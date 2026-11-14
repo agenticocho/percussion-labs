@@ -1,6 +1,6 @@
 # Percussion Labs
 
-Thirteen self-contained, browser-native percussion laboratories, plus two
+Fourteen self-contained, browser-native percussion laboratories, plus two
 specialty pendulum pieces. Each one builds an instrument out of a different
 piece of physics or mathematics, and generates its sound from the model rather
 than playing samples over it.
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The thirteen
+## The fourteen
 
 | # | Module | Built on |
 |---|---|---|
@@ -29,6 +29,7 @@ as well — technique first, then visible physics, then abstractions.
 | 11 | **DIAPASON-3D** | Full-screen 3D Euler–Bernoulli tuning fork, von Mises stress, six eigenmodes |
 | 12 | **KÁRMÁN-GONG 3D** | Föppl–von Kármán nonlinear shell, wave turbulence, pitch glissando |
 | 13 | **KEISU-3D** | Standing bell and singing bowl, Rayleigh–Love rim modes, Faraday spouting |
+| 14 | **CAMPANA-3D** | Free-free hanging bell, hum/prime/tierce/quint/nominal partials, bell swarm |
 
 ## Specialty
 
@@ -73,7 +74,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          thirteen laboratory modules + two specialty pendulum pieces
+*.html          fourteen laboratory modules + two specialty pendulum pieces
 ```
 
 ## Licence

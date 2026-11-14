@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAMPANA-3D // Free-Free Hanging Bell, Hum/Prime/Tierce/Quint/Nominal Partials &amp; Bell Swarm Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #04060c;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070a14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060c;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .glass-panel {
+      background: rgba(10, 14, 24, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .hud-pill {
+      background: rgba(6, 9, 18, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    /* Lock Three.js WebGL Canvas to 100% of container on Retina / HiDPI displays */
+    #threeHangingMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeHangingMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+    /* Full-Screen 3D Stage Mode */
+    .hanging-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: #03050a !important;
+    }
+    .btn-active-amber {
+      background: rgba(245, 158, 11, 0.22) !important;
+      border-color: rgba(245, 158, 11, 0.88) !important;
+      color: #fde68a !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+    }
+    .btn-active-cyan {
+      background: rgba(34, 211, 238, 0.2) !important;
+      border-color: rgba(34, 211, 238, 0.85) !important;
+      color: #a5f3fc !important;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.22);
+    }
+    .btn-active-emerald {
+      background: rgba(16, 185, 129, 0.22) !important;
+      border-color: rgba(16, 185, 129, 0.88) !important;
+      color: #a7f3d0 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+    }
+    .btn-active-violet {
+      background: rgba(168, 85, 247, 0.24) !important;
+      border-color: rgba(168, 85, 247, 0.88) !important;
+      color: #e9d5ff !important;
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.28);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#04060c] text-slate-100">
+
+  <!-- TOP SCIENTIFIC & CAMPANOLOGY HEADER BAR -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-3 py-2">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/25 via-orange-500/20 to-cyan-500/25 border border-amber-400/50 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <line x1="12" y1="2" x2="12" y2="5" stroke-linecap="round" />
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="currentColor" fill-opacity="0.2" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm md:text-base font-bold tracking-tight text-white">
+              CAMPANA-3D <span class="text-amber-400 font-normal">//</span> <span class="text-slate-300 font-medium">Free-Free Hanging Bell, Hum/Prime/Tierce/Quint/Nominal Partials &amp; Swarm Lab</span>
+            </h1>
+            <span class="hidden xl:inline-block text-[10px] font-mono-tech uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              0.5 : 1.0 : 1.2 : 1.5 : 2.0 : 3.0 : 4.0
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">
+            Single-Node Free-Crown Suspension • Explicit Hum $(2,0)$, Prime $(2,1^\#)$, Tierce $(3,1)$, Quint $(3,1^\#)$, Nominal $(4,1)$ • Strike-Height Nodal Filtering • Bell Swarm Cloud
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Partial & Strike-Note Readout Pills -->
+      <div class="flex flex-wrap items-center gap-1.5 font-mono-tech text-xs">
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Strike Note (Prime):</span>
+          <span id="hdrPrimeHz" class="text-amber-400 font-semibold">440.0 Hz (A4)</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Hum (2,0):</span>
+          <span id="hdrHumHz" class="text-emerald-400 font-semibold">220.0 Hz</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Tierce (3,1):</span>
+          <span id="hdrTierceHz" class="text-cyan-400 font-semibold">528.0 Hz (m3)</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 hidden md:flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Nominal (4,1):</span>
+          <span id="hdrNominalHz" class="text-violet-400 font-semibold">880.0 Hz</span>
+        </div>
+      </div>
+
+      <!-- Primary Action Buttons -->
+      <div class="flex items-center gap-1.5">
+        <button id="btnStrikeHeader" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-semibold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition">
+          <span>🔔 Strike Bell</span>
+          <kbd class="px-1 py-0.2 bg-black/25 rounded text-[10px] font-mono-tech">[Space]</kbd>
+        </button>
+        <button id="btnSwarmHeader" title="Trigger a shimmering multi-bell free-free swarm cloud [W]" class="px-2.5 py-1.5 rounded-lg bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 border border-violet-500/40 text-xs font-semibold transition">
+          🐝 Bell Swarm <kbd class="text-[10px] font-mono-tech opacity-75">[W]</kbd>
+        </button>
+        <button id="btnDampHeader" title="Hand-damp the hanging bell [D]" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition">
+          ✋ Damp <kbd class="text-[10px] font-mono-tech opacity-75">[D]</kbd>
+        </button>
+        <button id="btnCenterHeader" title="Center and fit the 3D hanging bell in the viewport [C]" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition">
+          ⌖ Center <kbd class="text-[10px] font-mono-tech opacity-75">[C]</kbd>
+        </button>
+        <button id="btnFullscreenHeader" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-1 transition">
+          <span>⛶ Full Screen</span>
+          <kbd class="text-[10px] font-mono-tech">[F]</kbd>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1920px] w-full mx-auto p-2.5 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+    <!-- LEFT & CENTER: 3D FREE-FREE HANGING BELL STAGE + 3-PANEL TELEMETRY STRIP (8 COLS) -->
+    <section class="lg:col-span-8 flex flex-col gap-2.5">
+
+      <!-- 3D WEBGL HANGING BELL STAGE CONTAINER -->
+      <div id="hangingStageContainer" class="relative w-full h-[540px] xl:h-[620px] rounded-xl overflow-hidden border border-slate-800/90 bg-[#03050a] shadow-2xl flex flex-col justify-between">
+
+        <!-- Three.js Canvas Mount -->
+        <div id="threeHangingMount" class="cursor-crosshair"></div>
+
+        <!-- TOP FLOATING IN-STAGE HUD (Always accessible in Full-Screen) -->
+        <div class="relative z-10 p-3 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+
+          <!-- Left HUD: 5 Hanging Bell Profiles + 4 Surface Shaders -->
+          <div class="flex flex-col gap-1.5 pointer-events-auto max-w-2xl">
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Bell Profile:</span>
+              <button data-arch="minor_third" class="arch-btn btn-active-amber px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                1. Hemony/Taylor Minor-3rd Free Bell
+              </button>
+              <button data-arch="major_third" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                2. Eindhoven Major-3rd Bulge Bell
+              </button>
+              <button data-arch="bonsho" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                3. Japanese Bonshō Temple Barrel Bell
+              </button>
+              <button data-arch="bianzhong" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                4. Chinese Bianzhong Two-Tone Chime
+              </button>
+              <button data-arch="meditation_tube" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                5. Free-Free Meditation Dome Resonator
+              </button>
+            </div>
+
+            <!-- Surface Shader Mode Selector Bar -->
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Surface Shader:</span>
+              <button data-shader="bronze" class="shader-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Cast Bell Bronze
+              </button>
+              <button data-shader="chladni" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Perrin Modal Phase (m, n)
+              </button>
+              <button data-shader="partial_zones" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Hum/Prime/Tierce/Quint Zones
+              </button>
+              <button data-shader="xray" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Nodal Meridian &amp; Circle X-Ray
+              </button>
+            </div>
+          </div>
+
+          <!-- Right HUD: Strike/Swing Tool, Camera Angles, Zoom & Centering Bar -->
+          <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <button id="btnToolStrike" class="btn-active-amber px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🔨 Click 3D Bell = Strike Zone
+              </button>
+              <button id="btnToolOrbit" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🔄 Drag = 3D Orbit
+              </button>
+              <button id="btnToolPan" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                ✥ Drag = Pan / Center
+              </button>
+              <button id="btnStageFullscreen" class="px-2.5 py-1 rounded-md text-xs font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 transition">
+                ⛶ Full Screen [F]
+              </button>
+            </div>
+
+            <!-- 3D Camera Angles -->
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <span class="text-[10px] font-mono-tech uppercase text-slate-400">Camera:</span>
+              <button data-cam="front" class="cam-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                1. Profile Elevation
+              </button>
+              <button data-cam="oblique" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                2. 3D Soundbow &amp; Waist
+              </button>
+              <button data-cam="upward" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                3. Under-Mouth Rim (2m Nodes)
+              </button>
+              <button data-cam="crown" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                4. Free-Crown Single Node
+              </button>
+              <button data-cam="orbit" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                5. 360° Orbit
+              </button>
+            </div>
+
+            <!-- Dedicated Zoom & Manual Centering / Pan Controls -->
+            <div class="hud-pill px-2 py-1 rounded-md flex flex-wrap items-center gap-1.5 text-[11px] font-mono-tech">
+              <button id="btnCenterStage" title="Center and fit the entire 3D hanging bell in the viewport [C]" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 font-semibold transition">
+                ⌖ Center &amp; Fit [C]
+              </button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Zoom:</span>
+              <button id="btnZoomIn" title="Zoom In" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">+</button>
+              <input id="sliderStageZoom" type="range" min="2.4" max="15.0" step="0.1" value="5.8" class="w-20" title="Camera Distance" />
+              <button id="btnZoomOut" title="Zoom Out" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">−</button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Pan:</span>
+              <button id="btnPanLeft" title="Pan Left" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">◀</button>
+              <button id="btnPanUp" title="Pan Up" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▲</button>
+              <button id="btnPanDown" title="Pan Down" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▼</button>
+              <button id="btnPanRight" title="Pan Right" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM FLOATING IN-STAGE HUD: Explicit Partial Quick-Select Bar & Strike Zone Readout -->
+        <div class="relative z-10 p-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
+
+          <!-- Live Strike Point (z/H, θ) & Excited Partials Readout -->
+          <div class="hud-pill px-3 py-2 rounded-lg pointer-events-auto flex flex-wrap items-center gap-3 text-xs font-mono-tech">
+            <div>
+              <span class="text-slate-400 text-[10px] block">STRIKE LOCATION (z/H, θ)</span>
+              <span id="hudStrikeZone" class="text-amber-300 font-semibold">z/H = 0.12 (Soundbow Rim), θ = 0°</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">INSPECTED PARTIAL &amp; NODAL TOPOLOGY</span>
+              <span id="hudPartialTopology" class="text-cyan-300 font-semibold">All Partials Coupled (Hum + Prime + Tierce + Quint + Nominal)</span>
+            </div>
+          </div>
+
+          <!-- Instant 5-Partial + All-Coupled Stage Selector Pills -->
+          <div class="hud-pill px-2.5 py-1.5 rounded-lg pointer-events-auto flex flex-wrap items-center gap-1 text-[11px] font-mono-tech">
+            <span class="text-slate-400 text-[10px] mr-1">SOLO PARTIAL:</span>
+            <button data-solo="-1" class="stage-partial-btn btn-active-amber px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300">
+              All
+            </button>
+            <button data-solo="0" class="stage-partial-btn px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-emerald-300">
+              Hum (2,0)
+            </button>
+            <button data-solo="1" class="stage-partial-btn px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-amber-300">
+              Prime (2,1#)
+            </button>
+            <button data-solo="2" class="stage-partial-btn px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300">
+              Tierce (3,1)
+            </button>
+            <button data-solo="3" class="stage-partial-btn px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-rose-300">
+              Quint (3,1#)
+            </button>
+            <button data-solo="4" class="stage-partial-btn px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-violet-300">
+              Nominal (4,1)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM 3-PANEL CAMPANOLOGY & ACOUSTIC TELEMETRY STRIP -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+
+        <!-- Panel A: Explicit Hum / Prime / Tierce / Quint / Nominal / Superquint / Octave-Nominal Spectrum -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-amber-300 uppercase tracking-wider font-mono-tech">
+                A. Hum / Prime / Tierce / Quint / Nominal
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Real-time amplitude &amp; cent tuning of the 7 principal partials
+              </p>
+            </div>
+            <span id="badgeChordType" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              1 : 2 : 2.4 : 3 : 4
+            </span>
+          </div>
+          <canvas id="canvasPartialBars" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel B: Vertical Meridian Modal Bending Profile u_r(z/H) & Nodal Circles -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-cyan-300 uppercase tracking-wider font-mono-tech">
+                B. Vertical Wall Profile u_r(z/H) &amp; Nodes
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Lehr/Hibbert axial bending curves &amp; strike elevation z/H marker
+              </p>
+            </div>
+            <span id="badgeNodalCircleZ" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              Waist Node z/H = 0.46
+            </span>
+          </div>
+          <canvas id="canvasAxialProfile" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel C: Under-Mouth Azimuthal Meridians (2m Nodes) & Decay Envelope -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-emerald-300 uppercase tracking-wider font-mono-tech">
+                C. Mouth Azimuth (2m Meridians) &amp; Decay
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Circumferential Chladni lobes cos(mθ) &amp; multi-partial linger tail
+              </p>
+            </div>
+            <span id="badgeMeridianCount" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              m = 2, 3, 4, 5, 6
+            </span>
+          </div>
+          <canvas id="canvasMouthPolar" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT CONTROL DECK: EXPLICIT 7-PARTIAL INSPECTOR, STRIKE ZONE, GEOMETRY & BELL SWARM (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-2.5">
+
+      <!-- CARD 1: EXPLICIT 7-PARTIAL INSPECTOR (HUM, PRIME, TIERCE, QUINT, NOMINAL, SUPERQUINT, OCTAVE) -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono-tech">
+              1. Explicit Bell Partials Inspector (Perrin / Lehr)
+            </h2>
+            <p class="text-[10px] text-slate-400">Click any partial to solo its 3D (m, n) nodal meridians &amp; nodal circle</p>
+          </div>
+          <button id="btnAllPartialsActive" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/50 text-amber-200">
+            All 8 Partials
+          </button>
+        </div>
+
+        <!-- Dynamic 8-Partial Interactive Table/Grid -->
+        <div id="partialsInspectorGrid" class="flex flex-col gap-1 font-mono-tech text-[11px]">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- CARD 2: STRIKE ZONE ELEVATION z/H (SOUNDBOW vs WAIST vs CROWN) & MALLET -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono-tech">
+            2. Strike-Point Nodal Filtering &amp; Exciter
+          </h2>
+          <span class="text-[10px] font-mono-tech text-slate-400">Hibbert Excitation Curves</span>
+        </div>
+
+        <!-- Quick Strike Zone Buttons -->
+        <div class="grid grid-cols-4 gap-1 text-[11px]">
+          <button data-zone="0.12" class="zone-btn btn-active-amber py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            Soundbow (0.12)
+          </button>
+          <button data-zone="0.32" class="zone-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            Lower Waist (Quint)
+          </button>
+          <button data-zone="0.48" class="zone-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            Mid-Waist Node
+          </button>
+          <button data-zone="0.82" class="zone-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            Shoulder / Crown
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Strike Height z/H -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Strike Height z/H:</span>
+              <span id="valStrikeHeight" class="text-amber-300 font-semibold">0.12 (Soundbow)</span>
+            </div>
+            <input id="sliderStrikeHeight" type="range" min="0.04" max="0.92" step="0.01" value="0.12" class="w-full" />
+          </div>
+
+          <!-- Mallet Hardness -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Hammer Hardness:</span>
+              <span id="valHammerHardness" class="text-cyan-300 font-semibold">0.72 (Bronze Clapper)</span>
+            </div>
+            <input id="sliderHammerHardness" type="range" min="0.15" max="1.00" step="0.05" value="0.72" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: FREE-FREE SUSPENSION, TIERCE TUNING & BELL GEOMETRY -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono-tech">
+            3. Free-Free Suspension &amp; Tierce/Waist Tuning
+          </h2>
+          <button id="btnToggleFreeCrown" class="btn-active-emerald px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] font-mono-tech text-emerald-300">
+            Single-Node Free-Free: ON
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Strike Pitch (Prime Fundamental Hz) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Prime Pitch f_P:</span>
+              <span id="valPrimePitch" class="text-amber-300 font-semibold">440 Hz (A4)</span>
+            </div>
+            <input id="sliderPrimePitch" type="range" min="110" max="880" step="1" value="440" class="w-full" />
+          </div>
+
+          <!-- Tierce Interval Morph (Minor Third 1.200 <-> Major Third 1.250 Bulge) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Tierce Ratio (Waist Bulge):</span>
+              <span id="valTierceRatio" class="text-cyan-300 font-semibold">1.200× (Minor 3rd)</span>
+            </div>
+            <input id="sliderTierceRatio" type="range" min="1.150" max="1.280" step="0.005" value="1.200" class="w-full" />
+          </div>
+
+          <!-- Free-Free Sustain T60 -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Hum Sustain T₆₀:</span>
+              <span id="valHumSustain" class="text-emerald-300 font-semibold">45.0 s (Free-Free)</span>
+            </div>
+            <input id="sliderHumSustain" type="range" min="8.0" max="75.0" step="1.0" value="45.0" class="w-full" />
+          </div>
+
+          <!-- Warble / Doublet Beat Frequency -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Shimmer Warble Δf:</span>
+              <span id="valWarbleHz" class="text-violet-300 font-semibold">2.20 Hz</span>
+            </div>
+            <input id="sliderWarbleHz" type="range" min="0.00" max="8.00" step="0.10" value="2.20" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: BELL SWARM GENERATOR, CARILLON SEQUENCER & WAV/JSON EXPORT -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-1.5">
+          <button id="btnToggleCarillon" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 flex items-center justify-center gap-1.5 transition">
+            <span>🎼 Auto-Strike / Swarm Loop</span>
+            <span id="carillonBadge" class="text-[10px] font-mono-tech px-1.5 py-0.2 rounded bg-slate-900 text-slate-400">OFF</span>
+          </button>
+          <div class="w-32">
+            <div class="flex justify-between font-mono-tech text-[10px]">
+              <span class="text-slate-400">Swarm Density:</span>
+              <span id="valSwarmDensity" class="text-violet-300">6 Voices</span>
+            </div>
+            <input id="sliderSwarmDensity" type="range" min="1" max="16" step="1" value="6" class="w-full" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+          <button id="btnExportWav" class="py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-mono-tech font-semibold transition">
+            ⬇ Export 44.1kHz .WAV
+          </button>
+          <button id="btnExportJson" class="py-1.5 px-2.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-mono-tech font-semibold transition">
+            ⬇ Export Partials .JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- LITERATURE & CAMPANOLOGY CITATIONS FOOTER -->
+      <div class="glass-panel rounded-xl px-3 py-2 text-[11px] text-slate-400 leading-relaxed">
+        <span class="text-slate-200 font-semibold font-mono-tech">Campanology References:</span>
+        Explicit Hum, Prime, Tierce, Quint &amp; Nominal modes $(m,n)$ and Chladni's law grounded in
+        <a href="https://www.hibberts.co.uk/wp-content/uploads/2022/01/perrin_charnley_depont_1982.pdf" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Perrin, Charnley &amp; DePont (1983, JSV)</a>,
+        <a href="https://www.hibberts.co.uk/identifying-bell-partials/" target="_blank" rel="noopener" class="text-cyan-400 hover:underline">Hibbert (2022, Identifying Bell Partials)</a>,
+        <a href="https://www.hibberts.co.uk/lehr_1986_partial_groups/" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Lehr (1986, Partial Groups in the Bell Sound)</a>,
+        <a href="https://online.ucpress.edu/mp/article-pdf/4/3/267/191648/40285370.pdf" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">Schoofs et al. (1987, Major-Third Bell)</a>,
+        and <a href="https://en.wikipedia.org/wiki/Strike_tone" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Strike Tone (Wikipedia)</a>.
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- COMPLETE APPLICATION LOGIC: THREE.JS 3D FREE-FREE BELL + EXPLICIT 8-PARTIAL SOLVER + BELL SWARM -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. EXPLICIT CAMPANOLOGICAL PARTIALS (Perrin, Charnley & DePont 1983 / Lehr 1986)
+      // =========================================================================
+      // Every partial has:
+      // - name: Traditional campanological name (Hum, Prime, Tierce, Quint, Nominal, Superquint, Octave Nominal, Free-Crown)
+      // - m: Number of complete nodal meridians running over the crown (producing 2*m nodal points around the rim!)
+      // - n: Number of horizontal nodal circles parallel to the mouth rim
+      // - nodalCircleZ: Normalized vertical elevation z/H of the horizontal nodal circle(s) (0 = mouth rim, 1 = crown apex)
+      // - baseRatioToPrime: Canonical frequency ratio relative to the Prime (Strike Note = 1.000)
+      // - decayMult: Relative damping speed (Hum lingers longest; high rim modes decay faster)
+      const BELL_PARTIALS = [
+        {
+          idx: 0,
+          id: 'hum',
+          name: '1. HUM',
+          sub: '(2,0) Sub-Octave',
+          m: 2,
+          n: 0,
+          nodalCirclesZ: [],
+          baseRatioToPrime: 0.500,
+          centsLabel: '-1200¢ (P8↓)',
+          decayMult: 0.35,
+          colorHex: '#10b981',
+          peakZoneZ: 0.08
+        },
+        {
+          idx: 1,
+          id: 'prime',
+          name: '2. PRIME (Fund.)',
+          sub: '(2,1#) Strike Fundamental',
+          m: 2,
+          n: 1,
+          nodalCirclesZ: [0.22],
+          baseRatioToPrime: 1.000,
+          centsLabel: '0¢ (Root 1:1)',
+          decayMult: 0.72,
+          colorHex: '#f59e0b',
+          peakZoneZ: 0.14
+        },
+        {
+          idx: 2,
+          id: 'tierce',
+          name: '3. TIERCE',
+          sub: '(3,1) Minor/Major 3rd',
+          m: 3,
+          n: 1,
+          nodalCirclesZ: [0.46],
+          baseRatioToPrime: 1.200,
+          centsLabel: '+316¢ (m3)',
+          decayMult: 0.95,
+          colorHex: '#22d3ee',
+          peakZoneZ: 0.10
+        },
+        {
+          idx: 3,
+          id: 'quint',
+          name: '4. QUINT',
+          sub: '(3,1#) Waist Fifth',
+          m: 3,
+          n: 1,
+          nodalCirclesZ: [0.16],
+          baseRatioToPrime: 1.500,
+          centsLabel: '+702¢ (P5)',
+          decayMult: 1.15,
+          colorHex: '#f43f5e',
+          peakZoneZ: 0.36 // Maximally excited when struck on the waist (Hibbert 2022)!
+        },
+        {
+          idx: 4,
+          id: 'nominal',
+          name: '5. NOMINAL',
+          sub: '(4,1) Upper Octave',
+          m: 4,
+          n: 1,
+          nodalCirclesZ: [0.48],
+          baseRatioToPrime: 2.000,
+          centsLabel: '+1200¢ (P8↑)',
+          decayMult: 1.45,
+          colorHex: '#a855f7',
+          peakZoneZ: 0.09
+        },
+        {
+          idx: 5,
+          id: 'superquint',
+          name: '6. SUPERQUINT',
+          sub: '(5,1) Twelfth (Strike Group)',
+          m: 5,
+          n: 1,
+          nodalCirclesZ: [0.50],
+          baseRatioToPrime: 3.000,
+          centsLabel: '+1902¢ (P12↑)',
+          decayMult: 2.10,
+          colorHex: '#38bdf8',
+          peakZoneZ: 0.08
+        },
+        {
+          idx: 6,
+          id: 'oct_nominal',
+          name: '7. OCTAVE NOMINAL',
+          sub: '(6,1) Double Octave',
+          m: 6,
+          n: 1,
+          nodalCirclesZ: [0.52],
+          baseRatioToPrime: 4.000,
+          centsLabel: '+2400¢ (2·P8↑)',
+          decayMult: 2.85,
+          colorHex: '#fb7185',
+          peakZoneZ: 0.07
+        },
+        {
+          idx: 7,
+          id: 'free_crown',
+          name: '8. FREE-CROWN (0,1)',
+          sub: 'Single-Node Breathing Mode',
+          m: 0,
+          n: 1,
+          nodalCirclesZ: [0.64],
+          baseRatioToPrime: 2.618,
+          centsLabel: '+1665¢ (Crown)',
+          decayMult: 0.85,
+          colorHex: '#fde047',
+          peakZoneZ: 0.84 // Unlocked only when Free-Free Single-Node suspension is ON!
+        }
+      ];
+
+      const ARCHETYPES = {
+        minor_third: {
+          id: 'minor_third',
+          name: 'Hemony / Taylor Minor-Third Free-Free Church Bell',
+          primeHz: 440.0,
+          tierceRatio: 1.200,
+          waistBulge: 0.0,
+          mouthFlare: 1.0,
+          ellipticity: 0.0,
+          humSustainSec: 45.0,
+          warbleHz: 2.20,
+          ratios: [0.500, 1.000, 1.200, 1.500, 2.000, 3.000, 4.000, 2.618],
+          chordBadge: 'Minor-3rd (1 : 2 : 2.4 : 3 : 4)'
+        },
+        major_third: {
+          id: 'major_third',
+          name: 'Eindhoven / Eijsbouts Major-Third Bulge Bell',
+          primeHz: 440.0,
+          tierceRatio: 1.250,
+          waistBulge: 0.24, // Characteristic Eindhoven waist bulge that raises the Tierce to 1.250!
+          mouthFlare: 0.96,
+          ellipticity: 0.0,
+          humSustainSec: 42.0,
+          warbleHz: 1.80,
+          ratios: [0.500, 1.000, 1.250, 1.500, 2.000, 3.000, 4.000, 2.680],
+          chordBadge: 'Major-3rd (1 : 2 : 2.5 : 3 : 4)'
+        },
+        bonsho: {
+          id: 'bonsho',
+          name: 'Japanese Bonshō (梵鐘) Temple Hanging Barrel Bell',
+          primeHz: 220.0,
+          tierceRatio: 1.185,
+          waistBulge: 0.14,
+          mouthFlare: 0.42, // Cylindrical barrel profile without wide Western lip flare
+          ellipticity: 0.0,
+          humSustainSec: 64.0,
+          warbleHz: 2.80,
+          ratios: [0.500, 1.000, 1.185, 1.460, 1.980, 2.890, 3.840, 2.420],
+          chordBadge: 'Bonshō Barrel (64s Deep Sustain)'
+        },
+        bianzhong: {
+          id: 'bianzhong',
+          name: 'Ancient Chinese Bianzhong (編鐘) Two-Tone Almond Bell',
+          primeHz: 392.0,
+          tierceRatio: 1.200,
+          waistBulge: 0.05,
+          mouthFlare: 0.55,
+          ellipticity: 0.26, // Lenticular almond cross-section separating Sui (front) and Gu (side) tones
+          humSustainSec: 22.0,
+          warbleHz: 0.90,
+          ratios: [0.500, 1.000, 1.200, 1.520, 2.020, 2.950, 3.920, 2.500],
+          chordBadge: 'Bianzhong Sui/Gu Dual-Pitch'
+        },
+        meditation_tube: {
+          id: 'meditation_tube',
+          name: 'Free-Free Meditation Dome & Swarm Resonator',
+          primeHz: 330.0,
+          tierceRatio: 1.225,
+          waistBulge: -0.06,
+          mouthFlare: 0.72,
+          ellipticity: 0.0,
+          humSustainSec: 68.0,
+          warbleHz: 3.10,
+          ratios: [0.500, 1.000, 1.225, 1.500, 2.000, 3.000, 4.000, 2.500],
+          chordBadge: 'Free-Free Golden Harmonics'
+        }
+      };
+
+      // =========================================================================
+      // 2. CENTRAL SIMULATION STATE
+      // =========================================================================
+      const state = {
+        archetype: 'minor_third',
+        freeCrownSuspension: true, // Single-node top suspension vs clamped belfry headstock
+        primePitchHz: 440.0,
+        tierceRatio: 1.200,
+        waistBulge: 0.0,
+        mouthFlare: 1.0,
+        ellipticity: 0.0,
+        humSustainSec: 45.0,
+        warbleHz: 2.20,
+
+        // Strike & Excitation
+        toolMode: 'strike',        // 'strike' | 'orbit' | 'pan'
+        strikeHeightZ: 0.12,       // 0.0 = bottom mouth rim, 0.12 = soundbow, 0.36 = waist, 0.85 = crown
+        strikeAngleRad: 0.0,
+        hammerHardness: 0.72,
+        soloPartialIdx: -1,        // -1 = all partials active
+
+        // Visual & Camera
+        shaderMode: 'bronze',      // 'bronze' | 'chladni' | 'partial_zones' | 'xray'
+        cameraPreset: 'front',
+
+        // 8 Partial Dynamical Amplitudes, Frequencies & Phases
+        partialAmps: new Float32Array(8),
+        partialPeakHold: new Float32Array(8),
+        partialFreqsHz: new Float32Array(8),
+        partialPhases: new Float32Array(8),
+
+        // Pendulum Swing of the Free-Free Bell on its Single Suspension Cord
+        bellSwingAngle: 0.0,
+        bellSwingVel: 0.0,
+
+        // Auto-Strike / Bell Swarm Cloud Sequencer
+        carillonActive: false,
+        swarmDensity: 6,
+        lastCarillonStrikeSec: 0
+      };
+
+      function noteNameFromHz(hz) {
+        const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const midi = Math.round(69 + 12 * Math.log2(Math.max(20, hz) / 440.0));
+        const note = names[((midi % 12) + 12) % 12];
+        const oct = Math.floor(midi / 12) - 1;
+        return `${note}${oct}`;
+      }
+
+      function recomputePartialFrequencies() {
+        const arch = ARCHETYPES[state.archetype] || ARCHETYPES.minor_third;
+        const fP = state.primePitchHz;
+
+        for (let k = 0; k < 8; k++) {
+          let ratio = arch.ratios[k];
+          if (k === 2) {
+            // Tierce ratio directly controlled by the Tierce / Waist Bulge slider!
+            ratio = state.tierceRatio;
+          }
+          state.partialFreqsHz[k] = fP * ratio;
+        }
+        // Couple waist bulge visually to Tierce ratio shift from 1.200 to 1.250
+        state.waistBulge = arch.waistBulge + (state.tierceRatio - arch.tierceRatio) * 4.2;
+      }
+
+      recomputePartialFrequencies();
+
+      // Evaluate Axial Bending Eigenfunction Phi_k(zNorm) for partial k at vertical height zNorm in [0, 1]
+      // Grounded in Lehr (1986) Fig. 4 & Hibbert (2022) excitation curves:
+      function evalAxialEigenfunction(k, zNorm) {
+        const p = BELL_PARTIALS[k];
+        // If crown is clamped to a belfry headstock, top crown motion (zNorm -> 1) is forced to 0;
+        // In a Free-Free Single-Node bell, the crown shoulder can flex freely!
+        const crownEnv = state.freeCrownSuspension
+          ? (k === 7 ? Math.pow(zNorm, 1.4) : Math.pow(1.0 - zNorm * 0.72, 0.85))
+          : Math.pow(1.0 - zNorm, 1.35);
+
+        if (k === 0) {
+          // 1. HUM (2,0): No horizontal nodal circle! Monotonic maximum at the mouth rim (z=0)
+          return Math.pow(1.0 - zNorm * 0.82, 1.5) * crownEnv;
+        } else if (k === 1) {
+          // 2. PRIME (2,1#): Nodal circle at z/H = 0.22; opposite sign in waist vs soundbow!
+          const nodeZ = p.nodalCirclesZ[0];
+          return ((nodeZ - zNorm) / nodeZ) * Math.exp(-zNorm * 0.9) * crownEnv * 1.25;
+        } else if (k === 3) {
+          // 4. QUINT (3,1#): Nodal circle low near soundbow (z/H = 0.16), strong antinode in waist (z/H ≈ 0.36)!
+          const nodeZ = p.nodalCirclesZ[0];
+          return ((zNorm - nodeZ) / 0.28) * Math.sin((1.0 - zNorm) * Math.PI * 0.95) * crownEnv * 1.4;
+        } else if (k === 7) {
+          // 8. FREE-CROWN (0,1): Breathing mode with nodal circle at z/H = 0.64 and strong antinode at crown shoulder!
+          if (!state.freeCrownSuspension) return 0.0;
+          const nodeZ = p.nodalCirclesZ[0];
+          return ((zNorm - nodeZ) / 0.36) * crownEnv * 1.35;
+        } else {
+          // Rim Inextensional Modes: TIERCE (3,1), NOMINAL (4,1), SUPERQUINT (5,1), OCTAVE NOMINAL (6,1)
+          // Have a horizontal nodal circle in the waist (z/H ≈ 0.46 - 0.52) and maximum amplitude at the soundbow!
+          const nodeZ = p.nodalCirclesZ[0];
+          return ((nodeZ - zNorm) / nodeZ) * Math.pow(1.0 - zNorm * 0.5, 1.4) * crownEnv * 1.15;
+        }
+      }
+
+      // =========================================================================
+      // 3. WEB AUDIO API EXPLICIT 8-PARTIAL + BELL SWARM CLOUD SYNTHESIZER
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+      let partialOscBanks = [];
+
+      function initAudio() {
+        if (audioCtx) {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          return;
+        }
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.78;
+
+        const comp = audioCtx.createDynamicsCompressor();
+        comp.threshold.value = -10;
+        comp.ratio.value = 4;
+        comp.attack.value = 0.002;
+        comp.release.value = 0.18;
+
+        masterGain.connect(comp);
+        comp.connect(audioCtx.destination);
+
+        // Create 8 Dual-Doublet Oscillators for the 8 Explicit Bell Partials
+        partialOscBanks = [];
+        for (let k = 0; k < 8; k++) {
+          const oscA = audioCtx.createOscillator();
+          const oscB = audioCtx.createOscillator();
+          const gainA = audioCtx.createGain();
+          const gainB = audioCtx.createGain();
+
+          oscA.type = k === 0 ? 'sine' : (k === 1 ? 'triangle' : 'sine');
+          oscB.type = 'sine';
+
+          oscA.frequency.value = state.partialFreqsHz[k];
+          oscB.frequency.value = state.partialFreqsHz[k] + state.warbleHz;
+
+          gainA.gain.value = 0.0;
+          gainB.gain.value = 0.0;
+
+          oscA.connect(gainA);
+          oscB.connect(gainB);
+          gainA.connect(masterGain);
+          gainB.connect(masterGain);
+
+          oscA.start();
+          oscB.start();
+
+          partialOscBanks.push({ oscA, oscB, gainA, gainB });
+        }
+      }
+
+      function updateAudioEngineFromPartials() {
+        if (!audioCtx || partialOscBanks.length === 0) return;
+        const now = audioCtx.currentTime;
+        // Subtle Doppler pitch modulation when the free-free bell swings as a pendulum
+        const doppler = 1.0 + state.bellSwingVel * 0.0028;
+
+        for (let k = 0; k < 8; k++) {
+          const bank = partialOscBanks[k];
+          const isMuted = (state.soloPartialIdx !== -1 && state.soloPartialIdx !== k);
+          const amp = isMuted ? 0.0 : state.partialAmps[k];
+          const fBase = Math.max(25, Math.min(14000, state.partialFreqsHz[k] * doppler));
+          // Doublet warble scales slightly with partial index; Bianzhong has two-tone Sui/Gu split
+          const split = state.ellipticity > 0.05
+            ? fBase * 0.18
+            : state.warbleHz * (k === 0 ? 0.65 : (1.0 + 0.15 * k));
+
+          bank.oscA.frequency.setTargetAtTime(fBase, now, 0.012);
+          bank.oscB.frequency.setTargetAtTime(fBase + split, now, 0.012);
+
+          const weight = k === 0 ? 0.24 : (k <= 4 ? 0.18 : 0.10);
+          const targetA = Math.min(0.32, amp * weight);
+          const targetB = targetA * (state.warbleHz > 0.05 ? 0.68 : 0.0);
+
+          bank.gainA.gain.setTargetAtTime(targetA, now, 0.015);
+          bank.gainB.gain.setTargetAtTime(targetB, now, 0.015);
+        }
+      }
+
+      // =========================================================================
+      // 4. STRIKE-POINT NODAL FILTERING & BELL SWARM CLOUD GENERATOR
+      // =========================================================================
+      function triggerHangingBellStrike(zHeightOverride, thetaOverride, velocityScale) {
+        initAudio();
+        recomputePartialFrequencies();
+
+        const zH = zHeightOverride !== undefined ? Math.max(0.02, Math.min(0.95, zHeightOverride)) : state.strikeHeightZ;
+        const th = thetaOverride !== undefined ? thetaOverride : state.strikeAngleRad;
+        const vScale = velocityScale !== undefined ? velocityScale : 1.0;
+
+        state.strikeHeightZ = zH;
+        state.strikeAngleRad = th;
+
+        // Sync Strike Height slider UI
+        const sliderZ = document.getElementById('sliderStrikeHeight');
+        if (sliderZ) {
+          sliderZ.value = zH.toFixed(2);
+          updateStrikeHeightLabel(zH);
+        }
+
+        // Excite each of the 8 partials proportional to |Phi_k(zH)| at the strike height zH
+        // and weighted by hammer hardness!
+        const hardnessCutoff = 1.5 + state.hammerHardness * 6.5;
+
+        for (let k = 0; k < 8; k++) {
+          const axialCoupling = Math.abs(evalAxialEigenfunction(k, zH));
+          const hardnessWeight = Math.exp(-k / hardnessCutoff);
+          const deltaAmp = axialCoupling * hardnessWeight * vScale * 1.18;
+
+          state.partialAmps[k] = Math.min(2.2, state.partialAmps[k] * 0.45 + deltaAmp);
+          state.partialPeakHold[k] = Math.max(state.partialPeakHold[k], state.partialAmps[k]);
+        }
+
+        // Impart a gentle pendulum swing impulse to the free-free bell suspended from its single top node!
+        state.bellSwingVel += (Math.cos(th) >= 0 ? 1 : -1) * 0.42 * vScale * (1.0 - zH * 0.6);
+
+        // Trigger 3D Hammer Swing Animation
+        hammerAnim.active = true;
+        hammerAnim.progress = 0.0;
+
+        // Play transient metallic clapper click on strike
+        if (audioCtx && masterGain) {
+          const now = audioCtx.currentTime;
+          const clickOsc = audioCtx.createOscillator();
+          const clickGain = audioCtx.createGain();
+          clickOsc.type = 'triangle';
+          clickOsc.frequency.setValueAtTime(1800 * state.hammerHardness + 400, now);
+          clickOsc.frequency.exponentialRampToValueAtTime(180, now + 0.032);
+          clickGain.gain.setValueAtTime(0.18 * vScale * state.hammerHardness, now);
+          clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.038);
+          clickOsc.connect(clickGain);
+          clickGain.connect(masterGain);
+          clickOsc.start(now);
+          clickOsc.stop(now + 0.04);
+        }
+
+        const deg = Math.round(((th * 180) / Math.PI + 360) % 360);
+        const zoneName = zH < 0.20 ? 'Soundbow Rim' : (zH < 0.42 ? 'Lower Waist (Quint Zone)' : (zH < 0.65 ? 'Mid-Waist Nodal Circle' : 'Upper Shoulder / Free Crown'));
+        document.getElementById('hudStrikeZone').textContent = `z/H = ${zH.toFixed(2)} (${zoneName}), θ = ${deg}°`;
+      }
+
+      // Trigger a spatial multi-voice "Bell Swarm" cloud (micro-detuned free-free bell cascade)
+      function triggerBellSwarmCloud() {
+        initAudio();
+        const voices = state.swarmDensity;
+        for (let v = 0; v < voices; v++) {
+          const delayMs = v * 95 + Math.random() * 45;
+          setTimeout(() => {
+            // Cycle across different strike heights (soundbow, waist, crown) to create a shimmering partial swarm!
+            const zSample = [0.11, 0.34, 0.14, 0.48, 0.82, 0.22][v % 6];
+            const thSample = (v * 1.35) % (Math.PI * 2);
+            triggerHangingBellStrike(zSample, thSample, 0.72);
+
+            // Spawn an ephemeral spatial swarm voice in Web Audio
+            if (audioCtx && masterGain) {
+              const now = audioCtx.currentTime;
+              const detuneRatio = Math.pow(2, ((v - voices * 0.5) * 7) / 1200); // microtonal swarm cluster
+              [0.5, 1.0, state.tierceRatio, 1.5, 2.0].forEach((r, idx) => {
+                const osc = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(state.primePitchHz * r * detuneRatio, now);
+                g.gain.setValueAtTime(0.045 / (1 + idx * 0.4), now);
+                g.gain.exponentialRampToValueAtTime(0.0005, now + 2.8);
+                osc.connect(g);
+                g.connect(masterGain);
+                osc.start(now);
+                osc.stop(now + 2.9);
+              });
+            }
+          }, delayMs);
+        }
+      }
+
+      function dampHangingBell() {
+        for (let k = 0; k < 8; k++) {
+          state.partialAmps[k] *= 0.04;
+          state.partialPeakHold[k] *= 0.1;
+        }
+        state.bellSwingVel *= 0.1;
+      }
+
+      // =========================================================================
+      // 5. TIME-DOMAIN PARTIAL DECAY & FREE-FREE PENDULUM SWING STEPPER
+      // =========================================================================
+      function stepHangingBellPhysics(dt) {
+        const safeDt = Math.min(0.033, Math.max(0.001, dt));
+
+        // 1. Free-Free Single-Node Pendulum Swing of the Suspended Bell
+        const swingOmega0Sq = 9.81 / 1.45;
+        state.bellSwingVel += (-swingOmega0Sq * Math.sin(state.bellSwingAngle) - 0.18 * state.bellSwingVel) * safeDt;
+        state.bellSwingAngle += state.bellSwingVel * safeDt;
+
+        // 2. Step 8 Partial Envelopes & Phases
+        // Free-Free Single-Node suspension increases sustain by 1.65x compared to clamped headstock
+        const sustainMultiplier = state.freeCrownSuspension ? 1.0 : 0.55;
+        const baseDecayRate = 6.908 / Math.max(4.0, state.humSustainSec * sustainMultiplier);
+
+        for (let k = 0; k < 8; k++) {
+          const p = BELL_PARTIALS[k];
+          state.partialAmps[k] *= Math.exp(-baseDecayRate * p.decayMult * safeDt);
+          state.partialPeakHold[k] *= Math.exp(-0.35 * safeDt);
+          const visFreq = 18.0 + k * 7.5;
+          state.partialPhases[k] += visFreq * safeDt;
+        }
+
+        // 3. Auto-Strike / Swarm Sequencer
+        if (state.carillonActive) {
+          const nowSec = performance.now() * 0.001;
+          if (nowSec - state.lastCarillonStrikeSec >= 1.45) {
+            state.lastCarillonStrikeSec = nowSec;
+            const heights = [0.12, 0.35, 0.12, 0.82];
+            const zNext = heights[Math.floor(nowSec) % heights.length];
+            triggerHangingBellStrike(zNext, (nowSec * 1.2) % (Math.PI * 2), 0.9);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. THREE.JS 3D SINGLE-NODE FREE-FREE HANGING BELL & NODAL OVERLAYS
+      // =========================================================================
+      const mountEl = document.getElementById('threeHangingMount');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03050a);
+      scene.fog = new THREE.FogExp2(0x03050a, 0.038);
+
+      const camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 100);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.22;
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      mountEl.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0x475569, 1.05);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 2.35);
+      keyLight.position.set(4, 7, 5);
+      scene.add(keyLight);
+
+      const cyanRimLight = new THREE.PointLight(0x22d3ee, 1.8, 16);
+      cyanRimLight.position.set(-4, 2, 3);
+      scene.add(cyanRimLight);
+
+      const amberBackLight = new THREE.PointLight(0xf59e0b, 1.85, 16);
+      amberBackLight.position.set(3, -2, -4);
+      scene.add(amberBackLight);
+
+      // Top Suspension Gantry Beam & Single-Point Free-Free Pivot
+      const gantryGroup = new THREE.Group();
+      scene.add(gantryGroup);
+
+      const beamMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.65 });
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.25, metalness: 0.88 });
+
+      const topBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 3.6, 20), beamMat);
+      topBeam.rotation.z = Math.PI * 0.5;
+      topBeam.position.set(0, 1.92, 0);
+      gantryGroup.add(topBeam);
+
+      // Single-Node Isolation Hook at (0, 1.92, 0)
+      const hookRing = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.022, 12, 32), goldMat);
+      hookRing.position.set(0, 1.84, 0);
+      gantryGroup.add(hookRing);
+
+      // Pivoting Bell Assembly Group (rotates around the single suspension node at y = 1.84)
+      const bellPivotGroup = new THREE.Group();
+      bellPivotGroup.position.set(0, 1.84, 0);
+      scene.add(bellPivotGroup);
+
+      // Single Braided Free-Free Suspension Cord (from y=0 down to crown eye at y=-0.52)
+      const cordGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.52, 12);
+      const cordMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.5, metalness: 0.4 });
+      const suspensionCord = new THREE.Mesh(cordGeo, cordMat);
+      suspensionCord.position.set(0, -0.26, 0);
+      bellPivotGroup.add(suspensionCord);
+
+      // Crown Eye Loop (Argent / Single-Point Eye)
+      const crownEye = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.028, 14, 32), goldMat);
+      crownEye.position.set(0, -0.52, 0);
+      bellPivotGroup.add(crownEye);
+
+      const gridHelper = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      gridHelper.position.y = -1.68;
+      scene.add(gridHelper);
+
+      // -------------------------------------------------------------------------
+      // 6A. Parametric 3D Hanging Bell Mesh (48 Vertical Rings x 96 Sectors)
+      // -------------------------------------------------------------------------
+      const NZ = 48;
+      const NTH = 96;
+      const ringsCount = NZ + 1;
+      const sectorsCount = NTH + 1;
+      const bellVertCount = ringsCount * sectorsCount;
+
+      const bellGeo = new THREE.BufferGeometry();
+      const bellPos = new Float32Array(bellVertCount * 3);
+      const bellCol = new Float32Array(bellVertCount * 3);
+      const vertZNorm = new Float32Array(bellVertCount); // 0 = bottom mouth rim, 1 = top crown apex
+      const vertTheta = new Float32Array(bellVertCount);
+
+      let vIdx = 0;
+      for (let iz = 0; iz <= NZ; iz++) {
+        const zN = iz / NZ;
+        for (let it = 0; it <= NTH; it++) {
+          const th = (it / NTH) * Math.PI * 2;
+          vertZNorm[vIdx] = zN;
+          vertTheta[vIdx] = th;
+          vIdx++;
+        }
+      }
+
+      const bellIndices = [];
+      for (let iz = 0; iz < NZ; iz++) {
+        for (let it = 0; it < NTH; it++) {
+          const a = iz * sectorsCount + it;
+          const b = (iz + 1) * sectorsCount + it;
+          const c = (iz + 1) * sectorsCount + (it + 1);
+          const d = iz * sectorsCount + (it + 1);
+          bellIndices.push(a, b, d);
+          bellIndices.push(b, c, d);
+        }
+      }
+
+      bellGeo.setIndex(bellIndices);
+      bellGeo.setAttribute('position', new THREE.BufferAttribute(bellPos, 3));
+      bellGeo.setAttribute('color', new THREE.BufferAttribute(bellCol, 3));
+
+      const bellMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.24,
+        metalness: 0.88,
+        side: THREE.DoubleSide
+      });
+
+      const bellMesh = new THREE.Mesh(bellGeo, bellMat);
+      bellMesh.frustumCulled = false;
+      bellPivotGroup.add(bellMesh);
+
+      // -------------------------------------------------------------------------
+      // 6B. 3D Nodal Meridians (2m Vertical Lines) & Horizontal Nodal Circle Overlays
+      // -------------------------------------------------------------------------
+      const nodalOverlayGroup = new THREE.Group();
+      bellPivotGroup.add(nodalOverlayGroup);
+
+      // Horizontal Nodal Circle Ring (Highlights waist/soundbow nodal circle z/H)
+      const nodalCirclePts = [];
+      for (let i = 0; i <= 96; i++) {
+        const a = (i / 96) * Math.PI * 2;
+        nodalCirclePts.push(new THREE.Vector3(Math.cos(a), 0, Math.sin(a)));
+      }
+      const nodalCircleGeo = new THREE.BufferGeometry().setFromPoints(nodalCirclePts);
+      const nodalCircleMat = new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 });
+      const nodalCircleMesh = new THREE.Line(nodalCircleGeo, nodalCircleMat);
+      nodalOverlayGroup.add(nodalCircleMesh);
+
+      // 12 Vertical Meridian Lines (Running from mouth rim up over the crown)
+      const meridianLines = [];
+      const meridianMat = new THREE.LineBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.82 });
+      for (let m = 0; m < 12; m++) {
+        const pts = [];
+        for (let iz = 0; iz <= 24; iz++) {
+          pts.push(new THREE.Vector3(0, 0, 0));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const line = new THREE.Line(geo, meridianMat);
+        nodalOverlayGroup.add(line);
+        meridianLines.push(line);
+      }
+
+      // -------------------------------------------------------------------------
+      // 6C. 3D External Striker Hammer & Strike Height Ring Indicator
+      // -------------------------------------------------------------------------
+      const strikerGroup = new THREE.Group();
+      bellPivotGroup.add(strikerGroup);
+
+      const strikerHead = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.75, roughness: 0.25, emissive: 0xd97706, emissiveIntensity: 0.25 })
+      );
+      strikerGroup.add(strikerHead);
+
+      const strikerShaft = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.022, 0.026, 0.65, 14),
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 })
+      );
+      strikerShaft.position.set(0.24, -0.22, 0);
+      strikerShaft.rotation.z = 0.65;
+      strikerGroup.add(strikerShaft);
+
+      const hammerAnim = { active: false, progress: 0.0 };
+
+      // Evaluate Static Hanging Bell Profile (rStatic, yStatic) in bellPivotGroup coordinates
+      // zNorm = 0 is bottom mouth rim (y = -2.65), zNorm = 1 is top crown apex (y = -0.55)
+      function evalHangingBellProfile(zNorm, theta) {
+        const bellHeight = 2.10;
+        const yStatic = -2.65 + zNorm * bellHeight;
+
+        // Shoulder radius (~0.52 at zNorm=0.85), curved waist, flared soundbow mouth (~1.12 at zNorm=0)
+        const mouthFlare = 0.48 * state.mouthFlare * Math.pow(1.0 - zNorm, 2.25);
+        const waistBulge = state.waistBulge * Math.sin(zNorm * Math.PI);
+        const crownCap = zNorm > 0.86 ? Math.cos(((zNorm - 0.86) / 0.14) * Math.PI * 0.5) : 1.0;
+
+        let rProfile = (0.56 + mouthFlare + waistBulge + 0.08 * (1.0 - zNorm)) * crownCap;
+        // Soundbow thickened rim bead near zNorm = 0.08
+        if (zNorm < 0.18) {
+          rProfile += 0.045 * Math.sin((zNorm / 0.18) * Math.PI);
+        }
+
+        const ellipScale = 1.0 + state.ellipticity * Math.cos(2 * theta);
+        return { rStatic: rProfile * ellipScale, yStatic };
+      }
+
+      function update3DHangingBell() {
+        bellPivotGroup.rotation.z = state.bellSwingAngle;
+
+        const posArr = bellGeo.attributes.position.array;
+        const colArr = bellGeo.attributes.color.array;
+
+        const pCos = new Float32Array(8);
+        for (let k = 0; k < 8; k++) {
+          const isMuted = (state.soloPartialIdx !== -1 && state.soloPartialIdx !== k);
+          pCos[k] = isMuted ? 0.0 : state.partialAmps[k] * Math.cos(state.partialPhases[k]);
+        }
+
+        const shader = state.shaderMode;
+
+        for (let i = 0; i < bellVertCount; i++) {
+          const zN = vertZNorm[i];
+          const th = vertTheta[i];
+          const { rStatic, yStatic } = evalHangingBellProfile(zN, th);
+
+          // Sum radial & tangential displacements across the 8 explicit bell partials
+          let uRadial = 0.0;
+          let uTangential = 0.0;
+
+          for (let k = 0; k < 8; k++) {
+            const amp = pCos[k];
+            if (Math.abs(amp) < 1e-4) continue;
+            const p = BELL_PARTIALS[k];
+            const axialPhi = evalAxialEigenfunction(k, zN);
+            const m = p.m;
+            if (m === 0) {
+              uRadial += amp * axialPhi * 0.055;
+            } else {
+              const ang = m * (th - state.strikeAngleRad);
+              uRadial += amp * axialPhi * Math.cos(ang) * 0.068;
+              uTangential -= (amp / m) * axialPhi * Math.sin(ang) * 0.068;
+            }
+          }
+
+          const rDef = Math.max(0.01, rStatic + uRadial);
+          const x = rDef * Math.cos(th) - uTangential * Math.sin(th);
+          const z = rDef * Math.sin(th) + uTangential * Math.cos(th);
+
+          posArr[i * 3] = x;
+          posArr[i * 3 + 1] = yStatic;
+          posArr[i * 3 + 2] = z;
+
+          // Compute Vertex Color based on selected Surface Shader Mode
+          let rC = 0.82, gC = 0.62, bC = 0.28;
+
+          if (shader === 'bronze') {
+            // Authentic Cast Bell Bronze with decorative waistinscription bands & soundbow polish
+            const isBand = (Math.abs(zN - 0.14) < 0.018 || Math.abs(zN - 0.76) < 0.022);
+            const vibGlow = Math.min(0.45, Math.abs(uRadial) * 9.0);
+            const baseShade = isBand ? 1.18 : (0.88 + 0.14 * Math.sin(zN * 24.0));
+            rC = Math.min(1.0, 0.82 * baseShade + vibGlow * 0.65);
+            gC = Math.min(1.0, 0.60 * baseShade + vibGlow * 0.45);
+            bC = Math.min(1.0, 0.28 * baseShade + vibGlow * 0.18);
+          } else if (shader === 'chladni') {
+            // Bipolar Perrin Modal Phase (Cyan Outward + / Rose-Magenta Inward - / Dark Nodal Lines)
+            const normU = Math.max(-1.0, Math.min(1.0, uRadial * 20.0));
+            const mag = Math.abs(normU);
+            if (normU >= 0) {
+              rC = 0.06 + mag * 0.15;
+              gC = 0.14 + mag * 0.82;
+              bC = 0.22 + mag * 0.86;
+            } else {
+              rC = 0.20 + mag * 0.82;
+              gC = 0.07 + mag * 0.18;
+              bC = 0.20 + mag * 0.68;
+            }
+          } else if (shader === 'partial_zones') {
+            // Color-codes the bell wall by which partial group is maximally excited at each height z/H:
+            // Soundbow (z < 0.22): Nominal/Tierce/Prime Amber-Cyan
+            // Lower Waist (0.22 < z < 0.50): Quint Rose-Emerald
+            // Upper Shoulder/Crown (z > 0.65): Free-Crown Gold-Violet
+            const distStrike = Math.exp(-Math.pow((zN - state.strikeHeightZ) / 0.08, 2));
+            rC = 0.18 + (zN < 0.25 ? 0.72 : (zN < 0.55 ? 0.85 : 0.45)) + distStrike * 0.35;
+            gC = 0.16 + (zN < 0.25 ? 0.55 : (zN < 0.55 ? 0.22 : 0.75)) + distStrike * 0.35;
+            bC = 0.22 + (zN < 0.25 ? 0.18 : (zN < 0.55 ? 0.42 : 0.85));
+          } else if (shader === 'xray') {
+            const mag = Math.min(1.0, Math.abs(uRadial) * 22.0);
+            rC = 0.05 + mag * 0.90;
+            gC = 0.10 + mag * 0.85;
+            bC = 0.18 + (1 - mag) * 0.35;
+          }
+
+          colArr[i * 3] = Math.min(1.0, rC);
+          colArr[i * 3 + 1] = Math.min(1.0, gC);
+          colArr[i * 3 + 2] = Math.min(1.0, bC);
+        }
+
+        bellGeo.attributes.position.needsUpdate = true;
+        bellGeo.attributes.color.needsUpdate = true;
+        bellGeo.computeVertexNormals();
+        bellGeo.computeBoundingSphere();
+
+        // Update 3D Nodal Circle & 2m Vertical Nodal Meridians for the active/soloed partial
+        const activeP = BELL_PARTIALS[state.soloPartialIdx !== -1 ? state.soloPartialIdx : 2]; // Default overlay shows Tierce (3,1) or soloed partial
+        if (activeP.nodalCirclesZ.length > 0) {
+          nodalCircleMesh.visible = true;
+          const zNode = activeP.nodalCirclesZ[0];
+          const { rStatic, yStatic } = evalHangingBellProfile(zNode, 0);
+          nodalCircleMesh.scale.set(rStatic * 1.02, 1, rStatic * 1.02);
+          nodalCircleMesh.position.y = yStatic;
+        } else {
+          nodalCircleMesh.visible = false;
+        }
+
+        const numMeridianNodes = activeP.m * 2;
+        for (let m = 0; m < meridianLines.length; m++) {
+          const line = meridianLines[m];
+          if (m < numMeridianNodes) {
+            line.visible = true;
+            const nodeTh = state.strikeAngleRad + ((2 * m + 1) * Math.PI) / (2 * activeP.m);
+            const arr = line.geometry.attributes.position.array;
+            for (let iz = 0; iz <= 24; iz++) {
+              const zFrac = iz / 24;
+              const { rStatic, yStatic } = evalHangingBellProfile(zFrac, nodeTh);
+              arr[iz * 3] = (rStatic + 0.018) * Math.cos(nodeTh);
+              arr[iz * 3 + 1] = yStatic;
+              arr[iz * 3 + 2] = (rStatic + 0.018) * Math.sin(nodeTh);
+            }
+            line.geometry.attributes.position.needsUpdate = true;
+          } else {
+            line.visible = false;
+          }
+        }
+
+        // Update 3D Striker Hammer Position at (strikeHeightZ, strikeAngleRad)
+        const { rStatic: hitR, yStatic: hitY } = evalHangingBellProfile(state.strikeHeightZ, state.strikeAngleRad);
+        let gap = 0.24;
+        if (hammerAnim.active) {
+          hammerAnim.progress += 0.20;
+          if (hammerAnim.progress >= Math.PI) {
+            hammerAnim.active = false;
+            hammerAnim.progress = 0.0;
+          } else {
+            gap = 0.26 - Math.sin(hammerAnim.progress) * 0.16;
+          }
+        }
+        const hx = (hitR + gap) * Math.cos(state.strikeAngleRad);
+        const hz = (hitR + gap) * Math.sin(state.strikeAngleRad);
+        strikerGroup.position.set(hx, hitY, hz);
+        strikerGroup.rotation.y = -state.strikeAngleRad;
+      }
+
+      // =========================================================================
+      // 7. 3D CAMERA NAVIGATION, CENTER/FIT, ZOOM & DIRECT RAYCAST STRIKING
+      // =========================================================================
+      const camSpherical = {
+        radius: 5.8,
+        theta: 0.25,
+        phi: Math.PI * 0.48,
+        targetX: 0.0,
+        targetY: -0.15,
+        targetZ: 0.0,
+        isOrbitDragging: false,
+        isPanDragging: false,
+        lastMouseX: 0,
+        lastMouseY: 0,
+        downMouseX: 0,
+        downMouseY: 0
+      };
+
+      function syncZoomSliderUI() {
+        const el = document.getElementById('sliderStageZoom');
+        if (el) el.value = String(Math.max(2.4, Math.min(15.0, camSpherical.radius)).toFixed(1));
+      }
+
+      function centerAndFitBell() {
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = -0.15;
+        camSpherical.targetZ = 0.0;
+        const aspect = Math.max(0.6, camera.aspect || 1.5);
+        const baseDist = 5.8;
+        camSpherical.radius = aspect < 1.2 ? baseDist / Math.max(0.65, aspect * 0.85) : baseDist;
+        syncZoomSliderUI();
+      }
+
+      function applyCameraPreset(preset) {
+        state.cameraPreset = preset;
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = -0.15;
+        camSpherical.targetZ = 0.0;
+
+        if (preset === 'front') {
+          camSpherical.radius = 5.8;
+          camSpherical.theta = 0.15;
+          camSpherical.phi = Math.PI * 0.49;
+        } else if (preset === 'oblique') {
+          camSpherical.radius = 5.4;
+          camSpherical.theta = 0.65;
+          camSpherical.phi = Math.PI * 0.42;
+        } else if (preset === 'upward') {
+          // Under-mouth view looking straight up inside the bell to see the 2m nodal meridians!
+          camSpherical.radius = 4.6;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = Math.PI * 0.82;
+        } else if (preset === 'crown') {
+          // Close-up of the single-node free-free crown eye suspension
+          camSpherical.targetY = 0.95;
+          camSpherical.radius = 3.4;
+          camSpherical.theta = 0.35;
+          camSpherical.phi = Math.PI * 0.38;
+        }
+        syncZoomSliderUI();
+        document.querySelectorAll('.cam-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-cam') === preset);
+        });
+      }
+
+      function updateCameraTransform(timeSec) {
+        if (state.cameraPreset === 'orbit' && !camSpherical.isOrbitDragging && !camSpherical.isPanDragging) {
+          camSpherical.theta = timeSec * 0.30;
+          camSpherical.phi = Math.PI * 0.46 + Math.sin(timeSec * 0.4) * 0.08;
+        }
+        const sinPhi = Math.sin(camSpherical.phi);
+        camera.position.x = camSpherical.targetX + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta);
+        camera.position.y = camSpherical.targetY + camSpherical.radius * Math.cos(camSpherical.phi);
+        camera.position.z = camSpherical.targetZ + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta);
+        camera.lookAt(camSpherical.targetX, camSpherical.targetY, camSpherical.targetZ);
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+
+      function raycastHangingBell(clientX, clientY) {
+        const rect = mountEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return { hit: false };
+        pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointerNDC, camera);
+
+        const hits = raycaster.intersectObject(bellMesh, false);
+        if (hits.length > 0) {
+          const localPt = bellPivotGroup.worldToLocal(hits[0].point.clone());
+          const zNorm = Math.max(0.04, Math.min(0.92, (localPt.y - (-2.65)) / 2.10));
+          const theta = Math.atan2(localPt.z, localPt.x);
+          return { hit: true, zNorm, theta };
+        }
+        return { hit: false };
+      }
+
+      renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        initAudio();
+        camSpherical.downMouseX = e.clientX;
+        camSpherical.downMouseY = e.clientY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (e.button === 2 || e.button === 1 || e.altKey || state.toolMode === 'pan') {
+          camSpherical.isPanDragging = true;
+          return;
+        }
+        camSpherical.isOrbitDragging = true;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        const dx = e.clientX - camSpherical.lastMouseX;
+        const dy = e.clientY - camSpherical.lastMouseY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (camSpherical.isPanDragging) {
+          const panScale = camSpherical.radius * 0.0015;
+          camSpherical.targetX -= dx * panScale * Math.cos(camSpherical.theta);
+          camSpherical.targetZ += dx * panScale * Math.sin(camSpherical.theta);
+          camSpherical.targetY += dy * panScale;
+          return;
+        }
+
+        if (!camSpherical.isOrbitDragging) return;
+        camSpherical.theta -= dx * 0.0065;
+        camSpherical.phi = Math.max(0.10, Math.min(Math.PI - 0.08, camSpherical.phi - dy * 0.0065));
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (camSpherical.isPanDragging) {
+          camSpherical.isPanDragging = false;
+          return;
+        }
+        if (camSpherical.isOrbitDragging) {
+          camSpherical.isOrbitDragging = false;
+          const dist = Math.hypot(e.clientX - camSpherical.downMouseX, e.clientY - camSpherical.downMouseY);
+          if (dist < 6) {
+            const rc = raycastHangingBell(e.clientX, e.clientY);
+            if (rc.hit) {
+              triggerHangingBellStrike(rc.zNorm, rc.theta, 1.0);
+            }
+          }
+        }
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(2.4, Math.min(15.0, camSpherical.radius + e.deltaY * 0.0035));
+        syncZoomSliderUI();
+      }, { passive: false });
+
+      function syncViewportSize() {
+        const rect = mountEl.getBoundingClientRect();
+        const w = Math.max(300, Math.floor(rect.width || mountEl.clientWidth || 800));
+        const h = Math.max(260, Math.floor(rect.height || mountEl.clientHeight || 540));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(w, h, true);
+      }
+      window.addEventListener('resize', syncViewportSize);
+      const resizeObserver = new ResizeObserver(syncViewportSize);
+      resizeObserver.observe(mountEl);
+      syncViewportSize();
+
+      // =========================================================================
+      // 8. 2D CAMPANOLOGY TELEMETRY CANVASES (Partial Bars, Axial Profile, Mouth Polar)
+      // =========================================================================
+      const canvasBars = document.getElementById('canvasPartialBars');
+      const ctxBars = canvasBars.getContext('2d');
+      const canvasAxial = document.getElementById('canvasAxialProfile');
+      const ctxAxial = canvasAxial.getContext('2d');
+      const canvasMouth = document.getElementById('canvasMouthPolar');
+      const ctxMouth = canvasMouth.getContext('2d');
+
+      function renderTelemetryCanvases() {
+        // -----------------------------------------------------------------------
+        // Canvas A: Explicit Hum, Prime, Tierce, Quint, Nominal, Superquint, Oct-Nom
+        // -----------------------------------------------------------------------
+        const wA = canvasBars.width;
+        const hA = canvasBars.height;
+        ctxBars.fillStyle = '#04060c';
+        ctxBars.fillRect(0, 0, wA, hA);
+
+        const shortNames = ['HUM', 'PRIME', 'TIERCE', 'QUINT', 'NOM.', 'S-QNT', 'OCT-N', 'CROWN'];
+        const colW = (wA - 20) / 8;
+
+        for (let k = 0; k < 8; k++) {
+          const p = BELL_PARTIALS[k];
+          const x = 10 + k * colW;
+          const isMuted = (state.soloPartialIdx !== -1 && state.soloPartialIdx !== k);
+          const amp = isMuted ? 0.0 : Math.min(1.0, state.partialAmps[k] * 0.78);
+          const peak = isMuted ? 0.0 : Math.min(1.0, state.partialPeakHold[k] * 0.78);
+
+          const barH = amp * (hA - 42);
+          const peakY = hA - 22 - peak * (hA - 42);
+
+          ctxBars.fillStyle = state.soloPartialIdx === k ? '#fde047' : p.colorHex;
+          ctxBars.fillRect(x + 4, hA - 22 - barH, colW - 8, barH);
+
+          // Peak hold tick
+          ctxBars.fillStyle = '#f8fafc';
+          ctxBars.fillRect(x + 4, peakY - 1.5, colW - 8, 2);
+
+          // Partial label & frequency
+          ctxBars.fillStyle = '#cbd5e1';
+          ctxBars.font = '8.5px "JetBrains Mono", monospace';
+          ctxBars.fillText(shortNames[k], x + 3, hA - 9);
+
+          ctxBars.fillStyle = p.colorHex;
+          ctxBars.fillText(`${Math.round(state.partialFreqsHz[k])}`, x + 4, hA - 26 - barH);
+        }
+
+        // -----------------------------------------------------------------------
+        // Canvas B: Vertical Wall Bending Profile u_r(z/H) & Nodal Circle Positions
+        // -----------------------------------------------------------------------
+        const wB = canvasAxial.width;
+        const hB = canvasAxial.height;
+        ctxAxial.fillStyle = '#04060c';
+        ctxAxial.fillRect(0, 0, wB, hB);
+
+        // Zero deflection vertical axis at center
+        const midX = wB * 0.52;
+        ctxAxial.strokeStyle = 'rgba(71, 85, 105, 0.55)';
+        ctxAxial.beginPath();
+        ctxAxial.moveTo(midX, 12);
+        ctxAxial.lineTo(midX, hB - 12);
+        ctxAxial.stroke();
+
+        // Draw Strike Height Horizontal Marker Line
+        const strikeY = (hB - 16) - state.strikeHeightZ * (hB - 32);
+        ctxAxial.strokeStyle = 'rgba(245, 158, 11, 0.65)';
+        ctxAxial.setLineDash([3, 3]);
+        ctxAxial.beginPath();
+        ctxAxial.moveTo(16, strikeY);
+        ctxAxial.lineTo(wB - 16, strikeY);
+        ctxAxial.stroke();
+        ctxAxial.setLineDash([]);
+        ctxAxial.fillStyle = '#fde68a';
+        ctxAxial.font = '9px "JetBrains Mono", monospace';
+        ctxAxial.fillText(`Strike z/H = ${state.strikeHeightZ.toFixed(2)}`, 14, Math.max(22, strikeY - 4));
+
+        // Plot Axial Eigenfunctions for the 5 Principal Partials (or Soloed Partial)
+        for (let k = 0; k < 5; k++) {
+          if (state.soloPartialIdx !== -1 && state.soloPartialIdx !== k) continue;
+          const p = BELL_PARTIALS[k];
+          ctxAxial.strokeStyle = p.colorHex;
+          ctxAxial.lineWidth = state.soloPartialIdx === k ? 2.6 : 1.5;
+          ctxAxial.beginPath();
+          for (let iz = 0; iz <= 40; iz++) {
+            const zFrac = iz / 40;
+            const phi = evalAxialEigenfunction(k, zFrac);
+            const py = (hB - 16) - zFrac * (hB - 32);
+            const px = midX + phi * 72.0;
+            if (iz === 0) ctxAxial.moveTo(px, py);
+            else ctxAxial.lineTo(px, py);
+          }
+          ctxAxial.stroke();
+        }
+
+        // -----------------------------------------------------------------------
+        // Canvas C: Under-Mouth Circumferential Lobes cos(mθ) & 2m Meridians
+        // -----------------------------------------------------------------------
+        const wC = canvasMouth.width;
+        const hC = canvasMouth.height;
+        ctxMouth.fillStyle = '#04060c';
+        ctxMouth.fillRect(0, 0, wC, hC);
+
+        const cx = wC * 0.36;
+        const cy = hC * 0.52;
+        const r0 = 46;
+
+        ctxMouth.strokeStyle = 'rgba(100, 116, 139, 0.35)';
+        ctxMouth.setLineDash([3, 3]);
+        ctxMouth.beginPath();
+        ctxMouth.arc(cx, cy, r0, 0, Math.PI * 2);
+        ctxMouth.stroke();
+        ctxMouth.setLineDash([]);
+
+        ctxMouth.strokeStyle = '#22d3ee';
+        ctxMouth.lineWidth = 2.2;
+        ctxMouth.beginPath();
+        for (let s = 0; s <= 120; s++) {
+          const th = (s / 120) * Math.PI * 2;
+          let dr = 0.0;
+          for (let k = 0; k < 7; k++) {
+            if (state.soloPartialIdx !== -1 && state.soloPartialIdx !== k) continue;
+            const m = BELL_PARTIALS[k].m;
+            dr += state.partialAmps[k] * Math.cos(state.partialPhases[k]) * Math.cos(m * (th - state.strikeAngleRad)) * 10.5;
+          }
+          const r = r0 + Math.max(-18, Math.min(18, dr));
+          const x = cx + r * Math.cos(th);
+          const y = cy + r * Math.sin(th);
+          if (s === 0) ctxMouth.moveTo(x, y);
+          else ctxMouth.lineTo(x, y);
+        }
+        ctxMouth.closePath();
+        ctxMouth.stroke();
+
+        // Right-side summary of active partial ratios
+        ctxMouth.fillStyle = '#e2e8f0';
+        ctxMouth.font = '9.5px "JetBrains Mono", monospace';
+        ctxMouth.fillText('Partial Ratios (f/f_P):', wC * 0.62, 24);
+        ctxMouth.fillStyle = '#10b981';
+        ctxMouth.fillText('Hum:     0.500×', wC * 0.62, 42);
+        ctxMouth.fillStyle = '#f59e0b';
+        ctxMouth.fillText('Prime:   1.000×', wC * 0.62, 58);
+        ctxMouth.fillStyle = '#22d3ee';
+        ctxMouth.fillText(`Tierce:  ${state.tierceRatio.toFixed(3)}×`, wC * 0.62, 74);
+        ctxMouth.fillStyle = '#f43f5e';
+        ctxMouth.fillText('Quint:   1.500×', wC * 0.62, 90);
+        ctxMouth.fillStyle = '#a855f7';
+        ctxMouth.fillText('Nominal: 2.000×', wC * 0.62, 106);
+        ctxMouth.fillStyle = '#38bdf8';
+        ctxMouth.fillText('S-Quint: 3.000×', wC * 0.62, 122);
+      }
+
+      // =========================================================================
+      // 9. UI BINDINGS, EXPLICIT 8-PARTIAL INSPECTOR & WAV/JSON EXPORTERS
+      // =========================================================================
+      function buildPartialsInspectorUI() {
+        const container = document.getElementById('partialsInspectorGrid');
+        container.innerHTML = '';
+        for (let k = 0; k < 8; k++) {
+          const p = BELL_PARTIALS[k];
+          const row = document.createElement('button');
+          row.className = 'partial-row-btn flex items-center justify-between px-2.5 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-left transition';
+          row.setAttribute('data-pidx', String(k));
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full" style="background:${p.colorHex}"></span>
+              <div>
+                <span class="text-slate-100 font-semibold">${p.name}</span>
+                <span class="text-slate-400 text-[10px] ml-1">${p.sub} • 2m=${p.m * 2} nodes</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span id="pFreqReadout_${k}" class="text-amber-300 font-semibold">${state.partialFreqsHz[k].toFixed(1)} Hz</span>
+              <span class="text-slate-400 text-[9.5px] block">${p.centsLabel}</span>
+            </div>
+          `;
+          row.addEventListener('click', () => {
+            initAudio();
+            selectSoloPartial(state.soloPartialIdx === k ? -1 : k);
+            // Strike at the optimal axial antinode height for this partial!
+            triggerHangingBellStrike(p.peakZoneZ, 0.0, 1.0);
+          });
+          container.appendChild(row);
+        }
+      }
+
+      function selectSoloPartial(k) {
+        state.soloPartialIdx = k;
+        if (k !== -1) {
+          state.shaderMode = 'chladni';
+          syncShaderButtons();
+          const p = BELL_PARTIALS[k];
+          const nodeDesc = p.nodalCirclesZ.length > 0 ? `Nodal Circle at z/H = ${p.nodalCirclesZ[0]}` : 'No Horizontal Nodal Circle (n=0)';
+          document.getElementById('hudPartialTopology').textContent =
+            `SOLO: ${p.name} ${p.sub} • ${p.m * 2} Rim Meridians, ${nodeDesc}`;
+          document.getElementById('badgeNodalCircleZ').textContent =
+            p.nodalCirclesZ.length > 0 ? `Node z/H = ${p.nodalCirclesZ[0]}` : 'No Waist Node (n=0)';
+        } else {
+          document.getElementById('hudPartialTopology').textContent =
+            'All Partials Coupled (Hum + Prime + Tierce + Quint + Nominal)';
+          document.getElementById('badgeNodalCircleZ').textContent = 'Waist Node z/H = 0.46';
+        }
+
+        document.querySelectorAll('.partial-row-btn').forEach((btn) => {
+          const idx = parseInt(btn.getAttribute('data-pidx'), 10);
+          btn.classList.toggle('btn-active-cyan', idx === state.soloPartialIdx);
+        });
+        document.querySelectorAll('.stage-partial-btn').forEach((btn) => {
+          const idx = parseInt(btn.getAttribute('data-solo'), 10);
+          btn.classList.toggle('btn-active-amber', idx === state.soloPartialIdx);
+        });
+      }
+
+      function refreshPartialFreqReadouts() {
+        for (let k = 0; k < 8; k++) {
+          const el = document.getElementById(`pFreqReadout_${k}`);
+          if (el) el.textContent = `${state.partialFreqsHz[k].toFixed(1)} Hz`;
+        }
+        const noteP = noteNameFromHz(state.partialFreqsHz[1]);
+        document.getElementById('hdrPrimeHz').textContent = `${state.partialFreqsHz[1].toFixed(1)} Hz (${noteP})`;
+        document.getElementById('hdrHumHz').textContent = `${state.partialFreqsHz[0].toFixed(1)} Hz`;
+        const tType = state.tierceRatio >= 1.235 ? 'M3' : 'm3';
+        document.getElementById('hdrTierceHz').textContent = `${state.partialFreqsHz[2].toFixed(1)} Hz (${tType})`;
+        document.getElementById('hdrNominalHz').textContent = `${state.partialFreqsHz[4].toFixed(1)} Hz`;
+      }
+
+      function syncShaderButtons() {
+        document.querySelectorAll('.shader-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-shader') === state.shaderMode);
+        });
+      }
+
+      function updateStrikeHeightLabel(zH) {
+        const zone = zH < 0.20 ? 'Soundbow' : (zH < 0.42 ? 'Waist (Quint)' : (zH < 0.65 ? 'Mid-Waist Node' : 'Crown'));
+        document.getElementById('valStrikeHeight').textContent = `${zH.toFixed(2)} (${zone})`;
+      }
+
+      function loadBellArchetype(archKey) {
+        const arch = ARCHETYPES[archKey];
+        if (!arch) return;
+        state.archetype = arch.id;
+        state.primePitchHz = arch.primeHz;
+        state.tierceRatio = arch.tierceRatio;
+        state.waistBulge = arch.waistBulge;
+        state.mouthFlare = arch.mouthFlare;
+        state.ellipticity = arch.ellipticity;
+        state.humSustainSec = arch.humSustainSec;
+        state.warbleHz = arch.warbleHz;
+
+        document.getElementById('sliderPrimePitch').value = state.primePitchHz;
+        document.getElementById('valPrimePitch').textContent = `${state.primePitchHz} Hz (${noteNameFromHz(state.primePitchHz)})`;
+
+        document.getElementById('sliderTierceRatio').value = state.tierceRatio;
+        document.getElementById('valTierceRatio').textContent =
+          `${state.tierceRatio.toFixed(3)}× (${state.tierceRatio >= 1.235 ? 'Major 3rd' : 'Minor 3rd'})`;
+
+        document.getElementById('sliderHumSustain').value = state.humSustainSec;
+        document.getElementById('valHumSustain').textContent = `${state.humSustainSec.toFixed(1)} s`;
+
+        document.getElementById('sliderWarbleHz').value = state.warbleHz;
+        document.getElementById('valWarbleHz').textContent = `${state.warbleHz.toFixed(2)} Hz`;
+
+        document.getElementById('badgeChordType').textContent = arch.chordBadge;
+
+        document.querySelectorAll('.arch-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-amber', btn.getAttribute('data-arch') === archKey);
+        });
+
+        recomputePartialFrequencies();
+        refreshPartialFreqReadouts();
+        triggerHangingBellStrike(state.strikeHeightZ, 0.0, 1.0);
+      }
+
+      document.querySelectorAll('.arch-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          loadBellArchetype(btn.getAttribute('data-arch'));
+        });
+      });
+
+      document.querySelectorAll('.shader-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.shaderMode = btn.getAttribute('data-shader');
+          syncShaderButtons();
+        });
+      });
+
+      document.querySelectorAll('.stage-partial-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          const idx = parseInt(btn.getAttribute('data-solo'), 10);
+          selectSoloPartial(idx);
+          const zTarget = idx >= 0 ? BELL_PARTIALS[idx].peakZoneZ : state.strikeHeightZ;
+          triggerHangingBellStrike(zTarget, 0.0, 1.0);
+        });
+      });
+
+      document.getElementById('btnAllPartialsActive').addEventListener('click', () => {
+        initAudio();
+        selectSoloPartial(-1);
+        triggerHangingBellStrike(0.12, 0.0, 1.0);
+      });
+
+      document.querySelectorAll('.zone-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          const zVal = parseFloat(btn.getAttribute('data-zone'));
+          document.querySelectorAll('.zone-btn').forEach((b) => b.classList.toggle('btn-active-amber', b === btn));
+          triggerHangingBellStrike(zVal, 0.0, 1.0);
+        });
+      });
+
+      function setToolMode(mode) {
+        state.toolMode = mode;
+        document.getElementById('btnToolStrike').classList.toggle('btn-active-amber', mode === 'strike');
+        document.getElementById('btnToolOrbit').classList.toggle('btn-active-cyan', mode === 'orbit');
+        document.getElementById('btnToolPan').classList.toggle('btn-active-cyan', mode === 'pan');
+      }
+      document.getElementById('btnToolStrike').addEventListener('click', () => setToolMode('strike'));
+      document.getElementById('btnToolOrbit').addEventListener('click', () => setToolMode('orbit'));
+      document.getElementById('btnToolPan').addEventListener('click', () => setToolMode('pan'));
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => applyCameraPreset(btn.getAttribute('data-cam')));
+      });
+
+      // Zoom, Center & Manual Pan Controls
+      document.getElementById('btnCenterHeader').addEventListener('click', centerAndFitBell);
+      document.getElementById('btnCenterStage').addEventListener('click', centerAndFitBell);
+
+      document.getElementById('sliderStageZoom').addEventListener('input', (e) => {
+        camSpherical.radius = parseFloat(e.target.value);
+      });
+      document.getElementById('btnZoomIn').addEventListener('click', () => {
+        camSpherical.radius = Math.max(2.4, camSpherical.radius - 0.55);
+        syncZoomSliderUI();
+      });
+      document.getElementById('btnZoomOut').addEventListener('click', () => {
+        camSpherical.radius = Math.min(15.0, camSpherical.radius + 0.55);
+        syncZoomSliderUI();
+      });
+
+      const panStep = 0.25;
+      document.getElementById('btnPanLeft').addEventListener('click', () => { camSpherical.targetX -= panStep; });
+      document.getElementById('btnPanRight').addEventListener('click', () => { camSpherical.targetX += panStep; });
+      document.getElementById('btnPanUp').addEventListener('click', () => { camSpherical.targetY += panStep; });
+      document.getElementById('btnPanDown').addEventListener('click', () => { camSpherical.targetY -= panStep; });
+
+      // Sliders
+      document.getElementById('sliderStrikeHeight').addEventListener('input', (e) => {
+        state.strikeHeightZ = parseFloat(e.target.value);
+        updateStrikeHeightLabel(state.strikeHeightZ);
+      });
+
+      document.getElementById('sliderHammerHardness').addEventListener('input', (e) => {
+        state.hammerHardness = parseFloat(e.target.value);
+        const hDesc = state.hammerHardness > 0.75 ? 'Hard Bronze' : (state.hammerHardness > 0.4 ? 'Wood/Leather' : 'Soft Felt');
+        document.getElementById('valHammerHardness').textContent = `${state.hammerHardness.toFixed(2)} (${hDesc})`;
+      });
+
+      document.getElementById('sliderPrimePitch').addEventListener('input', (e) => {
+        state.primePitchHz = parseFloat(e.target.value);
+        document.getElementById('valPrimePitch').textContent = `${state.primePitchHz} Hz (${noteNameFromHz(state.primePitchHz)})`;
+        recomputePartialFrequencies();
+        refreshPartialFreqReadouts();
+      });
+
+      document.getElementById('sliderTierceRatio').addEventListener('input', (e) => {
+        state.tierceRatio = parseFloat(e.target.value);
+        document.getElementById('valTierceRatio').textContent =
+          `${state.tierceRatio.toFixed(3)}× (${state.tierceRatio >= 1.235 ? 'Major 3rd' : 'Minor 3rd'})`;
+        recomputePartialFrequencies();
+        refreshPartialFreqReadouts();
+      });
+
+      document.getElementById('sliderHumSustain').addEventListener('input', (e) => {
+        state.humSustainSec = parseFloat(e.target.value);
+        document.getElementById('valHumSustain').textContent = `${state.humSustainSec.toFixed(1)} s`;
+      });
+
+      document.getElementById('sliderWarbleHz').addEventListener('input', (e) => {
+        state.warbleHz = parseFloat(e.target.value);
+        document.getElementById('valWarbleHz').textContent = `${state.warbleHz.toFixed(2)} Hz`;
+      });
+
+      document.getElementById('sliderSwarmDensity').addEventListener('input', (e) => {
+        state.swarmDensity = parseInt(e.target.value, 10);
+        document.getElementById('valSwarmDensity').textContent = `${state.swarmDensity} Voices`;
+      });
+
+      document.getElementById('btnToggleFreeCrown').addEventListener('click', (e) => {
+        state.freeCrownSuspension = !state.freeCrownSuspension;
+        e.currentTarget.textContent = `Single-Node Free-Free: ${state.freeCrownSuspension ? 'ON' : 'CLAMPED'}`;
+        e.currentTarget.classList.toggle('btn-active-emerald', state.freeCrownSuspension);
+      });
+
+      document.getElementById('btnStrikeHeader').addEventListener('click', () => triggerHangingBellStrike());
+      document.getElementById('btnSwarmHeader').addEventListener('click', () => triggerBellSwarmCloud());
+      document.getElementById('btnDampHeader').addEventListener('click', () => dampHangingBell());
+
+      document.getElementById('btnToggleCarillon').addEventListener('click', (e) => {
+        initAudio();
+        state.carillonActive = !state.carillonActive;
+        state.lastCarillonStrikeSec = 0;
+        document.getElementById('carillonBadge').textContent = state.carillonActive ? 'ON' : 'OFF';
+        e.currentTarget.classList.toggle('btn-active-amber', state.carillonActive);
+      });
+
+      // Full-Screen Theater Mode Toggle (`F` or `Esc`)
+      const stageContainer = document.getElementById('hangingStageContainer');
+      let isStageFullscreen = false;
+
+      function toggleFullScreenStage() {
+        isStageFullscreen = !isStageFullscreen;
+        stageContainer.classList.toggle('hanging-fullscreen-stage', isStageFullscreen);
+        const label = isStageFullscreen ? '✕ Exit Full Screen [F]' : '⛶ Full Screen [F]';
+        document.getElementById('btnStageFullscreen').textContent = label;
+        if (isStageFullscreen && stageContainer.requestFullscreen) {
+          stageContainer.requestFullscreen().catch(() => {});
+        } else if (!isStageFullscreen && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setTimeout(() => {
+          syncViewportSize();
+          centerAndFitBell();
+        }, 60);
+      }
+
+      document.getElementById('btnFullscreenHeader').addEventListener('click', toggleFullScreenStage);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleFullScreenStage);
+
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && isStageFullscreen) {
+          isStageFullscreen = false;
+          stageContainer.classList.remove('hanging-fullscreen-stage');
+          document.getElementById('btnStageFullscreen').textContent = '⛶ Full Screen [F]';
+        }
+        setTimeout(syncViewportSize, 60);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          triggerHangingBellStrike();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullScreenStage();
+        } else if (e.key === 'w' || e.key === 'W') {
+          triggerBellSwarmCloud();
+        } else if (e.key === 'd' || e.key === 'D') {
+          dampHangingBell();
+        } else if (e.key === 'c' || e.key === 'C' || e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          centerAndFitBell();
+        } else if (e.key === '+' || e.key === '=') {
+          camSpherical.radius = Math.max(2.4, camSpherical.radius - 0.5);
+          syncZoomSliderUI();
+        } else if (e.key === '-' || e.key === '_') {
+          camSpherical.radius = Math.min(15.0, camSpherical.radius + 0.5);
+          syncZoomSliderUI();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          camSpherical.targetX -= panStep;
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          camSpherical.targetX += panStep;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          camSpherical.targetY += panStep;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          camSpherical.targetY -= panStep;
+        } else if (e.key === 'Escape' && isStageFullscreen) {
+          toggleFullScreenStage();
+        }
+      });
+
+      // -------------------------------------------------------------------------
+      // Lossless 44.1 kHz 16-Bit Stereo .WAV Exporter & .JSON Exporter
+      // -------------------------------------------------------------------------
+      document.getElementById('btnExportWav').addEventListener('click', () => {
+        const btn = document.getElementById('btnExportWav');
+        const origText = btn.textContent;
+        btn.textContent = '⏳ Rendering WAV...';
+        try {
+          const sampleRate = 44100;
+          const duration = 5.5;
+          const totalSamples = Math.floor(sampleRate * duration);
+          const leftBuf = new Float32Array(totalSamples);
+          const rightBuf = new Float32Array(totalSamples);
+
+          const baseDecay = 6.908 / Math.max(5.0, state.humSustainSec);
+          const zH = state.strikeHeightZ;
+
+          for (let i = 0; i < totalSamples; i++) {
+            const t = i / sampleRate;
+            let sigL = 0.0;
+            let sigR = 0.0;
+
+            for (let k = 0; k < 8; k++) {
+              if (state.soloPartialIdx !== -1 && state.soloPartialIdx !== k) continue;
+              const p = BELL_PARTIALS[k];
+              const axialAmp = Math.abs(evalAxialEigenfunction(k, zH));
+              const env = axialAmp * Math.exp(-baseDecay * p.decayMult * t) * (k === 0 ? 0.28 : 0.16);
+              const fA = state.partialFreqsHz[k];
+              const fB = fA + state.warbleHz * (1 + 0.12 * k);
+              const sA = Math.sin(2 * Math.PI * fA * t) * env;
+              const sB = Math.sin(2 * Math.PI * fB * t) * env * 0.65;
+              sigL += sA + sB;
+              sigR += sA - sB * 0.4;
+            }
+
+            leftBuf[i] = Math.max(-0.98, Math.min(0.98, sigL));
+            rightBuf[i] = Math.max(-0.98, Math.min(0.98, sigR));
+          }
+
+          const wavBuffer = new ArrayBuffer(44 + totalSamples * 4);
+          const view = new DataView(wavBuffer);
+          const writeStr = (off, str) => { for (let c = 0; c < str.length; c++) view.setUint8(off + c, str.charCodeAt(c)); };
+          writeStr(0, 'RIFF');
+          view.setUint32(4, 36 + totalSamples * 4, true);
+          writeStr(8, 'WAVE');
+          writeStr(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, 2, true);
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * 4, true);
+          view.setUint16(32, 4, true);
+          view.setUint16(34, 16, true);
+          writeStr(36, 'data');
+          view.setUint32(40, totalSamples * 4, true);
+
+          let offset = 44;
+          for (let i = 0; i < totalSamples; i++) {
+            view.setInt16(offset, leftBuf[i] * 32767, true);
+            view.setInt16(offset + 2, rightBuf[i] * 32767, true);
+            offset += 4;
+          }
+
+          const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `campana_free_bell_${state.archetype}_${Math.round(state.primePitchHz)}Hz.wav`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } finally {
+          btn.textContent = origText;
+        }
+      });
+
+      document.getElementById('btnExportJson').addEventListener('click', () => {
+        const payload = {
+          lab: 'CAMPANA-3D // Free-Free Hanging Bell, Hum/Prime/Tierce/Quint/Nominal Partials Lab',
+          timestamp: new Date().toISOString(),
+          archetype: state.archetype,
+          freeCrownSingleNodeSuspension: state.freeCrownSuspension,
+          strikeNotePrimeHz: state.primePitchHz,
+          tierceRatio: state.tierceRatio,
+          strikeElevationZOverH: state.strikeHeightZ,
+          partials: BELL_PARTIALS.map((p, k) => ({
+            name: p.name,
+            classification: p.sub,
+            nodalMeridiansM: p.m,
+            rimNodes2M: p.m * 2,
+            nodalCirclesN: p.n,
+            nodalCircleElevations: p.nodalCirclesZ,
+            frequencyHz: Number(state.partialFreqsHz[k].toFixed(2)),
+            ratioToPrime: Number((state.partialFreqsHz[k] / state.primePitchHz).toFixed(3))
+          }))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `campana_partials_${state.archetype}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // =========================================================================
+      // 10. MASTER 60 FPS ANIMATION LOOP & INITIAL SEED STRIKE
+      // =========================================================================
+      buildPartialsInspectorUI();
+      refreshPartialFreqReadouts();
+      centerAndFitBell();
+
+      // Seed initial soundbow strike so the 3D free-free bell is immediately vibrating on load
+      for (let k = 0; k < 8; k++) {
+        state.partialAmps[k] = Math.abs(evalAxialEigenfunction(k, 0.12)) * 0.9;
+        state.partialPeakHold[k] = state.partialAmps[k];
+      }
+      state.bellSwingVel = 0.25;
+
+      let lastTimeMs = performance.now();
+
+      function animate(nowMs) {
+        requestAnimationFrame(animate);
+        const dt = (nowMs - lastTimeMs) * 0.001;
+        lastTimeMs = nowMs;
+        const timeSec = nowMs * 0.001;
+
+        stepHangingBellPhysics(dt);
+        updateAudioEngineFromPartials();
+        update3DHangingBell();
+        updateCameraTransform(timeSec);
+        renderer.render(scene, camera);
+        renderTelemetryCanvases();
+      }
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
