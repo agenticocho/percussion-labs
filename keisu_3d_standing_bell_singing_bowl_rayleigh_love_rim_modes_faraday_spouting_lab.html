@@ -1,0 +1,2433 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KEISU-3D // Standing Bell, Singing Bowl, Rayleigh-Love Rim Modes &amp; Faraday Spouting Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #04060c;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070a14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060c;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .glass-panel {
+      background: rgba(10, 14, 24, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .hud-pill {
+      background: rgba(6, 9, 18, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    /* Lock Three.js WebGL Canvas to 100% of container on Retina / HiDPI displays */
+    #threeBellMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeBellMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+    /* Full-Screen 3D Stage Mode */
+    .bell-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: #03050a !important;
+    }
+    .btn-active-amber {
+      background: rgba(245, 158, 11, 0.22) !important;
+      border-color: rgba(245, 158, 11, 0.88) !important;
+      color: #fde68a !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+    }
+    .btn-active-cyan {
+      background: rgba(34, 211, 238, 0.2) !important;
+      border-color: rgba(34, 211, 238, 0.85) !important;
+      color: #a5f3fc !important;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.22);
+    }
+    .btn-active-emerald {
+      background: rgba(16, 185, 129, 0.22) !important;
+      border-color: rgba(16, 185, 129, 0.88) !important;
+      color: #a7f3d0 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+    }
+    .btn-active-rose {
+      background: rgba(244, 63, 94, 0.22) !important;
+      border-color: rgba(244, 63, 94, 0.88) !important;
+      color: #fecdd3 !important;
+      box-shadow: 0 0 14px rgba(244, 63, 94, 0.25);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#04060c] text-slate-100">
+
+  <!-- TOP SCIENTIFIC & ACOUSTIC HEADER BAR -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-3 py-2">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/25 via-cyan-500/20 to-emerald-500/25 border border-amber-400/50 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <path d="M4 9c0 6.5 3.5 10 8 10s8-3.5 8-10H4z" fill="currentColor" fill-opacity="0.2" />
+            <ellipse cx="12" cy="9" rx="8" ry="2.5" />
+            <path d="M6 21h12" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm md:text-base font-bold tracking-tight text-white">
+              KEISU-3D <span class="text-amber-400 font-normal">//</span> <span class="text-slate-300 font-medium">Standing Bell, Rayleigh-Love Rim Modes, Puja Stick-Slip &amp; Faraday Spouting Lab</span>
+            </h1>
+            <span class="hidden xl:inline-block text-[10px] font-mono-tech uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              f_(n,0) ∝ n(n²−1)/√(n²+1) • Γ_F = Aω²/g
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">
+            Japanese <span class="italic text-amber-300">Rin / Keisu</span> • Himalayan <span class="italic text-cyan-300">Jambati</span> Singing Bowl • Shang <span class="italic text-emerald-300">Náo</span> Two-Tone Goblet • Han Spouting Bowl • Quartz Crystal Vessel
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Pills -->
+      <div class="flex flex-wrap items-center gap-1.5 font-mono-tech text-xs">
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">(2,0) Fund:</span>
+          <span id="hdrFundHz" class="text-amber-400 font-semibold">188.0 Hz</span>
+          <span id="hdrWaterShift" class="text-[10px] text-cyan-400">(Dry)</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Rim Accel Γ:</span>
+          <span id="hdrGammaG" class="text-emerald-400 font-semibold">0.00 g</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Hydro Regime:</span>
+          <span id="hdrHydroState" class="text-cyan-300 font-semibold">Calm Meniscus</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 hidden md:flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Puja Beat:</span>
+          <span id="hdrBeatHz" class="text-violet-400 font-semibold">3.2 Hz</span>
+        </div>
+      </div>
+
+      <!-- Primary Action Buttons -->
+      <div class="flex items-center gap-1.5">
+        <button id="btnStrikeHeader" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-semibold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition">
+          <span>🔔 Strike Rim</span>
+          <kbd class="px-1 py-0.2 bg-black/25 rounded text-[10px] font-mono-tech">[Space]</kbd>
+        </button>
+        <button id="btnAutoSingHeader" title="Toggle continuous stick-slip puja mallet rotation around the 3D rim [S]" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition">
+          🌀 Auto-Sing Puja <kbd class="text-[10px] font-mono-tech opacity-75">[S]</kbd>
+        </button>
+        <button id="btnDampHeader" title="Damp the standing bell rim [D]" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition">
+          ✋ Damp <kbd class="text-[10px] font-mono-tech opacity-75">[D]</kbd>
+        </button>
+        <button id="btnCenterHeader" title="Center and fit the 3D standing bell in the viewport [C]" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition">
+          ⌖ Center <kbd class="text-[10px] font-mono-tech opacity-75">[C]</kbd>
+        </button>
+        <button id="btnFullscreenHeader" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-1 transition">
+          <span>⛶ Full Screen</span>
+          <kbd class="text-[10px] font-mono-tech">[F]</kbd>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1920px] w-full mx-auto p-2.5 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+    <!-- LEFT & CENTER: 3D STANDING BELL STAGE + 3-PANEL TELEMETRY STRIP (8 COLS) -->
+    <section class="lg:col-span-8 flex flex-col gap-2.5">
+
+      <!-- 3D WEBGL STANDING BELL STAGE CONTAINER -->
+      <div id="bellStageContainer" class="relative w-full h-[540px] xl:h-[620px] rounded-xl overflow-hidden border border-slate-800/90 bg-[#03050a] shadow-2xl flex flex-col justify-between">
+
+        <!-- Three.js Canvas Mount -->
+        <div id="threeBellMount" class="cursor-crosshair"></div>
+
+        <!-- TOP FLOATING IN-STAGE HUD (Always accessible in Full-Screen) -->
+        <div class="relative z-10 p-3 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+
+          <!-- Left HUD: 5 Standing Bell Archetypes + 4 Surface Shaders -->
+          <div class="flex flex-col gap-1.5 pointer-events-auto max-w-2xl">
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Standing Bell:</span>
+              <button data-arch="jambati" class="arch-btn btn-active-amber px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                1. Himalayan Jambati Singing Bowl
+              </button>
+              <button data-arch="keisu" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                2. Japanese Zen Keisu / Rin (Zabuton)
+              </button>
+              <button data-arch="spouting" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                3. Han Spouting Bowl (Faraday Fountain)
+              </button>
+              <button data-arch="nao" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                4. Shang Dynasty Náo Goblet (2-Tone)
+              </button>
+              <button data-arch="crystal" class="arch-btn px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                5. Pure Quartz Crystal Bowl (SiO₂)
+              </button>
+            </div>
+
+            <!-- Surface Shader Mode Selector Bar -->
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Surface Shader:</span>
+              <button data-shader="patina" class="shader-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Hammered Alloy / Quartz
+              </button>
+              <button data-shader="rayleigh" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Rayleigh Rim Mode (u_r, u_θ)
+              </button>
+              <button data-shader="strain" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Flexural Bending Energy
+              </button>
+              <button data-shader="puja_wave" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Rotating Puja Lock-In Wave
+              </button>
+            </div>
+          </div>
+
+          <!-- Right HUD: Excitation Tool, Camera Angles, Zoom & Centering Bar -->
+          <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <button id="btnToolStrike" class="btn-active-amber px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🔨 Click Bowl = Strike
+              </button>
+              <button id="btnToolRub" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🪵 Drag Rim = Rub Puja Wand
+              </button>
+              <button id="btnToolPan" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                ✥ Drag = Pan / Center
+              </button>
+              <button id="btnStageFullscreen" class="px-2.5 py-1 rounded-md text-xs font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 transition">
+                ⛶ Full Screen [F]
+              </button>
+            </div>
+
+            <!-- 3D Camera Angles -->
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <span class="text-[10px] font-mono-tech uppercase text-slate-400">Camera:</span>
+              <button data-cam="oblique" class="cam-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                1. Temple 35° View
+              </button>
+              <button data-cam="top" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                2. Zenith Rim &amp; Water
+              </button>
+              <button data-cam="side" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                3. Side Profile &amp; Cushion
+              </button>
+              <button data-cam="meniscus" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                4. Close-Up Faraday Drops
+              </button>
+              <button data-cam="orbit" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                5. 360° Orbit
+              </button>
+            </div>
+
+            <!-- Dedicated Zoom & Manual Centering / Pan Controls -->
+            <div class="hud-pill px-2 py-1 rounded-md flex flex-wrap items-center gap-1.5 text-[11px] font-mono-tech">
+              <button id="btnCenterStage" title="Center and fit the entire 3D standing bell in the viewport [C]" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 font-semibold transition">
+                ⌖ Center &amp; Fit [C]
+              </button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Zoom:</span>
+              <button id="btnZoomIn" title="Zoom In" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">+</button>
+              <input id="sliderStageZoom" type="range" min="2.2" max="14.0" step="0.1" value="5.2" class="w-20" title="Camera Distance" />
+              <button id="btnZoomOut" title="Zoom Out" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">−</button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Pan:</span>
+              <button id="btnPanLeft" title="Pan Left" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">◀</button>
+              <button id="btnPanUp" title="Pan Up" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▲</button>
+              <button id="btnPanDown" title="Pan Down" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▼</button>
+              <button id="btnPanRight" title="Pan Right" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM FLOATING IN-STAGE HUD: Excitation Status & Quick Controls -->
+        <div class="relative z-10 p-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
+
+          <!-- Live Acoustic & Hydrodynamic Status Readout -->
+          <div class="hud-pill px-3 py-2 rounded-lg pointer-events-auto flex flex-wrap items-center gap-3 text-xs font-mono-tech">
+            <div>
+              <span class="text-slate-400 text-[10px] block">RIM AZIMUTH &amp; PUJA STATE</span>
+              <span id="hudRimState" class="text-amber-300 font-semibold">θ = 0° • Struck Idiophone (111.242.11)</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">DOMINANT RAYLEIGH MODE</span>
+              <span id="hudModeState" class="text-cyan-300 font-semibold">(2,0) Quadrupole (4 Nodal Meridians)</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
+            <div class="hidden sm:block">
+              <span class="text-slate-400 text-[10px] block">CHATTER / STICK-SLIP</span>
+              <span id="hudChatterState" class="text-emerald-300 font-semibold">Smooth Lock-In (No Chatter)</span>
+            </div>
+          </div>
+
+          <!-- Quick In-Stage Controls (Water Fill, Auto-Puja, Nodal Rings, Strike) -->
+          <div class="hud-pill px-2.5 py-1.5 rounded-lg pointer-events-auto flex flex-wrap items-center gap-1.5 text-xs">
+            <button id="btnQuickWater50" class="px-2 py-1 rounded text-[11px] font-mono-tech bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300">
+              💧 Fill Water (60%)
+            </button>
+            <button id="btnQuickSpoutBoost" class="px-2 py-1 rounded text-[11px] font-mono-tech bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300">
+              🌊 Trigger Faraday Spout
+            </button>
+            <button id="btnToggleNodalMeridians" class="btn-active-amber px-2 py-1 rounded text-[11px] font-mono-tech bg-slate-900/90 border border-slate-700 text-slate-200">
+              2n Nodal Meridians
+            </button>
+            <button id="btnStageStrikeNow" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs transition">
+              🔔 Strike [Space]
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM 3-PANEL SCIENTIFIC TELEMETRY STRIP -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+
+        <!-- Panel A: Polar Rim Deformation u_r(θ) & Rotating Puja Nodal Meridians -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-amber-300 uppercase tracking-wider font-mono-tech">
+                A. Polar Rim Orbit u_r(θ) &amp; 2n Nodes
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Top-down Rayleigh inextensional rim wave &amp; rotating puja angle
+              </p>
+            </div>
+            <span id="badgePolarNodes" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              4 Nodes (2,0)
+            </span>
+          </div>
+          <canvas id="canvasPolarRim" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel B: Rayleigh Modal Spectrum f_(n,0) & Doublet Beating -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-cyan-300 uppercase tracking-wider font-mono-tech">
+                B. Rayleigh Spectrum f_(n,0) &amp; FFT
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Modes (2,0)–(7,0) + rotational doublet splitting Δf = 2n Ω_puja
+              </p>
+            </div>
+            <span id="badgeSpecMode" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              Lock-In Harmonics
+            </span>
+          </div>
+          <canvas id="canvasRayleighSpec" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel C: Terwagne-Bush Faraday Stability Diagram (Γ vs Water Level) & Stick-Slip Phase -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-emerald-300 uppercase tracking-wider font-mono-tech">
+                C. Faraday Threshold Γ = Aω²/g &amp; Chatter
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Capillary Γ_c → Subharmonic Faraday Γ_F → Droplet Spouting Γ_d
+              </p>
+            </div>
+            <span id="badgeFaradayRegime" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              Γ &lt; Γ_F
+            </span>
+          </div>
+          <canvas id="canvasFaradayPhase" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT CONTROL DECK: STANDING BELL GEOMETRY, PUJA FRICTION, HYDRO-FARADAY & RITUAL LOOM (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-2.5">
+
+      <!-- CARD 1: STANDING BELL GEOMETRY, RIM CURVATURE & ALLOY -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono-tech">
+            1. Vessel Geometry, Rim Thickness &amp; Alloy
+          </h2>
+          <select id="selectBellAlloy" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] font-mono-tech text-slate-200 focus:outline-none">
+            <option value="seven_metal">Himalayan 7-Metal Bell Bronze (Cu-Sn-Fe-Ag)</option>
+            <option value="sahari">Japanese Sahari Temple Alloy (CuSn20 + Ag)</option>
+            <option value="shang_bronze">Ancient Shang Dynasty Cast Bronze</option>
+            <option value="quartz">Fused Quartz Silica Crystal (99.99% SiO₂)</option>
+            <option value="cast_iron">Chinese Temple Cast-Iron (Zhong/Qing)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Rim Diameter D -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Rim Diameter D:</span>
+              <span id="valBellDiameter" class="text-amber-300 font-semibold">24 cm</span>
+            </div>
+            <input id="sliderBellDiameter" type="range" min="10" max="65" step="1" value="24" class="w-full" />
+          </div>
+
+          <!-- Rim Wall Thickness h_rim -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Rim Thickness h:</span>
+              <span id="valRimThickness" class="text-amber-300 font-semibold">4.2 mm</span>
+            </div>
+            <input id="sliderRimThickness" type="range" min="1.5" max="10.0" step="0.2" value="4.2" class="w-full" />
+          </div>
+
+          <!-- Bowl Depth / Aspect Ratio H/D -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Bowl Depth H/D:</span>
+              <span id="valBowlDepth" class="text-cyan-300 font-semibold">0.52×</span>
+            </div>
+            <input id="sliderBowlDepth" type="range" min="0.28" max="0.95" step="0.02" value="0.52" class="w-full" />
+          </div>
+
+          <!-- Rim Incurve / Lip Flare -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Rim Lip Curvature:</span>
+              <span id="valRimIncurve" class="text-emerald-300 font-semibold">+0.12 (Bulbous)</span>
+            </div>
+            <input id="sliderRimIncurve" type="range" min="-0.35" max="0.45" step="0.02" value="0.12" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: PUJA STICK-SLIP RIM EXCITATION, CHATTER & STRIKER -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono-tech">
+            2. Puja Wand Stick-Slip, Chatter &amp; Striker
+          </h2>
+          <span class="text-[10px] font-mono-tech text-slate-400">Inácio–Antunes / Moore</span>
+        </div>
+
+        <!-- Striker / Puja Material Selector -->
+        <div class="grid grid-cols-4 gap-1 text-[11px]">
+          <button data-puja="suede" class="puja-btn btn-active-amber py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🦌 Suede Puja
+          </button>
+          <button data-puja="wood" class="puja-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🪵 Hard Wood (Chatter)
+          </button>
+          <button data-puja="cloth_bai" class="puja-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            ⛩️ Zen Cloth Bai
+          </button>
+          <button data-puja="silicone" class="puja-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🔮 Crystal Wand
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Puja Angular Rubbing Velocity Omega_puja -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Puja Speed Ω_puja:</span>
+              <span id="valPujaSpeed" class="text-cyan-300 font-semibold">0.85 rev/s</span>
+            </div>
+            <input id="sliderPujaSpeed" type="range" min="0.15" max="2.60" step="0.05" value="0.85" class="w-full" />
+          </div>
+
+          <!-- Puja Normal Contact Force F_N (Low Force + Hard Puja = Chatter!) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Normal Force F_N:</span>
+              <span id="valPujaForce" class="text-amber-300 font-semibold">3.8 N (Firm)</span>
+            </div>
+            <input id="sliderPujaForce" type="range" min="0.4" max="9.0" step="0.2" value="3.8" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: WATER FILL, FARADAY CAPILLARY WAVES & DROPLET SPOUTING -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono-tech">
+            3. Hydrodynamic Tuning &amp; Faraday Spouting
+          </h2>
+          <span class="text-[10px] font-mono-tech text-slate-400">Terwagne &amp; Bush (MIT)</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Water Fill Level % -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Water Fill Level:</span>
+              <span id="valWaterLevel" class="text-cyan-300 font-semibold">0% (Dry Bowl)</span>
+            </div>
+            <input id="sliderWaterLevel" type="range" min="0" max="85" step="1" value="0" class="w-full" />
+          </div>
+
+          <!-- Cushion Support Damping -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Sustain Decay T₆₀:</span>
+              <span id="valSustainT60" class="text-emerald-300 font-semibold">28.0 s</span>
+            </div>
+            <input id="sliderSustainT60" type="range" min="4.0" max="85.0" step="1.0" value="28.0" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: 6 RAYLEIGH SHELL MODES (n, 0) & RITUAL BPM CADENCE -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-violet-400 font-mono-tech">
+            4. Rayleigh Rim Eigenmodes (n, 0) &amp; Export
+          </h2>
+          <button id="btnClearSolo" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            All Modes Active
+          </button>
+        </div>
+
+        <!-- 6 Rayleigh-Love Rim Modes Grid (Click to Solo & Visualize 2n Nodal Meridians) -->
+        <div id="rayleighModesGrid" class="grid grid-cols-2 gap-1 text-[11px] font-mono-tech">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Ritual Temple Strikes Sequencer & WAV/JSON Export -->
+        <div class="pt-1.5 border-t border-slate-800/80 flex flex-col gap-2">
+          <div class="flex items-center justify-between gap-1.5">
+            <button id="btnToggleRitualPulse" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 flex items-center justify-center gap-1.5 transition">
+              <span>⛩️ Temple Strike Cadence</span>
+              <span id="ritualBadge" class="text-[10px] font-mono-tech px-1.5 py-0.2 rounded bg-slate-900 text-slate-400">OFF</span>
+            </button>
+            <div class="w-32">
+              <div class="flex justify-between font-mono-tech text-[10px]">
+                <span class="text-slate-400">Tempo:</span>
+                <span id="valRitualBpm" class="text-amber-300">48 BPM</span>
+              </div>
+              <input id="sliderRitualBpm" type="range" min="15" max="140" step="1" value="48" class="w-full" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+            <button id="btnExportWav" class="py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-mono-tech font-semibold transition">
+              ⬇ Export 44.1kHz .WAV
+            </button>
+            <button id="btnExportJson" class="py-1.5 px-2.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-mono-tech font-semibold transition">
+              ⬇ Export Bell .JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LITERATURE & ACOUSTICS CITATIONS FOOTER -->
+      <div class="glass-panel rounded-xl px-3 py-2 text-[11px] text-slate-400 leading-relaxed">
+        <span class="text-slate-200 font-semibold font-mono-tech">Acoustics References:</span>
+        Rayleigh inextensional shell modes $(n,0)$, stick-slip puja chatter, and Faraday droplet levitation grounded in
+        <a href="https://en.wikipedia.org/wiki/Standing_bell" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Standing Bell (Wikipedia)</a>,
+        <a href="https://thales.mit.edu/bush/wp-content/uploads/2012/08/TibetanBowls.pdf" target="_blank" rel="noopener" class="text-cyan-400 hover:underline">Terwagne &amp; Bush (2011, Nonlinearity 24, R51 — MIT)</a>,
+        <a href="https://arxiv.org/abs/1106.5657" target="_blank" rel="noopener" class="text-amber-400 hover:underline">arXiv:1106.5657 (Acoustics &amp; Fluid Dynamics)</a>,
+        <a href="https://www.researchgate.net/publication/273080540_An_Electro-Acoustic_Implementation_of_Tibetan_Bowls_Acoustics_and_Perception" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">Aarts et al. (2014)</a>,
+        and <a href="https://www.mdpi.com/2077-1444/14/10/1246" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Zen Monastic Soundspace (MDPI 2023)</a>.
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- COMPLETE APPLICATION LOGIC: THREE.JS 3D STANDING BELL + FARADAY WATER + PUJA STICK-SLIP + WEB AUDIO -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. ALLOYS, ARCHETYPES & RAYLEIGH INEXTENSIONAL SHELL MODES (n, 0)
+      // =========================================================================
+      const ALLOYS = {
+        seven_metal: { name: 'Himalayan 7-Metal Bronze', cL: 3580, rho: 8650, baseRgb: [0.85, 0.64, 0.28], roughness: 0.26, metalness: 0.88 },
+        sahari:      { name: 'Japanese Sahari Temple Alloy', cL: 3720, rho: 8780, baseRgb: [0.78, 0.62, 0.36], roughness: 0.20, metalness: 0.92 },
+        shang_bronze:{ name: 'Ancient Shang Patinated Bronze', cL: 3440, rho: 8500, baseRgb: [0.34, 0.56, 0.44], roughness: 0.38, metalness: 0.72 },
+        quartz:      { name: 'Fused Quartz Silica (SiO₂)', cL: 5760, rho: 2203, baseRgb: [0.86, 0.94, 0.99], roughness: 0.14, metalness: 0.15 },
+        cast_iron:   { name: 'Chinese Temple Cast-Iron', cL: 4520, rho: 7200, baseRgb: [0.32, 0.35, 0.40], roughness: 0.45, metalness: 0.78 }
+      };
+
+      const ARCHETYPES = {
+        jambati: {
+          id: 'jambati',
+          name: 'Himalayan Jambati Singing Bowl',
+          alloy: 'seven_metal',
+          diameterCm: 24,
+          rimThicknessMm: 4.2,
+          depthRatio: 0.52,
+          rimIncurve: 0.10,
+          waterLevelPct: 0,
+          sustainT60: 28.0,
+          ellipticity: 0.0,
+          hasStem: false,
+          hasHandles: false
+        },
+        keisu: {
+          id: 'keisu',
+          name: 'Japanese Zen Keisu / Dobachi Temple Bell',
+          alloy: 'sahari',
+          diameterCm: 38,
+          rimThicknessMm: 6.4,
+          depthRatio: 0.68,
+          rimIncurve: 0.28,  // Classic bulbous incurved Japanese Keisu lip
+          waterLevelPct: 0,
+          sustainT60: 42.0,
+          ellipticity: 0.0,
+          hasStem: false,
+          hasHandles: false
+        },
+        spouting: {
+          id: 'spouting',
+          name: 'Chinese Han-Dynasty Spouting Bowl (Yúxǐ)',
+          alloy: 'seven_metal',
+          diameterCm: 36,
+          rimThicknessMm: 3.6,
+          depthRatio: 0.42,
+          rimIncurve: -0.14, // Flared basin rim with twin loop handles
+          waterLevelPct: 68, // Pre-filled with water for Faraday droplet spouting!
+          sustainT60: 24.0,
+          ellipticity: 0.0,
+          hasStem: false,
+          hasHandles: true
+        },
+        nao: {
+          id: 'nao',
+          name: 'Shang Dynasty Náo Stemmed Goblet Bell',
+          alloy: 'shang_bronze',
+          diameterCm: 26,
+          rimThicknessMm: 5.5,
+          depthRatio: 0.74,
+          rimIncurve: -0.08,
+          waterLevelPct: 0,
+          sustainT60: 19.0,
+          ellipticity: 0.24, // Almond/lenticular cross-section producing two distinct strike tones (Sui vs Gu)!
+          hasStem: true,
+          hasHandles: false
+        },
+        crystal: {
+          id: 'crystal',
+          name: 'Fused Quartz Silica Crystal Singing Bowl',
+          alloy: 'quartz',
+          diameterCm: 28,
+          rimThicknessMm: 6.8,
+          depthRatio: 0.78,
+          rimIncurve: 0.00,  // Cylindrical quartz vessel
+          waterLevelPct: 0,
+          sustainT60: 65.0,
+          ellipticity: 0.0,
+          hasStem: false,
+          hasHandles: false
+        }
+      };
+
+      // Rayleigh Inextensional Shell Modes (n, 0):
+      // Frequency scales as f_n ~ n(n^2 - 1) / sqrt(n^2 + 1), normalized to n=2 -> 1.000
+      // n=2: 6/sqrt(5) = 2.68328 -> ratio 1.000
+      // n=3: 24/sqrt(10) = 7.58947 -> ratio 2.828
+      // n=4: 60/sqrt(17) = 14.5521 -> ratio 5.423
+      // n=5: 120/sqrt(26) = 23.5339 -> ratio 8.771
+      // n=6: 210/sqrt(37) = 34.5237 -> ratio 12.866
+      // n=7: 336/sqrt(50) = 47.5176 -> ratio 17.709
+      const RAYLEIGH_MODES = [
+        { idx: 0, n: 2, m: 0, ratio: 1.000, label: '(2,0) Quadrupole (4 Nodes)' },
+        { idx: 1, n: 3, m: 0, ratio: 2.765, label: '(3,0) Hexapole (6 Nodes)' },
+        { idx: 2, n: 4, m: 0, ratio: 5.260, label: '(4,0) Octupole (8 Nodes)' },
+        { idx: 3, n: 5, m: 0, ratio: 8.420, label: '(5,0) Decapole (10 Nodes)' },
+        { idx: 4, n: 6, m: 0, ratio: 12.18, label: '(6,0) Dodecapole (12 Nodes)' },
+        { idx: 5, n: 7, m: 0, ratio: 16.54, label: '(7,0) 14-Meridian Rim Mode' }
+      ];
+
+      // =========================================================================
+      // 2. CENTRAL SIMULATION STATE
+      // =========================================================================
+      const state = {
+        archetype: 'jambati',
+        alloy: 'seven_metal',
+        diameterCm: 24,
+        rimThicknessMm: 4.2,
+        depthRatio: 0.52,
+        rimIncurve: 0.10,
+        waterLevelPct: 0,
+        sustainT60: 28.0,
+        ellipticity: 0.0,
+        hasStem: false,
+        hasHandles: false,
+
+        // Puja & Excitation State
+        toolMode: 'strike',        // 'strike' | 'rub' | 'pan'
+        pujaMaterial: 'suede',     // 'suede' | 'wood' | 'cloth_bai' | 'silicone'
+        pujaSpeedRevSec: 0.85,
+        pujaNormalForceN: 3.8,
+        autoSingActive: false,
+        isRubbingRim: false,
+        pujaAngleRad: 0.0,
+        strikeAngleRad: 0.0,
+        isChattering: false,
+        chatterIntensity: 0.0,
+
+        // Visual & Camera
+        shaderMode: 'patina',      // 'patina' | 'rayleigh' | 'strain' | 'puja_wave'
+        cameraPreset: 'oblique',
+        showNodalMeridians: true,
+        soloModeIndex: -1,
+
+        // 6 Rayleigh Mode Dynamical Variables
+        modeAmps: new Float32Array(6),
+        modePhases: new Float32Array(6),
+        modeWaveAngle: new Float32Array(6), // Co-rotating antinode orientation
+        modeFreqsDry: new Float32Array(6),
+        modeFreqsWet: new Float32Array(6),
+        modeDoubletSplitHz: new Float32Array(6),
+
+        // Hydrodynamic Faraday & Droplet Spouting Telemetry
+        rimAccelG: 0.0,
+        faradayThresholdG: 1.85,
+        spoutingThresholdG: 4.20,
+        faradayWaveAmp: 0.0,
+
+        // Auto Temple Ritual Cadence
+        ritualActive: false,
+        ritualBpm: 48,
+        lastRitualStrikeSec: 0
+      };
+
+      function recomputeRayleighFrequencies() {
+        const alloy = ALLOYS[state.alloy] || ALLOYS.seven_metal;
+        const R = (state.diameterCm * 0.01) * 0.5;
+        const h = state.rimThicknessMm * 0.001;
+        // Calibrate (2,0) fundamental to 188.0 Hz for the 24 cm Himalayan Jambati bowl (Terwagne & Bush 2011)
+        const depthFactor = 1.0 / (0.72 + 0.54 * state.depthRatio);
+        const lipFactor = 1.0 + 0.25 * Math.abs(state.rimIncurve);
+        const f20Dry = 188.0 * (0.12 / R) * (0.12 / R) * (h / 0.0042) * (alloy.cL / 3580) * depthFactor * lipFactor;
+
+        // Hydrodynamic added-mass pitch shift when filled with water (Terwagne & Bush 2011 Eq. 2.2)
+        const fillFrac = state.waterLevelPct / 100.0;
+        // Water lowers higher modes slightly differently than (2,0), up to ~32% frequency drop at 85% fill
+        const waterShiftBase = 1.0 / Math.sqrt(1.0 + 1.35 * Math.pow(fillFrac, 2.2));
+
+        for (let k = 0; k < 6; k++) {
+          const mode = RAYLEIGH_MODES[k];
+          const fDry = Math.max(45.0, Math.min(12500.0, f20Dry * mode.ratio));
+          const modeWaterShift = 1.0 / Math.sqrt(1.0 + (1.35 + 0.15 * k) * Math.pow(fillFrac, 2.1));
+          state.modeFreqsDry[k] = fDry;
+          state.modeFreqsWet[k] = fDry * modeWaterShift;
+
+          // Rotational & geometric doublet splitting:
+          // Even in a symmetric bowl, rotating the puja at Omega_puja splits beats at 2n * Omega_puja!
+          // In the Shang Nao two-tone goblet, ellipticity splits (2,0) into two distinct musical notes (Sui & Gu)!
+          const rotBeat = (state.autoSingActive || state.isRubbingRim) ? (2 * mode.n * state.pujaSpeedRevSec * 0.45) : 0.0;
+          const asymBeat = state.ellipticity > 0.05
+            ? state.modeFreqsWet[k] * state.ellipticity * 0.75
+            : (1.8 + k * 0.95);
+          state.modeDoubletSplitHz[k] = asymBeat + rotBeat;
+        }
+      }
+
+      recomputeRayleighFrequencies();
+
+      // =========================================================================
+      // 3. WEB AUDIO API RAYLEIGH MODAL + PUJA STICK-SLIP & CHATTER SYNTHESIZER
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+      let analyserNode = null;
+      let fftBytes = null;
+      let modalBanks = [];
+      let chatterNoiseGain = null;
+      let waterSplashGain = null;
+
+      function initAudio() {
+        if (audioCtx) {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          return;
+        }
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.80;
+
+        const comp = audioCtx.createDynamicsCompressor();
+        comp.threshold.value = -10;
+        comp.ratio.value = 4;
+        comp.attack.value = 0.003;
+        comp.release.value = 0.18;
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 1024;
+        analyserNode.smoothingTimeConstant = 0.80;
+        fftBytes = new Uint8Array(analyserNode.frequencyBinCount);
+
+        masterGain.connect(comp);
+        comp.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+
+        // 6 Rayleigh Mode Dual-Doublet Oscillators ((n,0)_a and (n,0)_b)
+        modalBanks = [];
+        for (let k = 0; k < 6; k++) {
+          const oscA = audioCtx.createOscillator();
+          const oscB = audioCtx.createOscillator();
+          const gainA = audioCtx.createGain();
+          const gainB = audioCtx.createGain();
+
+          oscA.type = 'sine';
+          oscB.type = 'sine';
+          oscA.frequency.value = state.modeFreqsWet[k];
+          oscB.frequency.value = state.modeFreqsWet[k] + state.modeDoubletSplitHz[k];
+          gainA.gain.value = 0.0;
+          gainB.gain.value = 0.0;
+
+          oscA.connect(gainA);
+          oscB.connect(gainB);
+          gainA.connect(masterGain);
+          gainB.connect(masterGain);
+          oscA.start();
+          oscB.start();
+
+          modalBanks.push({ oscA, oscB, gainA, gainB });
+        }
+
+        // Stick-Slip Puja Chatter & Faraday Water Ejection Effervescence Generator
+        const bufLen = audioCtx.sampleRate * 2;
+        const noiseBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+        const data = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) {
+          // Sparse high-crest-factor micro-clicks for wood-on-bronze chatter + droplet fizz
+          const pulse = Math.random() < 0.04 ? (Math.random() * 2 - 1) : (Math.random() * 0.15 - 0.075);
+          data[i] = pulse;
+        }
+        const noiseSrc = audioCtx.createBufferSource();
+        noiseSrc.buffer = noiseBuf;
+        noiseSrc.loop = true;
+
+        const chatterFilter = audioCtx.createBiquadFilter();
+        chatterFilter.type = 'bandpass';
+        chatterFilter.frequency.value = 2600;
+        chatterFilter.Q.value = 4.2;
+
+        chatterNoiseGain = audioCtx.createGain();
+        chatterNoiseGain.gain.value = 0.0;
+
+        noiseSrc.connect(chatterFilter);
+        chatterFilter.connect(chatterNoiseGain);
+        chatterNoiseGain.connect(masterGain);
+        noiseSrc.start();
+      }
+
+      function updateAudioEngineFromPhysics() {
+        if (!audioCtx || modalBanks.length === 0) return;
+        const now = audioCtx.currentTime;
+
+        for (let k = 0; k < 6; k++) {
+          const bank = modalBanks[k];
+          const isMuted = (state.soloModeIndex !== -1 && state.soloModeIndex !== k);
+          const amp = isMuted ? 0.0 : state.modeAmps[k];
+          const fWet = Math.max(30, Math.min(14000, state.modeFreqsWet[k]));
+          const split = state.modeDoubletSplitHz[k];
+
+          bank.oscA.frequency.setTargetAtTime(fWet, now, 0.015);
+          bank.oscB.frequency.setTargetAtTime(fWet + split, now, 0.015);
+
+          const modeScale = k === 0 ? 0.28 : (0.16 / Math.pow(k + 1, 0.7));
+          const targetA = Math.min(0.34, amp * modeScale);
+          // In Nao two-tone bell, striking Sui (theta=0) vs Gu (theta=45deg) weights oscA vs oscB
+          const targetB = targetA * 0.72;
+
+          bank.gainA.gain.setTargetAtTime(targetA, now, 0.018);
+          bank.gainB.gain.setTargetAtTime(targetB, now, 0.018);
+        }
+
+        if (chatterNoiseGain) {
+          const chatterAmp = state.isChattering ? Math.min(0.22, state.chatterIntensity * 0.18) : 0.0;
+          const spoutFizz = state.rimAccelG > state.spoutingThresholdG && state.waterLevelPct > 10
+            ? Math.min(0.12, (state.rimAccelG - state.spoutingThresholdG) * 0.03)
+            : 0.0;
+          chatterNoiseGain.gain.setTargetAtTime(chatterAmp + spoutFizz, now, 0.025);
+        }
+      }
+
+      // =========================================================================
+      // 4. RIM STRIKE & CONTINUOUS PUJA STICK-SLIP EXCITATION ENGINE
+      // =========================================================================
+      function triggerBellRimStrike(thetaRad, forceScale) {
+        initAudio();
+        recomputeRayleighFrequencies();
+
+        const th = thetaRad !== undefined ? thetaRad : state.strikeAngleRad;
+        const fScale = forceScale !== undefined ? forceScale : 1.0;
+        state.strikeAngleRad = th;
+        state.pujaAngleRad = th;
+
+        // Striker hardness controls high-mode roll-off:
+        // Suede/Cloth Bai emphasize warm (2,0) & (3,0); Hard Wood excites bright (4,0)-(7,0) clang!
+        let cutoff = 2.4;
+        if (state.pujaMaterial === 'suede') cutoff = 2.1;
+        else if (state.pujaMaterial === 'cloth_bai') cutoff = 1.65;
+        else if (state.pujaMaterial === 'silicone') cutoff = 2.5;
+        else if (state.pujaMaterial === 'wood') cutoff = 5.5;
+
+        for (let k = 0; k < 6; k++) {
+          const addAmp = Math.exp(-k / cutoff) * fScale * (k === 0 ? 1.15 : 0.85);
+          state.modeAmps[k] = Math.min(2.2, state.modeAmps[k] * 0.55 + addAmp);
+          state.modeWaveAngle[k] = th;
+        }
+
+        pujaStrikeAnim.active = true;
+        pujaStrikeAnim.progress = 0.0;
+
+        const deg = Math.round(((th * 180) / Math.PI + 360) % 360);
+        const toneZone = state.ellipticity > 0.05
+          ? (Math.abs(Math.sin(2 * th)) > 0.65 ? 'Gu Corner Tone (High)' : 'Sui Center Tone (Fund.)')
+          : 'Struck Idiophone (111.242.11)';
+        document.getElementById('hudRimState').textContent = `θ = ${deg}° • ${toneZone}`;
+      }
+
+      function dampStandingBell() {
+        for (let k = 0; k < 6; k++) {
+          state.modeAmps[k] *= 0.04;
+        }
+        state.autoSingActive = false;
+        state.isRubbingRim = false;
+        state.rimAccelG = 0.0;
+        document.getElementById('btnAutoSingHeader').classList.remove('btn-active-cyan');
+      }
+
+      // =========================================================================
+      // 5. TIME-DOMAIN RAYLEIGH SHELL, STICK-SLIP CHATTER & FARADAY DROPLETS
+      // =========================================================================
+      function stepStandingBellPhysics(dt) {
+        const safeDt = Math.min(0.033, Math.max(0.001, dt));
+        recomputeRayleighFrequencies();
+
+        const isSinging = state.autoSingActive || state.isRubbingRim;
+
+        // 1. Advance Puja Rim Rubbing & Stick-Slip Lock-In / Chatter Physics
+        if (isSinging) {
+          if (state.autoSingActive) {
+            state.pujaAngleRad = (state.pujaAngleRad + safeDt * state.pujaSpeedRevSec * Math.PI * 2) % (Math.PI * 2);
+          }
+
+          // Stick-slip energy injection:
+          // Rubbing primarily locks in the (2,0) fundamental mode (or soloed mode) along with harmonic lock-in (Terwagne & Bush 2011)
+          const targetPrimary = state.soloModeIndex !== -1 ? state.soloModeIndex : 0;
+          const speedDrive = Math.min(1.6, state.pujaSpeedRevSec * 1.15);
+          const forceDrive = Math.min(1.5, state.pujaNormalForceN / 3.8);
+
+          state.modeAmps[targetPrimary] = Math.min(1.85, state.modeAmps[targetPrimary] + safeDt * 0.95 * speedDrive * forceDrive);
+          state.modeWaveAngle[targetPrimary] = state.pujaAngleRad;
+
+          // Lock-in secondary modes
+          for (let k = 1; k < 6; k++) {
+            if (k === targetPrimary) continue;
+            const harmonicCoupling = state.pujaMaterial === 'wood' ? 0.32 / k : 0.12 / (k * k);
+            state.modeAmps[k] = Math.min(0.9, state.modeAmps[k] + safeDt * harmonicCoupling * speedDrive);
+            state.modeWaveAngle[k] = state.pujaAngleRad;
+          }
+
+          // Evaluate Collin-Keefer-Moore (2015) / Inácio (2006) Puja Chatter Criterion:
+          // Chatter occurs when rim inward radial acceleration exceeds normal contact hold force,
+          // especially with hard wooden puja, low normal force F_N, and high angular speed!
+          const hardnessFactor = state.pujaMaterial === 'wood' ? 2.4 : (state.pujaMaterial === 'silicone' ? 0.45 : 0.75);
+          const chatterRatio = (state.modeAmps[targetPrimary] * state.pujaSpeedRevSec * hardnessFactor) / Math.max(0.4, state.pujaNormalForceN * 0.45);
+          if (chatterRatio > 1.15) {
+            state.isChattering = true;
+            state.chatterIntensity = Math.min(1.0, (chatterRatio - 1.15) * 1.4);
+            // Chatter injects high-order octupole/decapole modes!
+            state.modeAmps[2] = Math.min(1.1, state.modeAmps[2] + safeDt * 0.45);
+            state.modeAmps[3] = Math.min(0.9, state.modeAmps[3] + safeDt * 0.35);
+          } else {
+            state.isChattering = false;
+            state.chatterIntensity = 0.0;
+          }
+
+          const deg = Math.round(((state.pujaAngleRad * 180) / Math.PI + 360) % 360);
+          document.getElementById('hudRimState').textContent =
+            `θ_puja = ${deg}° • Friction Idiophone (133.1 Singing Lock-In)`;
+        } else {
+          state.isChattering = false;
+          state.chatterIntensity = 0.0;
+        }
+
+        // 2. Modal Decay & Phase Evolution
+        const baseDecay = 6.908 / Math.max(2.0, state.sustainT60);
+        let totalRimAmp = 0.0;
+
+        for (let k = 0; k < 6; k++) {
+          const modeDecay = baseDecay * (1.0 + 0.18 * k);
+          state.modeAmps[k] *= Math.exp(-modeDecay * safeDt);
+          // Visual oscillation frequency scaled for crisp 60 FPS standing-wave clarity
+          const visOmega = 24.0 + k * 9.5;
+          state.modePhases[k] += visOmega * safeDt;
+          totalRimAmp += state.modeAmps[k] * (k === 0 ? 1.0 : 0.45);
+        }
+
+        // 3. Compute Dimensionless Rim Acceleration Gamma = A * omega^2 / g (Terwagne & Bush 2011)
+        const f0 = state.modeFreqsWet[0];
+        state.rimAccelG = totalRimAmp * (f0 / 188.0) * 3.45;
+
+        // Update Faraday Wave Amplitude & Spawn Bouncing / Spouting Water Droplets
+        if (state.waterLevelPct > 5) {
+          if (state.rimAccelG > state.spoutingThresholdG) {
+            state.faradayWaveAmp = Math.min(1.0, (state.rimAccelG - 0.5) * 0.25);
+            spawnFaradayDroplets(Math.min(5, Math.ceil((state.rimAccelG - state.spoutingThresholdG) * 1.5)));
+          } else if (state.rimAccelG > state.faradayThresholdG) {
+            state.faradayWaveAmp = Math.min(0.65, (state.rimAccelG - 0.4) * 0.22);
+          } else {
+            state.faradayWaveAmp = Math.min(0.22, state.rimAccelG * 0.12);
+          }
+        } else {
+          state.faradayWaveAmp = 0.0;
+        }
+
+        stepFaradayDroplets(safeDt);
+
+        // 4. Auto Temple Ritual Strike Sequencer
+        if (state.ritualActive) {
+          const nowSec = performance.now() * 0.001;
+          const interval = 60.0 / Math.max(12, state.ritualBpm);
+          if (nowSec - state.lastRitualStrikeSec >= interval) {
+            state.lastRitualStrikeSec = nowSec;
+            const nextAngle = (state.strikeAngleRad + Math.PI * 0.38) % (Math.PI * 2);
+            triggerBellRimStrike(nextAngle, 0.92);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. THREE.JS 3D STANDING BELL, ZABUTON CUSHION, WATER MENISCUS & DROPLETS
+      // =========================================================================
+      const mountEl = document.getElementById('threeBellMount');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03050a);
+      scene.fog = new THREE.FogExp2(0x03050a, 0.042);
+
+      const camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 100);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.22;
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      mountEl.appendChild(renderer.domElement);
+
+      // Lighting Rig
+      const ambientLight = new THREE.AmbientLight(0x475569, 1.05);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 2.3);
+      keyLight.position.set(4, 7, 5);
+      scene.add(keyLight);
+
+      const cyanRimLight = new THREE.PointLight(0x22d3ee, 1.75, 15);
+      cyanRimLight.position.set(-4, 3, -3);
+      scene.add(cyanRimLight);
+
+      const amberWarmLight = new THREE.PointLight(0xf59e0b, 1.85, 15);
+      amberWarmLight.position.set(3, -1, 4);
+      scene.add(amberWarmLight);
+
+      const bellRoot = new THREE.Group();
+      scene.add(bellRoot);
+
+      // -------------------------------------------------------------------------
+      // 6A. Brocade Silk Zabuton / Ring Cushion & Optional Shang Náo Stem Base
+      // -------------------------------------------------------------------------
+      const cushionGroup = new THREE.Group();
+      bellRoot.add(cushionGroup);
+
+      const cushionGeo = new THREE.TorusGeometry(0.88, 0.26, 20, 48);
+      cushionGeo.rotateX(Math.PI * 0.5);
+      cushionGeo.scale(1.0, 0.55, 1.0);
+      const cushionMat = new THREE.MeshStandardMaterial({
+        color: 0x881337,
+        roughness: 0.78,
+        metalness: 0.12
+      });
+      const cushionMesh = new THREE.Mesh(cushionGeo, cushionMat);
+      cushionMesh.position.y = -0.92;
+      cushionGroup.add(cushionMesh);
+
+      // Gold brocade trim ring around cushion
+      const trimGeo = new THREE.TorusGeometry(1.12, 0.022, 12, 64);
+      trimGeo.rotateX(Math.PI * 0.5);
+      const trimMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.3, metalness: 0.85 });
+      const trimMesh = new THREE.Mesh(trimGeo, trimMat);
+      trimMesh.position.y = -0.92;
+      cushionGroup.add(trimMesh);
+
+      // Optional Shang Nao Goblet Stem (Visible when Nao archetype is active)
+      const naoStemGeo = new THREE.CylinderGeometry(0.22, 0.34, 1.05, 24);
+      const naoStemMat = new THREE.MeshStandardMaterial({ color: 0x3b6e5c, roughness: 0.4, metalness: 0.75 });
+      const naoStemMesh = new THREE.Mesh(naoStemGeo, naoStemMat);
+      naoStemMesh.position.y = -1.25;
+      naoStemMesh.visible = false;
+      bellRoot.add(naoStemMesh);
+
+      // Optional Han Spouting Bowl Loop Handles (Visible when Spouting Bowl archetype is active)
+      const handleGroup = new THREE.Group();
+      const handleLoopGeo = new THREE.TorusGeometry(0.24, 0.038, 12, 32, Math.PI * 1.15);
+      const handleLoopMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.28, metalness: 0.88 });
+      const leftHandleMesh = new THREE.Mesh(handleLoopGeo, handleLoopMat);
+      const rightHandleMesh = new THREE.Mesh(handleLoopGeo, handleLoopMat);
+      leftHandleMesh.rotation.z = Math.PI * 0.42;
+      rightHandleMesh.rotation.z = -Math.PI * 0.42;
+      handleGroup.add(leftHandleMesh, rightHandleMesh);
+      handleGroup.visible = false;
+      bellRoot.add(handleGroup);
+
+      // Floor Grid
+      const gridHelper = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      gridHelper.position.y = -1.18;
+      scene.add(gridHelper);
+
+      // -------------------------------------------------------------------------
+      // 6B. Parametric 3D Standing Bell Vessel Mesh (44 Axial Rings x 96 Sectors)
+      // -------------------------------------------------------------------------
+      const NZ = 44;
+      const NTH = 96;
+      const ringsCount = NZ + 1;
+      const sectorsCount = NTH + 1;
+      const bellVertCount = ringsCount * sectorsCount;
+
+      const bellGeo = new THREE.BufferGeometry();
+      const bellPositions = new Float32Array(bellVertCount * 3);
+      const bellColors = new Float32Array(bellVertCount * 3);
+      const bellUVs = new Float32Array(bellVertCount * 2);
+      const vertVFrac = new Float32Array(bellVertCount); // 0 = bottom center, 1 = open upper rim
+      const vertTheta = new Float32Array(bellVertCount);
+      const vertHammer = new Float32Array(bellVertCount);
+
+      let bIdx = 0;
+      for (let iz = 0; iz <= NZ; iz++) {
+        const v = iz / NZ;
+        for (let it = 0; it <= NTH; it++) {
+          const theta = (it / NTH) * Math.PI * 2;
+          vertVFrac[bIdx] = v;
+          vertTheta[bIdx] = theta;
+          const hammer =
+            Math.sin(v * 42.0 + Math.cos(theta * 9.0)) * 0.5 +
+            Math.cos(v * 68.0 - theta * 14.0) * 0.5;
+          vertHammer[bIdx] = hammer;
+          bellUVs[bIdx * 2] = it / NTH;
+          bellUVs[bIdx * 2 + 1] = v;
+          bIdx++;
+        }
+      }
+
+      const bellIndices = [];
+      for (let iz = 0; iz < NZ; iz++) {
+        for (let it = 0; it < NTH; it++) {
+          const a = iz * sectorsCount + it;
+          const b = (iz + 1) * sectorsCount + it;
+          const c = (iz + 1) * sectorsCount + (it + 1);
+          const d = iz * sectorsCount + (it + 1);
+          bellIndices.push(a, b, d);
+          bellIndices.push(b, c, d);
+        }
+      }
+
+      bellGeo.setIndex(bellIndices);
+      bellGeo.setAttribute('position', new THREE.BufferAttribute(bellPositions, 3));
+      bellGeo.setAttribute('color', new THREE.BufferAttribute(bellColors, 3));
+      bellGeo.setAttribute('uv', new THREE.BufferAttribute(bellUVs, 2));
+
+      const bellMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.24,
+        metalness: 0.86,
+        side: THREE.DoubleSide
+      });
+
+      const bellMesh = new THREE.Mesh(bellGeo, bellMat);
+      bellMesh.frustumCulled = false;
+      bellRoot.add(bellMesh);
+
+      // -------------------------------------------------------------------------
+      // 6C. 3D Dynamic Water Meniscus Mesh & Bouncing/Spouting Faraday Droplets
+      // -------------------------------------------------------------------------
+      const WR = 32;
+      const WTH = 72;
+      const waterVertCount = (WR + 1) * (WTH + 1);
+      const waterGeo = new THREE.BufferGeometry();
+      const waterPos = new Float32Array(waterVertCount * 3);
+      const waterCol = new Float32Array(waterVertCount * 3);
+      const waterRFrac = new Float32Array(waterVertCount);
+      const waterTheta = new Float32Array(waterVertCount);
+
+      let wIdx = 0;
+      for (let ir = 0; ir <= WR; ir++) {
+        const rf = ir / WR;
+        for (let it = 0; it <= WTH; it++) {
+          const th = (it / WTH) * Math.PI * 2;
+          waterRFrac[wIdx] = rf;
+          waterTheta[wIdx] = th;
+          wIdx++;
+        }
+      }
+      const waterIndices = [];
+      for (let ir = 0; ir < WR; ir++) {
+        for (let it = 0; it < WTH; it++) {
+          const a = ir * (WTH + 1) + it;
+          const b = (ir + 1) * (WTH + 1) + it;
+          const c = (ir + 1) * (WTH + 1) + (it + 1);
+          const d = ir * (WTH + 1) + (it + 1);
+          waterIndices.push(a, b, d);
+          waterIndices.push(b, c, d);
+        }
+      }
+      waterGeo.setIndex(waterIndices);
+      waterGeo.setAttribute('position', new THREE.BufferAttribute(waterPos, 3));
+      waterGeo.setAttribute('color', new THREE.BufferAttribute(waterCol, 3));
+
+      const waterMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.08,
+        metalness: 0.15,
+        transparent: true,
+        opacity: 0.84,
+        side: THREE.DoubleSide
+      });
+      const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+      waterMesh.frustumCulled = false;
+      waterMesh.visible = false;
+      bellRoot.add(waterMesh);
+
+      // 3D Levitating & Spouting Faraday Water Droplets Pool
+      const MAX_DROPLETS = 80;
+      const dropletGroup = new THREE.Group();
+      bellRoot.add(dropletGroup);
+      const dropletGeo = new THREE.SphereGeometry(0.024, 10, 10);
+      const dropletMat = new THREE.MeshBasicMaterial({ color: 0x67e8f9 });
+      const droplets = [];
+      for (let d = 0; d < MAX_DROPLETS; d++) {
+        const m = new THREE.Mesh(dropletGeo, dropletMat);
+        m.visible = false;
+        dropletGroup.add(m);
+        droplets.push({ mesh: m, active: false, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, bounces: 0 });
+      }
+
+      function spawnFaradayDroplets(count) {
+        const rimRadius = 0.85 + (state.diameterCm / 65.0) * 0.75;
+        const activeMode = RAYLEIGH_MODES[state.soloModeIndex !== -1 ? state.soloModeIndex : 0];
+        const nLobes = activeMode.n * 2; // 4 antinodes for (2,0) quadrupole!
+
+        let spawned = 0;
+        for (let i = 0; i < MAX_DROPLETS && spawned < count; i++) {
+          const dr = droplets[i];
+          if (!dr.active) {
+            dr.active = true;
+            dr.mesh.visible = true;
+            // Eject preferentially near the 2n rim antinodes!
+            const lobeIdx = Math.floor(Math.random() * nLobes);
+            const antinodeAngle = state.modeWaveAngle[0] + (lobeIdx * Math.PI) / activeMode.n + (Math.random() - 0.5) * 0.22;
+            const rSpawn = rimRadius * (0.55 + Math.random() * 0.32);
+            dr.x = rSpawn * Math.cos(antinodeAngle);
+            dr.z = rSpawn * Math.sin(antinodeAngle);
+            dr.y = getWaterSurfaceY() + 0.04;
+            // Inward walking + upward spouting velocity
+            dr.vx = -Math.cos(antinodeAngle) * (0.25 + Math.random() * 0.45);
+            dr.vz = -Math.sin(antinodeAngle) * (0.25 + Math.random() * 0.45);
+            dr.vy = 1.45 + Math.random() * 1.65;
+            dr.bounces = 0;
+            spawned++;
+          }
+        }
+      }
+
+      function getWaterSurfaceY() {
+        const bowlH = (0.85 + (state.diameterCm / 65.0) * 0.75) * state.depthRatio * 1.45;
+        return -0.82 + bowlH * (state.waterLevelPct / 100.0);
+      }
+
+      function stepFaradayDroplets(dt) {
+        const waterY = getWaterSurfaceY();
+        for (let i = 0; i < MAX_DROPLETS; i++) {
+          const dr = droplets[i];
+          if (!dr.active) continue;
+          dr.vy -= 4.8 * dt;
+          dr.x += dr.vx * dt;
+          dr.y += dr.vy * dt;
+          dr.z += dr.vz * dt;
+
+          if (dr.y <= waterY) {
+            if (dr.bounces < 2 && state.rimAccelG > state.faradayThresholdG) {
+              // Levitating / walking droplet bounce on the Faraday wave field (Terwagne & Bush 2011)!
+              dr.y = waterY + 0.01;
+              dr.vy = Math.abs(dr.vy) * 0.62;
+              dr.bounces++;
+            } else {
+              dr.active = false;
+              dr.mesh.visible = false;
+            }
+          }
+          dr.mesh.position.set(dr.x, dr.y, dr.z);
+        }
+      }
+
+      // -------------------------------------------------------------------------
+      // 6D. 2n Nodal Meridian Lines Overlay & 3D Puja Wand / Striker
+      // -------------------------------------------------------------------------
+      const meridianGroup = new THREE.Group();
+      bellRoot.add(meridianGroup);
+      const meridianLines = [];
+      const meridianMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.72 });
+      for (let m = 0; m < 14; m++) {
+        const geo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(1, 0, 0)
+        ]);
+        const line = new THREE.Line(geo, meridianMat);
+        meridianGroup.add(line);
+        meridianLines.push(line);
+      }
+
+      // 3D Puja Wand / Mallet Assembly
+      const pujaGroup = new THREE.Group();
+      bellRoot.add(pujaGroup);
+
+      const pujaWoodGeo = new THREE.CylinderGeometry(0.068, 0.068, 0.92, 20);
+      const pujaWoodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.45 });
+      const pujaShaft = new THREE.Mesh(pujaWoodGeo, pujaWoodMat);
+      pujaShaft.position.y = 0.22;
+      pujaGroup.add(pujaShaft);
+
+      const pujaSuedeGeo = new THREE.CylinderGeometry(0.076, 0.076, 0.46, 20);
+      const pujaSuedeMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.85,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.0
+      });
+      const pujaSleeve = new THREE.Mesh(pujaSuedeGeo, pujaSuedeMat);
+      pujaSleeve.position.y = -0.02;
+      pujaGroup.add(pujaSleeve);
+
+      const pujaStrikeAnim = { active: false, progress: 0.0 };
+
+      // Evaluate Static Standing Bell Cross-Section (rStatic, yStatic) for v in [0, 1]
+      function evalBellProfile(v, theta, rimRadius, bowlHeight) {
+        // v = 0 is bottom center, v = 1 is open upper rim
+        // Smooth curved bowl profile with configurable rim incurve (Japanese Keisu vs flared Spouting Bowl)
+        let rProfile = Math.sin(v * Math.PI * 0.5);
+        // Apply rim incurve near upper lip (v > 0.65)
+        if (v > 0.65) {
+          const u = (v - 0.65) / 0.35;
+          rProfile -= state.rimIncurve * u * u * 0.32;
+        }
+        // Apply elliptical cross-section if Shang Nao goblet is active
+        const ellipScale = 1.0 + state.ellipticity * Math.cos(2 * theta);
+        const rBase = rimRadius * rProfile * ellipScale;
+        const yBase = -0.82 + bowlHeight * Math.pow(v, 1.35);
+        return { rBase, yBase };
+      }
+
+      // Real-Time 60 FPS 3D Standing Bell & Water Meniscus Deformation
+      function update3DStandingBell(timeSec) {
+        const rimRadius = 0.85 + (state.diameterCm / 65.0) * 0.75;
+        const bowlHeight = rimRadius * state.depthRatio * 1.45;
+        const alloy = ALLOYS[state.alloy] || ALLOYS.seven_metal;
+
+        // Toggle cushion / stem / handles per archetype
+        cushionGroup.visible = !state.hasStem;
+        naoStemMesh.visible = state.hasStem;
+        handleGroup.visible = state.hasHandles;
+        if (state.hasHandles) {
+          const topProf = evalBellProfile(0.96, 0, rimRadius, bowlHeight);
+          leftHandleMesh.position.set(-topProf.rBase - 0.08, topProf.yBase + 0.08, 0);
+          rightHandleMesh.position.set(topProf.rBase + 0.08, topProf.yBase + 0.08, 0);
+        }
+
+        bellMat.roughness = alloy.roughness;
+        bellMat.metalness = alloy.metalness;
+
+        const posArr = bellGeo.attributes.position.array;
+        const colArr = bellGeo.attributes.color.array;
+
+        const modeCos = new Float32Array(6);
+        for (let k = 0; k < 6; k++) {
+          const isMuted = (state.soloModeIndex !== -1 && state.soloModeIndex !== k);
+          modeCos[k] = isMuted ? 0.0 : state.modeAmps[k] * Math.cos(state.modePhases[k]);
+        }
+
+        const shader = state.shaderMode;
+
+        for (let i = 0; i < bellVertCount; i++) {
+          const v = vertVFrac[i];
+          const theta = vertTheta[i];
+          const hammer = vertHammer[i];
+
+          const { rBase, yBase } = evalBellProfile(v, theta, rimRadius, bowlHeight);
+
+          // Rayleigh Inextensional Shell Displacement:
+          // Maximum at open upper rim (v = 1), zero at supported base (v = 0) as v^2
+          const rimEnvelope = v * v;
+          let uRadial = 0.0;
+          let uTangential = 0.0;
+
+          for (let k = 0; k < 6; k++) {
+            const amp = modeCos[k];
+            if (Math.abs(amp) < 1e-4) continue;
+            const n = RAYLEIGH_MODES[k].n;
+            const relAngle = n * (theta - state.modeWaveAngle[k]);
+            // Radial displacement proportional to cos(n * theta)
+            uRadial += amp * Math.cos(relAngle) * 0.065;
+            // Tangential displacement proportional to -(1/n) * sin(n * theta) (Terwagne & Bush 2011)
+            uTangential -= (amp / n) * Math.sin(relAngle) * 0.065;
+          }
+
+          uRadial *= rimEnvelope;
+          uTangential *= rimEnvelope;
+
+          const rDef = rBase + uRadial + hammer * 0.003;
+          const x = rDef * Math.cos(theta) - uTangential * Math.sin(theta);
+          const z = rDef * Math.sin(theta) + uTangential * Math.cos(theta);
+
+          posArr[i * 3] = x;
+          posArr[i * 3 + 1] = yBase;
+          posArr[i * 3 + 2] = z;
+
+          // Surface Shader Coloring
+          let rC = alloy.baseRgb[0], gC = alloy.baseRgb[1], bC = alloy.baseRgb[2];
+
+          if (shader === 'patina') {
+            const rimRing = v > 0.92 ? 1.14 : (0.88 + 0.12 * v);
+            const dimple = 0.94 + 0.06 * hammer;
+            const vibShimmer = Math.min(0.38, Math.abs(uRadial) * 6.5);
+            rC = Math.min(1.0, alloy.baseRgb[0] * rimRing * dimple + vibShimmer * 0.8);
+            gC = Math.min(1.0, alloy.baseRgb[1] * rimRing * dimple + vibShimmer * 0.55);
+            bC = Math.min(1.0, alloy.baseRgb[2] * rimRing * dimple + vibShimmer * 0.25);
+          } else if (shader === 'rayleigh') {
+            const normU = Math.max(-1.0, Math.min(1.0, uRadial * 18.0));
+            const mag = Math.abs(normU);
+            if (normU >= 0) {
+              rC = 0.08 + mag * 0.15;
+              gC = 0.14 + mag * 0.82;
+              bC = 0.22 + mag * 0.86;
+            } else {
+              rC = 0.18 + mag * 0.82;
+              gC = 0.08 + mag * 0.20;
+              bC = 0.22 + mag * 0.72;
+            }
+          } else if (shader === 'strain') {
+            const strain = Math.min(1.0, Math.abs(uRadial) * 20.0 + v * v * state.rimAccelG * 0.12);
+            rC = Math.min(1.0, 0.10 + strain * 1.15);
+            gC = Math.min(1.0, 0.15 + Math.sin(strain * Math.PI) * 0.75);
+            bC = Math.max(0.08, 0.48 - strain * 0.38);
+          } else if (shader === 'puja_wave') {
+            const angDist = Math.cos(2 * (theta - state.pujaAngleRad));
+            const lockGlow = Math.max(0, angDist) * v * v * Math.min(1.0, state.rimAccelG * 0.35 + 0.25);
+            rC = 0.12 + lockGlow * 0.88;
+            gC = 0.16 + lockGlow * 0.64;
+            bC = 0.26 + (1 - lockGlow) * 0.45;
+          }
+
+          colArr[i * 3] = rC;
+          colArr[i * 3 + 1] = gC;
+          colArr[i * 3 + 2] = bC;
+        }
+
+        bellGeo.attributes.position.needsUpdate = true;
+        bellGeo.attributes.color.needsUpdate = true;
+        bellGeo.computeVertexNormals();
+        bellGeo.computeBoundingSphere();
+
+        // Update 3D Water Meniscus & Subharmonic Faraday Standing Waves
+        const hasWater = state.waterLevelPct > 2;
+        waterMesh.visible = hasWater;
+        if (hasWater) {
+          const fillV = 0.15 + (state.waterLevelPct / 100.0) * 0.78;
+          const { rBase: waterRimR, yBase: waterY } = evalBellProfile(fillV, 0, rimRadius, bowlHeight);
+          const wPos = waterGeo.attributes.position.array;
+          const wCol = waterGeo.attributes.color.array;
+          const domMode = RAYLEIGH_MODES[state.soloModeIndex !== -1 ? state.soloModeIndex : 0];
+          const nFaraday = domMode.n;
+
+          for (let j = 0; j < waterVertCount; j++) {
+            const rf = waterRFrac[j];
+            const th = waterTheta[j];
+            const rW = rf * (waterRimR * 0.96);
+
+            // Edge-induced capillary waves + subharmonic Faraday standing crispations near rim
+            const edgeEnv = Math.pow(rf, 1.6);
+            const capWave = Math.sin(rf * 28.0 - timeSec * 16.0) * Math.cos(nFaraday * (th - state.modeWaveAngle[0]));
+            const faradayCrisp = Math.cos(2 * nFaraday * (th - state.modeWaveAngle[0])) * Math.sin(rf * 18.0) * Math.cos(timeSec * 11.0);
+            const dy = (capWave * 0.025 + faradayCrisp * 0.045) * edgeEnv * state.faradayWaveAmp;
+
+            wPos[j * 3] = rW * Math.cos(th);
+            wPos[j * 3 + 1] = waterY + dy;
+            wPos[j * 3 + 2] = rW * Math.sin(th);
+
+            const crest = Math.min(1.0, Math.abs(dy) * 28.0);
+            wCol[j * 3] = 0.06 + crest * 0.45;
+            wCol[j * 3 + 1] = 0.38 + crest * 0.55;
+            wCol[j * 3 + 2] = 0.58 + crest * 0.42;
+          }
+          waterGeo.attributes.position.needsUpdate = true;
+          waterGeo.attributes.color.needsUpdate = true;
+          waterGeo.computeVertexNormals();
+        }
+
+        // Update 2n Nodal Meridian Lines Hovering Over Rim
+        meridianGroup.visible = state.showNodalMeridians;
+        if (state.showNodalMeridians) {
+          const activeMode = RAYLEIGH_MODES[state.soloModeIndex !== -1 ? state.soloModeIndex : 0];
+          const numNodes = activeMode.n * 2;
+          const { rBase: topR, yBase: topY } = evalBellProfile(1.0, 0, rimRadius, bowlHeight);
+          for (let m = 0; m < meridianLines.length; m++) {
+            const line = meridianLines[m];
+            if (m < numNodes) {
+              line.visible = true;
+              // Nodes of cos(n*(theta - psi)) occur at theta = psi + (2m + 1)*pi / (2n)
+              const nodeAng = state.modeWaveAngle[activeMode.idx] + ((2 * m + 1) * Math.PI) / (2 * activeMode.n);
+              const lArr = line.geometry.attributes.position.array;
+              lArr[0] = 0; lArr[1] = topY + 0.02; lArr[2] = 0;
+              lArr[3] = topR * 1.08 * Math.cos(nodeAng);
+              lArr[4] = topY + 0.02;
+              lArr[5] = topR * 1.08 * Math.sin(nodeAng);
+              line.geometry.attributes.position.needsUpdate = true;
+            } else {
+              line.visible = false;
+            }
+          }
+          document.getElementById('badgePolarNodes').textContent = `${numNodes} Nodes (${activeMode.n},0)`;
+          document.getElementById('hudModeState').textContent = activeMode.label;
+        }
+
+        // Update 3D Puja Wand Position & Strike/Rub Animation around the Outer Rim
+        const { rBase: rimR, yBase: rimY } = evalBellProfile(0.95, state.pujaAngleRad, rimRadius, bowlHeight);
+        let radialGap = 0.085;
+        if (pujaStrikeAnim.active) {
+          pujaStrikeAnim.progress += 0.18;
+          if (pujaStrikeAnim.progress >= Math.PI) {
+            pujaStrikeAnim.active = false;
+            pujaStrikeAnim.progress = 0.0;
+          } else {
+            radialGap = 0.24 - Math.sin(pujaStrikeAnim.progress) * 0.16;
+          }
+        } else if (!state.autoSingActive && !state.isRubbingRim) {
+          radialGap = 0.16;
+        }
+        // Add micro-jitter when chattering!
+        if (state.isChattering) {
+          radialGap += Math.random() * 0.035;
+          pujaSuedeMat.emissiveIntensity = 0.75;
+        } else {
+          pujaSuedeMat.emissiveIntensity = (state.autoSingActive || state.isRubbingRim) ? 0.25 : 0.0;
+        }
+
+        const px = (rimR + radialGap) * Math.cos(state.pujaAngleRad);
+        const pz = (rimR + radialGap) * Math.sin(state.pujaAngleRad);
+        pujaGroup.position.set(px, rimY + 0.06, pz);
+        // Tilt puja slightly outward from rim normal
+        pujaGroup.rotation.set(0, -state.pujaAngleRad, -0.18);
+      }
+
+      // =========================================================================
+      // 7. 3D CAMERA NAVIGATION, CENTER/FIT, ZOOM & DIRECT RAYCAST STRIKE / RUB
+      // =========================================================================
+      const camSpherical = {
+        radius: 5.2,
+        theta: 0.45,
+        phi: Math.PI * 0.34,
+        targetX: 0.0,
+        targetY: -0.15,
+        targetZ: 0.0,
+        isOrbitDragging: false,
+        isPanDragging: false,
+        lastMouseX: 0,
+        lastMouseY: 0,
+        downMouseX: 0,
+        downMouseY: 0
+      };
+
+      function syncZoomSliderUI() {
+        const el = document.getElementById('sliderStageZoom');
+        if (el) el.value = String(Math.max(2.2, Math.min(14.0, camSpherical.radius)).toFixed(1));
+      }
+
+      function centerAndFitBell() {
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = -0.15;
+        camSpherical.targetZ = 0.0;
+        const aspect = Math.max(0.6, camera.aspect || 1.5);
+        const baseDist = 5.1;
+        camSpherical.radius = aspect < 1.2 ? baseDist / Math.max(0.65, aspect * 0.85) : baseDist;
+        syncZoomSliderUI();
+      }
+
+      function applyCameraPreset(preset) {
+        state.cameraPreset = preset;
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = -0.15;
+        camSpherical.targetZ = 0.0;
+
+        if (preset === 'oblique') {
+          camSpherical.radius = 5.2;
+          camSpherical.theta = 0.48;
+          camSpherical.phi = Math.PI * 0.34;
+        } else if (preset === 'top') {
+          camSpherical.radius = 4.9;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = 0.12;
+        } else if (preset === 'side') {
+          camSpherical.radius = 5.3;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = Math.PI * 0.48;
+        } else if (preset === 'meniscus') {
+          camSpherical.radius = 3.2;
+          camSpherical.theta = 0.35;
+          camSpherical.phi = Math.PI * 0.25;
+        }
+        syncZoomSliderUI();
+        document.querySelectorAll('.cam-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-cam') === preset);
+        });
+      }
+
+      function updateCameraTransform(timeSec) {
+        if (state.cameraPreset === 'orbit' && !camSpherical.isOrbitDragging && !camSpherical.isPanDragging) {
+          camSpherical.theta = timeSec * 0.30;
+          camSpherical.phi = Math.PI * 0.32 + Math.sin(timeSec * 0.4) * 0.06;
+        }
+        const sinPhi = Math.sin(camSpherical.phi);
+        camera.position.x = camSpherical.targetX + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta);
+        camera.position.y = camSpherical.targetY + camSpherical.radius * Math.cos(camSpherical.phi);
+        camera.position.z = camSpherical.targetZ + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta);
+        camera.lookAt(camSpherical.targetX, camSpherical.targetY, camSpherical.targetZ);
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+      const rimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const planeIntersectPt = new THREE.Vector3();
+
+      function raycastBellAzimuth(clientX, clientY) {
+        const rect = mountEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return { hit: false };
+        pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointerNDC, camera);
+
+        const hits = raycaster.intersectObject(bellMesh, false);
+        if (hits.length > 0) {
+          const pt = hits[0].point;
+          return { hit: true, theta: Math.atan2(pt.z, pt.x) };
+        }
+        if (raycaster.ray.intersectPlane(rimPlane, planeIntersectPt)) {
+          if (Math.hypot(planeIntersectPt.x, planeIntersectPt.z) < 2.2) {
+            return { hit: true, theta: Math.atan2(planeIntersectPt.z, planeIntersectPt.x) };
+          }
+        }
+        return { hit: false };
+      }
+
+      renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        initAudio();
+        camSpherical.downMouseX = e.clientX;
+        camSpherical.downMouseY = e.clientY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (e.button === 2 || e.button === 1 || e.altKey || state.toolMode === 'pan') {
+          camSpherical.isPanDragging = true;
+          return;
+        }
+
+        const rc = raycastBellAzimuth(e.clientX, e.clientY);
+        if (rc.hit && (state.toolMode === 'rub' || e.shiftKey)) {
+          state.isRubbingRim = true;
+          state.pujaAngleRad = rc.theta;
+          return;
+        }
+
+        camSpherical.isOrbitDragging = true;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (state.isRubbingRim) {
+          const rc = raycastBellAzimuth(e.clientX, e.clientY);
+          if (rc.hit) {
+            state.pujaAngleRad = rc.theta;
+          }
+          return;
+        }
+
+        const dx = e.clientX - camSpherical.lastMouseX;
+        const dy = e.clientY - camSpherical.lastMouseY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (camSpherical.isPanDragging) {
+          const panScale = camSpherical.radius * 0.0015;
+          camSpherical.targetX -= dx * panScale * Math.cos(camSpherical.theta);
+          camSpherical.targetZ += dx * panScale * Math.sin(camSpherical.theta);
+          camSpherical.targetY += dy * panScale;
+          return;
+        }
+
+        if (!camSpherical.isOrbitDragging) return;
+        camSpherical.theta -= dx * 0.0065;
+        camSpherical.phi = Math.max(0.10, Math.min(Math.PI - 0.12, camSpherical.phi - dy * 0.0065));
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (state.isRubbingRim) {
+          state.isRubbingRim = false;
+          return;
+        }
+        if (camSpherical.isPanDragging) {
+          camSpherical.isPanDragging = false;
+          return;
+        }
+        if (camSpherical.isOrbitDragging) {
+          camSpherical.isOrbitDragging = false;
+          const dist = Math.hypot(e.clientX - camSpherical.downMouseX, e.clientY - camSpherical.downMouseY);
+          if (dist < 6) {
+            const rc = raycastBellAzimuth(e.clientX, e.clientY);
+            if (rc.hit) {
+              triggerBellRimStrike(rc.theta, 1.0);
+            }
+          }
+        }
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(2.2, Math.min(14.0, camSpherical.radius + e.deltaY * 0.0035));
+        syncZoomSliderUI();
+      }, { passive: false });
+
+      function syncViewportSize() {
+        const rect = mountEl.getBoundingClientRect();
+        const w = Math.max(300, Math.floor(rect.width || mountEl.clientWidth || 800));
+        const h = Math.max(260, Math.floor(rect.height || mountEl.clientHeight || 540));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(w, h, true);
+      }
+      window.addEventListener('resize', syncViewportSize);
+      const resizeObserver = new ResizeObserver(syncViewportSize);
+      resizeObserver.observe(mountEl);
+      syncViewportSize();
+
+      // =========================================================================
+      // 8. 2D TELEMETRY CANVASES (Polar Rim Orbit, Rayleigh Spectrum, Faraday Phase)
+      // =========================================================================
+      const canvasPolar = document.getElementById('canvasPolarRim');
+      const ctxPolar = canvasPolar.getContext('2d');
+      const canvasSpec = document.getElementById('canvasRayleighSpec');
+      const ctxSpec = canvasSpec.getContext('2d');
+      const canvasFaraday = document.getElementById('canvasFaradayPhase');
+      const ctxFaraday = canvasFaraday.getContext('2d');
+
+      function renderTelemetryCanvases() {
+        // -----------------------------------------------------------------------
+        // Canvas A: Top-Down Polar Rim Deformation u_r(θ) & Rotating Puja Indicator
+        // -----------------------------------------------------------------------
+        const wA = canvasPolar.width;
+        const hA = canvasPolar.height;
+        ctxPolar.fillStyle = '#04060c';
+        ctxPolar.fillRect(0, 0, wA, hA);
+
+        const cx = wA * 0.36;
+        const cy = hA * 0.52;
+        const baseR = 46;
+
+        // Resting circular rim dashed reference
+        ctxPolar.strokeStyle = 'rgba(100, 116, 139, 0.4)';
+        ctxPolar.setLineDash([3, 3]);
+        ctxPolar.beginPath();
+        ctxPolar.arc(cx, cy, baseR, 0, Math.PI * 2);
+        ctxPolar.stroke();
+        ctxPolar.setLineDash([]);
+
+        // Draw live Rayleigh inextensional rim deformation u_r(theta)
+        ctxPolar.strokeStyle = '#22d3ee';
+        ctxPolar.lineWidth = 2.2;
+        ctxPolar.beginPath();
+        for (let s = 0; s <= 120; s++) {
+          const th = (s / 120) * Math.PI * 2;
+          let dr = 0.0;
+          for (let k = 0; k < 6; k++) {
+            if (state.soloModeIndex !== -1 && state.soloModeIndex !== k) continue;
+            const n = RAYLEIGH_MODES[k].n;
+            dr += state.modeAmps[k] * Math.cos(state.modePhases[k]) * Math.cos(n * (th - state.modeWaveAngle[k])) * 12.0;
+          }
+          const r = baseR + Math.max(-18, Math.min(18, dr));
+          const x = cx + r * Math.cos(th);
+          const y = cy + r * Math.sin(th);
+          if (s === 0) ctxPolar.moveTo(x, y);
+          else ctxPolar.lineTo(x, y);
+        }
+        ctxPolar.closePath();
+        ctxPolar.stroke();
+
+        // Draw Puja Contact Dot on Polar Rim
+        const pujaX = cx + (baseR + 10) * Math.cos(state.pujaAngleRad);
+        const pujaY = cy + (baseR + 10) * Math.sin(state.pujaAngleRad);
+        ctxPolar.fillStyle = state.isChattering ? '#f43f5e' : '#f59e0b';
+        ctxPolar.beginPath();
+        ctxPolar.arc(pujaX, pujaY, 5.0, 0, Math.PI * 2);
+        ctxPolar.fill();
+
+        // Right-hand side readout text inside Canvas A
+        ctxPolar.fillStyle = '#fde68a';
+        ctxPolar.font = '10px "JetBrains Mono", monospace';
+        ctxPolar.fillText('Rayleigh Rim Law:', wA * 0.64, 28);
+        ctxPolar.fillStyle = '#94a3b8';
+        ctxPolar.fillText('u_r ∝ cos(nθ)', wA * 0.64, 46);
+        ctxPolar.fillText('u_θ ∝ -(1/n)sin(nθ)', wA * 0.64, 64);
+        ctxPolar.fillStyle = '#67e8f9';
+        ctxPolar.fillText(`f_(2,0) = ${state.modeFreqsWet[0].toFixed(1)}Hz`, wA * 0.64, 92);
+        ctxPolar.fillStyle = '#a7f3d0';
+        ctxPolar.fillText(`f_(3,0) = ${state.modeFreqsWet[1].toFixed(1)}Hz`, wA * 0.64, 110);
+        ctxPolar.fillStyle = '#f43f5e';
+        ctxPolar.fillText(`f_(4,0) = ${state.modeFreqsWet[2].toFixed(0)}Hz`, wA * 0.64, 128);
+
+        // -----------------------------------------------------------------------
+        // Canvas B: 6 Rayleigh Modes (2,0)-(7,0) + Live Web Audio FFT
+        // -----------------------------------------------------------------------
+        const wB = canvasSpec.width;
+        const hB = canvasSpec.height;
+        ctxSpec.fillStyle = '#04060c';
+        ctxSpec.fillRect(0, 0, wB, hB);
+
+        if (analyserNode && fftBytes) {
+          analyserNode.getByteFrequencyData(fftBytes);
+          ctxSpec.fillStyle = 'rgba(34, 211, 238, 0.16)';
+          const bins = 64;
+          for (let b = 0; b < bins; b++) {
+            const val = fftBytes[b * 2] / 255.0;
+            const bx = (b / bins) * wB;
+            const bh = val * (hB - 24);
+            ctxSpec.fillRect(bx, hB - 16 - bh, wB / bins - 1, bh);
+          }
+        }
+
+        const colW = (wB - 28) / 6;
+        for (let k = 0; k < 6; k++) {
+          const x = 14 + k * colW;
+          const isMuted = (state.soloModeIndex !== -1 && state.soloModeIndex !== k);
+          const amp = isMuted ? 0.0 : Math.min(1.0, state.modeAmps[k] * 0.72);
+          const barH = amp * (hB - 36);
+
+          ctxSpec.fillStyle = state.soloModeIndex === k ? '#22d3ee' : (k === 0 ? '#f59e0b' : '#38bdf8');
+          ctxSpec.fillRect(x + 8, hB - 18 - barH, colW - 16, barH);
+
+          ctxSpec.fillStyle = '#e2e8f0';
+          ctxSpec.font = '9.5px "JetBrains Mono", monospace';
+          ctxSpec.fillText(`(${RAYLEIGH_MODES[k].n},0)`, x + 10, hB - 5);
+        }
+
+        ctxSpec.fillStyle = '#fde68a';
+        ctxSpec.font = '10px "JetBrains Mono", monospace';
+        ctxSpec.fillText(`Doublet Beat Δf = ${state.modeDoubletSplitHz[0].toFixed(2)} Hz`, 10, 14);
+
+        // -----------------------------------------------------------------------
+        // Canvas C: Terwagne-Bush Faraday Threshold Diagram (Γ = Aω²/g)
+        // -----------------------------------------------------------------------
+        const wC = canvasFaraday.width;
+        const hC = canvasFaraday.height;
+        ctxFaraday.fillStyle = '#04060c';
+        ctxFaraday.fillRect(0, 0, wC, hC);
+
+        // Draw Horizontal Regime Threshold Lines: Gamma_F (Faraday) and Gamma_d (Droplet Spouting)
+        const yFaraday = hC - 18 - (state.faradayThresholdG / 7.0) * (hC - 36);
+        const ySpout = hC - 18 - (state.spoutingThresholdG / 7.0) * (hC - 36);
+
+        ctxFaraday.strokeStyle = 'rgba(34, 211, 238, 0.55)';
+        ctxFaraday.setLineDash([4, 4]);
+        ctxFaraday.beginPath();
+        ctxFaraday.moveTo(12, yFaraday);
+        ctxFaraday.lineTo(wC - 12, yFaraday);
+        ctxFaraday.stroke();
+
+        ctxFaraday.strokeStyle = 'rgba(244, 63, 94, 0.65)';
+        ctxFaraday.beginPath();
+        ctxFaraday.moveTo(12, ySpout);
+        ctxFaraday.lineTo(wC - 12, ySpout);
+        ctxFaraday.stroke();
+        ctxFaraday.setLineDash([]);
+
+        ctxFaraday.fillStyle = '#67e8f9';
+        ctxFaraday.font = '9px "JetBrains Mono", monospace';
+        ctxFaraday.fillText('Γ_F (Faraday Waves f/2)', 16, yFaraday - 4);
+        ctxFaraday.fillStyle = '#fda4af';
+        ctxFaraday.fillText('Γ_d (Droplet Spouting)', 16, ySpout - 4);
+
+        // Plot Current Operating Point (Water Fill % on X, Rim Accel Gamma on Y)
+        const ptX = 24 + (state.waterLevelPct / 85.0) * (wC - 48);
+        const ptY = hC - 18 - Math.min(1.0, state.rimAccelG / 7.0) * (hC - 36);
+
+        ctxFaraday.fillStyle = state.rimAccelG > state.spoutingThresholdG ? '#f43f5e' : (state.rimAccelG > state.faradayThresholdG ? '#22d3ee' : '#10b981');
+        ctxFaraday.beginPath();
+        ctxFaraday.arc(ptX, ptY, 6.0, 0, Math.PI * 2);
+        ctxFaraday.fill();
+
+        ctxFaraday.fillStyle = '#e2e8f0';
+        ctxFaraday.font = '10px "JetBrains Mono", monospace';
+        ctxFaraday.fillText(`Rim Accel Γ = ${state.rimAccelG.toFixed(2)} g | Water = ${state.waterLevelPct}%`, 12, 14);
+      }
+
+      // =========================================================================
+      // 9. UI CONTROLS, ARCHETYPE LOADER & WAV/JSON EXPORTERS
+      // =========================================================================
+      function buildRayleighModesGrid() {
+        const container = document.getElementById('rayleighModesGrid');
+        container.innerHTML = '';
+        for (let k = 0; k < 6; k++) {
+          const m = RAYLEIGH_MODES[k];
+          const btn = document.createElement('button');
+          btn.className = 'mode-pill-btn flex items-center justify-between px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-left transition';
+          btn.setAttribute('data-mode-idx', String(k));
+          btn.innerHTML = `
+            <span class="text-slate-200 font-medium">${m.label}</span>
+            <span id="rayleighFreqLbl_${k}" class="text-amber-300 text-[10px]">${state.modeFreqsWet[k].toFixed(0)}Hz</span>
+          `;
+          btn.addEventListener('click', () => {
+            initAudio();
+            if (state.soloModeIndex === k) {
+              state.soloModeIndex = -1;
+            } else {
+              state.soloModeIndex = k;
+              state.shaderMode = 'rayleigh';
+              syncShaderButtons();
+            }
+            syncModePillButtons();
+            triggerBellRimStrike(0.0, 1.0);
+          });
+          container.appendChild(btn);
+        }
+      }
+
+      function syncModePillButtons() {
+        document.querySelectorAll('.mode-pill-btn').forEach((btn) => {
+          const idx = parseInt(btn.getAttribute('data-mode-idx'), 10);
+          btn.classList.toggle('btn-active-cyan', state.soloModeIndex === idx);
+          const lbl = document.getElementById(`rayleighFreqLbl_${idx}`);
+          if (lbl) lbl.textContent = `${state.modeFreqsWet[idx].toFixed(0)}Hz`;
+        });
+      }
+
+      function syncShaderButtons() {
+        document.querySelectorAll('.shader-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-shader') === state.shaderMode);
+        });
+      }
+
+      function loadBellArchetype(archKey) {
+        const arch = ARCHETYPES[archKey];
+        if (!arch) return;
+        state.archetype = arch.id;
+        state.alloy = arch.alloy;
+        state.diameterCm = arch.diameterCm;
+        state.rimThicknessMm = arch.rimThicknessMm;
+        state.depthRatio = arch.depthRatio;
+        state.rimIncurve = arch.rimIncurve;
+        state.waterLevelPct = arch.waterLevelPct;
+        state.sustainT60 = arch.sustainT60;
+        state.ellipticity = arch.ellipticity;
+        state.hasStem = arch.hasStem;
+        state.hasHandles = arch.hasHandles;
+
+        document.getElementById('selectBellAlloy').value = state.alloy;
+        document.getElementById('sliderBellDiameter').value = state.diameterCm;
+        document.getElementById('valBellDiameter').textContent = `${state.diameterCm} cm`;
+
+        document.getElementById('sliderRimThickness').value = state.rimThicknessMm;
+        document.getElementById('valRimThickness').textContent = `${state.rimThicknessMm.toFixed(1)} mm`;
+
+        document.getElementById('sliderBowlDepth').value = state.depthRatio;
+        document.getElementById('valBowlDepth').textContent = `${state.depthRatio.toFixed(2)}×`;
+
+        document.getElementById('sliderRimIncurve').value = state.rimIncurve;
+        document.getElementById('valRimIncurve').textContent = `${state.rimIncurve >= 0 ? '+' : ''}${state.rimIncurve.toFixed(2)}`;
+
+        document.getElementById('sliderWaterLevel').value = state.waterLevelPct;
+        document.getElementById('valWaterLevel').textContent = state.waterLevelPct === 0 ? '0% (Dry Bowl)' : `${state.waterLevelPct}% Filled`;
+
+        document.getElementById('sliderSustainT60').value = state.sustainT60;
+        document.getElementById('valSustainT60').textContent = `${state.sustainT60.toFixed(1)} s`;
+
+        document.querySelectorAll('.arch-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-amber', btn.getAttribute('data-arch') === archKey);
+        });
+
+        recomputeRayleighFrequencies();
+        syncModePillButtons();
+
+        if (archKey === 'spouting') {
+          state.autoSingActive = true;
+          document.getElementById('btnAutoSingHeader').classList.add('btn-active-cyan');
+          triggerBellRimStrike(0.0, 1.35);
+          spawnFaradayDroplets(12);
+        } else {
+          triggerBellRimStrike(0.0, 1.0);
+        }
+      }
+
+      document.querySelectorAll('.arch-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          loadBellArchetype(btn.getAttribute('data-arch'));
+        });
+      });
+
+      document.querySelectorAll('.shader-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.shaderMode = btn.getAttribute('data-shader');
+          syncShaderButtons();
+        });
+      });
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => applyCameraPreset(btn.getAttribute('data-cam')));
+      });
+
+      document.querySelectorAll('.puja-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          state.pujaMaterial = btn.getAttribute('data-puja');
+          document.querySelectorAll('.puja-btn').forEach((b) => {
+            b.classList.toggle('btn-active-amber', b.getAttribute('data-puja') === state.pujaMaterial);
+          });
+        });
+      });
+
+      function setToolMode(mode) {
+        state.toolMode = mode;
+        document.getElementById('btnToolStrike').classList.toggle('btn-active-amber', mode === 'strike');
+        document.getElementById('btnToolRub').classList.toggle('btn-active-cyan', mode === 'rub');
+        document.getElementById('btnToolPan').classList.toggle('btn-active-cyan', mode === 'pan');
+      }
+      document.getElementById('btnToolStrike').addEventListener('click', () => setToolMode('strike'));
+      document.getElementById('btnToolRub').addEventListener('click', () => setToolMode('rub'));
+      document.getElementById('btnToolPan').addEventListener('click', () => setToolMode('pan'));
+
+      // Zoom, Center & Manual Pan Controls
+      document.getElementById('btnCenterHeader').addEventListener('click', centerAndFitBell);
+      document.getElementById('btnCenterStage').addEventListener('click', centerAndFitBell);
+
+      document.getElementById('sliderStageZoom').addEventListener('input', (e) => {
+        camSpherical.radius = parseFloat(e.target.value);
+      });
+      document.getElementById('btnZoomIn').addEventListener('click', () => {
+        camSpherical.radius = Math.max(2.2, camSpherical.radius - 0.55);
+        syncZoomSliderUI();
+      });
+      document.getElementById('btnZoomOut').addEventListener('click', () => {
+        camSpherical.radius = Math.min(14.0, camSpherical.radius + 0.55);
+        syncZoomSliderUI();
+      });
+
+      const panStep = 0.24;
+      document.getElementById('btnPanLeft').addEventListener('click', () => { camSpherical.targetX -= panStep; });
+      document.getElementById('btnPanRight').addEventListener('click', () => { camSpherical.targetX += panStep; });
+      document.getElementById('btnPanUp').addEventListener('click', () => { camSpherical.targetY += panStep; });
+      document.getElementById('btnPanDown').addEventListener('click', () => { camSpherical.targetY -= panStep; });
+
+      // Sliders & Dropdowns
+      document.getElementById('selectBellAlloy').addEventListener('change', (e) => {
+        state.alloy = e.target.value;
+        recomputeRayleighFrequencies();
+        syncModePillButtons();
+      });
+
+      const bindSlider = (id, valId, prop, fmtFn) => {
+        const el = document.getElementById(id);
+        const valEl = document.getElementById(valId);
+        el.addEventListener('input', () => {
+          state[prop] = parseFloat(el.value);
+          if (valEl && fmtFn) valEl.textContent = fmtFn(state[prop]);
+          recomputeRayleighFrequencies();
+          syncModePillButtons();
+        });
+      };
+
+      bindSlider('sliderBellDiameter', 'valBellDiameter', 'diameterCm', (v) => `${v} cm`);
+      bindSlider('sliderRimThickness', 'valRimThickness', 'rimThicknessMm', (v) => `${v.toFixed(1)} mm`);
+      bindSlider('sliderBowlDepth', 'valBowlDepth', 'depthRatio', (v) => `${v.toFixed(2)}×`);
+      bindSlider('sliderRimIncurve', 'valRimIncurve', 'rimIncurve', (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`);
+      bindSlider('sliderPujaSpeed', 'valPujaSpeed', 'pujaSpeedRevSec', (v) => `${v.toFixed(2)} rev/s`);
+      bindSlider('sliderPujaForce', 'valPujaForce', 'pujaNormalForceN', (v) => `${v.toFixed(1)} N`);
+      bindSlider('sliderWaterLevel', 'valWaterLevel', 'waterLevelPct', (v) => v === 0 ? '0% (Dry Bowl)' : `${v}% Filled`);
+      bindSlider('sliderSustainT60', 'valSustainT60', 'sustainT60', (v) => `${v.toFixed(1)} s`);
+      bindSlider('sliderRitualBpm', 'valRitualBpm', 'ritualBpm', (v) => `${v} BPM`);
+
+      // Header & Stage Action Buttons
+      document.getElementById('btnStrikeHeader').addEventListener('click', () => triggerBellRimStrike());
+      document.getElementById('btnStageStrikeNow').addEventListener('click', () => triggerBellRimStrike());
+      document.getElementById('btnDampHeader').addEventListener('click', () => dampStandingBell());
+
+      document.getElementById('btnAutoSingHeader').addEventListener('click', (e) => {
+        initAudio();
+        state.autoSingActive = !state.autoSingActive;
+        e.currentTarget.classList.toggle('btn-active-cyan', state.autoSingActive);
+      });
+
+      document.getElementById('btnQuickWater50').addEventListener('click', () => {
+        initAudio();
+        state.waterLevelPct = state.waterLevelPct > 10 ? 0 : 62;
+        document.getElementById('sliderWaterLevel').value = state.waterLevelPct;
+        document.getElementById('valWaterLevel').textContent =
+          state.waterLevelPct === 0 ? '0% (Dry Bowl)' : `${state.waterLevelPct}% Filled`;
+        recomputeRayleighFrequencies();
+        syncModePillButtons();
+      });
+
+      document.getElementById('btnQuickSpoutBoost').addEventListener('click', () => {
+        initAudio();
+        if (state.waterLevelPct < 40) {
+          state.waterLevelPct = 65;
+          document.getElementById('sliderWaterLevel').value = 65;
+          document.getElementById('valWaterLevel').textContent = '65% Filled';
+        }
+        state.autoSingActive = true;
+        document.getElementById('btnAutoSingHeader').classList.add('btn-active-cyan');
+        state.modeAmps[0] = 1.75;
+        state.modeAmps[1] = 0.65;
+        spawnFaradayDroplets(16);
+      });
+
+      document.getElementById('btnToggleNodalMeridians').addEventListener('click', (e) => {
+        state.showNodalMeridians = !state.showNodalMeridians;
+        e.currentTarget.classList.toggle('btn-active-amber', state.showNodalMeridians);
+      });
+
+      document.getElementById('btnClearSolo').addEventListener('click', () => {
+        state.soloModeIndex = -1;
+        syncModePillButtons();
+      });
+
+      document.getElementById('btnToggleRitualPulse').addEventListener('click', (e) => {
+        initAudio();
+        state.ritualActive = !state.ritualActive;
+        state.lastRitualStrikeSec = 0;
+        document.getElementById('ritualBadge').textContent = state.ritualActive ? 'ON' : 'OFF';
+        e.currentTarget.classList.toggle('btn-active-amber', state.ritualActive);
+      });
+
+      // Full-Screen Theater Mode Toggle (`F` or `Esc`)
+      const stageContainer = document.getElementById('bellStageContainer');
+      let isStageFullscreen = false;
+
+      function toggleFullScreenStage() {
+        isStageFullscreen = !isStageFullscreen;
+        stageContainer.classList.toggle('bell-fullscreen-stage', isStageFullscreen);
+        const label = isStageFullscreen ? '✕ Exit Full Screen [F]' : '⛶ Full Screen [F]';
+        document.getElementById('btnStageFullscreen').textContent = label;
+        if (isStageFullscreen && stageContainer.requestFullscreen) {
+          stageContainer.requestFullscreen().catch(() => {});
+        } else if (!isStageFullscreen && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setTimeout(() => {
+          syncViewportSize();
+          centerAndFitBell();
+        }, 60);
+      }
+
+      document.getElementById('btnFullscreenHeader').addEventListener('click', toggleFullScreenStage);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleFullScreenStage);
+
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && isStageFullscreen) {
+          isStageFullscreen = false;
+          stageContainer.classList.remove('bell-fullscreen-stage');
+          document.getElementById('btnStageFullscreen').textContent = '⛶ Full Screen [F]';
+        }
+        setTimeout(syncViewportSize, 60);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          triggerBellRimStrike();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullScreenStage();
+        } else if (e.key === 's' || e.key === 'S') {
+          document.getElementById('btnAutoSingHeader').click();
+        } else if (e.key === 'd' || e.key === 'D') {
+          dampStandingBell();
+        } else if (e.key === 'c' || e.key === 'C' || e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          centerAndFitBell();
+        } else if (e.key === '+' || e.key === '=') {
+          camSpherical.radius = Math.max(2.2, camSpherical.radius - 0.5);
+          syncZoomSliderUI();
+        } else if (e.key === '-' || e.key === '_') {
+          camSpherical.radius = Math.min(14.0, camSpherical.radius + 0.5);
+          syncZoomSliderUI();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          camSpherical.targetX -= panStep;
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          camSpherical.targetX += panStep;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          camSpherical.targetY += panStep;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          camSpherical.targetY -= panStep;
+        } else if (e.key === 'Escape' && isStageFullscreen) {
+          toggleFullScreenStage();
+        }
+      });
+
+      // -------------------------------------------------------------------------
+      // Lossless 44.1 kHz 16-Bit Stereo .WAV Exporter & .JSON Exporter
+      // -------------------------------------------------------------------------
+      document.getElementById('btnExportWav').addEventListener('click', () => {
+        const btn = document.getElementById('btnExportWav');
+        const origText = btn.textContent;
+        btn.textContent = '⏳ Rendering WAV...';
+        try {
+          const sampleRate = 44100;
+          const duration = 5.0;
+          const totalSamples = sampleRate * duration;
+          const leftBuf = new Float32Array(totalSamples);
+          const rightBuf = new Float32Array(totalSamples);
+
+          const decayRate = 6.908 / Math.max(3.0, state.sustainT60);
+          for (let i = 0; i < totalSamples; i++) {
+            const t = i / sampleRate;
+            let sigL = 0.0;
+            let sigR = 0.0;
+            // Bloom envelope if Auto-Sing is active, otherwise struck bell decay
+            const bloomEnv = state.autoSingActive
+              ? Math.min(1.0, 0.25 + t * 0.45)
+              : Math.exp(-decayRate * t);
+
+            for (let k = 0; k < 6; k++) {
+              const fA = state.modeFreqsWet[k];
+              const fB = fA + state.modeDoubletSplitHz[k];
+              const mWeight = (k === 0 ? 0.34 : 0.16 / (k + 1)) * Math.exp(-decayRate * k * 0.15 * t);
+              const sA = Math.sin(2 * Math.PI * fA * t) * mWeight * bloomEnv;
+              const sB = Math.sin(2 * Math.PI * fB * t) * mWeight * 0.72 * bloomEnv;
+              sigL += sA + sB;
+              sigR += sA - sB * 0.4;
+            }
+
+            leftBuf[i] = Math.max(-0.98, Math.min(0.98, sigL));
+            rightBuf[i] = Math.max(-0.98, Math.min(0.98, sigR));
+          }
+
+          const wavBuffer = new ArrayBuffer(44 + totalSamples * 4);
+          const view = new DataView(wavBuffer);
+          const writeStr = (off, str) => { for (let c = 0; c < str.length; c++) view.setUint8(off + c, str.charCodeAt(c)); };
+          writeStr(0, 'RIFF');
+          view.setUint32(4, 36 + totalSamples * 4, true);
+          writeStr(8, 'WAVE');
+          writeStr(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, 2, true);
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * 4, true);
+          view.setUint16(32, 4, true);
+          view.setUint16(34, 16, true);
+          writeStr(36, 'data');
+          view.setUint32(40, totalSamples * 4, true);
+
+          let offset = 44;
+          for (let i = 0; i < totalSamples; i++) {
+            view.setInt16(offset, leftBuf[i] * 32767, true);
+            view.setInt16(offset + 2, rightBuf[i] * 32767, true);
+            offset += 4;
+          }
+
+          const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `standing_bell_${state.archetype}_${Math.round(state.modeFreqsWet[0])}Hz.wav`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } finally {
+          btn.textContent = origText;
+        }
+      });
+
+      document.getElementById('btnExportJson').addEventListener('click', () => {
+        const payload = {
+          lab: 'KEISU-3D // Standing Bell, Rayleigh-Love Rim Modes & Faraday Spouting Lab',
+          timestamp: new Date().toISOString(),
+          archetype: state.archetype,
+          alloy: ALLOYS[state.alloy],
+          geometry: {
+            rimDiameterCm: state.diameterCm,
+            rimThicknessMm: state.rimThicknessMm,
+            depthRatio: state.depthRatio,
+            rimIncurve: state.rimIncurve,
+            waterLevelPct: state.waterLevelPct
+          },
+          hydrodynamics: {
+            rimAccelerationG: Number(state.rimAccelG.toFixed(3)),
+            faradayThresholdG: state.faradayThresholdG,
+            dropletSpoutingThresholdG: state.spoutingThresholdG
+          },
+          rayleighModes: RAYLEIGH_MODES.map((m, idx) => ({
+            mode: m.label,
+            nodalMeridians: m.n * 2,
+            dryFreqHz: Number(state.modeFreqsDry[idx].toFixed(2)),
+            wetFreqHz: Number(state.modeFreqsWet[idx].toFixed(2)),
+            doubletBeatHz: Number(state.modeDoubletSplitHz[idx].toFixed(2))
+          }))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `standing_bell_telemetry_${state.archetype}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // =========================================================================
+      // 10. MASTER 60 FPS ANIMATION LOOP & INITIAL SEED
+      // =========================================================================
+      buildRayleighModesGrid();
+      centerAndFitBell();
+
+      state.modeAmps[0] = 0.95;
+      state.modeAmps[1] = 0.42;
+      state.modeAmps[2] = 0.22;
+
+      let lastTimeMs = performance.now();
+
+      function animate(nowMs) {
+        requestAnimationFrame(animate);
+        const dt = (nowMs - lastTimeMs) * 0.001;
+        lastTimeMs = nowMs;
+        const timeSec = nowMs * 0.001;
+
+        stepStandingBellPhysics(dt);
+        updateAudioEngineFromPhysics();
+        update3DStandingBell(timeSec);
+        updateCameraTransform(timeSec);
+        renderer.render(scene, camera);
+        renderTelemetryCanvases();
+
+        // Update Header & HUD Readouts
+        document.getElementById('hdrFundHz').textContent = `${state.modeFreqsWet[0].toFixed(1)} Hz`;
+        const shiftPct = ((state.modeFreqsWet[0] - state.modeFreqsDry[0]) / state.modeFreqsDry[0]) * 100;
+        document.getElementById('hdrWaterShift').textContent =
+          state.waterLevelPct === 0 ? '(Dry)' : `(${shiftPct.toFixed(1)}% H₂O)`;
+        document.getElementById('hdrGammaG').textContent = `${state.rimAccelG.toFixed(2)} g`;
+        document.getElementById('hdrBeatHz').textContent = `${state.modeDoubletSplitHz[0].toFixed(2)} Hz`;
+
+        let hydroTxt = 'Calm Meniscus';
+        let fBadge = 'Γ < Γ_F';
+        if (state.waterLevelPct === 0) {
+          hydroTxt = 'Dry Vessel';
+          fBadge = 'Dry Mode';
+        } else if (state.rimAccelG > state.spoutingThresholdG) {
+          hydroTxt = 'Droplet Spouting!';
+          fBadge = 'Γ > Γ_d (Spout)';
+        } else if (state.rimAccelG > state.faradayThresholdG) {
+          hydroTxt = 'Faraday Waves (f/2)';
+          fBadge = 'Γ > Γ_F (Faraday)';
+        } else if (state.rimAccelG > 0.4) {
+          hydroTxt = 'Capillary Ripples';
+          fBadge = 'Γ_c < Γ < Γ_F';
+        }
+        document.getElementById('hdrHydroState').textContent = hydroTxt;
+        document.getElementById('badgeFaradayRegime').textContent = fBadge;
+
+        const chatterEl = document.getElementById('hudChatterState');
+        if (state.isChattering) {
+          chatterEl.textContent = `Stick-Slip Chatter! (${(state.chatterIntensity * 100).toFixed(0)}%)`;
+          chatterEl.className = 'text-rose-400 font-semibold';
+        } else {
+          chatterEl.textContent = 'Smooth Lock-In (No Chatter)';
+          chatterEl.className = 'text-emerald-300 font-semibold';
+        }
+      }
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

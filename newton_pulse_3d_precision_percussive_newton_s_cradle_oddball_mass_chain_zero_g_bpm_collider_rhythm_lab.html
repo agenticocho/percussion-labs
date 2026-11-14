@@ -1,0 +1,2640 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NEWTON-PULSE 3D // Precision Percussive Newton's Cradle, Oddball Mass-Chain, Zero-G BPM Collider &amp; Rhythm Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #04060c;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070a14;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060c;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .glass-panel {
+      background: rgba(10, 14, 24, 0.9);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .hud-pill {
+      background: rgba(6, 9, 18, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    /* Lock Three.js WebGL Canvas to 100% of container on Retina / HiDPI displays */
+    #threeCradleMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeCradleMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+    /* Full-Screen 3D Stage Mode */
+    .cradle-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: #03050a !important;
+    }
+    .btn-active-amber {
+      background: rgba(245, 158, 11, 0.22) !important;
+      border-color: rgba(245, 158, 11, 0.88) !important;
+      color: #fde68a !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+    }
+    .btn-active-cyan {
+      background: rgba(34, 211, 238, 0.2) !important;
+      border-color: rgba(34, 211, 238, 0.85) !important;
+      color: #a5f3fc !important;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.22);
+    }
+    .btn-active-emerald {
+      background: rgba(16, 185, 129, 0.22) !important;
+      border-color: rgba(16, 185, 129, 0.88) !important;
+      color: #a7f3d0 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+    }
+    .btn-active-violet {
+      background: rgba(168, 85, 247, 0.24) !important;
+      border-color: rgba(168, 85, 247, 0.88) !important;
+      color: #e9d5ff !important;
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.28);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#04060c] text-slate-100">
+
+  <!-- TOP SCIENTIFIC & RHYTHM TRANSPORT HEADER -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-3 py-2">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/25 via-rose-500/20 to-cyan-500/25 border border-amber-400/50 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <line x1="3" y1="3" x2="21" y2="3" stroke-linecap="round"/>
+            <line x1="6" y1="3" x2="4" y2="15" />
+            <line x1="11" y1="3" x2="11" y2="16" />
+            <line x1="16" y1="3" x2="16" y2="16" />
+            <circle cx="3.5" cy="17" r="2.3" fill="currentColor" />
+            <circle cx="11" cy="18" r="2.3" fill="currentColor" fill-opacity="0.45" />
+            <circle cx="16.5" cy="18" r="3.1" fill="currentColor" fill-opacity="0.8" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm md:text-base font-bold tracking-tight text-white">
+              NEWTON-PULSE 3D <span class="text-amber-400 font-normal">//</span> <span class="text-slate-300 font-medium">Precision Wavefront Cradle, Oddball Collider &amp; Zero-G BPM Lab</span>
+            </h1>
+            <span class="hidden xl:inline-block text-[10px] font-mono-tech uppercase px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              Exact k → k Wavefront • 70s Sustain • Zero-G BPM Lock
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">
+            Exact $k$-to-$k$ Equal-Mass Momentum Transfer • 70-Second Ring-Down • Zero-Gravity BPM-Locked Perpetual Collider • Oddball &amp; Binary Polyrhythms
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Physics & Rhythm Telemetry Pills -->
+      <div class="flex flex-wrap items-center gap-1.5 font-mono-tech text-xs">
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Tempo / Groove:</span>
+          <span id="hdrGrooveBpm" class="text-amber-400 font-semibold">120.0 BPM</span>
+          <span id="hdrHitsPerSec" class="text-[10px] text-emerald-400">(2.00 hits/s)</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Elapsed / Sustain:</span>
+          <span id="hdrElapsedSec" class="text-cyan-400 font-semibold">0.0s / 70s</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Amplitude:</span>
+          <span id="hdrEnergyPct" class="text-emerald-400 font-semibold">100.0%</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 hidden md:flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Momentum ∑mv:</span>
+          <span id="hdrMomentum" class="text-violet-400 font-semibold">+0.00 N·s</span>
+        </div>
+      </div>
+
+      <!-- Master Transport & Fullscreen Buttons -->
+      <div class="flex items-center gap-1.5">
+        <button id="btnLaunchHeader" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-semibold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition">
+          <span>⚡ Re-Launch</span>
+          <kbd class="px-1 py-0.2 bg-black/25 rounded text-[10px] font-mono-tech">[Space]</kbd>
+        </button>
+        <button id="btnPlayPauseHeader" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition">
+          ⏸ Pause <kbd class="text-[10px] font-mono-tech opacity-75">[P]</kbd>
+        </button>
+        <button id="btnCenterHeader" title="Center and fit the entire 3D Newton's cradle in the viewport [C]" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition">
+          ⌖ Center <kbd class="text-[10px] font-mono-tech opacity-75">[C]</kbd>
+        </button>
+        <button id="btnFullscreenHeader" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-1 transition">
+          <span>⛶ Full Screen</span>
+          <kbd class="text-[10px] font-mono-tech">[F]</kbd>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1920px] w-full mx-auto p-2.5 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+    <!-- LEFT & CENTER: 3D NEWTON'S CRADLE STAGE + 3-PANEL TELEMETRY STRIP (8 COLS) -->
+    <section class="lg:col-span-8 flex flex-col gap-2.5">
+
+      <!-- 3D WEBGL NEWTON'S CRADLE STAGE CONTAINER -->
+      <div id="cradleStageContainer" class="relative w-full h-[540px] xl:h-[620px] rounded-xl overflow-hidden border border-slate-800/90 bg-[#03050a] shadow-2xl flex flex-col justify-between">
+
+        <!-- Three.js Canvas Mount -->
+        <div id="threeCradleMount" class="cursor-grab active:cursor-grabbing"></div>
+
+        <!-- TOP FLOATING IN-STAGE HUD (Always accessible in Full-Screen) -->
+        <div class="relative z-10 p-3 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+
+          <!-- Left HUD: 8 Rhythm & Oddball Cradle Presets + Gravity/Perpetual Drive Mode + Material -->
+          <div class="flex flex-col gap-1.5 pointer-events-auto max-w-2xl">
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Cradle Preset:</span>
+              <button data-preset="classic_1to1" class="preset-btn btn-active-amber px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                1. Classic 5-Ball (70s Precision)
+              </button>
+              <button data-preset="classic_2to2" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                2. Classic 2-Ball Transfer (2→2)
+              </button>
+              <button data-preset="classic_3to3" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                3. Classic 3-Ball Transfer (3→3)
+              </button>
+              <button data-preset="oddball_center" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                4. Giant Center Oddball (4m)
+              </button>
+              <button data-preset="oddball_end_flam" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                5. Heavy End Striker (3.5m Flam)
+              </button>
+              <button data-preset="binary_2v1" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                6. Binary 2L vs 1R Stream
+              </button>
+              <button data-preset="newtons_bells" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                7. Newton's Bells Choir
+              </button>
+              <button data-preset="quad_4way" class="preset-btn px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                8. 4-Way Orthogonal X-Z
+              </button>
+            </div>
+
+            <!-- Drive Mode Bar: Realistic 70s Gravity vs Perpetual BPM Gravity vs Zero-Gravity Perpetual BPM -->
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Gravity &amp; Drive:</span>
+              <button data-drive="realistic_70s" class="drive-btn btn-active-emerald px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                🌍 Realistic Gravity (70s Ring-Down)
+              </button>
+              <button data-drive="perpetual_grav" class="drive-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                ♾️ Perpetual Gravity (BPM-Locked)
+              </button>
+              <button data-drive="zerog_bpm" class="drive-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                🚀 Zero-Gravity Perpetual (g = 0, BPM-Locked)
+              </button>
+            </div>
+
+            <!-- Material & Acoustic Design Bar -->
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Material:</span>
+              <button data-mat="steel" class="mat-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                ⚙️ Stainless Steel (70s)
+              </button>
+              <button data-mat="billiard" class="mat-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                🎱 Phenolic Billiard Balls
+              </button>
+              <button data-mat="bowling" class="mat-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                🎳 Bowling Spheres (808 Sub)
+              </button>
+              <button data-mat="bells" class="mat-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                🔔 Suspended "Newton's Bells"
+              </button>
+            </div>
+          </div>
+
+          <!-- Right HUD: Drag Mode, Camera Angles, Zoom & Centering Bar -->
+          <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <button id="btnInteractPull" class="btn-active-amber px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                ✋ Drag 3D Ball = Pull &amp; Drop
+              </button>
+              <button id="btnInteractOrbit" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🔄 Drag = 3D Orbit
+              </button>
+              <button id="btnInteractPan" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                ✥ Drag = Pan / Center
+              </button>
+              <button id="btnStageFullscreen" class="px-2.5 py-1 rounded-md text-xs font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 transition">
+                ⛶ Full Screen [F]
+              </button>
+            </div>
+
+            <!-- 3D Camera Angles -->
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <span class="text-[10px] font-mono-tech uppercase text-slate-400">Camera:</span>
+              <button data-cam="front" class="cam-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                1. Front Elevation
+              </button>
+              <button data-cam="isometric" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                2. Isometric 3D
+              </button>
+              <button data-cam="axial" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                3. End-On Bifilar V
+              </button>
+              <button data-cam="top" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                4. Top-Down (X-Z Cross)
+              </button>
+              <button data-cam="orbit" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                5. 360° Orbit
+              </button>
+            </div>
+
+            <!-- Dedicated Zoom & Manual Centering / Pan Controls -->
+            <div class="hud-pill px-2 py-1 rounded-md flex flex-wrap items-center gap-1.5 text-[11px] font-mono-tech">
+              <button id="btnCenterStage" title="Center and fit the entire Newton's cradle in the viewport [C]" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 font-semibold transition">
+                ⌖ Center &amp; Fit [C]
+              </button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Zoom:</span>
+              <button id="btnZoomIn" title="Zoom In" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">+</button>
+              <input id="sliderStageZoom" type="range" min="3.0" max="20.0" step="0.2" value="8.2" class="w-20" title="Camera Distance (Drag right to zoom out)" />
+              <button id="btnZoomOut" title="Zoom Out" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">−</button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Pan:</span>
+              <button id="btnPanLeft" title="Pan Left" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">◀</button>
+              <button id="btnPanUp" title="Pan Up" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▲</button>
+              <button id="btnPanDown" title="Pan Down" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▼</button>
+              <button id="btnPanRight" title="Pan Right" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM FLOATING IN-STAGE HUD: Exact k-Ball Launch Triggers & Live Collision Readout -->
+        <div class="relative z-10 p-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
+
+          <!-- Live Collision & Momentum Transfer Readout -->
+          <div class="hud-pill px-3 py-2 rounded-lg pointer-events-auto flex flex-wrap items-center gap-3 text-xs font-mono-tech">
+            <div>
+              <span class="text-slate-400 text-[10px] block">WAVEFRONT TRANSFER &amp; DRUM VOICE</span>
+              <span id="hudLastCollision" class="text-amber-300 font-semibold">1 Left → 1 Right Exact Transfer (Middle Balls At Rest)</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">CHAIN CONFIGURATION</span>
+              <span id="hudChainConfig" class="text-cyan-300 font-semibold">Equal-Mass [1m, 1m, 1m, 1m, 1m]</span>
+            </div>
+          </div>
+
+          <!-- Instant Stream Launch Buttons (1L, 2L, 3L, 4L, Binary 1v1, Binary 2v1, Syncopated) -->
+          <div class="hud-pill px-2.5 py-1.5 rounded-lg pointer-events-auto flex flex-wrap items-center gap-1 text-[11px] font-mono-tech">
+            <span class="text-slate-400 text-[10px] mr-1">LAUNCH:</span>
+            <button data-launch="1L" class="launch-quick-btn btn-active-amber px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300">
+              1 Ball (1→1)
+            </button>
+            <button data-launch="2L" class="launch-quick-btn px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300">
+              2 Balls (2→2)
+            </button>
+            <button data-launch="3L" class="launch-quick-btn px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300">
+              3 Balls (3→3)
+            </button>
+            <button data-launch="4L" class="launch-quick-btn px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700 text-amber-300">
+              4 Balls (4→4)
+            </button>
+            <button data-launch="bin_1v1" class="launch-quick-btn px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300">
+              Binary 1L+1R
+            </button>
+            <button data-launch="bin_2v1" class="launch-quick-btn px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300">
+              Binary 2L+1R
+            </button>
+            <button data-launch="bin_phase" class="launch-quick-btn px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 text-emerald-300">
+              Phase Offset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM 3-PANEL SCIENTIFIC & RHYTHM TELEMETRY STRIP -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+
+        <!-- Panel A: Scrolling Percussive Beat Matrix & Drum Voice Waterfall -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-amber-300 uppercase tracking-wider font-mono-tech">
+                A. Percussive Beat &amp; Polyrhythm Roll
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Real-time collision timeline (Kick, Snare, Oddball Bell, Hi-Hat)
+              </p>
+            </div>
+            <span id="badgeRhythmSignature" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              1→1 Precision Pulse
+            </span>
+          </div>
+          <canvas id="canvasBeatRoll" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel B: Momentum p_i = m_i v_i & Energy Partition -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-cyan-300 uppercase tracking-wider font-mono-tech">
+                B. Momentum p_i = m_i v_i &amp; Energy Split
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Per-ball momentum vectors + Kinetic vs. Potential partition
+              </p>
+            </div>
+            <span id="badgeEnergyMode" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              70s Ring-Down
+            </span>
+          </div>
+          <canvas id="canvasMomentumBars" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel C: Wavefront Impulse Cascade & Phase Portrait -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-emerald-300 uppercase tracking-wider font-mono-tech">
+                C. Wavefront Impulse &amp; Phase Portrait
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Contact shockwave history &amp; outer-ball (θ₁, ω₁) vs (θ_N, ω_N) orbit
+              </p>
+            </div>
+            <span id="badgeContactTau" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              Dispersion 0.0%
+            </span>
+          </div>
+          <canvas id="canvasHertzWave" width="420" height="150" class="w-full h-[142px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT CONTROL DECK: ASYMMETRIC ODDBALL SCULPTOR, BINARY STREAMS, ZERO-G BPM & DRUM SYNTH (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-2.5">
+
+      <!-- CARD 1: ASYMMETRIC & ODDBALL MASS-CHAIN ARCHITECT -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono-tech">
+              1. Oddball &amp; Equal-Mass Chain Architect
+            </h2>
+            <p class="text-[10px] text-slate-400">Click any ball slot below to cycle its mass &amp; size (0.5m → 1m → 2.5m → 4.0m)</p>
+          </div>
+          <select id="selectTopologyMode" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] font-mono-tech text-cyan-300 focus:outline-none">
+            <option value="linear">1D Linear Bifilar Cradle</option>
+            <option value="quad_cross">2D 4-Way Orthogonal X-Z Collider</option>
+          </select>
+        </div>
+
+        <!-- Interactive Per-Ball Mass & Size Matrix -->
+        <div id="ballMassMatrix" class="grid grid-cols-7 gap-1 font-mono-tech text-[10px]">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Quick Mass Distribution Templates -->
+        <div class="grid grid-cols-3 gap-1 text-[11px]">
+          <button data-masspat="uniform" class="masspat-btn btn-active-amber py-1 px-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300">
+            Uniform [1m..1m]
+          </button>
+          <button data-masspat="center_giant" class="masspat-btn py-1 px-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300">
+            Center Giant [..4m..]
+          </button>
+          <button data-masspat="heavy_left" class="masspat-btn py-1 px-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300">
+            Heavy End [3.5m,1m..]
+          </button>
+          <button data-masspat="dimer" class="masspat-btn py-1 px-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300">
+            Dimer [2.5m, 0.8m..]
+          </button>
+          <button data-masspat="tapered" class="masspat-btn py-1 px-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300">
+            Tapered Horn [4m→0.5m]
+          </button>
+          <button data-masspat="bookends" class="masspat-btn py-1 px-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300">
+            Heavy Bookends [3m..3m]
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs pt-1">
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Ball Count N:</span>
+              <span id="valBallCount" class="text-amber-300 font-semibold">5 Balls</span>
+            </div>
+            <input id="sliderBallCount" type="range" min="3" max="9" step="1" value="5" class="w-full" />
+          </div>
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">String Length L:</span>
+              <span id="valStringLen" class="text-cyan-300 font-semibold">1.80 m</span>
+            </div>
+            <input id="sliderStringLen" type="range" min="0.50" max="3.80" step="0.05" value="1.80" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: BINARY & MULTI-BALL STREAM LAUNCHER -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono-tech">
+            2. Multi-Ball (1→1, 2→2, 3→3) &amp; Binary Streams
+          </h2>
+          <button id="btnFireStreamsNow" class="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-[11px] transition">
+            ⚡ Re-Launch Now
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Left Stream Count k_L -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Left Launch Balls (k_L):</span>
+              <span id="valLeftCount" class="text-amber-300 font-semibold">1 Ball (1→1)</span>
+            </div>
+            <input id="sliderLeftCount" type="range" min="0" max="4" step="1" value="1" class="w-full" />
+          </div>
+
+          <!-- Right Stream Count k_R (Binary Opposite Stream) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Right Binary Balls (k_R):</span>
+              <span id="valRightCount" class="text-cyan-300 font-semibold">0 Balls (Off)</span>
+            </div>
+            <input id="sliderRightCount" type="range" min="0" max="4" step="1" value="0" class="w-full" />
+          </div>
+
+          <!-- Left Release Angle theta_L -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Left Pull Angle θ_L:</span>
+              <span id="valLeftAngle" class="text-amber-300 font-semibold">50°</span>
+            </div>
+            <input id="sliderLeftAngle" type="range" min="15" max="75" step="1" value="50" class="w-full" />
+          </div>
+
+          <!-- Right Release Angle -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Right Pull Angle θ_R:</span>
+              <span id="valRightAngle" class="text-cyan-300 font-semibold">45°</span>
+            </div>
+            <input id="sliderRightAngle" type="range" min="15" max="75" step="1" value="45" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: 70-SECOND SUSTAIN, ZERO-GRAVITY PERPETUAL & BPM CLOCK LOCK -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono-tech">
+            3. 70s Ring-Down, Zero-G Perpetual &amp; BPM Lock
+          </h2>
+          <select id="selectDriveMode" class="bg-slate-900 border border-emerald-500/50 rounded px-2 py-0.5 text-[11px] font-mono-tech text-emerald-300 focus:outline-none">
+            <option value="realistic_70s">🌍 Realistic Gravity (70s Ring-Down)</option>
+            <option value="perpetual_grav">♾️ Perpetual Gravity (BPM-Locked)</option>
+            <option value="zerog_bpm">🚀 Zero-G Perpetual (g=0, BPM-Locked)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Target BPM Lock Slider -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Target Beat Tempo:</span>
+              <span id="valTargetBpm" class="text-amber-300 font-semibold">120 BPM</span>
+            </div>
+            <input id="sliderTargetBpm" type="range" min="40" max="240" step="1" value="120" class="w-full" />
+          </div>
+
+          <!-- Ring-Down Sustain Duration (15s to 120s, default 70s) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Ring-Down Duration:</span>
+              <span id="valRingDuration" class="text-emerald-300 font-semibold">70 s (High-Q)</span>
+            </div>
+            <input id="sliderRingDuration" type="range" min="15" max="120" step="5" value="70" class="w-full" />
+          </div>
+
+          <!-- Gravity Field g (or 0 in Zero-G mode) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Gravity Field (g):</span>
+              <span id="valGravity" class="text-cyan-300 font-semibold">9.81 m/s² (Earth)</span>
+            </div>
+            <input id="sliderGravity" type="range" min="1.62" max="24.80" step="0.10" value="9.81" class="w-full" />
+          </div>
+
+          <!-- Hutzler Dispersion Factor (0% = Exact k->k Transfer, >0% = Rocking Cradle Dispersion) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Hertz Dispersion σ:</span>
+              <span id="valDispersion" class="text-violet-300 font-semibold">0.0% (Exact k→k)</span>
+            </div>
+            <input id="sliderDispersion" type="range" min="0" max="25" step="0.5" value="0" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: PERCUSSIVE DRUM KIT VOICE MAPPER & BPM-LOCKED WAV/JSON EXPORT -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-violet-400 font-mono-tech">
+            4. Collision Drum Kit Synth &amp; BPM WAV Export
+          </h2>
+          <select id="selectAudioKit" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] font-mono-tech text-amber-300 focus:outline-none">
+            <option value="hybrid_kit">Physical Material + Drum Kit Layer</option>
+            <option value="pure_material">Pure Acoustic Material (Steel/Wood/Bell)</option>
+            <option value="analog_808">TR-808 / Modular Percussion Kit</option>
+            <option value="gamelan_bells">Pitched Newton's Bells &amp; Agogo Choir</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 pt-1">
+          <button id="btnExportWav" class="py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-mono-tech font-semibold transition">
+            ⬇ Export BPM Loop (.WAV)
+          </button>
+          <button id="btnExportJson" class="py-1.5 px-2.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-mono-tech font-semibold transition">
+            ⬇ Export Cradle (.JSON)
+          </button>
+        </div>
+      </div>
+
+      <!-- LITERATURE & PHYSICS CITATIONS FOOTER -->
+      <div class="glass-panel rounded-xl px-3 py-2 text-[11px] text-slate-400 leading-relaxed">
+        <span class="text-slate-200 font-semibold font-mono-tech">Collision Physics References:</span>
+        Sequential wavefront impulse propagation, unequal-mass oddball cascades, and dispersion grounded in
+        <a href="https://www.researchgate.net/publication/225227764_Newton's_Cradle_in_Physics_Education" target="_blank" rel="noopener" class="text-cyan-400 hover:underline">Herrmann &amp; Seitz (1982)</a>,
+        <a href="https://openresearch-repository.anu.edu.au/bitstreams/9491c276-c388-42a0-9859-cf02240166b6/download" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Hutzler et al. (2004, "Rocking Newton's cradle")</a>,
+        <a href="https://www.physics.purdue.edu/demos/display_page.php?item=1N-12" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Purdue 1N-12 Unequal-Mass Cradle</a>,
+        and <a href="https://royalsocietypublishing.org/rsta/article/376/2127/20170130/115665/Waves-in-strongly-nonlinear-discrete-systemsWaves" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">Sen &amp; Nesterenko Solitary Granular Chains (2018)</a>.
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- COMPLETE APPLICATION LOGIC: EXACT SEQUENTIAL WAVEFRONT COLLIDER + 70s SUSTAIN + ZERO-G BPM LOCK -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. MATERIAL & CRADLE PRESET DEFINITIONS
+      // =========================================================================
+      const MATERIALS = {
+        steel: {
+          name: 'Hardened Stainless Steel (High-Q 70s)',
+          ringDurationSec: 70,
+          colorHex: 0xdbeafe,
+          metalness: 0.92,
+          roughness: 0.12,
+          baseClickFreq: 3400
+        },
+        billiard: {
+          name: 'Phenolic Resin Billiard Balls',
+          ringDurationSec: 45,
+          colorHex: 0xfef08a,
+          metalness: 0.12,
+          roughness: 0.18,
+          baseClickFreq: 1650
+        },
+        bowling: {
+          name: 'High-Mass Urethane Bowling Spheres',
+          ringDurationSec: 35,
+          colorHex: 0x38bdf8,
+          metalness: 0.25,
+          roughness: 0.28,
+          baseClickFreq: 520
+        },
+        bells: {
+          name: 'Suspended Cast Bronze "Newton\'s Bells"',
+          ringDurationSec: 65,
+          colorHex: 0xf59e0b,
+          metalness: 0.86,
+          roughness: 0.22,
+          baseClickFreq: 1180
+        }
+      };
+
+      const BILLIARD_PALETTE = [0xfacc15, 0x2563eb, 0xdc2626, 0x7c3aed, 0xea580c, 0x16a34a, 0x991b1b, 0x1e293b, 0x06b6d4];
+
+      const CRADLE_PRESETS = {
+        classic_1to1: {
+          id: 'classic_1to1',
+          label: 'Classic 5-Ball Equal-Mass Cradle (1→1 Transfer, 70s Sustain)',
+          topology: 'linear',
+          material: 'steel',
+          masses: [1.0, 1.0, 1.0, 1.0, 1.0],
+          leftCount: 1,
+          rightCount: 0,
+          leftAngleDeg: 50,
+          rightAngleDeg: 45,
+          rightPhaseDelay: 0.0,
+          rhythmTag: '1→1 Exact Isochronous Pulse'
+        },
+        classic_2to2: {
+          id: 'classic_2to2',
+          label: 'Classic 5-Ball 2-Ball Launch (2→2 Transfer, Center Ball Still)',
+          topology: 'linear',
+          material: 'steel',
+          masses: [1.0, 1.0, 1.0, 1.0, 1.0],
+          leftCount: 2,
+          rightCount: 0,
+          leftAngleDeg: 50,
+          rightAngleDeg: 45,
+          rightPhaseDelay: 0.0,
+          rhythmTag: '2→2 Paired Momentum Transfer'
+        },
+        classic_3to3: {
+          id: 'classic_3to3',
+          label: 'Classic 5-Ball 3-Ball Launch (3→3 Shared-Center Transfer)',
+          topology: 'linear',
+          material: 'steel',
+          masses: [1.0, 1.0, 1.0, 1.0, 1.0],
+          leftCount: 3,
+          rightCount: 0,
+          leftAngleDeg: 50,
+          rightAngleDeg: 45,
+          rightPhaseDelay: 0.0,
+          rhythmTag: '3→3 Shared-Center Transfer'
+        },
+        oddball_center: {
+          id: 'oddball_center',
+          label: 'Giant Central Oddball [1m, 1m, 4m, 1m, 1m]',
+          topology: 'linear',
+          material: 'steel',
+          masses: [1.0, 1.0, 4.0, 1.0, 1.0],
+          leftCount: 1,
+          rightCount: 0,
+          leftAngleDeg: 54,
+          rightAngleDeg: 45,
+          rightPhaseDelay: 0.0,
+          rhythmTag: 'Oddball Syncopated Polyrhythm'
+        },
+        oddball_end_flam: {
+          id: 'oddball_end_flam',
+          label: 'Heavy End Striker [3.5m, 1m, 1m, 1m, 1m]',
+          topology: 'linear',
+          material: 'steel',
+          masses: [3.5, 1.0, 1.0, 1.0, 1.0],
+          leftCount: 1,
+          rightCount: 0,
+          leftAngleDeg: 48,
+          rightAngleDeg: 45,
+          rightPhaseDelay: 0.0,
+          rhythmTag: 'Multi-Ball Flam & Drag Roll'
+        },
+        binary_2v1: {
+          id: 'binary_2v1',
+          label: 'Binary Opposing Streams (2 Left vs 1 Right)',
+          topology: 'linear',
+          material: 'billiard',
+          masses: [1.0, 1.0, 1.0, 1.0, 1.0],
+          leftCount: 2,
+          rightCount: 1,
+          leftAngleDeg: 50,
+          rightAngleDeg: 50,
+          rightPhaseDelay: 0.0,
+          rhythmTag: 'Binary 2L⇄1R Counter-Stream'
+        },
+        newtons_bells: {
+          id: 'newtons_bells',
+          label: 'Suspended "Newton\'s Bells" Bronze Choir',
+          topology: 'linear',
+          material: 'bells',
+          masses: [2.5, 1.0, 1.0, 2.5, 1.0],
+          leftCount: 1,
+          rightCount: 1,
+          leftAngleDeg: 52,
+          rightAngleDeg: 46,
+          rightPhaseDelay: 0.35,
+          rhythmTag: 'Harmonic Bell & Clapper Ostinato'
+        },
+        quad_4way: {
+          id: 'quad_4way',
+          label: '4-Way Orthogonal X-Z Cross-Cradle Collider',
+          topology: 'quad_cross',
+          material: 'steel',
+          masses: [1.0, 1.0, 1.0, 1.0, 1.0],
+          leftCount: 1,
+          rightCount: 0,
+          leftAngleDeg: 52,
+          rightAngleDeg: 48,
+          rightPhaseDelay: 0.0,
+          rhythmTag: 'Quad-Stream X-Z Polyrhythm'
+        }
+      };
+
+      // =========================================================================
+      // 2. CENTRAL SIMULATION STATE
+      // =========================================================================
+      const state = {
+        presetId: 'classic_1to1',
+        topology: 'linear',          // 'linear' or 'quad_cross'
+        driveMode: 'realistic_70s',  // 'realistic_70s' | 'perpetual_grav' | 'zerog_bpm'
+        material: 'steel',           // 'steel', 'billiard', 'bowling', 'bells'
+        audioKit: 'hybrid_kit',
+
+        isPlaying: true,
+        targetBpm: 120,
+        ringDurationSec: 70,         // High-quality 70-second ring-down default!
+        stringLenM: 1.80,
+        gravityG: 9.81,
+        dispersionPct: 0.0,          // 0.0% = exact 1->1, 2->2, 3->3 momentum transfer
+
+        leftCount: 1,
+        rightCount: 0,
+        leftAngleDeg: 50,
+        rightAngleDeg: 45,
+        rightPhaseDelay: 0.0,
+
+        masses: [1.0, 1.0, 1.0, 1.0, 1.0],
+        ballsX: [],
+        ballsZ: [],
+
+        interactMode: 'pull',        // 'pull', 'orbit', 'pan'
+        cameraPreset: 'front',
+        draggedBall: null,
+
+        // Telemetry & Timing
+        elapsedSinceLaunchSec: 0.0,
+        initialMaxAngleRad: 0.87,
+        currentMaxAngleRad: 0.87,
+        currentKineticEnergy: 0.0,
+        currentPotentialEnergy: 0.0,
+        currentTotalEnergy: 1.0,
+        initialTotalEnergy: 1.0,
+        totalMomentum: 0.0,
+        lastImpulseMag: 0.0,
+
+        beatEvents: [],
+        impulseHistory: [],
+        phaseTrailLeft: [],
+        phaseTrailRight: []
+      };
+
+      function radiusFromMass(m) {
+        return 0.24 * Math.pow(Math.max(0.35, m), 1 / 3);
+      }
+
+      function ellipticPeriodFactor(theta0Rad) {
+        const s2 = theta0Rad * theta0Rad;
+        return 1.0 + (1.0 / 16.0) * s2 + (11.0 / 3072.0) * s2 * s2;
+      }
+
+      function getEffectiveGravityOverL() {
+        const beatIntervalSec = 60.0 / Math.max(20, state.targetBpm);
+        if (state.driveMode === 'perpetual_grav') {
+          const thetaRef = (state.leftAngleDeg * Math.PI) / 180.0;
+          const ellFactor = ellipticPeriodFactor(thetaRef);
+          const halfPeriod = beatIntervalSec;
+          const omega0 = (Math.PI * ellFactor) / Math.max(0.08, halfPeriod);
+          return omega0 * omega0;
+        }
+        return state.gravityG / Math.max(0.25, state.stringLenM);
+      }
+
+      function rebuildCradleChains() {
+        const N = state.masses.length;
+        state.ballsX = [];
+
+        const radii = state.masses.map(radiusFromMass);
+        const pivotX = new Float64Array(N);
+        pivotX[0] = 0.0;
+        for (let i = 1; i < N; i++) {
+          pivotX[i] = pivotX[i - 1] + radii[i - 1] + radii[i];
+        }
+        const centerOffset = 0.5 * (pivotX[0] + pivotX[N - 1]);
+        for (let i = 0; i < N; i++) {
+          pivotX[i] -= centerOffset;
+        }
+
+        for (let i = 0; i < N; i++) {
+          state.ballsX.push({
+            idx: i,
+            axis: 'X',
+            mass: state.masses[i],
+            radius: radii[i],
+            pivotPos: pivotX[i],
+            theta: 0.0,
+            omega: 0.0,
+            glow: 0.0,
+            compression: 0.0
+          });
+        }
+
+        state.ballsZ = [];
+        if (state.topology === 'quad_cross') {
+          const midIdx = Math.floor(N / 2);
+          for (let j = 0; j < N; j++) {
+            const m = j === midIdx ? state.masses[midIdx] : 1.0;
+            const r = radiusFromMass(m);
+            state.ballsZ.push({
+              idx: j,
+              axis: 'Z',
+              isSharedCenter: j === midIdx,
+              mass: m,
+              radius: r,
+              pivotPos: pivotX[j] - pivotX[midIdx],
+              theta: 0.0,
+              omega: 0.0,
+              glow: 0.0,
+              compression: 0.0
+            });
+          }
+        }
+
+        applyLaunchStreamConfiguration();
+        rebuildThreeCradleMeshes();
+        renderBallMassMatrixUI();
+        updateChainConfigHudLabel();
+      }
+
+      function applyLaunchStreamConfiguration() {
+        const N = state.ballsX.length;
+        for (let i = 0; i < N; i++) {
+          state.ballsX[i].theta = 0.0;
+          state.ballsX[i].omega = 0.0;
+          state.ballsX[i].glow = 0.0;
+          state.ballsX[i].compression = 0.0;
+        }
+
+        const kL = Math.min(N, state.leftCount);
+        const kR = Math.min(N - kL, state.rightCount);
+        const angL = -(state.leftAngleDeg * Math.PI) / 180.0;
+        const angR = (state.rightAngleDeg * Math.PI) / 180.0;
+
+        const beatIntervalSec = 60.0 / Math.max(20, state.targetBpm);
+        const zeroGOmegaMag = (2.0 * Math.abs(angL)) / Math.max(0.08, beatIntervalSec);
+
+        for (let i = 0; i < kL; i++) {
+          state.ballsX[i].theta = angL;
+          state.ballsX[i].omega = state.driveMode === 'zerog_bpm' ? zeroGOmegaMag : 0.0;
+        }
+
+        for (let i = 0; i < kR; i++) {
+          const idx = N - 1 - i;
+          if (state.rightPhaseDelay > 0.05) {
+            state.ballsX[idx].theta = angR * (1.0 - state.rightPhaseDelay * 0.55);
+            state.ballsX[idx].omega = state.driveMode === 'zerog_bpm'
+              ? -zeroGOmegaMag
+              : -Math.sqrt(getEffectiveGravityOverL()) * angR * state.rightPhaseDelay;
+          } else {
+            state.ballsX[idx].theta = angR;
+            state.ballsX[idx].omega = state.driveMode === 'zerog_bpm' ? -zeroGOmegaMag : 0.0;
+          }
+        }
+
+        if (state.topology === 'quad_cross' && state.ballsZ.length > 0) {
+          const NZ = state.ballsZ.length;
+          for (let j = 0; j < NZ; j++) {
+            state.ballsZ[j].theta = 0.0;
+            state.ballsZ[j].omega = 0.0;
+          }
+          const omegaPeak = state.driveMode === 'zerog_bpm'
+            ? zeroGOmegaMag
+            : Math.sqrt(2.0 * getEffectiveGravityOverL() * (1.0 - Math.cos(angL)));
+          state.ballsZ[0].theta = 0.0;
+          state.ballsZ[0].omega = omegaPeak;
+        }
+
+        state.elapsedSinceLaunchSec = 0.0;
+        state.initialMaxAngleRad = Math.max(0.1, Math.abs(angL), kR > 0 ? Math.abs(angR) : 0.1);
+        state.phaseTrailLeft.length = 0;
+        state.phaseTrailRight.length = 0;
+        computeSystemEnergies();
+        state.initialTotalEnergy = Math.max(0.001, state.currentTotalEnergy);
+      }
+
+      function updateChainConfigHudLabel() {
+        const massStr = state.masses.map((m) => `${m}m`).join(', ');
+        const isUniform = state.masses.every((m) => Math.abs(m - state.masses[0]) < 0.01);
+        const prefix = state.topology === 'quad_cross' ? '4-Way X-Z Cross' : (isUniform ? 'Equal-Mass' : 'Oddball Chain');
+        document.getElementById('hudChainConfig').textContent = `${prefix} [${massStr}]`;
+      }
+
+      // =========================================================================
+      // 3. EXACT SEQUENTIAL WAVEFRONT COLLISION ENGINE (1->1, 2->2, 3->3 + ODDBALL)
+      // =========================================================================
+      function stepCradlePhysics(dtFrame) {
+        if (!state.isPlaying) return;
+
+        const SUBSTEPS = 32;
+        const dtReal = Math.min(0.033, Math.max(0.0005, dtFrame));
+        state.elapsedSinceLaunchSec += dtReal;
+        const dt = dtReal / SUBSTEPS;
+
+        const gOverL = getEffectiveGravityOverL();
+        const isZeroG = state.driveMode === 'zerog_bpm';
+        const isPerpetual = (state.driveMode === 'perpetual_grav' || state.driveMode === 'zerog_bpm');
+
+        const ampDecayRate = isPerpetual ? 0.0 : (2.9957 / Math.max(10.0, state.ringDurationSec));
+        const substepDampFactor = Math.exp(-ampDecayRate * dt);
+        const ePair = 1.0 - (state.dispersionPct * 0.004);
+        const wallAngleRad = (Math.max(state.leftAngleDeg, state.rightAngleDeg) * Math.PI) / 180.0;
+
+        let maxImpulseThisFrame = 0.0;
+
+        for (let s = 0; s < SUBSTEPS; s++) {
+          const impX = stepChainWavefrontSubstep(state.ballsX, dt, gOverL, isZeroG, wallAngleRad, substepDampFactor, ePair, 'X');
+          if (impX > maxImpulseThisFrame) maxImpulseThisFrame = impX;
+
+          if (state.topology === 'quad_cross' && state.ballsZ.length > 0) {
+            const impZ = stepChainWavefrontSubstep(state.ballsZ, dt, gOverL, isZeroG, wallAngleRad, substepDampFactor, ePair, 'Z');
+            if (impZ > maxImpulseThisFrame) maxImpulseThisFrame = impZ;
+          }
+        }
+
+        const glowDecay = Math.exp(-dtReal * 8.0);
+        state.ballsX.forEach((b) => { b.glow *= glowDecay; b.compression *= 0.80; });
+        state.ballsZ.forEach((b) => { b.glow *= glowDecay; b.compression *= 0.80; });
+
+        if (maxImpulseThisFrame > 0) {
+          state.lastImpulseMag = maxImpulseThisFrame * 140.0;
+        } else {
+          state.lastImpulseMag *= 0.85;
+        }
+        state.impulseHistory.push(state.lastImpulseMag);
+        if (state.impulseHistory.length > 160) state.impulseHistory.shift();
+
+        if (state.ballsX.length >= 2) {
+          const bFirst = state.ballsX[0];
+          const bLast = state.ballsX[state.ballsX.length - 1];
+          state.phaseTrailLeft.push({ th: bFirst.theta, om: bFirst.omega * 0.25 });
+          state.phaseTrailRight.push({ th: bLast.theta, om: bLast.omega * 0.25 });
+          if (state.phaseTrailLeft.length > 90) {
+            state.phaseTrailLeft.shift();
+            state.phaseTrailRight.shift();
+          }
+        }
+
+        computeSystemEnergies();
+      }
+
+      function stepChainWavefrontSubstep(chain, dt, gOverL, isZeroG, wallAngleRad, substepDampFactor, ePair, axisLabel) {
+        const N = chain.length;
+        let peakImpulse = 0.0;
+
+        // 1. Advance free pendulum swing (or constant-velocity Zero-G coasting)
+        for (let i = 0; i < N; i++) {
+          const b = chain[i];
+          if (state.draggedBall === b) {
+            b.omega = 0.0;
+            continue;
+          }
+          if (!isZeroG) {
+            const alpha = -gOverL * Math.sin(b.theta);
+            b.omega = (b.omega + alpha * dt) * substepDampFactor;
+          }
+          b.theta += b.omega * dt;
+
+          if (isZeroG) {
+            if (b.theta < -wallAngleRad && b.omega < 0) {
+              b.theta = -wallAngleRad - (b.theta + wallAngleRad);
+              b.omega = -b.omega;
+              b.glow = 0.65;
+            } else if (b.theta > wallAngleRad && b.omega > 0) {
+              b.theta = wallAngleRad - (b.theta - wallAngleRad);
+              b.omega = -b.omega;
+              b.glow = 0.65;
+            }
+          }
+        }
+
+        // 2. Check if any adjacent balls have touched/crossed with genuine approaching velocity (dv > MIN_COLLISION_DV)
+        const EPS_TOUCH = 0.0025;
+        const MIN_COLLISION_DV = 0.005;
+        let hasCollision = false;
+        for (let i = 0; i < N - 1; i++) {
+          if (chain[i].theta >= chain[i + 1].theta - EPS_TOUCH && chain[i].omega - chain[i + 1].omega > MIN_COLLISION_DV) {
+            hasCollision = true;
+            break;
+          }
+        }
+
+        if (!hasCollision) return 0.0;
+
+        // 3. Propagate Synchronous Wavefront Pairwise Cascade across all contiguous touching clusters
+        const CONTACT_CLUSTER_TOL = 0.035;
+        let startIdx = 0;
+        while (startIdx < N - 1) {
+          if (chain[startIdx].theta < chain[startIdx + 1].theta - CONTACT_CLUSTER_TOL) {
+            startIdx++;
+            continue;
+          }
+          let endIdx = startIdx + 1;
+          while (endIdx < N - 1 && chain[endIdx].theta >= chain[endIdx + 1].theta - CONTACT_CLUSTER_TOL) {
+            endIdx++;
+          }
+
+          let clusterActive = false;
+          for (let k = startIdx; k < endIdx; k++) {
+            if (chain[k].omega - chain[k + 1].omega > MIN_COLLISION_DV) {
+              clusterActive = true;
+              break;
+            }
+          }
+
+          if (clusterActive) {
+            let stationaryCount = 0;
+            for (let k = startIdx; k <= endIdx; k++) {
+              if (Math.abs(chain[k].omega) < 1e-3 && Math.abs(chain[k].theta) < 0.025) {
+                stationaryCount++;
+              }
+            }
+
+            const maxPasses = (endIdx - startIdx + 1) * 4;
+            let firstHitPairA = null;
+            let firstHitPairB = null;
+            let maxRelVel = 0.0;
+
+            for (let pass = 0; pass < maxPasses; pass++) {
+              const activePairs = [];
+              for (let k = startIdx; k < endIdx; k++) {
+                const dv = chain[k].omega - chain[k + 1].omega;
+                if (dv > MIN_COLLISION_DV) {
+                  activePairs.push({ k, dv });
+                }
+              }
+              if (activePairs.length === 0) break;
+
+              activePairs.sort((a, b) => b.dv - a.dv);
+              const usedBalls = new Uint8Array(N);
+
+              for (let p = 0; p < activePairs.length; p++) {
+                const k = activePairs[p].k;
+                if (usedBalls[k] || usedBalls[k + 1]) continue;
+                usedBalls[k] = 1;
+                usedBalls[k + 1] = 1;
+
+                const bA = chain[k];
+                const bB = chain[k + 1];
+                const mA = bA.mass;
+                const mB = bB.mass;
+                const wA = bA.omega;
+                const wB = bB.omega;
+                const dv = wA - wB;
+
+                if (dv > maxRelVel) {
+                  maxRelVel = dv;
+                  firstHitPairA = bA;
+                  firstHitPairB = bB;
+                }
+
+                bA.omega = (mA * wA + mB * wB - mB * ePair * dv) / (mA + mB);
+                bB.omega = (mA * wA + mB * wB + mA * ePair * dv) / (mA + mB);
+
+                bA.glow = 1.0;
+                bB.glow = 1.0;
+                bA.compression = Math.min(1.0, dv * 0.22);
+                bB.compression = Math.min(1.0, dv * 0.22);
+
+                const imp = ((mA * mB) / (mA + mB)) * (1 + ePair) * dv;
+                if (imp > peakImpulse) peakImpulse = imp;
+              }
+            }
+
+            if (stationaryCount > 0) {
+              for (let k = startIdx; k <= endIdx; k++) {
+                if (Math.abs(chain[k].omega) < 1e-3) {
+                  chain[k].omega = 0.0;
+                  chain[k].theta = 0.0;
+                } else {
+                  chain[k].theta = 0.0;
+                }
+              }
+            } else {
+              let avgTheta = 0.0;
+              for (let k = startIdx; k <= endIdx; k++) avgTheta += chain[k].theta;
+              avgTheta /= (endIdx - startIdx + 1);
+              for (let k = startIdx; k <= endIdx; k++) chain[k].theta = avgTheta;
+            }
+
+            if (firstHitPairA && firstHitPairB && maxRelVel > 0.08) {
+              triggerCollisionPercussion(firstHitPairA, firstHitPairB, maxRelVel * state.stringLenM, axisLabel);
+            }
+          }
+
+          startIdx = endIdx + 1;
+        }
+
+        return peakImpulse;
+      }
+
+      function computeSystemEnergies() {
+        const L = state.stringLenM;
+        const g = state.driveMode === 'zerog_bpm' ? 0.0 : getEffectiveGravityOverL() * L;
+        let K = 0.0;
+        let U = 0.0;
+        let P = 0.0;
+        let maxAng = 0.0;
+
+        const accumulate = (chain) => {
+          for (let i = 0; i < chain.length; i++) {
+            const b = chain[i];
+            const v = L * b.omega;
+            K += 0.5 * b.mass * v * v;
+            U += b.mass * g * L * (1.0 - Math.cos(b.theta));
+            P += b.mass * v * Math.cos(b.theta);
+            if (Math.abs(b.theta) > maxAng) maxAng = Math.abs(b.theta);
+          }
+        };
+
+        accumulate(state.ballsX);
+        if (state.topology === 'quad_cross') accumulate(state.ballsZ);
+
+        state.currentKineticEnergy = K;
+        state.currentPotentialEnergy = U;
+        state.currentTotalEnergy = K + U;
+        state.totalMomentum = P;
+        if (maxAng > 0.02) {
+          state.currentMaxAngleRad = Math.max(maxAng, state.currentMaxAngleRad * 0.995);
+        }
+      }
+
+      // =========================================================================
+      // 4. WEB AUDIO API PHYSICAL COLLISION + PERCUSSIVE DRUM KIT SYNTHESIZER
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+      let lastAudioTriggerMs = new Float64Array(24);
+
+      function initAudio() {
+        if (audioCtx) {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          return;
+        }
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.80;
+
+        const comp = audioCtx.createDynamicsCompressor();
+        comp.threshold.value = -8;
+        comp.ratio.value = 4;
+        comp.attack.value = 0.001;
+        comp.release.value = 0.12;
+
+        masterGain.connect(comp);
+        comp.connect(audioCtx.destination);
+      }
+
+      function triggerCollisionPercussion(ballA, ballB, relSpeed, axisLabel) {
+        const nowPerf = performance.now();
+        const pairKey = (axisLabel === 'Z' ? 12 : 0) + Math.min(ballA.idx, ballB.idx);
+        if (nowPerf - lastAudioTriggerMs[pairKey] < 28) return;
+        lastAudioTriggerMs[pairKey] = nowPerf;
+
+        const effMass = (2 * ballA.mass * ballB.mass) / (ballA.mass + ballB.mass);
+        const normVel = Math.min(1.0, Math.max(0.05, relSpeed / 4.2));
+        if (normVel < 0.04) return;
+
+        const N = state.ballsX.length;
+        const isOddballInvolved = (Math.abs(ballA.mass - 1.0) > 0.2 || Math.abs(ballB.mass - 1.0) > 0.2);
+        const isLeftHalf = (ballA.idx + ballB.idx) < N - 1;
+
+        let lane = 0;
+        let voiceLabel = 'Sub-Kick + Click';
+        let color = '#10b981';
+
+        if (isOddballInvolved) {
+          lane = 2;
+          voiceLabel = 'Oddball Bell / Anvil';
+          color = '#f59e0b';
+        } else if (axisLabel === 'Z') {
+          lane = 3;
+          voiceLabel = 'Cross Clave / Hat';
+          color = '#a855f7';
+        } else if (isLeftHalf) {
+          lane = 0;
+          voiceLabel = 'Left Transfer (Kick)';
+          color = '#10b981';
+        } else {
+          lane = 1;
+          voiceLabel = 'Right Transfer (Snare/Rim)';
+          color = '#22d3ee';
+        }
+
+        state.beatEvents.push({
+          time: nowPerf * 0.001,
+          lane,
+          amp: normVel,
+          color,
+          label: voiceLabel
+        });
+        if (state.beatEvents.length > 140) state.beatEvents.shift();
+
+        const movingRight = state.ballsX.filter((b) => b.omega > 0.08).length;
+        const movingLeft = state.ballsX.filter((b) => b.omega < -0.08).length;
+        const restCount = N - movingRight - movingLeft;
+        document.getElementById('hudLastCollision').textContent =
+          `Moving: ${movingLeft}L / ${movingRight}R (${restCount} Stationary) • ${voiceLabel}`;
+
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const mat = MATERIALS[state.material] || MATERIALS.steel;
+        const kit = state.audioKit;
+
+        if (kit === 'hybrid_kit' || kit === 'pure_material' || kit === 'gamelan_bells') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          const massPitchScale = Math.pow(effMass, -0.38);
+          const baseFreq = mat.baseClickFreq * massPitchScale * (axisLabel === 'Z' ? 1.25 : 1.0);
+
+          if (state.material === 'bells' || kit === 'gamelan_bells') {
+            const bellFund = 330 * massPitchScale * (1 + 0.12 * ballA.idx);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(bellFund, now);
+
+            const modOsc = audioCtx.createOscillator();
+            const modGain = audioCtx.createGain();
+            modOsc.frequency.setValueAtTime(bellFund * 2.41, now);
+            modGain.gain.setValueAtTime(bellFund * 0.85 * normVel, now);
+            modGain.gain.exponentialRampToValueAtTime(0.1, now + 0.35);
+            modOsc.connect(modGain);
+            modGain.connect(osc.frequency);
+            modOsc.start(now);
+            modOsc.stop(now + 0.38);
+
+            gain.gain.setValueAtTime(normVel * 0.28, now);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.42);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.44);
+          } else {
+            osc.type = state.material === 'billiard' ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(baseFreq, now);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(90, baseFreq * 0.22), now + 0.042);
+
+            gain.gain.setValueAtTime(normVel * 0.32, now);
+            gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.05);
+            osc.connect(gain);
+            gain.connect(masterGain);
+            osc.start(now);
+            osc.stop(now + 0.055);
+          }
+        }
+
+        if (kit === 'hybrid_kit' || kit === 'analog_808') {
+          if (lane === 0) {
+            const kickOsc = audioCtx.createOscillator();
+            const kickGain = audioCtx.createGain();
+            kickOsc.type = 'sine';
+            kickOsc.frequency.setValueAtTime(140, now);
+            kickOsc.frequency.exponentialRampToValueAtTime(45, now + 0.14);
+            kickGain.gain.setValueAtTime(normVel * 0.40, now);
+            kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.21);
+            kickOsc.connect(kickGain);
+            kickGain.connect(masterGain);
+            kickOsc.start(now);
+            kickOsc.stop(now + 0.23);
+          } else if (lane === 2) {
+            [540, 800].forEach((freq) => {
+              const cbOsc = audioCtx.createOscillator();
+              const cbGain = audioCtx.createGain();
+              cbOsc.type = 'square';
+              cbOsc.frequency.setValueAtTime(freq / Math.pow(effMass, 0.18), now);
+              const filter = audioCtx.createBiquadFilter();
+              filter.type = 'bandpass';
+              filter.frequency.value = 680;
+              filter.Q.value = 3.5;
+              cbGain.gain.setValueAtTime(normVel * 0.14, now);
+              cbGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.18);
+              cbOsc.connect(filter);
+              filter.connect(cbGain);
+              cbGain.connect(masterGain);
+              cbOsc.start(now);
+              cbOsc.stop(now + 0.20);
+            });
+          } else if (lane === 1 || lane === 3) {
+            const rimOsc = audioCtx.createOscillator();
+            const rimGain = audioCtx.createGain();
+            rimOsc.type = 'triangle';
+            const fRim = lane === 3 ? 1920 : 880;
+            rimOsc.frequency.setValueAtTime(fRim, now);
+            rimOsc.frequency.exponentialRampToValueAtTime(fRim * 0.45, now + 0.035);
+            rimGain.gain.setValueAtTime(normVel * 0.22, now);
+            rimGain.gain.exponentialRampToValueAtTime(0.0008, now + 0.042);
+            rimOsc.connect(rimGain);
+            rimGain.connect(masterGain);
+            rimOsc.start(now);
+            rimOsc.stop(now + 0.045);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 5. THREE.JS 3D FULL-SCREEN BIFILAR NEWTON'S CRADLE & ZERO-G REFLECTOR ARCS
+      // =========================================================================
+      const mountEl = document.getElementById('threeCradleMount');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03050a);
+      scene.fog = new THREE.FogExp2(0x03050a, 0.032);
+
+      const camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 120);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.22;
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      mountEl.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0x475569, 1.05);
+      scene.add(ambientLight);
+
+      const mainSpot = new THREE.DirectionalLight(0xfffbeb, 2.3);
+      mainSpot.position.set(5, 8, 6);
+      scene.add(mainSpot);
+
+      const cyanRim = new THREE.PointLight(0x22d3ee, 1.8, 18);
+      cyanRim.position.set(-5, 2, 4);
+      scene.add(cyanRim);
+
+      const amberRim = new THREE.PointLight(0xf59e0b, 1.8, 18);
+      amberRim.position.set(5, -2, -4);
+      scene.add(amberRim);
+
+      const cradleGroup = new THREE.Group();
+      scene.add(cradleGroup);
+
+      const floorGrid = new THREE.GridHelper(16, 32, 0x1e293b, 0x0f172a);
+      floorGrid.position.y = -2.35;
+      scene.add(floorGrid);
+
+      let meshListX = [];
+      let meshListZ = [];
+      let zeroGReflectorGroup = null;
+
+      function createBallOrBellMesh(ballObj, index) {
+        const matDef = MATERIALS[state.material] || MATERIALS.steel;
+        let colHex = matDef.colorHex;
+        if (state.material === 'billiard') {
+          colHex = BILLIARD_PALETTE[index % BILLIARD_PALETTE.length];
+        } else if (ballObj.mass > 1.8) {
+          colHex = 0xf59e0b;
+        }
+
+        const mat = new THREE.MeshStandardMaterial({
+          color: colHex,
+          metalness: matDef.metalness,
+          roughness: matDef.roughness,
+          emissive: 0xf59e0b,
+          emissiveIntensity: 0.0
+        });
+
+        let mesh;
+        if (state.material === 'bells') {
+          const r = ballObj.radius;
+          const lathePts = [
+            new THREE.Vector2(0.0, r * 1.15),
+            new THREE.Vector2(r * 0.45, r * 1.05),
+            new THREE.Vector2(r * 0.72, r * 0.35),
+            new THREE.Vector2(r * 0.85, -r * 0.45),
+            new THREE.Vector2(r * 1.08, -r * 0.98),
+            new THREE.Vector2(r * 0.92, -r * 0.98)
+          ];
+          const bellGeo = new THREE.LatheGeometry(lathePts, 32);
+          mesh = new THREE.Mesh(bellGeo, mat);
+        } else {
+          const sphereGeo = new THREE.SphereGeometry(ballObj.radius, 36, 36);
+          mesh = new THREE.Mesh(sphereGeo, mat);
+        }
+
+        mesh.userData.ballRef = ballObj;
+
+        const wireMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.68 });
+        const wireGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 1.8, 0.85),
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(0, 1.8, -0.85)
+        ]);
+        const wireLine = new THREE.Line(wireGeo, wireMat);
+
+        if (Math.abs(ballObj.mass - 1.0) > 0.1) {
+          const haloGeo = new THREE.TorusGeometry(ballObj.radius * 1.04, 0.012, 12, 48);
+          const haloMat = new THREE.MeshBasicMaterial({
+            color: ballObj.mass > 1.0 ? 0xf59e0b : 0x22d3ee,
+            transparent: true,
+            opacity: 0.75
+          });
+          mesh.add(new THREE.Mesh(haloGeo, haloMat));
+        }
+
+        cradleGroup.add(mesh);
+        cradleGroup.add(wireLine);
+
+        return { mesh, wireLine, ballObj };
+      }
+
+      function rebuildThreeCradleMeshes() {
+        while (cradleGroup.children.length > 0) {
+          cradleGroup.remove(cradleGroup.children[0]);
+        }
+        meshListX = [];
+        meshListZ = [];
+
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.75, roughness: 0.28 });
+        const brassJointMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.85, roughness: 0.22 });
+
+        const railSpan = Math.max(4.6, state.ballsX.length * 0.72 + 1.6);
+        const railHalfW = 0.92;
+        const railY = 1.65;
+        const baseY = -2.32;
+
+        [-railHalfW, railHalfW].forEach((zRail) => {
+          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, railSpan, 20), frameMat);
+          rail.rotation.z = Math.PI / 2;
+          rail.position.set(0, railY, zRail);
+          cradleGroup.add(rail);
+
+          [-railSpan * 0.5, railSpan * 0.5].forEach((xLeg) => {
+            const legH = railY - baseY;
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, legH, 18), frameMat);
+            leg.position.set(xLeg, baseY + legH * 0.5, zRail);
+            cradleGroup.add(leg);
+
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16), brassJointMat);
+            cap.position.set(xLeg, railY, zRail);
+            cradleGroup.add(cap);
+          });
+        });
+
+        [-railSpan * 0.5, railSpan * 0.5].forEach((xLeg) => {
+          const topCross = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, railHalfW * 2, 16), frameMat);
+          topCross.rotation.x = Math.PI / 2;
+          topCross.position.set(xLeg, railY, 0);
+          cradleGroup.add(topCross);
+
+          const baseCross = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, railHalfW * 2.3), frameMat);
+          baseCross.position.set(xLeg, baseY, 0);
+          cradleGroup.add(baseCross);
+        });
+
+        if (state.topology === 'quad_cross') {
+          [-railHalfW, railHalfW].forEach((xRail) => {
+            const zBar = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, railSpan, 18), frameMat);
+            zBar.rotation.x = Math.PI / 2;
+            zBar.position.set(xRail, railY, 0);
+            cradleGroup.add(zBar);
+          });
+        }
+
+        zeroGReflectorGroup = new THREE.Group();
+        const reflectorMat = new THREE.MeshBasicMaterial({
+          color: 0xa855f7,
+          transparent: true,
+          opacity: 0.45,
+          side: THREE.DoubleSide
+        });
+        const leftBumper = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.025, 12, 36), reflectorMat);
+        const rightBumper = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.025, 12, 36), reflectorMat);
+        leftBumper.rotation.y = Math.PI * 0.5;
+        rightBumper.rotation.y = Math.PI * 0.5;
+        zeroGReflectorGroup.add(leftBumper, rightBumper);
+        zeroGReflectorGroup.userData = { leftBumper, rightBumper };
+        cradleGroup.add(zeroGReflectorGroup);
+
+        state.ballsX.forEach((b, i) => {
+          meshListX.push(createBallOrBellMesh(b, i));
+        });
+
+        if (state.topology === 'quad_cross') {
+          state.ballsZ.forEach((b, j) => {
+            if (!b.isSharedCenter) {
+              meshListZ.push(createBallOrBellMesh(b, j + 2));
+            }
+          });
+        }
+      }
+
+      function updateThreeCradlePositions() {
+        const railY = 1.65;
+        const visL = 2.05;
+        const railHalfW = 0.92;
+
+        if (zeroGReflectorGroup && state.ballsX.length > 0) {
+          const isZeroG = state.driveMode === 'zerog_bpm';
+          zeroGReflectorGroup.visible = isZeroG;
+          if (isZeroG) {
+            const wallRad = (Math.max(state.leftAngleDeg, state.rightAngleDeg) * Math.PI) / 180.0;
+            const bFirst = state.ballsX[0];
+            const bLast = state.ballsX[state.ballsX.length - 1];
+            const lx = bFirst.pivotPos - visL * Math.sin(wallRad) - bFirst.radius * 0.5;
+            const ly = railY - visL * Math.cos(wallRad);
+            const rx = bLast.pivotPos + visL * Math.sin(wallRad) + bLast.radius * 0.5;
+            const ry = railY - visL * Math.cos(wallRad);
+            zeroGReflectorGroup.userData.leftBumper.position.set(lx, ly, 0);
+            zeroGReflectorGroup.userData.rightBumper.position.set(rx, ry, 0);
+          }
+        }
+
+        for (let i = 0; i < meshListX.length; i++) {
+          const item = meshListX[i];
+          const b = item.ballObj;
+          const bx = b.pivotPos + visL * Math.sin(b.theta);
+          const by = railY - visL * Math.cos(b.theta);
+          const bz = 0.0;
+
+          item.mesh.position.set(bx, by, bz);
+          item.mesh.rotation.z = b.theta;
+          const squash = 1.0 - b.compression * 0.14;
+          item.mesh.scale.set(squash, 1.0 + b.compression * 0.08, 1.0 + b.compression * 0.08);
+          item.mesh.material.emissiveIntensity = b.glow * 0.85;
+
+          const wPos = item.wireLine.geometry.attributes.position.array;
+          wPos[0] = b.pivotPos; wPos[1] = railY; wPos[2] = railHalfW;
+          wPos[3] = bx;         wPos[4] = by;    wPos[5] = bz;
+          wPos[6] = b.pivotPos; wPos[7] = railY; wPos[8] = -railHalfW;
+          item.wireLine.geometry.attributes.position.needsUpdate = true;
+        }
+
+        for (let j = 0; j < meshListZ.length; j++) {
+          const item = meshListZ[j];
+          const b = item.ballObj;
+          const bx = 0.0;
+          const by = railY - visL * Math.cos(b.theta);
+          const bz = b.pivotPos + visL * Math.sin(b.theta);
+
+          item.mesh.position.set(bx, by, bz);
+          item.mesh.rotation.x = -b.theta;
+          item.mesh.material.emissiveIntensity = b.glow * 0.85;
+
+          const wPos = item.wireLine.geometry.attributes.position.array;
+          wPos[0] = railHalfW;  wPos[1] = railY; wPos[2] = b.pivotPos;
+          wPos[3] = bx;         wPos[4] = by;    wPos[5] = bz;
+          wPos[6] = -railHalfW; wPos[7] = railY; wPos[8] = b.pivotPos;
+          item.wireLine.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+
+      // =========================================================================
+      // 6. 3D CAMERA NAVIGATION, CENTER/FIT, ZOOM & DIRECT 3D BALL PULL-AND-DROP
+      // =========================================================================
+      const camSpherical = {
+        radius: 8.2,
+        theta: 0.0,
+        phi: Math.PI * 0.47,
+        targetX: 0.0,
+        targetY: -0.25,
+        targetZ: 0.0,
+        isOrbitDragging: false,
+        isPanDragging: false,
+        lastMouseX: 0,
+        lastMouseY: 0
+      };
+
+      function syncZoomSliderUI() {
+        const el = document.getElementById('sliderStageZoom');
+        if (el) el.value = String(Math.max(3.0, Math.min(20.0, camSpherical.radius)).toFixed(1));
+      }
+
+      function centerAndFitCradle() {
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = -0.22;
+        camSpherical.targetZ = 0.0;
+        const aspect = Math.max(0.6, camera.aspect || 1.5);
+        const spanScale = 7.8 + Math.max(0, state.ballsX.length - 5) * 0.65;
+        camSpherical.radius = aspect < 1.2 ? spanScale / Math.max(0.65, aspect * 0.85) : spanScale;
+        syncZoomSliderUI();
+      }
+
+      function applyCameraPreset(preset) {
+        state.cameraPreset = preset;
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = -0.22;
+        camSpherical.targetZ = 0.0;
+
+        if (preset === 'front') {
+          camSpherical.radius = 8.2;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = Math.PI * 0.48;
+        } else if (preset === 'isometric') {
+          camSpherical.radius = 8.6;
+          camSpherical.theta = 0.62;
+          camSpherical.phi = Math.PI * 0.40;
+        } else if (preset === 'axial') {
+          camSpherical.radius = 7.4;
+          camSpherical.theta = Math.PI * 0.5;
+          camSpherical.phi = Math.PI * 0.47;
+        } else if (preset === 'top') {
+          camSpherical.radius = 9.2;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = 0.14;
+        }
+        syncZoomSliderUI();
+        document.querySelectorAll('.cam-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-cam') === preset);
+        });
+      }
+
+      function updateCameraTransform(timeSec) {
+        if (state.cameraPreset === 'orbit' && !camSpherical.isOrbitDragging && !camSpherical.isPanDragging && !state.draggedBall) {
+          camSpherical.theta = timeSec * 0.28;
+          camSpherical.phi = Math.PI * 0.42 + Math.sin(timeSec * 0.35) * 0.06;
+        }
+        const sinPhi = Math.sin(camSpherical.phi);
+        camera.position.x = camSpherical.targetX + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta);
+        camera.position.y = camSpherical.targetY + camSpherical.radius * Math.cos(camSpherical.phi);
+        camera.position.z = camSpherical.targetZ + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta);
+        camera.lookAt(camSpherical.targetX, camSpherical.targetY, camSpherical.targetZ);
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+      const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const dragIntersectPt = new THREE.Vector3();
+
+      renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        initAudio();
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (e.button === 2 || e.button === 1 || e.altKey || state.interactMode === 'pan') {
+          camSpherical.isPanDragging = true;
+          return;
+        }
+
+        const rect = mountEl.getBoundingClientRect();
+        pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointerNDC, camera);
+
+        const pickMeshes = meshListX.map((m) => m.mesh).concat(meshListZ.map((m) => m.mesh));
+        const hits = raycaster.intersectObjects(pickMeshes, false);
+
+        if (hits.length > 0 && state.interactMode === 'pull') {
+          const hitBall = hits[0].object.userData.ballRef;
+          if (hitBall) {
+            state.draggedBall = hitBall;
+            const chain = hitBall.axis === 'Z' ? state.ballsZ : state.ballsX;
+            chain.forEach((b) => { b.theta = 0.0; b.omega = 0.0; });
+            hitBall.glow = 1.0;
+            return;
+          }
+        }
+
+        camSpherical.isOrbitDragging = true;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (state.draggedBall) {
+          const rect = mountEl.getBoundingClientRect();
+          pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, camera);
+
+          if (raycaster.ray.intersectPlane(dragPlane, dragIntersectPt)) {
+            const b = state.draggedBall;
+            const dx = (b.axis === 'Z' ? dragIntersectPt.z : dragIntersectPt.x) - b.pivotPos;
+            const dy = 1.65 - dragIntersectPt.y;
+            const ang = Math.atan2(dx, Math.max(0.3, dy));
+            const clampedAng = Math.max(-1.3, Math.min(1.3, ang));
+            const chain = b.axis === 'Z' ? state.ballsZ : state.ballsX;
+
+            for (let k = 0; k < chain.length; k++) {
+              chain[k].theta = 0.0;
+              chain[k].omega = 0.0;
+            }
+            if (clampedAng < -0.04) {
+              for (let k = 0; k <= b.idx; k++) {
+                chain[k].theta = clampedAng;
+              }
+            } else if (clampedAng > 0.04) {
+              for (let k = b.idx; k < chain.length; k++) {
+                chain[k].theta = clampedAng;
+              }
+            }
+          }
+          return;
+        }
+
+        const dx = e.clientX - camSpherical.lastMouseX;
+        const dy = e.clientY - camSpherical.lastMouseY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (camSpherical.isPanDragging) {
+          const panScale = camSpherical.radius * 0.0015;
+          camSpherical.targetX -= dx * panScale * Math.cos(camSpherical.theta);
+          camSpherical.targetZ += dx * panScale * Math.sin(camSpherical.theta);
+          camSpherical.targetY += dy * panScale;
+          return;
+        }
+
+        if (!camSpherical.isOrbitDragging) return;
+        camSpherical.theta -= dx * 0.0065;
+        camSpherical.phi = Math.max(0.12, Math.min(Math.PI - 0.12, camSpherical.phi - dy * 0.0065));
+      });
+
+      window.addEventListener('pointerup', () => {
+        if (state.draggedBall) {
+          const b = state.draggedBall;
+          const chain = b.axis === 'Z' ? state.ballsZ : state.ballsX;
+          if (state.driveMode === 'zerog_bpm') {
+            const beatIntervalSec = 60.0 / Math.max(20, state.targetBpm);
+            const zOmega = (2.0 * Math.abs(b.theta)) / Math.max(0.08, beatIntervalSec);
+            chain.forEach((item) => {
+              if (Math.abs(item.theta) > 0.03) {
+                item.omega = item.theta < 0 ? zOmega : -zOmega;
+              }
+            });
+          }
+          state.elapsedSinceLaunchSec = 0.0;
+          state.initialMaxAngleRad = Math.max(0.1, Math.abs(b.theta));
+          state.draggedBall = null;
+          computeSystemEnergies();
+          state.initialTotalEnergy = Math.max(0.001, state.currentTotalEnergy);
+        }
+        camSpherical.isOrbitDragging = false;
+        camSpherical.isPanDragging = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(2.5, Math.min(22.0, camSpherical.radius + e.deltaY * 0.0045));
+        syncZoomSliderUI();
+      }, { passive: false });
+
+      function syncViewportSize() {
+        const rect = mountEl.getBoundingClientRect();
+        const w = Math.max(300, Math.floor(rect.width || mountEl.clientWidth || 800));
+        const h = Math.max(260, Math.floor(rect.height || mountEl.clientHeight || 540));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(w, h, true);
+      }
+      window.addEventListener('resize', syncViewportSize);
+      const resizeObserver = new ResizeObserver(syncViewportSize);
+      resizeObserver.observe(mountEl);
+      syncViewportSize();
+
+      // =========================================================================
+      // 7. 2D TELEMETRY CANVASES (Beat Waterfall, Momentum Bars, Phase Portrait)
+      // =========================================================================
+      const canvasBeat = document.getElementById('canvasBeatRoll');
+      const ctxBeat = canvasBeat.getContext('2d');
+      const canvasMom = document.getElementById('canvasMomentumBars');
+      const ctxMom = canvasMom.getContext('2d');
+      const canvasHertz = document.getElementById('canvasHertzWave');
+      const ctxHertz = canvasHertz.getContext('2d');
+
+      function renderTelemetryCanvases(nowSec) {
+        const wA = canvasBeat.width;
+        const hA = canvasBeat.height;
+        ctxBeat.fillStyle = '#04060c';
+        ctxBeat.fillRect(0, 0, wA, hA);
+
+        const laneLabels = ['L0 Kick', 'L1 Snare', 'L2 Oddball', 'L3 Hat/Z'];
+        const laneColors = ['#10b981', '#22d3ee', '#f59e0b', '#a855f7'];
+        const laneH = (hA - 18) / 4;
+
+        for (let l = 0; l < 4; l++) {
+          const yL = 10 + l * laneH;
+          ctxBeat.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+          ctxBeat.beginPath();
+          ctxBeat.moveTo(56, yL + laneH * 0.5);
+          ctxBeat.lineTo(wA - 8, yL + laneH * 0.5);
+          ctxBeat.stroke();
+
+          ctxBeat.fillStyle = laneColors[l];
+          ctxBeat.font = '9.5px "JetBrains Mono", monospace';
+          ctxBeat.fillText(laneLabels[l], 4, yL + laneH * 0.5 + 3);
+        }
+
+        const windowSec = 4.5;
+        for (let i = 0; i < state.beatEvents.length; i++) {
+          const ev = state.beatEvents[i];
+          const age = nowSec - ev.time;
+          if (age >= 0 && age <= windowSec) {
+            const x = wA - 12 - (age / windowSec) * (wA - 68);
+            const y = 10 + ev.lane * laneH + laneH * 0.5;
+            const r = 3.2 + ev.amp * 4.8;
+            ctxBeat.fillStyle = ev.color;
+            ctxBeat.beginPath();
+            ctxBeat.arc(x, y, r, 0, Math.PI * 2);
+            ctxBeat.fill();
+          }
+        }
+
+        const wB = canvasMom.width;
+        const hB = canvasMom.height;
+        ctxMom.fillStyle = '#04060c';
+        ctxMom.fillRect(0, 0, wB, hB);
+
+        const midY = hB * 0.48;
+        ctxMom.strokeStyle = 'rgba(71, 85, 105, 0.5)';
+        ctxMom.beginPath();
+        ctxMom.moveTo(10, midY);
+        ctxMom.lineTo(wB - 10, midY);
+        ctxMom.stroke();
+
+        const N = state.ballsX.length;
+        const colW = (wB - 28) / N;
+        for (let i = 0; i < N; i++) {
+          const b = state.ballsX[i];
+          const p = b.mass * state.stringLenM * b.omega;
+          const pClamped = Math.max(-1.0, Math.min(1.0, p / 6.5));
+          const x = 14 + i * colW;
+          const barH = pClamped * (hB * 0.34);
+
+          ctxMom.fillStyle = Math.abs(b.omega) < 0.02 ? '#334155' : (b.mass > 1.5 ? '#f59e0b' : '#22d3ee');
+          if (barH >= 0) {
+            ctxMom.fillRect(x + 4, midY - barH, colW - 8, Math.max(2, barH));
+          } else {
+            ctxMom.fillRect(x + 4, midY, colW - 8, Math.max(2, -barH));
+          }
+
+          ctxMom.fillStyle = Math.abs(b.omega) < 0.02 ? '#64748b' : '#f8fafc';
+          ctxMom.font = '9px "JetBrains Mono", monospace';
+          ctxMom.fillText(`#${i + 1}(${b.mass}m)`, x + 3, hB - 24);
+        }
+
+        const eTot = Math.max(0.001, state.currentTotalEnergy);
+        const kFrac = state.driveMode === 'zerog_bpm' ? 1.0 : Math.min(1.0, state.currentKineticEnergy / eTot);
+        ctxMom.fillStyle = '#10b981';
+        ctxMom.fillRect(14, hB - 14, (wB - 28) * kFrac, 8);
+        ctxMom.fillStyle = '#6366f1';
+        ctxMom.fillRect(14 + (wB - 28) * kFrac, hB - 14, (wB - 28) * (1 - kFrac), 8);
+
+        ctxMom.fillStyle = '#e2e8f0';
+        ctxMom.font = '9.5px "JetBrains Mono", monospace';
+        ctxMom.fillText(`K_kin: ${(kFrac * 100).toFixed(0)}% | U_grav: ${((1 - kFrac) * 100).toFixed(0)}%`, 14, 13);
+
+        const wC = canvasHertz.width;
+        const hC = canvasHertz.height;
+        ctxHertz.fillStyle = '#04060c';
+        ctxHertz.fillRect(0, 0, wC, hC);
+
+        const halfW = wC * 0.52;
+        ctxHertz.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+        ctxHertz.beginPath();
+        ctxHertz.moveTo(halfW, 8);
+        ctxHertz.lineTo(halfW, hC - 8);
+        ctxHertz.stroke();
+
+        ctxHertz.strokeStyle = '#f43f5e';
+        ctxHertz.lineWidth = 1.8;
+        ctxHertz.beginPath();
+        for (let i = 0; i < state.impulseHistory.length; i++) {
+          const x = 8 + (i / 159) * (halfW - 16);
+          const fNorm = Math.min(1.0, state.impulseHistory[i] / 500.0);
+          const y = hC - 16 - fNorm * (hC - 36);
+          if (i === 0) ctxHertz.moveTo(x, y);
+          else ctxHertz.lineTo(x, y);
+        }
+        ctxHertz.stroke();
+
+        const cxP = halfW + (wC - halfW) * 0.5;
+        const cyP = hC * 0.54;
+        const drawPhaseCurve = (trail, col) => {
+          if (trail.length < 2) return;
+          ctxHertz.strokeStyle = col;
+          ctxHertz.lineWidth = 1.8;
+          ctxHertz.beginPath();
+          for (let i = 0; i < trail.length; i++) {
+            const px = cxP + Math.max(-1, Math.min(1, trail[i].th)) * 44;
+            const py = cyP - Math.max(-1, Math.min(1, trail[i].om)) * 44;
+            if (i === 0) ctxHertz.moveTo(px, py);
+            else ctxHertz.lineTo(px, py);
+          }
+          ctxHertz.stroke();
+        };
+        drawPhaseCurve(state.phaseTrailLeft, '#f59e0b');
+        drawPhaseCurve(state.phaseTrailRight, '#22d3ee');
+
+        ctxHertz.fillStyle = '#fda4af';
+        ctxHertz.font = '9.5px "JetBrains Mono", monospace';
+        ctxHertz.fillText('Wavefront Impulse', 8, 14);
+        ctxHertz.fillStyle = '#67e8f9';
+        ctxHertz.fillText('Phase (θ₁ vs θ_N)', halfW + 8, 14);
+      }
+
+      // =========================================================================
+      // 8. UI CONTROLS, DRIVE MODES, PER-BALL MASS MATRIX & WAV/JSON EXPORTERS
+      // =========================================================================
+      const MASS_CYCLE = [0.5, 1.0, 2.5, 4.0];
+
+      function renderBallMassMatrixUI() {
+        const container = document.getElementById('ballMassMatrix');
+        container.innerHTML = '';
+        state.masses.forEach((m, idx) => {
+          const btn = document.createElement('button');
+          const isHeavy = m > 1.5;
+          const isLight = m < 0.8;
+          btn.className = `p-1.5 rounded border text-center transition flex flex-col items-center justify-center ${
+            isHeavy
+              ? 'bg-amber-500/20 border-amber-400 text-amber-200 font-bold'
+              : isLight
+              ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-200'
+              : 'bg-slate-900 border-slate-700 text-slate-300'
+          }`;
+          btn.innerHTML = `
+            <span class="text-[9px] text-slate-400">#${idx + 1}</span>
+            <span class="text-[11px]">${m}m</span>
+          `;
+          btn.title = 'Click to cycle ball mass (0.5m → 1.0m → 2.5m → 4.0m)';
+          btn.addEventListener('click', () => {
+            initAudio();
+            const currIdx = MASS_CYCLE.indexOf(m);
+            const nextM = MASS_CYCLE[(currIdx + 1) % MASS_CYCLE.length];
+            state.masses[idx] = nextM;
+            rebuildCradleChains();
+          });
+          container.appendChild(btn);
+        });
+      }
+
+      function setDriveMode(mode) {
+        state.driveMode = mode;
+        document.getElementById('selectDriveMode').value = mode;
+
+        document.querySelectorAll('.drive-btn').forEach((btn) => {
+          const m = btn.getAttribute('data-drive');
+          btn.classList.remove('btn-active-emerald', 'btn-active-amber', 'btn-active-violet');
+          if (m === mode) {
+            if (mode === 'realistic_70s') btn.classList.add('btn-active-emerald');
+            else if (mode === 'perpetual_grav') btn.classList.add('btn-active-amber');
+            else btn.classList.add('btn-active-violet');
+          }
+        });
+
+        const badge = document.getElementById('badgeEnergyMode');
+        if (mode === 'realistic_70s') {
+          badge.textContent = `${state.ringDurationSec}s Ring-Down`;
+          document.getElementById('valGravity').textContent = `${state.gravityG.toFixed(2)} m/s²`;
+        } else if (mode === 'perpetual_grav') {
+          badge.textContent = `Perpetual ${state.targetBpm} BPM`;
+          document.getElementById('valGravity').textContent = `BPM-Locked (${state.targetBpm})`;
+        } else {
+          badge.textContent = `Zero-G ${state.targetBpm} BPM`;
+          document.getElementById('valGravity').textContent = '0.00 m/s² (Zero-G)';
+        }
+
+        applyLaunchStreamConfiguration();
+      }
+
+      function syncQuickLaunchHighlight() {
+        document.querySelectorAll('.launch-quick-btn').forEach((b) => {
+          const code = b.getAttribute('data-launch');
+          const match =
+            (code === '1L' && state.leftCount === 1 && state.rightCount === 0) ||
+            (code === '2L' && state.leftCount === 2 && state.rightCount === 0) ||
+            (code === '3L' && state.leftCount === 3 && state.rightCount === 0) ||
+            (code === '4L' && state.leftCount === 4 && state.rightCount === 0) ||
+            (code === 'bin_1v1' && state.leftCount === 1 && state.rightCount === 1 && state.rightPhaseDelay === 0) ||
+            (code === 'bin_2v1' && state.leftCount === 2 && state.rightCount === 1 && state.rightPhaseDelay === 0) ||
+            (code === 'bin_phase' && state.rightPhaseDelay > 0.1);
+          b.classList.toggle('btn-active-amber', match);
+        });
+      }
+
+      function loadCradlePreset(presetId) {
+        const p = CRADLE_PRESETS[presetId];
+        if (!p) return;
+        state.presetId = p.id;
+        state.topology = p.topology;
+        state.material = p.material;
+        state.masses = p.masses.slice();
+        state.leftCount = p.leftCount;
+        state.rightCount = p.rightCount;
+        state.leftAngleDeg = p.leftAngleDeg;
+        state.rightAngleDeg = p.rightAngleDeg;
+        state.rightPhaseDelay = p.rightPhaseDelay || 0.0;
+
+        const matDef = MATERIALS[state.material];
+        state.ringDurationSec = matDef.ringDurationSec;
+
+        document.getElementById('selectTopologyMode').value = state.topology;
+        document.getElementById('sliderBallCount').value = state.masses.length;
+        document.getElementById('valBallCount').textContent = `${state.masses.length} Balls`;
+
+        document.getElementById('sliderLeftCount').value = state.leftCount;
+        document.getElementById('valLeftCount').textContent = `${state.leftCount} Ball${state.leftCount === 1 ? '' : 's'} (${state.leftCount}→${state.leftCount})`;
+
+        document.getElementById('sliderRightCount').value = state.rightCount;
+        document.getElementById('valRightCount').textContent = state.rightCount === 0 ? '0 Balls (Off)' : `${state.rightCount} Ball${state.rightCount === 1 ? '' : 's'}`;
+
+        document.getElementById('sliderLeftAngle').value = state.leftAngleDeg;
+        document.getElementById('valLeftAngle').textContent = `${state.leftAngleDeg}°`;
+
+        document.getElementById('sliderRightAngle').value = state.rightAngleDeg;
+        document.getElementById('valRightAngle').textContent = `${state.rightAngleDeg}°`;
+
+        document.getElementById('sliderRingDuration').value = state.ringDurationSec;
+        document.getElementById('valRingDuration').textContent = `${state.ringDurationSec} s (High-Q)`;
+        document.getElementById('badgeRhythmSignature').textContent = p.rhythmTag;
+
+        document.querySelectorAll('.preset-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-amber', btn.getAttribute('data-preset') === presetId);
+        });
+        document.querySelectorAll('.mat-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-mat') === state.material);
+        });
+
+        syncQuickLaunchHighlight();
+        rebuildCradleChains();
+        if (state.topology === 'quad_cross') {
+          applyCameraPreset('isometric');
+        }
+      }
+
+      document.querySelectorAll('.preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          loadCradlePreset(btn.getAttribute('data-preset'));
+        });
+      });
+
+      document.querySelectorAll('.drive-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          setDriveMode(btn.getAttribute('data-drive'));
+        });
+      });
+
+      document.getElementById('selectDriveMode').addEventListener('change', (e) => {
+        initAudio();
+        setDriveMode(e.target.value);
+      });
+
+      document.querySelectorAll('.mat-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          state.material = btn.getAttribute('data-mat');
+          const matDef = MATERIALS[state.material];
+          state.ringDurationSec = matDef.ringDurationSec;
+          document.getElementById('sliderRingDuration').value = state.ringDurationSec;
+          document.getElementById('valRingDuration').textContent = `${state.ringDurationSec} s (High-Q)`;
+
+          document.querySelectorAll('.mat-btn').forEach((b) => {
+            b.classList.toggle('btn-active-cyan', b.getAttribute('data-mat') === state.material);
+          });
+          rebuildThreeCradleMeshes();
+        });
+      });
+
+      document.querySelectorAll('.masspat-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          const pat = btn.getAttribute('data-masspat');
+          const N = state.masses.length;
+          const mid = Math.floor(N / 2);
+          if (pat === 'uniform') {
+            state.masses = new Array(N).fill(1.0);
+          } else if (pat === 'center_giant') {
+            state.masses = new Array(N).fill(1.0);
+            state.masses[mid] = 4.0;
+          } else if (pat === 'heavy_left') {
+            state.masses = new Array(N).fill(1.0);
+            state.masses[0] = 3.5;
+          } else if (pat === 'dimer') {
+            state.masses = Array.from({ length: N }, (_, i) => (i % 2 === 0 ? 2.5 : 0.8));
+          } else if (pat === 'tapered') {
+            state.masses = Array.from({ length: N }, (_, i) => Number((3.8 * Math.pow(0.68, i)).toFixed(2)));
+          } else if (pat === 'bookends') {
+            state.masses = new Array(N).fill(1.0);
+            state.masses[0] = 3.0;
+            state.masses[N - 1] = 3.0;
+          }
+          document.querySelectorAll('.masspat-btn').forEach((b) => {
+            b.classList.toggle('btn-active-amber', b === btn);
+          });
+          rebuildCradleChains();
+        });
+      });
+
+      document.querySelectorAll('.launch-quick-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          initAudio();
+          const code = btn.getAttribute('data-launch');
+          state.rightPhaseDelay = 0.0;
+          if (code === '1L') { state.leftCount = 1; state.rightCount = 0; }
+          else if (code === '2L') { state.leftCount = 2; state.rightCount = 0; }
+          else if (code === '3L') { state.leftCount = 3; state.rightCount = 0; }
+          else if (code === '4L') { state.leftCount = 4; state.rightCount = 0; }
+          else if (code === 'bin_1v1') { state.leftCount = 1; state.rightCount = 1; }
+          else if (code === 'bin_2v1') { state.leftCount = 2; state.rightCount = 1; }
+          else if (code === 'bin_phase') { state.leftCount = 2; state.rightCount = 1; state.rightPhaseDelay = 0.48; }
+
+          document.getElementById('sliderLeftCount').value = state.leftCount;
+          document.getElementById('valLeftCount').textContent = `${state.leftCount} Ball${state.leftCount === 1 ? '' : 's'} (${state.leftCount}→${state.leftCount})`;
+          document.getElementById('sliderRightCount').value = state.rightCount;
+          document.getElementById('valRightCount').textContent = state.rightCount === 0 ? '0 Balls (Off)' : `${state.rightCount} Ball${state.rightCount === 1 ? '' : 's'}`;
+
+          syncQuickLaunchHighlight();
+          applyLaunchStreamConfiguration();
+        });
+      });
+
+      function setInteractMode(mode) {
+        state.interactMode = mode;
+        document.getElementById('btnInteractPull').classList.toggle('btn-active-amber', mode === 'pull');
+        document.getElementById('btnInteractOrbit').classList.toggle('btn-active-cyan', mode === 'orbit');
+        document.getElementById('btnInteractPan').classList.toggle('btn-active-cyan', mode === 'pan');
+      }
+      document.getElementById('btnInteractPull').addEventListener('click', () => setInteractMode('pull'));
+      document.getElementById('btnInteractOrbit').addEventListener('click', () => setInteractMode('orbit'));
+      document.getElementById('btnInteractPan').addEventListener('click', () => setInteractMode('pan'));
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => applyCameraPreset(btn.getAttribute('data-cam')));
+      });
+
+      document.getElementById('btnCenterHeader').addEventListener('click', centerAndFitCradle);
+      document.getElementById('btnCenterStage').addEventListener('click', centerAndFitCradle);
+
+      document.getElementById('sliderStageZoom').addEventListener('input', (e) => {
+        camSpherical.radius = parseFloat(e.target.value);
+      });
+      document.getElementById('btnZoomIn').addEventListener('click', () => {
+        camSpherical.radius = Math.max(2.5, camSpherical.radius - 0.7);
+        syncZoomSliderUI();
+      });
+      document.getElementById('btnZoomOut').addEventListener('click', () => {
+        camSpherical.radius = Math.min(22.0, camSpherical.radius + 0.7);
+        syncZoomSliderUI();
+      });
+
+      const panStep = 0.32;
+      document.getElementById('btnPanLeft').addEventListener('click', () => { camSpherical.targetX -= panStep; });
+      document.getElementById('btnPanRight').addEventListener('click', () => { camSpherical.targetX += panStep; });
+      document.getElementById('btnPanUp').addEventListener('click', () => { camSpherical.targetY += panStep; });
+      document.getElementById('btnPanDown').addEventListener('click', () => { camSpherical.targetY -= panStep; });
+
+      document.getElementById('selectTopologyMode').addEventListener('change', (e) => {
+        state.topology = e.target.value;
+        rebuildCradleChains();
+      });
+
+      document.getElementById('selectAudioKit').addEventListener('change', (e) => {
+        initAudio();
+        state.audioKit = e.target.value;
+      });
+
+      document.getElementById('sliderBallCount').addEventListener('input', (e) => {
+        const newN = parseInt(e.target.value, 10);
+        document.getElementById('valBallCount').textContent = `${newN} Balls`;
+        while (state.masses.length < newN) state.masses.push(1.0);
+        if (state.masses.length > newN) state.masses.length = newN;
+        rebuildCradleChains();
+      });
+
+      document.getElementById('sliderStringLen').addEventListener('input', (e) => {
+        state.stringLenM = parseFloat(e.target.value);
+        document.getElementById('valStringLen').textContent = `${state.stringLenM.toFixed(2)} m`;
+      });
+
+      document.getElementById('sliderLeftCount').addEventListener('input', (e) => {
+        state.leftCount = parseInt(e.target.value, 10);
+        document.getElementById('valLeftCount').textContent = `${state.leftCount} Ball${state.leftCount === 1 ? '' : 's'} (${state.leftCount}→${state.leftCount})`;
+        syncQuickLaunchHighlight();
+        applyLaunchStreamConfiguration();
+      });
+
+      document.getElementById('sliderRightCount').addEventListener('input', (e) => {
+        state.rightCount = parseInt(e.target.value, 10);
+        document.getElementById('valRightCount').textContent =
+          state.rightCount === 0 ? '0 Balls (Off)' : `${state.rightCount} Ball${state.rightCount === 1 ? '' : 's'}`;
+        syncQuickLaunchHighlight();
+        applyLaunchStreamConfiguration();
+      });
+
+      document.getElementById('sliderLeftAngle').addEventListener('input', (e) => {
+        state.leftAngleDeg = parseInt(e.target.value, 10);
+        document.getElementById('valLeftAngle').textContent = `${state.leftAngleDeg}°`;
+        applyLaunchStreamConfiguration();
+      });
+
+      document.getElementById('sliderRightAngle').addEventListener('input', (e) => {
+        state.rightAngleDeg = parseInt(e.target.value, 10);
+        document.getElementById('valRightAngle').textContent = `${state.rightAngleDeg}°`;
+        applyLaunchStreamConfiguration();
+      });
+
+      document.getElementById('sliderTargetBpm').addEventListener('input', (e) => {
+        state.targetBpm = parseInt(e.target.value, 10);
+        document.getElementById('valTargetBpm').textContent = `${state.targetBpm} BPM`;
+        if (state.driveMode === 'realistic_70s') {
+          setDriveMode('perpetual_grav');
+        } else {
+          setDriveMode(state.driveMode);
+        }
+      });
+
+      document.getElementById('sliderRingDuration').addEventListener('input', (e) => {
+        state.ringDurationSec = parseInt(e.target.value, 10);
+        document.getElementById('valRingDuration').textContent = `${state.ringDurationSec} s (High-Q)`;
+        if (state.driveMode === 'realistic_70s') {
+          document.getElementById('badgeEnergyMode').textContent = `${state.ringDurationSec}s Ring-Down`;
+        }
+      });
+
+      document.getElementById('sliderGravity').addEventListener('input', (e) => {
+        state.gravityG = parseFloat(e.target.value);
+        if (state.driveMode !== 'realistic_70s') {
+          setDriveMode('realistic_70s');
+        }
+        const pName = Math.abs(state.gravityG - 9.81) < 0.3 ? 'Earth' : (state.gravityG < 2.5 ? 'Moon' : (state.gravityG < 5.0 ? 'Mars' : 'Jupiter'));
+        document.getElementById('valGravity').textContent = `${state.gravityG.toFixed(2)} m/s² (${pName})`;
+      });
+
+      document.getElementById('sliderDispersion').addEventListener('input', (e) => {
+        state.dispersionPct = parseFloat(e.target.value);
+        document.getElementById('valDispersion').textContent =
+          state.dispersionPct === 0 ? '0.0% (Exact k→k)' : `${state.dispersionPct.toFixed(1)}% (Rocking)`;
+        document.getElementById('badgeContactTau').textContent = `Dispersion ${state.dispersionPct.toFixed(1)}%`;
+      });
+
+      document.getElementById('btnLaunchHeader').addEventListener('click', () => {
+        initAudio();
+        applyLaunchStreamConfiguration();
+      });
+      document.getElementById('btnFireStreamsNow').addEventListener('click', () => {
+        initAudio();
+        applyLaunchStreamConfiguration();
+      });
+
+      document.getElementById('btnPlayPauseHeader').addEventListener('click', (e) => {
+        initAudio();
+        state.isPlaying = !state.isPlaying;
+        e.currentTarget.innerHTML = state.isPlaying
+          ? '⏸ Pause <kbd class="text-[10px] font-mono-tech opacity-75">[P]</kbd>'
+          : '▶ Resume <kbd class="text-[10px] font-mono-tech opacity-75">[P]</kbd>';
+      });
+
+      const stageContainer = document.getElementById('cradleStageContainer');
+      let isStageFullscreen = false;
+
+      function toggleFullScreenStage() {
+        isStageFullscreen = !isStageFullscreen;
+        stageContainer.classList.toggle('cradle-fullscreen-stage', isStageFullscreen);
+        const label = isStageFullscreen ? '✕ Exit Full Screen [F]' : '⛶ Full Screen [F]';
+        document.getElementById('btnStageFullscreen').textContent = label;
+        if (isStageFullscreen && stageContainer.requestFullscreen) {
+          stageContainer.requestFullscreen().catch(() => {});
+        } else if (!isStageFullscreen && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setTimeout(() => {
+          syncViewportSize();
+          centerAndFitCradle();
+        }, 60);
+      }
+
+      document.getElementById('btnFullscreenHeader').addEventListener('click', toggleFullScreenStage);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleFullScreenStage);
+
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && isStageFullscreen) {
+          isStageFullscreen = false;
+          stageContainer.classList.remove('cradle-fullscreen-stage');
+          document.getElementById('btnStageFullscreen').textContent = '⛶ Full Screen [F]';
+        }
+        setTimeout(syncViewportSize, 60);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          initAudio();
+          applyLaunchStreamConfiguration();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullScreenStage();
+        } else if (e.key === 'c' || e.key === 'C' || e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          centerAndFitCradle();
+        } else if (e.key === 'p' || e.key === 'P') {
+          document.getElementById('btnPlayPauseHeader').click();
+        } else if (e.key === '+' || e.key === '=') {
+          camSpherical.radius = Math.max(2.5, camSpherical.radius - 0.6);
+          syncZoomSliderUI();
+        } else if (e.key === '-' || e.key === '_') {
+          camSpherical.radius = Math.min(22.0, camSpherical.radius + 0.6);
+          syncZoomSliderUI();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          camSpherical.targetX -= panStep;
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          camSpherical.targetX += panStep;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          camSpherical.targetY += panStep;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          camSpherical.targetY -= panStep;
+        } else if (e.key === 'Escape' && isStageFullscreen) {
+          toggleFullScreenStage();
+        }
+      });
+
+      // -------------------------------------------------------------------------
+      // Lossless 44.1 kHz 16-Bit Stereo BPM-Locked .WAV Exporter & .JSON Exporter
+      // -------------------------------------------------------------------------
+      document.getElementById('btnExportWav').addEventListener('click', () => {
+        const btn = document.getElementById('btnExportWav');
+        const origText = btn.textContent;
+        btn.textContent = '⏳ Rendering WAV...';
+        try {
+          const sampleRate = 44100;
+          const beatSec = 60.0 / Math.max(30, state.targetBpm);
+          const duration = Math.min(8.0, Math.max(3.0, beatSec * 8.0));
+          const totalSamples = Math.floor(sampleRate * duration);
+          const leftBuf = new Float32Array(totalSamples);
+          const rightBuf = new Float32Array(totalSamples);
+
+          const N = state.masses.length;
+          const angL = -(state.leftAngleDeg * Math.PI) / 180.0;
+          const angR = (state.rightAngleDeg * Math.PI) / 180.0;
+          const isZeroG = state.driveMode === 'zerog_bpm';
+          const gOverL = getEffectiveGravityOverL();
+          const zeroGOmega = (2.0 * Math.abs(angL)) / Math.max(0.08, beatSec);
+
+          const simBalls = state.masses.map((m, i) => ({
+            idx: i,
+            mass: m,
+            theta: i < state.leftCount ? angL : (i >= N - state.rightCount ? angR : 0.0),
+            omega: isZeroG ? (i < state.leftCount ? zeroGOmega : (i >= N - state.rightCount ? -zeroGOmega : 0.0)) : 0.0
+          }));
+
+          const dtSim = 1.0 / 2000.0;
+          const totalSteps = Math.floor(duration / dtSim);
+          const recordedHits = [];
+          const wallRad = Math.max(Math.abs(angL), Math.abs(angR));
+          let lastHitTime = -1.0;
+
+          for (let s = 0; s < totalSteps; s++) {
+            const t = s * dtSim;
+            for (let i = 0; i < N; i++) {
+              const b = simBalls[i];
+              if (!isZeroG) b.omega += (-gOverL * Math.sin(b.theta)) * dtSim;
+              b.theta += b.omega * dtSim;
+              if (isZeroG) {
+                if (b.theta < -wallRad && b.omega < 0) { b.theta = -wallRad; b.omega = -b.omega; }
+                else if (b.theta > wallRad && b.omega > 0) { b.theta = wallRad; b.omega = -b.omega; }
+              }
+            }
+
+            let collided = false;
+            for (let i = 0; i < N - 1; i++) {
+              if (simBalls[i].theta >= simBalls[i + 1].theta - 0.002 && simBalls[i].omega - simBalls[i + 1].omega > 0.005) {
+                collided = true;
+                break;
+              }
+            }
+            if (collided) {
+              let maxDv = 0;
+              let hitPairIdx = 0;
+              let effM = 1.0;
+              for (let pass = 0; pass < N * 4; pass++) {
+                let any = false;
+                for (let k = 0; k < N - 1; k++) {
+                  const bA = simBalls[k];
+                  const bB = simBalls[k + 1];
+                  const wA = bA.omega;
+                  const wB = bB.omega;
+                  const dv = wA - wB;
+                  if (bA.theta >= bB.theta - 0.035 && dv > 0.005) {
+                    if (dv > maxDv) {
+                      maxDv = dv;
+                      hitPairIdx = k;
+                      effM = (2 * bA.mass * bB.mass) / (bA.mass + bB.mass);
+                    }
+                    const mA = bA.mass, mB = bB.mass;
+                    bA.omega = ((mA - mB) * wA + 2 * mB * wB) / (mA + mB);
+                    bB.omega = (2 * mA * wA + (mB - mA) * wB) / (mA + mB);
+                    any = true;
+                  }
+                }
+                if (!any) break;
+              }
+              for (let k = 0; k < N; k++) {
+                if (Math.abs(simBalls[k].theta) < 0.03) simBalls[k].theta = 0.0;
+              }
+              if (t - lastHitTime > 0.03 && maxDv > 0.1) {
+                lastHitTime = t;
+                recordedHits.push({ time: t, pairIdx: hitPairIdx, amp: Math.min(1.0, maxDv * 0.35), effMass: effM });
+              }
+            }
+          }
+
+          const mat = MATERIALS[state.material] || MATERIALS.steel;
+          for (let h = 0; h < recordedHits.length; h++) {
+            const hit = recordedHits[h];
+            const startIdx = Math.floor(hit.time * sampleRate);
+            const pan = N > 1 ? (hit.pairIdx / (N - 1)) * 1.2 - 0.6 : 0.0;
+            const gainL = Math.cos((pan + 1) * Math.PI * 0.25);
+            const gainR = Math.sin((pan + 1) * Math.PI * 0.25);
+            const freq = mat.baseClickFreq * Math.pow(hit.effMass, -0.38);
+            const hitSamples = Math.min(Math.floor(sampleRate * 0.28), totalSamples - startIdx);
+
+            for (let j = 0; j < hitSamples; j++) {
+              const tau = j / sampleRate;
+              const clickSig = Math.sin(2 * Math.PI * freq * tau * Math.exp(-tau * 18)) * Math.exp(-tau * 45);
+              const kickSig = hit.pairIdx <= 1 ? Math.sin(2 * Math.PI * 62 * tau) * Math.exp(-tau * 16) * 0.62 : 0.0;
+              const bellSig = hit.effMass > 1.4 ? Math.sin(2 * Math.PI * 540 * tau) * Math.exp(-tau * 12) * 0.45 : 0.0;
+              const sig = (clickSig * 0.45 + kickSig + bellSig) * hit.amp * 0.6;
+              leftBuf[startIdx + j] = Math.max(-0.98, Math.min(0.98, leftBuf[startIdx + j] + sig * gainL));
+              rightBuf[startIdx + j] = Math.max(-0.98, Math.min(0.98, rightBuf[startIdx + j] + sig * gainR));
+            }
+          }
+
+          const wavBuffer = new ArrayBuffer(44 + totalSamples * 4);
+          const view = new DataView(wavBuffer);
+          const writeStr = (off, str) => { for (let c = 0; c < str.length; c++) view.setUint8(off + c, str.charCodeAt(c)); };
+          writeStr(0, 'RIFF');
+          view.setUint32(4, 36 + totalSamples * 4, true);
+          writeStr(8, 'WAVE');
+          writeStr(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, 2, true);
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * 4, true);
+          view.setUint16(32, 4, true);
+          view.setUint16(34, 16, true);
+          writeStr(36, 'data');
+          view.setUint32(40, totalSamples * 4, true);
+
+          let offset = 44;
+          for (let i = 0; i < totalSamples; i++) {
+            view.setInt16(offset, leftBuf[i] * 32767, true);
+            view.setInt16(offset + 2, rightBuf[i] * 32767, true);
+            offset += 4;
+          }
+
+          const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `newton_pulse_${state.presetId}_${state.targetBpm}BPM.wav`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } finally {
+          btn.textContent = origText;
+        }
+      });
+
+      document.getElementById('btnExportJson').addEventListener('click', () => {
+        const payload = {
+          lab: 'NEWTON-PULSE 3D // Precision Wavefront Newton\'s Cradle & Zero-G BPM Collider',
+          timestamp: new Date().toISOString(),
+          preset: state.presetId,
+          driveMode: state.driveMode,
+          targetBpm: state.targetBpm,
+          ringDurationSec: state.ringDurationSec,
+          topology: state.topology,
+          material: MATERIALS[state.material],
+          masses: state.masses,
+          streamLaunch: {
+            leftBalls: state.leftCount,
+            rightBalls: state.rightCount,
+            leftAngleDeg: state.leftAngleDeg,
+            rightAngleDeg: state.rightAngleDeg
+          },
+          physics: {
+            stringLengthM: state.stringLenM,
+            gravityMps2: state.driveMode === 'zerog_bpm' ? 0.0 : state.gravityG,
+            dispersionPct: state.dispersionPct,
+            totalMomentumNs: Number(state.totalMomentum.toFixed(4)),
+            totalEnergyJ: Number(state.currentTotalEnergy.toFixed(4))
+          }
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `newton_pulse_telemetry_${state.presetId}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // =========================================================================
+      // 9. MASTER 60 FPS ANIMATION LOOP & INITIAL BOOT
+      // =========================================================================
+      loadCradlePreset('classic_1to1');
+      centerAndFitCradle();
+
+      let lastTimeMs = performance.now();
+
+      function animate(nowMs) {
+        requestAnimationFrame(animate);
+        const dt = (nowMs - lastTimeMs) * 0.001;
+        lastTimeMs = nowMs;
+        const timeSec = nowMs * 0.001;
+
+        stepCradlePhysics(dt);
+        updateThreeCradlePositions();
+        updateCameraTransform(timeSec);
+        renderer.render(scene, camera);
+        renderTelemetryCanvases(timeSec);
+
+        let effBpm = state.targetBpm;
+        if (state.driveMode === 'realistic_70s') {
+          const thetaRef = (state.leftAngleDeg * Math.PI) / 180.0;
+          const halfPeriod = Math.PI * Math.sqrt(state.stringLenM / state.gravityG) * ellipticPeriodFactor(thetaRef);
+          effBpm = 60.0 / Math.max(0.1, halfPeriod);
+        }
+        const hitsPerSec = effBpm / 60.0;
+        document.getElementById('hdrGrooveBpm').textContent = `${effBpm.toFixed(1)} BPM`;
+        document.getElementById('hdrHitsPerSec').textContent = `(${hitsPerSec.toFixed(2)} hits/s)`;
+
+        const sustainLabel = state.driveMode === 'realistic_70s' ? `${state.ringDurationSec}s` : '∞';
+        document.getElementById('hdrElapsedSec').textContent = `${state.elapsedSinceLaunchSec.toFixed(1)}s / ${sustainLabel}`;
+
+        const ampPct = state.driveMode === 'realistic_70s'
+          ? Math.max(0, Math.min(100, Math.exp(-(2.9957 / state.ringDurationSec) * state.elapsedSinceLaunchSec) * 100))
+          : 100.0;
+        document.getElementById('hdrEnergyPct').textContent = `${ampPct.toFixed(1)}%`;
+
+        const pSign = state.totalMomentum >= 0 ? '+' : '';
+        document.getElementById('hdrMomentum').textContent = `${pSign}${state.totalMomentum.toFixed(2)} N·s`;
+      }
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

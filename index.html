@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Percussion Labs — Twelve Interactive Laboratories</title>
-<meta name="description" content="Twelve browser-native percussion laboratories, plus a specialty pendulum lab: rudiments, cymatics, cavitation, gongs, tuning forks, chimera oscillators, solitons, isospectral drums, p-adic rhythm and aperiodic tilings.">
+<title>Percussion Labs — Thirteen Interactive Laboratories</title>
+<meta name="description" content="Thirteen browser-native percussion laboratories, plus two specialty pendulum pieces: rudiments, cymatics, cavitation, gongs, tuning forks, singing bowls, chimera oscillators, solitons, isospectral drums, p-adic rhythm and aperiodic tilings.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -114,7 +114,8 @@
   a.card:hover .launch{color:var(--accent)}
   a.card:hover .launch svg{transform:translateX(4px)}
 
-  /* specialty card: single, wider, distinguished */
+  /* specialty cards: wider, distinguished, stacked */
+  .spec{display:flex;flex-direction:column;gap:18px}
   a.feature{
     display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;
     background:linear-gradient(135deg,rgba(255,180,84,.07),rgba(79,209,197,.05) 55%,var(--panel));
@@ -171,19 +172,19 @@
 
   <header>
     <div class="eyebrow">Percussion Series</div>
-    <h1>Twelve percussion <span>laboratories</span>,<br>running in your browser.</h1>
+    <h1>Thirteen percussion <span>laboratories</span>,<br>running in your browser.</h1>
     <p class="lede">
       Each lab is a self-contained instrument built from a different piece of
       physics or mathematics — <strong>cymatics, cavitation, gongs, tuning forks,
-      chimera oscillators, solitons, isospectral drums, p-adic trees, aperiodic
-      tilings</strong>. Turn a knob and the underlying model responds; the sound is
-      generated from the model, not sampled over it. No build step, no backend,
+      singing bowls, chimera oscillators, solitons, isospectral drums, p-adic trees,
+      aperiodic tilings</strong>. Turn a knob and the underlying model responds; the sound
+      is generated from the model, not sampled over it. No build step, no backend,
       no account. Listed in the order they were built, which tracks the order of
       ambition as well: technique first, then visible physics, then abstractions.
     </p>
     <div class="stats">
-      <div class="stat"><b>12</b><i>Laboratories</i></div>
-      <div class="stat"><b>+1</b><i>Specialty piece</i></div>
+      <div class="stat"><b>13</b><i>Laboratories</i></div>
+      <div class="stat"><b>+2</b><i>Specialty pieces</i></div>
       <div class="stat"><b>0</b><i>Install steps</i></div>
       <div class="stat"><b>100%</b><i>Client-side</i></div>
     </div>
@@ -191,8 +192,8 @@
 
   <section>
     <div class="section-head">
-      <h2>The Twelve</h2>
-      <span>01–12 · in order of construction</span>
+      <h2>The Thirteen</h2>
+      <span>01–13 · in order of construction</span>
     </div>
 
     <div class="grid">
@@ -293,31 +294,56 @@
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
+      <a class="card" href="keisu_3d_standing_bell_singing_bowl_rayleigh_love_rim_modes_faraday_spouting_lab.html">
+        <div class="num">13</div>
+        <h3 class="name">KEISU-3D</h3>
+        <p class="desc">A standing bell and a singing bowl: Rayleigh–Love rim modes plus Faraday spouting. Two ways a curved vessel sings — coupled rim modes in the metal, and a liquid film climbing and breaking from the wall.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Rayleigh–Love</span><span class="tag">rim modes</span><span class="tag">Faraday spouting</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
     </div>
   </section>
 
   <section>
     <div class="section-head">
       <h2>Specialty</h2>
-      <span>beyond the twelve · pendulum family</span>
+      <span>beyond the thirteen · the pendulum family</span>
     </div>
 
-    <a class="feature" href="pendulum_loom_3d_harmonic_phase_loom_blackburn_lissajous_coupled_huygens_wave_lab.html">
-      <div>
-        <div class="badge">
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v6l4 2"/><circle cx="8" cy="8" r="6"/></svg>
-          Specialty pendulum lab
+    <div class="spec">
+
+      <a class="feature" href="pendulum_loom_3d_harmonic_phase_loom_blackburn_lissajous_coupled_huygens_wave_lab.html">
+        <div>
+          <div class="badge">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v6l4 2"/><circle cx="8" cy="8" r="6"/></svg>
+            Specialty · harmonic
+          </div>
+          <h3 class="name">PENDULUM-LOOM</h3>
+          <p class="desc">A 3D harmonic phase loom driven by Blackburn pendulums, Lissajous figures and coupled Huygens clocks — interference turned into rhythm. The most purely physical piece in the set: every hit traces back to a pendulum you can watch swing.</p>
+          <div class="tags"><span class="tag">coupled oscillators</span><span class="tag">Lissajous</span><span class="tag">Huygens</span><span class="tag">phase</span></div>
         </div>
-        <h3 class="name">PENDULUM-LOOM</h3>
-        <p class="desc">A 3D harmonic phase loom driven by Blackburn pendulums, Lissajous figures and coupled Huygens clocks — interference turned into rhythm. The most purely physical piece in the set: every hit traces back to a pendulum you can watch swing.</p>
-        <div class="tags"><span class="tag">coupled oscillators</span><span class="tag">Lissajous</span><span class="tag">Huygens</span><span class="tag">phase</span></div>
-      </div>
-      <div class="arrow">Open <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-    </a>
+        <div class="arrow">Open <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="feature" href="newton_pulse_3d_precision_percussive_newton_s_cradle_oddball_mass_chain_zero_g_bpm_collider_rhythm_lab.html">
+        <div>
+          <div class="badge">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v6l4 2"/><circle cx="8" cy="8" r="6"/></svg>
+            Specialty · impulse
+          </div>
+          <h3 class="name">NEWTON-PULSE 3D</h3>
+          <p class="desc">A precision percussive Newton's cradle with an oddball mass chain, a zero-G BPM collider and a rhythm lab. Momentum transfer as rhythm — one ball in and two out is a musical decision, not just a physics demonstration.</p>
+          <div class="tags"><span class="tag new">new</span><span class="tag">momentum transfer</span><span class="tag">mass chain</span><span class="tag">zero-G</span></div>
+        </div>
+        <div class="arrow">Open <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
   </section>
 
   <footer>
-    <div>Percussion Labs · twelve labs + a specialty pendulum piece · built for the browser</div>
+    <div>Percussion Labs · thirteen labs + two specialty pendulum pieces · built for the browser</div>
     <p class="note">
       Everything runs client-side. Audio starts after your first click or key press, because
       browsers require a user gesture before a page may produce sound. The modules reference

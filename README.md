@@ -1,9 +1,9 @@
 # Percussion Labs
 
-Twelve self-contained, browser-native percussion laboratories, plus a specialty
-pendulum lab. Each one builds an instrument out of a different piece of physics
-or mathematics, and generates its sound from the model rather than playing
-samples over it.
+Thirteen self-contained, browser-native percussion laboratories, plus two
+specialty pendulum pieces. Each one builds an instrument out of a different
+piece of physics or mathematics, and generates its sound from the model rather
+than playing samples over it.
 
 **Live suite:** https://agenticocho.github.io/percussion-labs/
 
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The twelve
+## The thirteen
 
 | # | Module | Built on |
 |---|---|---|
@@ -28,15 +28,19 @@ as well — technique first, then visible physics, then abstractions.
 | 10 | **CHIMERA-SWARM** | 3D Kuramoto–Sakaguchi chimera manifold, swarmalator dynamics |
 | 11 | **DIAPASON-3D** | Full-screen 3D Euler–Bernoulli tuning fork, von Mises stress, six eigenmodes |
 | 12 | **KÁRMÁN-GONG 3D** | Föppl–von Kármán nonlinear shell, wave turbulence, pitch glissando |
+| 13 | **KEISU-3D** | Standing bell and singing bowl, Rayleigh–Love rim modes, Faraday spouting |
 
 ## Specialty
 
 | Module | Built on |
 |---|---|
 | **PENDULUM-LOOM** | 3D harmonic phase loom, Blackburn Lissajous figures, coupled Huygens clocks |
+| **NEWTON-PULSE 3D** | Precision percussive Newton's cradle, oddball mass chain, zero-G BPM collider |
 
-The most purely physical piece in the set — every hit traces back to a pendulum
-you can watch swing.
+Two ways a pendulum makes a rhythm: harmonically, where coupled clocks drift in
+and out of phase, and impulsively, where momentum passes through a chain of
+balls. Both are more physical than musical — every hit traces back to a swing
+you can watch.
 
 ## Running locally
 
@@ -69,7 +73,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          twelve laboratory modules + the specialty pendulum lab
+*.html          thirteen laboratory modules + two specialty pendulum pieces
 ```
 
 ## Licence
