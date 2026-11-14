@@ -1,10 +1,10 @@
-# Khayyam — Percussion Series
+# Percussion Labs
 
 Ten self-contained, browser-native percussion laboratories. Each one builds an
 instrument out of a different piece of physics or mathematics, and generates its
 sound from the model rather than playing samples over it.
 
-**Live suite:** https://agenticocho.github.io/khayyam-percussion/
+**Live suite:** https://agenticocho.github.io/percussion-labs/
 
 No build step, no backend, no account. Open `index.html` or any module directly.
 
