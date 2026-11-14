@@ -1,0 +1,1822 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHIMERA-SWARM // 3D Kuramoto-Sakaguchi Chimera Manifold & Swarmalator Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            chimera: {
+              950: '#04050b',
+              900: '#080b16',
+              800: '#101528',
+              700: '#192240',
+              600: '#273663'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #04050b;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080b16; }
+    ::-webkit-scrollbar-thumb { background: #273663; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b5294; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #192240;
+      border: 1px solid #273663;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #c084fc;
+      border: 2px solid #04050b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.6);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6) !important;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(16, 21, 40, 0.94) 0%, rgba(8, 11, 22, 0.98) 100%);
+      border: 1px solid rgba(54, 72, 128, 0.55);
+    }
+    /* Full-Screen Theater Overlay Class (works in both native Fullscreen API and sandboxed iframe fallback) */
+    .chimera-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+    @keyframes pulseChimera {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(192, 132, 252, 0.25); }
+    }
+    .swarm-active {
+      animation: pulseChimera 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-purple-200">
+
+  <!-- TOP STUDIO HEADER & KURAMOTO-SWARMALATOR MASTER TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-chimera-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1640px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/25 via-sky-500/20 to-amber-500/25 border border-purple-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9" stroke="#38bdf8" stroke-dasharray="3 2"></circle>
+            <circle cx="12" cy="12" r="4.5" stroke="#f59e0b"></circle>
+            <line x1="12" y1="12" x2="18.5" y2="7.5" stroke="#10b981" stroke-width="2.2" stroke-linecap="round"></line>
+            <circle cx="18.5" cy="7.5" r="2" fill="#10b981"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">CHIMERA-SWARM // 3D KURAMOTO &amp; SWARMALATOR LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30">Full-Screen 3D WebGL</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Sakaguchi-Kuramoto Non-Local PDE θ̇_i = ω_i + (K/N)∑G_ij sin(θ_j−θ_i−α) • 3D O'Keeffe-Strogatz Swarmalators • Toroidal &amp; Spherical Chimeras</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-chimera-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-purple-500 hover:bg-purple-400 text-slate-950 transition shadow-lg shadow-purple-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">ENGAGE SWARM</span>
+        </button>
+
+        <button id="btnSeedChimera" type="button" class="px-2.5 py-2 rounded-lg bg-chimera-800 hover:bg-chimera-700 text-amber-300 border border-amber-500/40 text-xs font-mono font-semibold transition" title="Nucleate a Half-Coherent / Half-Drifting Chimera State">
+          NUCLEATE CHIMERA ⚡
+        </button>
+
+        <!-- Camera Preset Selector -->
+        <div class="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+          <span class="text-[10px] font-mono text-slate-400">3D Cam:</span>
+          <select id="selectCameraView" class="bg-chimera-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-sky-300 outline-none">
+            <option value="isometric" selected>1. Isometric Studio Orbit</option>
+            <option value="zenith">2. Zenith Polar Ring (Top-Down)</option>
+            <option value="tunnel">3. Toroidal Core Tunnel</option>
+            <option value="equator">4. Equatorial Wave Horizon</option>
+            <option value="drone">5. Cinematic Auto-Orbit Drone</option>
+          </select>
+        </div>
+
+        <!-- BPM & Global Order Parameter R Readout -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[78px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-purple-400">128</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="orderHeaderReadout" class="text-[10px] text-emerald-400 font-mono">Global R = 0.62</div>
+          </div>
+          <input id="sliderBpm" type="range" min="45" max="220" value="128" class="w-24 sm:w-28" />
+        </div>
+      </div>
+
+      <!-- Right Action Buttons: Fullscreen & WAV Export -->
+      <div class="flex items-center gap-2">
+        <button id="btnHeaderFullscreen" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/50 text-xs font-bold transition shadow-md shadow-sky-500/10" title="Launch Immersive Full-Screen 3D Chimera Swarm (Shortcut: F)">
+          <span>⛶ Full Screen [F]</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1640px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): CHIMERA & SWARMALATOR PRESETS, SAKAGUCHI-KURAMOTO PDE ARCHITECT -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated 3D Chimera & Swarmalator Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Chimera &amp; Swarm Regimes</h2>
+            <p class="text-[11px] text-slate-400">Coexisting Sync/Chaos &amp; Swarmalators</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/15 text-purple-300 border border-purple-500/30">8 Attractors</span>
+        </div>
+
+        <div id="chimeraPresetList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- SAKAGUCHI-KURAMOTO & SWARMALATOR PDE PARAMETER ARCHITECT -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-purple-300">Kuramoto-Swarmalator PDE</h2>
+          <p class="text-[10px] text-slate-400">G(d) = 1 + A·cos(d) • ẋ_i ∝ (1 + J cos Δθ)</p>
+        </div>
+
+        <!-- 5 Core PDE Sliders: Oscillator Count N, Coupling K, Frustration alpha, Kernel A, Swarmalator J -->
+        <div class="bg-chimera-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Oscillator Count (N)</span>
+              <span id="valOscCount" class="text-purple-400 font-bold">36 Agents</span>
+            </div>
+            <input id="sliderOscCount" type="range" min="16" max="64" step="2" value="36" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Coupling Strength (K)</span>
+              <span id="valCouplingK" class="text-emerald-400 font-bold">2.10 (Chimera)</span>
+            </div>
+            <input id="sliderCouplingK" type="range" min="0" max="500" value="210" class="w-full slider-emerald" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Phase Frustration (α)</span>
+              <span id="valFrustrationAlpha" class="text-amber-400 font-bold">1.45 rad (83°)</span>
+            </div>
+            <input id="sliderFrustrationAlpha" type="range" min="0" max="157" value="145" class="w-full slider-amber" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">Critical Chimera Window: α ≈ π/2 − 0.12</div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Non-Local Kernel (A)</span>
+              <span id="valKernelA" class="text-sky-400 font-bold">0.90 (Cosine)</span>
+            </div>
+            <input id="sliderKernelA" type="range" min="0" max="100" value="90" class="w-full slider-cyan" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Swarmalator Phase-Attract (J)</span>
+              <span id="valSwarmJ" class="text-purple-400 font-bold">0.80 (Like-Attracts)</span>
+            </div>
+            <input id="sliderSwarmJ" type="range" min="-100" max="100" value="80" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Coherent vs Incoherent Sub-Population Order Telemetry -->
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center justify-between bg-chimera-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Coherent Domain R_sync:</span>
+            <span id="readoutSyncR" class="font-mono font-bold text-amber-400">0.964 (Locked)</span>
+          </div>
+          <div class="flex items-center justify-between bg-chimera-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Drifting Cloud R_drift:</span>
+            <span id="readoutDriftR" class="font-mono font-bold text-sky-400">0.241 (Chaotic)</span>
+          </div>
+          <div class="flex items-center justify-between bg-chimera-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Chimera Contrast ΔR:</span>
+            <span id="readoutChimeraIndex" class="font-mono font-bold text-emerald-400">0.723 (Strong Chimera!)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): FULL-SCREEN CAPABLE 3D THREE.JS VIEWPORT + SPATIOTEMPORAL KYMOGRAPH -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- 3D WEBGL CHIMERA-SWARM CARD -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 4 3D Manifold Topology Tabs -->
+          <div class="flex flex-wrap items-center gap-1 bg-chimera-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabTorusManifold" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-500 text-slate-950 transition">
+              🍩 1. 3D Torus Chimera
+            </button>
+            <button id="tabSwarmalator3D" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🐝 2. 3D Swarmalators
+            </button>
+            <button id="tabSphereSpiral" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🌐 3. S² Spiral Core
+            </button>
+            <button id="tabTwinRings" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              ♊ 4. Abrams Twin Rings
+            </button>
+          </div>
+
+          <!-- Visual Filaments & Trails Toggles -->
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1 text-[11px] font-mono text-emerald-300 cursor-pointer">
+              <input id="chkSyncWeb" type="checkbox" checked class="rounded bg-chimera-800 border-slate-600 text-emerald-500 focus:ring-0" />
+              <span>Sync Web</span>
+            </label>
+            <label class="flex items-center gap-1 text-[11px] font-mono text-sky-300 cursor-pointer">
+              <input id="chkPhaseTrails" type="checkbox" checked class="rounded bg-chimera-800 border-slate-600 text-sky-500 focus:ring-0" />
+              <span>3D Trails</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- FULL-SCREEN CAPABLE 3D VIEWPORT CONTAINER -->
+        <div id="chimeraStageWrapper" class="relative w-full h-80 sm:h-[380px] bg-chimera-950 rounded-xl border border-slate-800/90 overflow-hidden flex flex-col justify-between">
+          <!-- Three.js WebGL Canvas mounts here -->
+          <div id="threeChimeraMount" class="absolute inset-0 w-full h-full"></div>
+
+          <!-- Top Floating HUD Overlay (Visible in both normal & full-screen modes!) -->
+          <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-2 pointer-events-auto">
+              <div id="hudChimeraStateBadge" class="px-3 py-1 rounded-lg bg-chimera-900/90 backdrop-blur-md border border-purple-500/40 text-xs font-mono font-bold text-purple-300">
+                Regime: Coexisting Sync (Amber) + Drifting Cloud (Cyan)
+              </div>
+              <span id="hudClickedAgent" class="hidden sm:inline-block px-2.5 py-1 rounded-lg bg-chimera-900/90 border border-slate-800 text-[10px] font-mono text-amber-300">
+                Click any 3D Oscillator to Perturb • Drag to Orbit
+              </span>
+            </div>
+
+            <!-- Full-Screen & Camera Quick Switcher inside Stage -->
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnStageCamCycle" type="button" class="px-2.5 py-1 rounded-lg bg-chimera-900/90 hover:bg-chimera-800 border border-slate-700 text-[11px] font-mono text-sky-300 transition">
+                🎥 Next Angle
+              </button>
+              <button id="btnStageFullscreen" type="button" class="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-lg">
+                ⛶ Full Screen
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Floating HUD Dock (Allows Full Control While in Full-Screen!) -->
+          <div class="relative z-10 p-3 bg-gradient-to-t from-chimera-950/95 via-chimera-950/75 to-transparent flex flex-col gap-2 pointer-events-auto">
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex flex-wrap items-center gap-1">
+                <span class="text-[10px] font-mono uppercase text-slate-400 mr-1">Inject State:</span>
+                <button id="btnInjectChimera" type="button" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 border border-amber-500/50 text-[10px] font-mono text-amber-200 font-bold">⚡ Half-Sync Chimera</button>
+                <button id="btnInjectTwisted1" type="button" class="px-2 py-0.5 rounded bg-chimera-900/90 hover:bg-chimera-800 border border-slate-700 text-[10px] font-mono text-sky-300">🌪️ q=1 Scroll Wave</button>
+                <button id="btnInjectTwisted2" type="button" class="px-2 py-0.5 rounded bg-chimera-900/90 hover:bg-chimera-800 border border-slate-700 text-[10px] font-mono text-purple-300">🌀 q=2 Double Twist</button>
+                <button id="btnInjectChaos" type="button" class="px-2 py-0.5 rounded bg-chimera-900/90 hover:bg-chimera-800 border border-slate-700 text-[10px] font-mono text-rose-300">💥 Scramble Chaos</button>
+                <button id="btnInjectUnison" type="button" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/50 text-[10px] font-mono text-emerald-200 font-bold">🧲 Clamp Unison</button>
+              </div>
+              <button id="btnFlipChimeraDomains" type="button" class="px-2.5 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/50 text-[10px] font-mono text-purple-200 font-semibold">
+                ⇄ Swap Sync/Chaos Halves
+              </button>
+            </div>
+
+            <!-- Interactive Frustration Alpha & Coupling Quick-Scrubber in Fullscreen -->
+            <div class="flex items-center gap-3">
+              <span class="text-[10px] font-mono text-slate-400 shrink-0">Frustration α:</span>
+              <input id="sliderStageAlpha" type="range" min="0" max="157" value="145" class="flex-1 slider-amber" />
+              <span id="lblStageAlpha" class="text-[11px] font-mono font-bold text-amber-400 w-16 text-right">1.45 rad</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2D SPATIOTEMPORAL KYMOGRAPH (SPACE-TIME PHASE CARPET) & COMPLEX ORDER COMPASS -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-chimera-950/90 border border-slate-800 rounded-xl p-3 items-center">
+          <!-- Scrolling Space-Time Phase Kymograph (7 cols) -->
+          <div class="sm:col-span-7 flex flex-col">
+            <div class="flex items-center justify-between text-[10px] font-mono uppercase text-slate-400 mb-1">
+              <span>Spatiotemporal Chimera Kymograph θ_i(t)</span>
+              <span class="text-amber-300"> Amber = Sync • Cyan Speckle = Chaos</span>
+            </div>
+            <canvas id="kymographCanvas" width="320" height="92" class="w-full h-24 rounded-xl bg-chimera-900 border border-slate-800"></canvas>
+          </div>
+
+          <!-- Complex Unit-Disk Order Parameter Compass R_A, R_B, R_global (5 cols) -->
+          <div class="sm:col-span-5 flex items-center gap-3">
+            <canvas id="orderCompassCanvas" width="96" height="96" class="w-24 h-24 rounded-xl bg-chimera-900 border border-slate-800 shrink-0"></canvas>
+            <div class="space-y-1.5 text-[11px] font-mono flex-1">
+              <div class="bg-chimera-900 border border-slate-800 rounded-lg px-2 py-1">
+                <div class="text-[9px] text-slate-400">GLOBAL ORDER |Z|</div>
+                <div id="readoutGlobalZ" class="font-bold text-emerald-400">R = 0.624</div>
+              </div>
+              <div class="bg-chimera-900 border border-slate-800 rounded-lg px-2 py-1">
+                <div class="text-[9px] text-slate-400">MEAN PHASE Ψ(t)</div>
+                <div id="readoutMeanPsi" class="font-bold text-purple-300">+1.24 rad</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): LOCAL ORDER SPECTRUM R_loc(i), ACOUSTIC TUNING & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- LOCAL ORDER PARAMETER SPECTRUM R_loc(i) & SWARM SYNTHESIZER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Local Order Profile R_loc(i) &amp; Synth</h2>
+            <p class="text-[11px] text-slate-400">R_loc(i) = |∑_{j∈B(i)} e^(iθ_j)| • Amber = Coherent, Cyan = Drifting</p>
+          </div>
+          <button id="btnAuditionSwarmBurst" type="button" class="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/50 text-[11px] font-mono text-purple-300 font-semibold transition">
+            🔔 Swarm Chord
+          </button>
+        </div>
+
+        <!-- Live Local Order Parameter R_loc(i) Bar Chart across all N Oscillators -->
+        <div class="bg-chimera-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>LOCAL COHERENCE R_loc(i) (Click bar to perturb agent)</span>
+            <span class="text-amber-300">i = 1 .. N</span>
+          </div>
+          <div id="localOrderBars" class="flex items-end gap-0.5 h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Scale & Timbre Selectors -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-chimera-950/90 border border-slate-800 rounded-xl p-2">
+            <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">1. Swarm Pitch Mapping</label>
+            <select id="selectSwarmScale" class="w-full bg-chimera-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-purple-300 outline-none">
+              <option value="harmonic" selected>Harmonic Overtone Series (1..16)</option>
+              <option value="pentatonic">Celestial Minor Pentatonic</option>
+              <option value="slendro">Javanese Gamelan Slendro</option>
+              <option value="just_inian">Just Intonation Polychord</option>
+              <option value="local_r">Pitch Modulated by R_loc(i)</option>
+            </select>
+          </div>
+
+          <div class="bg-chimera-950/90 border border-slate-800 rounded-xl p-2">
+            <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">2. Oscillator Voice Timbre</label>
+            <select id="selectSwarmTimbre" class="w-full bg-chimera-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+              <option value="crystal" selected>Crystal FM Pluck + Bell</option>
+              <option value="gamelan">Bronze Gamelan Kettle</option>
+              <option value="kalimba">Resonant Kalimba Tine</option>
+              <option value="marimba">Rosewood Marimba Bar</option>
+              <option value="synth_pulse">Analog Sub-Harmonic Pulse</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4 Synthesis & Frequency Dispersion Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-chimera-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Root Pitch (f₀)</span>
+              <span id="valRootFreq" class="font-mono text-purple-400">165 Hz</span>
+            </div>
+            <input id="sliderRootFreq" type="range" min="65" max="360" value="165" class="w-full" />
+          </div>
+
+          <div class="bg-chimera-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Voice Decay</span>
+              <span id="valVoiceDecay" class="font-mono text-sky-400">0.52 s</span>
+            </div>
+            <input id="sliderVoiceDecay" type="range" min="12" max="180" value="52" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-chimera-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Lorentzian Spread (γ_ω)</span>
+              <span id="valOmegaSpread" class="font-mono text-amber-400">0.08 (Nearly Identical)</span>
+            </div>
+            <input id="sliderOmegaSpread" type="range" min="0" max="100" value="8" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-chimera-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Thermal Noise (D_ξ)</span>
+              <span id="valThermalNoise" class="font-mono text-emerald-400">0.02</span>
+            </div>
+            <input id="sliderThermalNoise" type="range" min="0" max="100" value="2" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & SWARM TELEMETRY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Chimera &amp; Swarm WAV Exporter</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportChimeraLoopWav" type="button" class="px-3 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-xs transition shadow-md shadow-purple-500/15">
+              💾 Export Chimera Swarm (.WAV)
+            </button>
+            <button id="btnExportSyncVsChaosWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              🌓 Export Sync vs Chaos (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Swarm Stems (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="coherent_burst" class="chimera-shot-btn px-2 py-1.5 rounded-lg bg-chimera-900 hover:bg-chimera-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                CoherentPulse.wav
+              </button>
+              <button type="button" data-shot="scroll_wave" class="chimera-shot-btn px-2 py-1.5 rounded-lg bg-chimera-900 hover:bg-chimera-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                ScrollWave.wav
+              </button>
+              <button type="button" data-shot="swarm_vortex" class="chimera-shot-btn px-2 py-1.5 rounded-lg bg-chimera-900 hover:bg-chimera-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                Swarmalator.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Kuramoto-Swarmalator State JSON</span>
+            <button id="btnExportChimeraJson" type="button" class="px-2.5 py-1 rounded-lg bg-chimera-800 hover:bg-chimera-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="chimeraVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="chimeraVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-chimera-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-[10000] hidden px-4 py-2.5 rounded-xl bg-chimera-800/95 border border-purple-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. CURATED 3D KURAMOTO CHIMERA & O'KEEFFE-STROGATZ SWARMALATOR PRESETS
+    // =========================================================================
+    const CHIMERA_PRESETS = [
+      {
+        id: "kuramoto_battogtokh",
+        name: "Kuramoto-Battogtokh 3D Toroidal Chimera",
+        desc: "Classic non-local cosine coupling (A=0.90, α=1.45 rad) splitting the torus into sync & chaos",
+        manifold: "torus", count: 36, K: 2.10, alpha: 1.45, A: 0.90, J: 0.50, cam: "isometric", initType: "chimera", bpm: 128
+      },
+      {
+        id: "swarmalator_splintered",
+        name: "O'Keeffe-Strogatz Splintered Phase-Wave Swarm",
+        desc: "Coupled 3D spatial-phase Swarmalators (J=+0.85, K=−0.45) self-assembling into rotating vortex pods",
+        manifold: "swarmalator", count: 40, K: 1.45, alpha: 1.38, A: 0.75, J: 0.85, cam: "zenith", initType: "scroll1", bpm: 134
+      },
+      {
+        id: "abrams_strogatz_twin",
+        name: "Abrams-Strogatz Twin-Ring Symmetry Breaking",
+        desc: "Two identically coupled 3D rings where Ring A phase-locks (R≈0.98) while Ring B drifts (R≈0.22)",
+        manifold: "twin", count: 36, K: 2.35, alpha: 1.47, A: 0.85, J: 0.40, cam: "isometric", initType: "chimera", bpm: 124
+      },
+      {
+        id: "spherical_spiral_defect",
+        name: "Spherical S² Spiral-Wave Chimera Defect",
+        desc: "Rotating spiral phase wave on a 3D geodesic sphere with an incoherent chimera eye at the pole",
+        manifold: "sphere", count: 42, K: 2.20, alpha: 1.44, A: 0.88, J: 0.60, cam: "isometric", initType: "chimera", bpm: 132
+      },
+      {
+        id: "swarmalator_rainbow_ring",
+        name: "Swarmalator Static Phase-Wave Annulus (J = +0.95)",
+        desc: "Like-phases attract spatially while opposite-phases repel into a rainbow toroidal vortex ring",
+        manifold: "swarmalator", count: 44, K: 0.65, alpha: 1.25, A: 0.80, J: 0.95, cam: "zenith", initType: "scroll1", bpm: 120
+      },
+      {
+        id: "twisted_scroll_q2",
+        name: "Wiley-Strogatz-Girvan q=2 Double-Twisted Scroll",
+        desc: "Topological winding number q = 2 phase wave spiraling twice around the 3D torus",
+        manifold: "torus", count: 36, K: 2.60, alpha: 0.35, A: 0.92, J: 0.50, cam: "tunnel", initType: "scroll2", bpm: 140
+      },
+      {
+        id: "breathing_chimera",
+        name: "Breathing Non-Stationary Chimera Oscillation",
+        desc: "High phase frustration (α=1.51 rad) causing the incoherent domain's order parameter R_B(t) to pulse",
+        manifold: "twin", count: 38, K: 2.40, alpha: 1.51, A: 0.95, J: 0.50, cam: "equator", initType: "chimera", bpm: 136
+      },
+      {
+        id: "turbulent_desync_gas",
+        name: "Super-Critical Phase Turbulence (α = 1.56 rad)",
+        desc: "Near-π/2 Sakaguchi frustration shattering global coherence into multi-cluster polyrhythmic bursts",
+        manifold: "torus", count: 40, K: 1.80, alpha: 1.56, A: 0.85, J: -0.45, cam: "drone", initType: "chaos", bpm: 148
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "kuramoto_battogtokh",
+      manifold: "torus", // 'torus' | 'swarmalator' | 'sphere' | 'twin'
+      isPlaying: true,
+      isFullscreen: false,
+      bpm: 128,
+
+      // Sakaguchi-Kuramoto & Swarmalator PDE Parameters
+      oscCount: 36,
+      couplingK: 2.10,
+      frustrationAlpha: 1.45, // radians
+      kernelA: 0.90,          // Non-local coupling modulation G(d) = 1 + A*cos(d)
+      swarmJ: 0.80,           // Swarmalator phase-dependent spatial attraction
+      omegaSpread: 0.08,      // Natural frequency dispersion
+      thermalNoise: 0.02,
+
+      // Order Parameters & Telemetry
+      globalR: 0.62,
+      globalPsi: 0.0,
+      syncGroupR: 0.96,
+      driftGroupR: 0.24,
+
+      // Visual & Camera Options
+      cameraPreset: "isometric", // 'isometric' | 'zenith' | 'tunnel' | 'equator' | 'drone'
+      showSyncWeb: true,
+      showPhaseTrails: true,
+
+      // Oscillator Agent Array
+      agents: [], // { idx, theta, dTheta, natDelta, localR, glow, x, y, z, vx, vy, vz, ringAngle, trailPts }
+
+      // Acoustic Synthesis Parameters
+      scaleMode: "harmonic",
+      timbre: "crystal",
+      rootFreqHz: 165,
+      voiceDecaySec: 0.52,
+
+      // Vault
+      vault: []
+    };
+
+    // =========================================================================
+    // 3. OSCILLATOR SWARM INITIALIZATION & STATE INJECTORS
+    // =========================================================================
+    function initSwarmAgents(initMode = "chimera") {
+      const N = state.oscCount;
+      state.agents = [];
+      const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+      for (let i = 0; i < N; i++) {
+        const ringAngle = (i / N) * Math.PI * 2;
+        const isFirstHalf = i < N / 2;
+
+        // Seed initial phase distribution
+        let theta = 0;
+        if (initMode === 'chimera') {
+          // Canonical Chimera initial condition: First half tightly phase-locked, second half Gaussian/random!
+          if (isFirstHalf) {
+            theta = 0.05 * Math.sin(ringAngle * 2);
+          } else {
+            const env = Math.sin(((i - N / 2) / (N / 2)) * Math.PI);
+            theta = (Math.random() * 2 - 1) * Math.PI * env;
+          }
+          theta = (theta + Math.PI * 2) % (Math.PI * 2);
+        } else if (initMode === 'scroll1') {
+          theta = ringAngle;
+        } else if (initMode === 'scroll2') {
+          theta = (ringAngle * 2) % (Math.PI * 2);
+        } else if (initMode === 'unison') {
+          theta = 0.02 * (Math.random() - 0.5);
+        } else {
+          theta = Math.random() * Math.PI * 2;
+        }
+
+        // Initial 3D Spatial Coordinates (used directly by Swarmalators or overridden by Manifold mapping)
+        const rInit = 2.2 + 1.4 * Math.cos(theta);
+        const sx = rInit * Math.cos(ringAngle);
+        const sz = rInit * Math.sin(ringAngle);
+        const sy = 1.1 * Math.sin(theta);
+
+        // Fibonacci Sphere coordinates for S^2 manifold
+        const ySph = 1 - (i / Math.max(1, N - 1)) * 2;
+        const rSph = Math.sqrt(Math.max(0, 1 - ySph * ySph));
+        const phiSph = i * goldenAngle;
+
+        state.agents.push({
+          idx: i,
+          ringAngle,
+          theta,
+          dTheta: 0,
+          natDelta: (i / N - 0.5) * 2.0,
+          localR: isFirstHalf ? 0.95 : 0.25,
+          glow: 0,
+          x: sx, y: sy, z: sz,
+          sphX: Math.cos(phiSph) * rSph,
+          sphY: ySph,
+          sphZ: Math.sin(phiSph) * rSph,
+          trailPts: []
+        });
+      }
+
+      buildLocalOrderBarsDOM();
+      rebuildThreeSwarmScene();
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO SWARM POLYPHONIC SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.82;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function computeAgentPitchHz(agent) {
+      const f0 = state.rootFreqHz;
+      const i = agent.idx;
+
+      if (state.scaleMode === 'local_r') {
+        // Coherent agents lock onto pure fifth/octave intervals; drifting chimera agents microtonally detune!
+        const quantRatios = [1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+        const base = f0 * quantRatios[i % quantRatios.length];
+        const driftDetune = (1.0 - agent.localR) * 0.22 * Math.sin(i * 2.4);
+        return base * (1.0 + driftDetune);
+      } else if (state.scaleMode === 'pentatonic') {
+        const penta = [1.0, 1.125, 1.25, 1.5, 1.667, 2.0, 2.25, 2.5, 3.0, 3.333];
+        return f0 * penta[i % penta.length] * (1 + Math.floor(i / 20) * 0.5);
+      } else if (state.scaleMode === 'slendro') {
+        const slendro = [1.0, 1.149, 1.319, 1.516, 1.741, 2.0, 2.297, 2.639, 3.031];
+        return f0 * slendro[i % slendro.length];
+      } else if (state.scaleMode === 'just_inian') {
+        const just = [1.0, 1.125, 1.25, 1.333, 1.5, 1.667, 1.875, 2.0, 2.25, 2.5];
+        return f0 * just[i % just.length];
+      } else {
+        return f0 * (1 + (i % 16) * 0.18);
+      }
+    }
+
+    function triggerSwarmVoice(ctx, destNode, when, agent, velocity = 0.75) {
+      const baseFreq = Math.min(4800, Math.max(55, computeAgentPitchHz(agent)));
+      const decay = state.voiceDecaySec * (0.75 + agent.localR * 0.45);
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.015, velocity * 0.30), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        const pan = Math.max(-0.9, Math.min(0.9, agent.x / 4.2));
+        panner.pan.setValueAtTime(pan, when);
+        hitGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        hitGain.connect(destNode);
+      }
+
+      let partials = [1.0, 2.0, 3.0];
+      let oscType = 'sine';
+      if (state.timbre === 'crystal') {
+        partials = [1.0, 2.0, 4.02];
+        oscType = agent.localR > 0.65 ? 'triangle' : 'sine';
+      } else if (state.timbre === 'gamelan') {
+        partials = [1.0, 1.008, 2.42, 3.88];
+        oscType = 'triangle';
+      } else if (state.timbre === 'kalimba') {
+        partials = [1.0, 2.92, 5.8];
+        oscType = 'sine';
+      } else if (state.timbre === 'marimba') {
+        partials = [1.0, 4.0, 9.6];
+        oscType = 'sine';
+      } else if (state.timbre === 'synth_pulse') {
+        partials = [0.5, 1.0, 1.5, 2.0];
+        oscType = 'sawtooth';
+      }
+
+      partials.forEach((ratio, pIdx) => {
+        const freq = Math.min(13000, baseFreq * ratio);
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = pIdx === 0 ? oscType : 'sine';
+        osc.frequency.setValueAtTime(freq, when);
+
+        const amp = pIdx === 0 ? 0.72 : (0.24 / pIdx);
+        const pDecay = Math.max(0.04, decay / Math.pow(pIdx + 1, 0.55));
+        g.gain.setValueAtTime(0.001, when);
+        g.gain.linearRampToValueAtTime(amp, when + 0.002);
+        g.gain.exponentialRampToValueAtTime(0.0008, when + pDecay);
+
+        osc.connect(g);
+        g.connect(hitGain);
+        osc.start(when);
+        osc.stop(when + pDecay + 0.02);
+      });
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D WEBGL SCENE (TORUS, SWARMALATORS, SPHERE & TWIN RINGS)
+    // =========================================================================
+    let scene, camera, renderer, raycaster, mouseVec;
+    let swarmGroup, guideWireMesh, orderArrowGroup, syncWebLines;
+    let agentMeshes = [];
+    let trailLineMeshes = [];
+    let isDraggingOrbit = false;
+    let prevPointer = { x: 0, y: 0 };
+    let camSpherical = { theta: 0.65, phi: 1.05, radius: 11.8 };
+
+    function initThreeSwarmEngine() {
+      const mount = document.getElementById('threeChimeraMount');
+      const w = mount.clientWidth || 640;
+      const h = mount.clientHeight || 380;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04050b);
+
+      camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 200);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      mount.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      // Lighting
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.72);
+      scene.add(ambLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 0.95);
+      dirLight1.position.set(10, 14, 10);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xf59e0b, 0.85);
+      dirLight2.position.set(-10, -10, -8);
+      scene.add(dirLight2);
+
+      swarmGroup = new THREE.Group();
+      scene.add(swarmGroup);
+
+      rebuildThreeSwarmScene();
+      applyCameraPreset(state.cameraPreset);
+
+      window.addEventListener('resize', handleViewportResize);
+      document.addEventListener('fullscreenchange', handleViewportResize);
+
+      let downPos = { x: 0, y: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDraggingOrbit = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        downPos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingOrbit) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        camSpherical.theta -= dx * 0.0075;
+        camSpherical.phi = Math.max(0.12, Math.min(Math.PI - 0.12, camSpherical.phi - dy * 0.0075));
+        updateCameraPosition();
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!isDraggingOrbit) return;
+        isDraggingOrbit = false;
+        if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 6) {
+          handleThreeAgentClick(e);
+        }
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(4.5, Math.min(28, camSpherical.radius + e.deltaY * 0.01));
+        updateCameraPosition();
+      }, { passive: false });
+    }
+
+    function handleViewportResize() {
+      const mount = document.getElementById('threeChimeraMount');
+      if (!mount || !renderer || !camera) return;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      if (!w || !h) return;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function applyCameraPreset(preset) {
+      state.cameraPreset = preset;
+      document.getElementById('selectCameraView').value = preset;
+      if (preset === 'isometric') {
+        camSpherical = { theta: 0.65, phi: 1.05, radius: 11.8 };
+      } else if (preset === 'zenith') {
+        camSpherical = { theta: 0.0, phi: 0.12, radius: 12.8 };
+      } else if (preset === 'tunnel') {
+        camSpherical = { theta: 0.0, phi: 1.48, radius: 5.8 };
+      } else if (preset === 'equator') {
+        camSpherical = { theta: 0.0, phi: Math.PI / 2, radius: 12.2 };
+      }
+      updateCameraPosition();
+    }
+
+    function updateCameraPosition() {
+      if (!camera) return;
+      const r = camSpherical.radius;
+      const x = r * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      const y = r * Math.cos(camSpherical.phi);
+      const z = r * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.position.set(x, y, z);
+      camera.lookAt(0, 0, 0);
+    }
+
+    function rebuildThreeSwarmScene() {
+      if (!swarmGroup) return;
+      while (swarmGroup.children.length > 0) {
+        swarmGroup.remove(swarmGroup.children[0]);
+      }
+      agentMeshes = [];
+      trailLineMeshes = [];
+
+      // 1. Background Wireframe Manifold Reference (Torus, Sphere, or Twin Rings)
+      if (state.manifold === 'torus') {
+        const tGeo = new THREE.TorusGeometry(3.0, 1.05, 16, 48);
+        const wGeo = new THREE.WireframeGeometry(tGeo);
+        const wMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.42 });
+        guideWireMesh = new THREE.LineSegments(wGeo, wMat);
+        guideWireMesh.rotation.x = Math.PI / 2;
+        swarmGroup.add(guideWireMesh);
+      } else if (state.manifold === 'sphere') {
+        const sGeo = new THREE.SphereGeometry(3.1, 20, 16);
+        const wGeo = new THREE.WireframeGeometry(sGeo);
+        const wMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.38 });
+        guideWireMesh = new THREE.LineSegments(wGeo, wMat);
+        swarmGroup.add(guideWireMesh);
+      } else if (state.manifold === 'twin') {
+        [-1.3, 1.3].forEach((yOff, idx) => {
+          const rGeo = new THREE.TorusGeometry(3.1, 0.04, 8, 64);
+          const rMat = new THREE.MeshBasicMaterial({ color: idx === 0 ? 0xf59e0b : 0x38bdf8, transparent: true, opacity: 0.4 });
+          const rMesh = new THREE.Mesh(rGeo, rMat);
+          rMesh.rotation.x = Math.PI / 2;
+          rMesh.position.y = yOff;
+          swarmGroup.add(rMesh);
+        });
+      } else {
+        const grid = new THREE.GridHelper(10, 20, 0x1e293b, 0x0f172a);
+        grid.position.y = -2.2;
+        swarmGroup.add(grid);
+      }
+
+      // 2. Central Global Order Parameter Vector Arrow R * exp(i * Psi)
+      orderArrowGroup = new THREE.Group();
+      const shaftGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.0, 12);
+      shaftGeo.translate(0, 0.5, 0);
+      shaftGeo.rotateZ(-Math.PI / 2);
+      const shaftMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+      const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
+      orderArrowGroup.add(shaftMesh);
+      swarmGroup.add(orderArrowGroup);
+
+      // 3. Create Oscillator Agent Spheres & 3D Light Trails
+      const sphereGeo = new THREE.SphereGeometry(0.21, 20, 20);
+      state.agents.forEach((ag, idx) => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: 0xf59e0b,
+          emissive: 0xf59e0b,
+          emissiveIntensity: 0.3,
+          roughness: 0.2,
+          metalness: 0.65
+        });
+        const mesh = new THREE.Mesh(sphereGeo, mat);
+        mesh.userData = { agentIdx: idx };
+        swarmGroup.add(mesh);
+        agentMeshes.push(mesh);
+
+        const trGeo = new THREE.BufferGeometry();
+        const trMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.42 });
+        const trLine = new THREE.Line(trGeo, trMat);
+        swarmGroup.add(trLine);
+        trailLineMeshes.push(trLine);
+      });
+
+      // 4. Phase-Synchronization Synaptic Web LineSegments
+      const webGeo = new THREE.BufferGeometry();
+      const webMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.28 });
+      syncWebLines = new THREE.LineSegments(webGeo, webMat);
+      swarmGroup.add(syncWebLines);
+    }
+
+    function handleThreeAgentClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouseVec, camera);
+      const hits = raycaster.intersectObjects(agentMeshes);
+      if (hits.length > 0) {
+        const idx = hits[0].object.userData.agentIdx;
+        const ag = state.agents[idx];
+        if (ag) {
+          ag.theta = (ag.theta + Math.PI) % (Math.PI * 2);
+          ag.glow = 1.0;
+          document.getElementById('hudClickedAgent').textContent =
+            `Perturbed Agent #${idx + 1} • R_loc = ${ag.localR.toFixed(3)} (${ag.localR > 0.68 ? 'Coherent' : 'Drifting'})`;
+          const ctx = ensureAudio();
+          triggerSwarmVoice(ctx, masterGain, ctx.currentTime, ag, 0.96);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 6. SAKAGUCHI-KURAMOTO & 3D SWARMALATOR PDE SOLVER + KYMOGRAPH
+    // =========================================================================
+    const kymoCanvas = document.getElementById('kymographCanvas');
+    const kymoCtx = kymoCanvas.getContext('2d');
+    const compassCanvas = document.getElementById('orderCompassCanvas');
+    const compassCtx = compassCanvas.getContext('2d');
+    let kymoColPtr = 0;
+
+    let lastTs = performance.now();
+    function animateMainLoop() {
+      const now = performance.now();
+      const dt = Math.min(0.04, (now - lastTs) / 1000);
+      lastTs = now;
+
+      if (state.cameraPreset === 'drone' && !isDraggingOrbit) {
+        camSpherical.theta += dt * 0.28;
+        updateCameraPosition();
+      }
+
+      stepKuramotoSwarmalatorPDE(dt);
+      updateThreeSwarmGeometry(dt);
+      renderOrderCompassCanvas();
+      updateLocalOrderBarsDOM();
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animateMainLoop);
+    }
+
+    function stepKuramotoSwarmalatorPDE(dt) {
+      const N = state.agents.length;
+      if (N === 0) return;
+
+      const baseOmega = (state.bpm / 60) * Math.PI * 1.45;
+      const K = state.couplingK;
+      const alpha = state.frustrationAlpha;
+      const A = state.kernelA;
+      const J = state.swarmJ;
+      const spread = state.omegaSpread;
+      const noiseAmp = state.thermalNoise;
+
+      // 1. Compute Local Order Parameter R_loc(i) for every oscillator within neighborhood |i - j| <= M
+      const neighSpan = Math.max(2, Math.floor(N * 0.14));
+      let sumCosAll = 0, sumSinAll = 0;
+      let sumSyncR = 0, countSync = 0;
+      let sumDriftR = 0, countDrift = 0;
+
+      for (let i = 0; i < N; i++) {
+        let locCos = 0, locSin = 0, cnt = 0;
+        for (let d = -neighSpan; d <= neighSpan; d++) {
+          const j = (i + d + N) % N;
+          locCos += Math.cos(state.agents[j].theta);
+          locSin += Math.sin(state.agents[j].theta);
+          cnt++;
+        }
+        const rLoc = Math.hypot(locCos / cnt, locSin / cnt);
+        state.agents[i].localR = rLoc;
+
+        sumCosAll += Math.cos(state.agents[i].theta);
+        sumSinAll += Math.sin(state.agents[i].theta);
+
+        if (i < N / 2) { sumSyncR += rLoc; countSync++; }
+        else { sumDriftR += rLoc; countDrift++; }
+      }
+
+      state.globalR = Math.hypot(sumCosAll / N, sumSinAll / N);
+      state.globalPsi = Math.atan2(sumSinAll / N, sumCosAll / N);
+      state.syncGroupR = countSync > 0 ? sumSyncR / countSync : 0;
+      state.driftGroupR = countDrift > 0 ? sumDriftR / countDrift : 0;
+
+      // Update UI Telemetry
+      document.getElementById('orderHeaderReadout').textContent = `Global R = ${state.globalR.toFixed(2)}`;
+      document.getElementById('readoutGlobalZ').textContent = `R = ${state.globalR.toFixed(3)}`;
+      document.getElementById('readoutMeanPsi').textContent = `${state.globalPsi >= 0 ? '+' : ''}${state.globalPsi.toFixed(2)} rad`;
+      document.getElementById('readoutSyncR').textContent = `${state.syncGroupR.toFixed(3)} (${state.syncGroupR > 0.7 ? 'Locked' : 'Partial'})`;
+      document.getElementById('readoutDriftR').textContent = `${state.driftGroupR.toFixed(3)} (${state.driftGroupR < 0.55 ? 'Drifting' : 'Syncing'})`;
+      const chimeraDiff = Math.abs(state.syncGroupR - state.driftGroupR);
+      document.getElementById('readoutChimeraIndex').textContent =
+        `${chimeraDiff.toFixed(3)} (${chimeraDiff > 0.25 ? 'Strong Chimera!' : 'Uniform State'})`;
+
+      if (!state.isPlaying) return;
+
+      // 2. Integrate Phase & Spatial Velocities
+      const nextTheta = new Float64Array(N);
+      const nextX = new Float64Array(N);
+      const nextY = new Float64Array(N);
+      const nextZ = new Float64Array(N);
+
+      for (let i = 0; i < N; i++) {
+        const agI = state.agents[i];
+        let phaseSum = 0;
+        let fx = 0, fy = 0, fz = 0;
+
+        for (let j = 0; j < N; j++) {
+          if (i === j) continue;
+          const agJ = state.agents[j];
+
+          if (state.manifold === 'swarmalator') {
+            // 3D O'Keeffe-Strogatz Swarmalator Spatial-Phase PDE
+            const dx = agJ.x - agI.x;
+            const dy = agJ.y - agI.y;
+            const dz = agJ.z - agI.z;
+            const dist = Math.max(0.35, Math.hypot(dx, dy, dz));
+            const attract = 1.0 + J * Math.cos(agJ.theta - agI.theta);
+            const repel = 1.4 / (dist * dist);
+            const fMag = (attract / dist) - repel;
+            fx += dx * fMag;
+            fy += dy * fMag;
+            fz += dz * fMag;
+            phaseSum += (Math.sin(agJ.theta - agI.theta - alpha * 0.45)) / dist;
+          } else if (state.manifold === 'twin') {
+            // Abrams-Strogatz Two-Population Kernel (\mu intra-ring, \nu inter-ring)
+            const sameRing = (i < N / 2 && j < N / 2) || (i >= N / 2 && j >= N / 2);
+            const weight = sameRing ? (1.0 + A) : (1.0 - A);
+            phaseSum += weight * Math.sin(agJ.theta - agI.theta - alpha);
+          } else {
+            // Non-Local Cosine Coupling Kernel G(x_i - x_j) = 1 + A * cos(x_i - x_j)
+            const dAng = agI.ringAngle - agJ.ringAngle;
+            const Gij = 1.0 + A * Math.cos(dAng);
+            phaseSum += Gij * Math.sin(agJ.theta - agI.theta - alpha);
+          }
+        }
+
+        const omegaI = baseOmega * (1.0 + spread * agI.natDelta);
+        const dTheta = omegaI + (K / N) * phaseSum + (Math.random() - 0.5) * noiseAmp * 8.0;
+        agI.dTheta = dTheta;
+
+        const prevMod = ((agI.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        const updatedTheta = agI.theta + dTheta * dt;
+        const newMod = ((updatedTheta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        nextTheta[i] = updatedTheta;
+
+        // Fire acoustic voice when phase wraps past 2*pi -> 0!
+        if (newMod < prevMod && dTheta > 0) {
+          agI.glow = 1.0;
+          const ctx = ensureAudio();
+          triggerSwarmVoice(ctx, masterGain, ctx.currentTime, agI, agI.localR > 0.7 ? 0.85 : 0.52);
+        }
+
+        if (state.manifold === 'swarmalator') {
+          // Swirl velocity + spatial attraction-repulsion
+          const swirlX = -agI.z * 0.45;
+          const swirlZ = agI.x * 0.45;
+          nextX[i] = agI.x + (swirlX + (fx / N) * 3.5) * dt;
+          nextY[i] = agI.y * 0.96 + (Math.sin(updatedTheta) * 1.1 - agI.y) * 0.08 + (fy / N) * dt;
+          nextZ[i] = agI.z + (swirlZ + (fz / N) * 3.5) * dt;
+        }
+      }
+
+      for (let i = 0; i < N; i++) {
+        state.agents[i].theta = nextTheta[i];
+        if (state.manifold === 'swarmalator') {
+          state.agents[i].x = nextX[i];
+          state.agents[i].y = nextY[i];
+          state.agents[i].z = nextZ[i];
+        }
+      }
+
+      // Advance Spatiotemporal Kymograph Column
+      renderKymographColumn();
+    }
+
+    function updateThreeSwarmGeometry(dt) {
+      const N = state.agents.length;
+      const webPositions = [];
+
+      for (let i = 0; i < N; i++) {
+        const ag = state.agents[i];
+        ag.glow = Math.max(0, ag.glow - dt * 3.2);
+
+        if (state.manifold === 'torus') {
+          // 3D Torus \mathbb{T}^2: Major angle = ringAngle, Minor poloidal angle = phase \theta_i(t)!
+          const Rmaj = 3.0;
+          const rMin = 1.05;
+          const u = ag.ringAngle;
+          const v = ag.theta;
+          ag.x = (Rmaj + rMin * Math.cos(v)) * Math.cos(u);
+          ag.z = (Rmaj + rMin * Math.cos(v)) * Math.sin(u);
+          ag.y = rMin * Math.sin(v);
+        } else if (state.manifold === 'sphere') {
+          // Geodesic Sphere S^2 with radial phase pulsation
+          const rPulse = 3.1 + 0.38 * Math.sin(ag.theta);
+          ag.x = ag.sphX * rPulse;
+          ag.y = ag.sphY * rPulse;
+          ag.z = ag.sphZ * rPulse;
+        } else if (state.manifold === 'twin') {
+          // Abrams-Strogatz Twin Rings (Upper Ring A vs Lower Ring B)
+          const isUpper = i < N / 2;
+          const subIdx = isUpper ? i : (i - N / 2);
+          const subAng = (subIdx / (N / 2)) * Math.PI * 2;
+          const Rring = 3.1 + 0.25 * Math.cos(ag.theta);
+          ag.x = Rring * Math.cos(subAng);
+          ag.z = Rring * Math.sin(subAng);
+          ag.y = (isUpper ? 1.3 : -1.3) + 0.38 * Math.sin(ag.theta);
+        }
+
+        const mesh = agentMeshes[i];
+        if (mesh) {
+          mesh.position.set(ag.x, ag.y, ag.z);
+          const s = 1.0 + ag.glow * 0.75;
+          mesh.scale.set(s, s, s);
+
+          // Color by Local Order Parameter R_loc(i):
+          // High R_loc (Coherent Domain) -> Warm Amber/Gold (#f59e0b)
+          // Low R_loc (Drifting Chimera Cloud) -> Electric Cyan/Purple (#38bdf8)
+          if (ag.localR > 0.68) {
+            mesh.material.color.setHex(0xf59e0b);
+            mesh.material.emissive.setHex(0xd97706);
+          } else {
+            mesh.material.color.setHex(0x38bdf8);
+            mesh.material.emissive.setHex(0x0284c7);
+          }
+          mesh.material.emissiveIntensity = 0.25 + ag.glow * 0.75;
+        }
+
+        // Update 3D Trail
+        const trLine = trailLineMeshes[i];
+        if (trLine) {
+          trLine.visible = state.showPhaseTrails;
+          if (state.showPhaseTrails) {
+            ag.trailPts.push(new THREE.Vector3(ag.x, ag.y, ag.z));
+            if (ag.trailPts.length > 22) ag.trailPts.shift();
+            trLine.geometry.setFromPoints(ag.trailPts);
+          }
+        }
+
+        // Build Synaptic Phase-Locked Web Connections
+        if (state.showSyncWeb) {
+          const nextJ = (i + 1) % N;
+          const agNext = state.agents[nextJ];
+          if (Math.cos(ag.theta - agNext.theta) > 0.72) {
+            webPositions.push(ag.x, ag.y, ag.z, agNext.x, agNext.y, agNext.z);
+          }
+        }
+      }
+
+      if (syncWebLines) {
+        syncWebLines.visible = state.showSyncWeb;
+        syncWebLines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(webPositions, 3));
+      }
+
+      if (orderArrowGroup) {
+        const len = Math.max(0.15, state.globalR * 2.8);
+        orderArrowGroup.scale.set(len, 1, 1);
+        orderArrowGroup.rotation.y = -state.globalPsi;
+      }
+    }
+
+    function renderKymographColumn() {
+      const W = kymoCanvas.width;
+      const H = kymoCanvas.height;
+      const N = state.agents.length;
+      const cellH = H / Math.max(1, N);
+
+      for (let i = 0; i < N; i++) {
+        const ag = state.agents[i];
+        const normPhase = (((ag.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+        if (ag.localR > 0.68) {
+          const l = Math.round(28 + normPhase * 55);
+          kymoCtx.fillStyle = `hsl(38, 95%, ${l}%)`;
+        } else {
+          const l = Math.round(25 + normPhase * 55);
+          kymoCtx.fillStyle = `hsl(198, 92%, ${l}%)`;
+        }
+        kymoCtx.fillRect(kymoColPtr, i * cellH, 2, Math.ceil(cellH));
+      }
+
+      // Draw scanning cursor line
+      kymoCtx.fillStyle = '#ffffff';
+      kymoCtx.fillRect((kymoColPtr + 2) % W, 0, 1, H);
+      kymoColPtr = (kymoColPtr + 1) % W;
+    }
+
+    function renderOrderCompassCanvas() {
+      const W = compassCanvas.width;
+      const H = compassCanvas.height;
+      const cx = W / 2;
+      const cy = H / 2;
+      const R = Math.min(cx, cy) - 8;
+
+      compassCtx.fillStyle = '#080b16';
+      compassCtx.fillRect(0, 0, W, H);
+
+      compassCtx.beginPath();
+      compassCtx.arc(cx, cy, R, 0, Math.PI * 2);
+      compassCtx.strokeStyle = '#334155';
+      compassCtx.lineWidth = 1.5;
+      compassCtx.stroke();
+
+      // Plot oscillator phases on unit circle
+      state.agents.forEach(ag => {
+        const px = cx + Math.cos(ag.theta) * R;
+        const py = cy + Math.sin(ag.theta) * R;
+        compassCtx.fillStyle = ag.localR > 0.68 ? '#f59e0b' : '#38bdf8';
+        compassCtx.fillRect(px - 1.5, py - 1.5, 3, 3);
+      });
+
+      // Global Order Vector R * e^(i * Psi)
+      const vx = cx + Math.cos(state.globalPsi) * R * state.globalR;
+      const vy = cy + Math.sin(state.globalPsi) * R * state.globalR;
+      compassCtx.beginPath();
+      compassCtx.moveTo(cx, cy);
+      compassCtx.lineTo(vx, vy);
+      compassCtx.strokeStyle = '#10b981';
+      compassCtx.lineWidth = 2.5;
+      compassCtx.stroke();
+
+      compassCtx.beginPath();
+      compassCtx.arc(vx, vy, 3.5, 0, Math.PI * 2);
+      compassCtx.fillStyle = '#10b981';
+      compassCtx.fill();
+    }
+
+    // =========================================================================
+    // 7. LOCAL ORDER BAR CHART & FULL-SCREEN ENGINE
+    // =========================================================================
+    function buildLocalOrderBarsDOM() {
+      const container = document.getElementById('localOrderBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      state.agents.forEach((ag, idx) => {
+        const col = document.createElement('div');
+        col.className = 'flex-1 h-full bg-chimera-900 rounded overflow-hidden flex items-end cursor-pointer hover:ring-1 hover:ring-amber-400';
+        col.title = `Oscillator #${idx + 1}`;
+        col.innerHTML = `<div id="locBar_${idx}" class="w-full transition-all duration-75" style="height: 50%"></div>`;
+        col.addEventListener('click', () => {
+          ag.theta = (ag.theta + Math.PI) % (Math.PI * 2);
+          ag.glow = 1.0;
+          const ctx = ensureAudio();
+          triggerSwarmVoice(ctx, masterGain, ctx.currentTime, ag, 0.95);
+        });
+        container.appendChild(col);
+      });
+    }
+
+    function updateLocalOrderBarsDOM() {
+      state.agents.forEach((ag, idx) => {
+        const bar = document.getElementById(`locBar_${idx}`);
+        if (!bar) return;
+        const pct = Math.min(100, Math.max(10, Math.round(ag.localR * 100)));
+        bar.style.height = `${pct}%`;
+        bar.style.backgroundColor = ag.localR > 0.68 ? '#f59e0b' : '#38bdf8';
+      });
+    }
+
+    function toggleChimeraFullscreen() {
+      const wrapper = document.getElementById('chimeraStageWrapper');
+      const btnStage = document.getElementById('btnStageFullscreen');
+      const btnHeader = document.getElementById('btnHeaderFullscreen');
+
+      state.isFullscreen = !state.isFullscreen;
+
+      if (state.isFullscreen) {
+        wrapper.classList.add('chimera-fullscreen-stage');
+        btnStage.textContent = '✕ Exit Full Screen [Esc]';
+        btnHeader.innerHTML = '<span>✕ Exit Full Screen</span>';
+        if (wrapper.requestFullscreen) {
+          wrapper.requestFullscreen().catch(() => {});
+        }
+        showToast('Entered Full-Screen 3D Chimera Swarm Mode (Press F or Esc to exit)');
+      } else {
+        wrapper.classList.remove('chimera-fullscreen-stage');
+        btnStage.textContent = '⛶ Full Screen';
+        btnHeader.innerHTML = '<span>⛶ Full Screen [F]</span>';
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      setTimeout(handleViewportResize, 60);
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderChimeraWav(mode = 'chimera_loop') {
+      const sr = 44100;
+      const N = state.agents.length;
+      const totalSec = (mode === 'chimera_loop' || mode === 'sync_vs_chaos') ? 3.8 : 2.1;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'coherent_burst') {
+        for (let i = 0; i < Math.min(10, Math.floor(N / 2)); i++) {
+          triggerSwarmVoice(offCtx, offCtx.destination, 0.05 + i * 0.012, state.agents[i], 0.88);
+        }
+      } else if (mode === 'scroll_wave') {
+        for (let i = 0; i < Math.min(20, N); i++) {
+          triggerSwarmVoice(offCtx, offCtx.destination, 0.04 + i * 0.075, state.agents[i], 0.84);
+        }
+      } else if (mode === 'swarm_vortex') {
+        for (let i = 0; i < Math.min(16, N); i++) {
+          const t = 0.05 + (i % 4) * 0.22 + i * 0.03;
+          triggerSwarmVoice(offCtx, offCtx.destination, t, state.agents[i], 0.85);
+        }
+      } else {
+        // Render 16-step Chimera Coherent Pulse + Incoherent Cloud Texture
+        const stepSec = (60 / state.bpm) * 0.25;
+        for (let s = 0; s < 16; s++) {
+          const tBase = 0.05 + s * stepSec;
+          const ag = state.agents[s % N];
+          const jitter = ag.localR > 0.68 ? 0 : (Math.random() * 0.06);
+          triggerSwarmVoice(offCtx, offCtx.destination, tBase + jitter, ag, ag.localR > 0.68 ? 0.90 : 0.62);
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `chimera_swarm_${mode}_${state.manifold}.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('chimeraVaultList');
+      const count = document.getElementById('chimeraVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-chimera-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-purple-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyChimeraPreset(pr) {
+      state.activePresetId = pr.id;
+      state.manifold = pr.manifold;
+      state.oscCount = pr.count;
+      state.couplingK = pr.K;
+      state.frustrationAlpha = pr.alpha;
+      state.kernelA = pr.A;
+      state.swarmJ = pr.J;
+      state.bpm = pr.bpm;
+
+      document.getElementById('sliderOscCount').value = pr.count;
+      document.getElementById('valOscCount').textContent = `${pr.count} Agents`;
+      document.getElementById('sliderCouplingK').value = Math.round(pr.K * 100);
+      document.getElementById('valCouplingK').textContent = pr.K.toFixed(2);
+      document.getElementById('sliderFrustrationAlpha').value = Math.round(pr.alpha * 100);
+      document.getElementById('valFrustrationAlpha').textContent = `${pr.alpha.toFixed(2)} rad`;
+      document.getElementById('sliderStageAlpha').value = Math.round(pr.alpha * 100);
+      document.getElementById('lblStageAlpha').textContent = `${pr.alpha.toFixed(2)} rad`;
+      document.getElementById('sliderKernelA').value = Math.round(pr.A * 100);
+      document.getElementById('valKernelA').textContent = pr.A.toFixed(2);
+      document.getElementById('sliderSwarmJ').value = Math.round(pr.J * 100);
+      document.getElementById('valSwarmJ').textContent = pr.J.toFixed(2);
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+
+      setManifoldTabUI(pr.manifold);
+      initSwarmAgents(pr.initType);
+      applyCameraPreset(pr.cam);
+      renderPresetListUI();
+    }
+
+    function setManifoldTabUI(m) {
+      state.manifold = m;
+      const bTor = document.getElementById('tabTorusManifold');
+      const bSwa = document.getElementById('tabSwarmalator3D');
+      const bSph = document.getElementById('tabSphereSpiral');
+      const bTwi = document.getElementById('tabTwinRings');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bTor.className = m === 'torus' ? act : idl;
+      bSwa.className = m === 'swarmalator' ? act : idl;
+      bSph.className = m === 'sphere' ? act : idl;
+      bTwi.className = m === 'twin' ? act : idl;
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('chimeraPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      CHIMERA_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-purple-500/15 border-purple-400/60 text-white' : 'bg-chimera-950/75 hover:bg-chimera-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-purple-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-chimera-900 text-amber-300 border border-slate-800">α=${pr.alpha}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyChimeraPreset(pr);
+          const ctx = ensureAudio();
+          triggerSwarmVoice(ctx, masterGain, ctx.currentTime, state.agents[0], 0.92);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function updatePlayButtonUI() {
+      const btn = document.getElementById('btnPlayToggle');
+      if (state.isPlaying) {
+        btn.classList.add('swarm-active');
+        document.getElementById('iconPlay').classList.add('hidden');
+        document.getElementById('iconStop').classList.remove('hidden');
+        document.getElementById('labelPlayToggle').textContent = 'PAUSE SWARM';
+      } else {
+        btn.classList.remove('swarm-active');
+        document.getElementById('iconPlay').classList.remove('hidden');
+        document.getElementById('iconStop').classList.add('hidden');
+        document.getElementById('labelPlayToggle').textContent = 'ENGAGE SWARM';
+      }
+    }
+
+    function initEventListeners() {
+      updatePlayButtonUI();
+
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        ensureAudio();
+        state.isPlaying = !state.isPlaying;
+        updatePlayButtonUI();
+      });
+
+      const nucleateChimera = () => {
+        initSwarmAgents('chimera');
+        const ctx = ensureAudio();
+        triggerSwarmVoice(ctx, masterGain, ctx.currentTime, state.agents[0], 0.92);
+        showToast('Nucleated Coexisting Half-Coherent / Half-Drifting Chimera State!');
+      };
+
+      document.getElementById('btnSeedChimera').addEventListener('click', nucleateChimera);
+      document.getElementById('btnInjectChimera').addEventListener('click', nucleateChimera);
+
+      document.getElementById('btnInjectTwisted1').addEventListener('click', () => {
+        initSwarmAgents('scroll1');
+        showToast('Injected q = 1 Twisted Scroll Wave');
+      });
+      document.getElementById('btnInjectTwisted2').addEventListener('click', () => {
+        initSwarmAgents('scroll2');
+        showToast('Injected q = 2 Double-Twisted Scroll Wave');
+      });
+      document.getElementById('btnInjectChaos').addEventListener('click', () => {
+        initSwarmAgents('chaos');
+        showToast('Scrambled Oscillator Phases into Uniform Incoherence');
+      });
+      document.getElementById('btnInjectUnison').addEventListener('click', () => {
+        initSwarmAgents('unison');
+        showToast('Clamped All Oscillators into Global Unison Phase');
+      });
+
+      document.getElementById('btnFlipChimeraDomains').addEventListener('click', () => {
+        const N = state.agents.length;
+        const half = Math.floor(N / 2);
+        for (let i = 0; i < half; i++) {
+          const tmp = state.agents[i].theta;
+          state.agents[i].theta = state.agents[i + half].theta;
+          state.agents[i + half].theta = tmp;
+        }
+        showToast('Swapped Coherent and Drifting Chimera Domains!');
+      });
+
+      document.getElementById('selectCameraView').addEventListener('change', (e) => {
+        applyCameraPreset(e.target.value);
+      });
+
+      document.getElementById('btnStageCamCycle').addEventListener('click', () => {
+        const order = ['isometric', 'zenith', 'tunnel', 'equator', 'drone'];
+        const next = order[(order.indexOf(state.cameraPreset) + 1) % order.length];
+        applyCameraPreset(next);
+        showToast(`Camera Angle: ${next.toUpperCase()}`);
+      });
+
+      document.getElementById('btnHeaderFullscreen').addEventListener('click', toggleChimeraFullscreen);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleChimeraFullscreen);
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      // Manifold Tabs
+      document.getElementById('tabTorusManifold').addEventListener('click', () => {
+        setManifoldTabUI('torus');
+        rebuildThreeSwarmScene();
+      });
+      document.getElementById('tabSwarmalator3D').addEventListener('click', () => {
+        setManifoldTabUI('swarmalator');
+        rebuildThreeSwarmScene();
+      });
+      document.getElementById('tabSphereSpiral').addEventListener('click', () => {
+        setManifoldTabUI('sphere');
+        rebuildThreeSwarmScene();
+      });
+      document.getElementById('tabTwinRings').addEventListener('click', () => {
+        setManifoldTabUI('twin');
+        rebuildThreeSwarmScene();
+      });
+
+      document.getElementById('chkSyncWeb').addEventListener('change', (e) => {
+        state.showSyncWeb = e.target.checked;
+      });
+      document.getElementById('chkPhaseTrails').addEventListener('change', (e) => {
+        state.showPhaseTrails = e.target.checked;
+      });
+
+      // Left Column & Stage Alpha Sliders
+      document.getElementById('sliderOscCount').addEventListener('input', (e) => {
+        state.oscCount = parseInt(e.target.value, 10);
+        document.getElementById('valOscCount').textContent = `${state.oscCount} Agents`;
+        initSwarmAgents('chimera');
+      });
+
+      document.getElementById('sliderCouplingK').addEventListener('input', (e) => {
+        state.couplingK = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valCouplingK').textContent = state.couplingK.toFixed(2);
+      });
+
+      const syncAlphaSliders = (valInt) => {
+        state.frustrationAlpha = valInt / 100;
+        document.getElementById('sliderFrustrationAlpha').value = valInt;
+        document.getElementById('sliderStageAlpha').value = valInt;
+        const deg = Math.round((state.frustrationAlpha * 180) / Math.PI);
+        document.getElementById('valFrustrationAlpha').textContent = `${state.frustrationAlpha.toFixed(2)} rad (${deg}°)`;
+        document.getElementById('lblStageAlpha').textContent = `${state.frustrationAlpha.toFixed(2)} rad`;
+      };
+      document.getElementById('sliderFrustrationAlpha').addEventListener('input', (e) => syncAlphaSliders(parseInt(e.target.value, 10)));
+      document.getElementById('sliderStageAlpha').addEventListener('input', (e) => syncAlphaSliders(parseInt(e.target.value, 10)));
+
+      document.getElementById('sliderKernelA').addEventListener('input', (e) => {
+        state.kernelA = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valKernelA').textContent = state.kernelA.toFixed(2);
+      });
+
+      document.getElementById('sliderSwarmJ').addEventListener('input', (e) => {
+        state.swarmJ = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valSwarmJ').textContent = state.swarmJ.toFixed(2);
+      });
+
+      // Right Column Sliders & Selectors
+      document.getElementById('btnAuditionSwarmBurst').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        for (let i = 0; i < Math.min(12, state.agents.length); i++) {
+          state.agents[i].glow = 1.0;
+          triggerSwarmVoice(ctx, masterGain, ctx.currentTime + i * 0.035, state.agents[i], 0.85);
+        }
+      });
+
+      document.getElementById('selectSwarmScale').addEventListener('change', (e) => {
+        state.scaleMode = e.target.value;
+      });
+      document.getElementById('selectSwarmTimbre').addEventListener('change', (e) => {
+        state.timbre = e.target.value;
+      });
+      document.getElementById('sliderRootFreq').addEventListener('input', (e) => {
+        state.rootFreqHz = parseInt(e.target.value, 10);
+        document.getElementById('valRootFreq').textContent = `${state.rootFreqHz} Hz`;
+      });
+      document.getElementById('sliderVoiceDecay').addEventListener('input', (e) => {
+        state.voiceDecaySec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valVoiceDecay').textContent = `${state.voiceDecaySec.toFixed(2)} s`;
+      });
+      document.getElementById('sliderOmegaSpread').addEventListener('input', (e) => {
+        state.omegaSpread = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valOmegaSpread').textContent = state.omegaSpread.toFixed(2);
+      });
+      document.getElementById('sliderThermalNoise').addEventListener('input', (e) => {
+        state.thermalNoise = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valThermalNoise').textContent = state.thermalNoise.toFixed(2);
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderChimeraWav('chimera_loop'));
+      document.getElementById('btnExportChimeraLoopWav').addEventListener('click', () => renderChimeraWav('chimera_loop'));
+      document.getElementById('btnExportSyncVsChaosWav').addEventListener('click', () => renderChimeraWav('sync_vs_chaos'));
+
+      document.querySelectorAll('.chimera-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderChimeraWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportChimeraJson').addEventListener('click', () => {
+        const payload = {
+          app: "CHIMERA_SWARM_3D_KURAMOTO_LAB",
+          manifold: state.manifold,
+          oscillatorCount: state.oscCount,
+          couplingK: state.couplingK,
+          frustrationAlphaRad: state.frustrationAlpha,
+          nonLocalKernelA: state.kernelA,
+          swarmalatorAttractionJ: state.swarmJ,
+          orderParameters: {
+            globalR: Number(state.globalR.toFixed(4)),
+            coherentDomainR: Number(state.syncGroupR.toFixed(4)),
+            driftingDomainR: Number(state.driftGroupR.toFixed(4))
+          },
+          agentPhases: state.agents.map(a => Number((a.theta % (Math.PI * 2)).toFixed(4)))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chimera_swarm_${state.manifold}_telemetry.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded 3D Kuramoto-Swarmalator Telemetry JSON');
+      });
+
+      // Keyboard Shortcuts: F = Fullscreen, Esc = Exit Fullscreen, Space = Play/Pause
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleChimeraFullscreen();
+        } else if (e.key === 'Escape' && state.isFullscreen) {
+          toggleChimeraFullscreen();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initThreeSwarmEngine();
+      applyChimeraPreset(CHIMERA_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(animateMainLoop);
+    });
+  </script>
+</body>
+</html>

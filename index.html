@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Percussion Labs — Nine Interactive Laboratories</title>
-<meta name="description" content="Nine browser-native percussion laboratories, plus a specialty pendulum lab: rudiments, cymatics, cavitation, solitons, isospectral drums, p-adic rhythm and aperiodic tilings.">
+<title>Percussion Labs — Twelve Interactive Laboratories</title>
+<meta name="description" content="Twelve browser-native percussion laboratories, plus a specialty pendulum lab: rudiments, cymatics, cavitation, gongs, tuning forks, chimera oscillators, solitons, isospectral drums, p-adic rhythm and aperiodic tilings.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -100,6 +100,10 @@
     padding:4px 9px;border-radius:99px;border:1px solid var(--line);
     color:var(--faint);background:rgba(255,255,255,.015);
   }
+  .tag.new{
+    color:var(--accent-2);border-color:rgba(79,209,197,.34);
+    background:rgba(79,209,197,.07);
+  }
 
   .launch{
     display:flex;align-items:center;gap:8px;font-family:"JetBrains Mono",monospace;
@@ -167,17 +171,18 @@
 
   <header>
     <div class="eyebrow">Percussion Series</div>
-    <h1>Nine percussion <span>laboratories</span>,<br>running in your browser.</h1>
+    <h1>Twelve percussion <span>laboratories</span>,<br>running in your browser.</h1>
     <p class="lede">
       Each lab is a self-contained instrument built from a different piece of
-      physics or mathematics — <strong>cymatics, cavitation, solitons, isospectral drums,
-      p-adic trees, aperiodic tilings</strong>. Turn a knob and the underlying model responds;
-      the sound is generated from the model, not sampled over it. No build step, no
-      backend, no account. Listed in the order they were built, which tracks the order
-      of ambition as well: technique first, then visible physics, then abstractions.
+      physics or mathematics — <strong>cymatics, cavitation, gongs, tuning forks,
+      chimera oscillators, solitons, isospectral drums, p-adic trees, aperiodic
+      tilings</strong>. Turn a knob and the underlying model responds; the sound is
+      generated from the model, not sampled over it. No build step, no backend,
+      no account. Listed in the order they were built, which tracks the order of
+      ambition as well: technique first, then visible physics, then abstractions.
     </p>
     <div class="stats">
-      <div class="stat"><b>9</b><i>Laboratories</i></div>
+      <div class="stat"><b>12</b><i>Laboratories</i></div>
       <div class="stat"><b>+1</b><i>Specialty piece</i></div>
       <div class="stat"><b>0</b><i>Install steps</i></div>
       <div class="stat"><b>100%</b><i>Client-side</i></div>
@@ -186,8 +191,8 @@
 
   <section>
     <div class="section-head">
-      <h2>The Nine</h2>
-      <span>01–09 · in order of construction</span>
+      <h2>The Twelve</h2>
+      <span>01–12 · in order of construction</span>
     </div>
 
     <div class="grid">
@@ -264,13 +269,37 @@
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
+      <a class="card" href="chimera_swarm_3d_kuramoto_sakaguchi_chimera_manifold_swarmalator_lab.html">
+        <div class="num">10</div>
+        <h3 class="name">CHIMERA-SWARM</h3>
+        <p class="desc">A 3D Kuramoto–Sakaguchi chimera manifold and swarmalator: one population locks in phase while another stays incoherent, and the boundary between them is what you hear.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Kuramoto–Sakaguchi</span><span class="tag">swarmalator</span><span class="tag">chimera</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="diapason_3d_full_screen_3d_euler_bernoulli_tuning_fork_von_mises_stress_6_eigenmode_lab.html">
+        <div class="num">11</div>
+        <h3 class="name">DIAPASON-3D</h3>
+        <p class="desc">A full-screen 3D Euler–Bernoulli tuning fork with von Mises stress and six eigenmodes — the geometry of a struck fork resolved into stress fields and the modes that follow from them.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Euler–Bernoulli</span><span class="tag">von Mises</span><span class="tag">eigenmodes</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="k_rm_n_gong_3d_f_ppl_von_k_rm_n_nonlinear_shell_wave_turbulence_pitch_glissando_gong_lab.html">
+        <div class="num">12</div>
+        <h3 class="name">KÁRMÁN-GONG 3D</h3>
+        <p class="desc">Föppl–von Kármán nonlinear shell dynamics with wave turbulence and pitch glissando — a gong whose pitch bends as the shell deforms, which is why a struck gong blooms instead of simply ringing.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Föppl–von Kármán</span><span class="tag">shell</span><span class="tag">glissando</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
     </div>
   </section>
 
   <section>
     <div class="section-head">
       <h2>Specialty</h2>
-      <span>beyond the nine · built last</span>
+      <span>beyond the twelve · pendulum family</span>
     </div>
 
     <a class="feature" href="pendulum_loom_3d_harmonic_phase_loom_blackburn_lissajous_coupled_huygens_wave_lab.html">
@@ -288,7 +317,7 @@
   </section>
 
   <footer>
-    <div>Percussion Labs · nine labs + a specialty pendulum piece · built for the browser</div>
+    <div>Percussion Labs · twelve labs + a specialty pendulum piece · built for the browser</div>
     <p class="note">
       Everything runs client-side. Audio starts after your first click or key press, because
       browsers require a user gesture before a page may produce sound. The modules reference

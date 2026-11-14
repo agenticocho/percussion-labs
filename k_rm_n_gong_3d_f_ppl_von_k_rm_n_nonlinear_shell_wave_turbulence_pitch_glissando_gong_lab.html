@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KÁRMÁN-GONG 3D // Föppl–von Kármán Nonlinear Shell, Wave Turbulence & Pitch-Glissando Gong Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #05060b;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #070911;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #05060b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .glass-panel {
+      background: rgba(10, 13, 22, 0.88);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .hud-pill {
+      background: rgba(6, 9, 17, 0.84);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(245, 158, 11, 0.28);
+    }
+    /* Lock Three.js WebGL Canvas to 100% of its mount container on HiDPI / Retina displays */
+    #threeCanvasMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeCanvasMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+    /* Full-Screen 3D Stage Mode */
+    .gong-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      background: #04050a !important;
+    }
+    .btn-active-amber {
+      background: rgba(245, 158, 11, 0.2) !important;
+      border-color: rgba(245, 158, 11, 0.85) !important;
+      color: #fde68a !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
+    }
+    .btn-active-cyan {
+      background: rgba(34, 211, 238, 0.18) !important;
+      border-color: rgba(34, 211, 238, 0.82) !important;
+      color: #a5f3fc !important;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.22);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#05060b] text-slate-100">
+
+  <!-- TOP SCIENTIFIC HEADER BAR -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-3 py-2">
+    <div class="max-w-[1920px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand & Acoustic Equations -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500/25 via-orange-500/20 to-cyan-500/20 border border-amber-400/50 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+            <circle cx="12" cy="12" r="9" />
+            <circle cx="12" cy="12" r="3.2" fill="currentColor" fill-opacity="0.3" />
+            <path d="M4 3h16M7 3l2 3M17 3l-2 3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm md:text-base font-bold tracking-tight text-white">
+              KÁRMÁN-GONG 3D <span class="text-amber-400 font-normal">//</span> <span class="text-slate-300 font-medium">Föppl–von Kármán Shell &amp; Wave-Turbulence Lab</span>
+            </h1>
+            <span class="hidden xl:inline-block text-[10px] font-mono-tech uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              ρh ẅ + D∇⁴w = L(w+w₀, F)
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">
+            Interactive 3D Nonlinear Shallow Shell Percussion • Delayed Kolmogorov Wave-Turbulence Crash • Opera Pitch Glissando • Javanese <span class="italic text-amber-300">Ombak</span> Beating • Flumi Friction Bowing
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Readout Pills -->
+      <div class="flex flex-wrap items-center gap-1.5 font-mono-tech text-xs">
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">f₀(t) Glide:</span>
+          <span id="hdrFundHz" class="text-amber-400 font-semibold">48.0 Hz</span>
+          <span id="hdrGlideDelta" class="text-[10px] text-emerald-400">(+0.0¢)</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Centroid f_c:</span>
+          <span id="hdrCentroidHz" class="text-cyan-400 font-semibold">142 Hz</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Turbulence E_turb:</span>
+          <span id="hdrTurbPct" class="text-rose-400 font-semibold">0.0%</span>
+        </div>
+        <div class="px-2.5 py-1 rounded bg-slate-900/90 border border-slate-800 hidden md:flex items-center gap-1.5">
+          <span class="text-[10px] uppercase text-slate-400">Ombak Beat:</span>
+          <span id="hdrOmbakHz" class="text-violet-400 font-semibold">2.40 Hz</span>
+        </div>
+      </div>
+
+      <!-- Primary Action Buttons -->
+      <div class="flex items-center gap-1.5">
+        <button id="btnStrikeHeader" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-semibold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition">
+          <span>🔨 Strike Gong</span>
+          <kbd class="px-1 py-0.2 bg-black/25 rounded text-[10px] font-mono-tech">[Space]</kbd>
+        </button>
+        <button id="btnPrimeHeader" title="Tap the gong softly to seed background modal energy before a main strike (lowers the wave-turbulence threshold)" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-medium transition">
+          ✨ Prime / Warm <kbd class="text-[10px] font-mono-tech opacity-75">[P]</kbd>
+        </button>
+        <button id="btnDampHeader" title="Hand-damp the gong rim and boss" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition">
+          ✋ Damp <kbd class="text-[10px] font-mono-tech opacity-75">[D]</kbd>
+        </button>
+        <button id="btnCenterHeader" title="Center and fit the entire 3D gong & gantry in the viewport" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-medium transition">
+          ⌖ Center <kbd class="text-[10px] font-mono-tech opacity-75">[C]</kbd>
+        </button>
+        <button id="btnFullscreenHeader" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-semibold flex items-center gap-1 transition">
+          <span>⛶ Full Screen</span>
+          <kbd class="text-[10px] font-mono-tech">[F]</kbd>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1920px] w-full mx-auto p-2.5 grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+    <!-- LEFT & CENTER: 3D GONG VIEWPORT + TELEMETRY STRIP (8 COLS) -->
+    <section class="lg:col-span-8 flex flex-col gap-2.5">
+
+      <!-- 3D WEBGL GONG STAGE CONTAINER -->
+      <div id="gongStageContainer" class="relative w-full h-[540px] xl:h-[620px] rounded-xl overflow-hidden border border-slate-800/90 bg-[#04050a] shadow-2xl flex flex-col justify-between">
+        
+        <!-- Three.js Canvas Mount -->
+        <div id="threeCanvasMount" class="cursor-crosshair"></div>
+
+        <!-- TOP FLOATING IN-STAGE HUD (Always accessible in Full-Screen) -->
+        <div class="relative z-10 p-3 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+          
+          <!-- Left HUD: Gong Archetype Selector Pills & Surface Shaders -->
+          <div class="flex flex-col gap-1.5 pointer-events-auto max-w-2xl">
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">3D Gong Archetype:</span>
+              <button data-archetype="tamtam" class="archetype-btn btn-active-amber px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                1. Wuhan Chau Tam-Tam (Wave Turbulence)
+              </button>
+              <button data-archetype="xiaoluo" class="archetype-btn px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                2. Beijing Xiaoluo (Upward Glissando ↗)
+              </button>
+              <button data-archetype="daluo" class="archetype-btn px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                3. Beijing Daluo (Downward Glissando ↘)
+              </button>
+              <button data-archetype="ageng" class="archetype-btn px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                4. Javanese Gong Ageng (Sacred Ombak)
+              </button>
+              <button data-archetype="wind" class="archetype-btn px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/85 border border-slate-700 text-slate-200 transition">
+                5. Feng Luo Wind Gong (Flumi Singing)
+              </button>
+            </div>
+
+            <!-- Surface Shader Mode Selector Bar -->
+            <div class="flex flex-wrap items-center gap-1">
+              <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400 mr-1">Surface Shader:</span>
+              <button data-shader="bronze" class="shader-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Hammered Bronze &amp; Oxide
+              </button>
+              <button data-shader="stress" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Airy Membrane Stress ∇²F
+              </button>
+              <button data-shader="modal" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Bipolar Deflection w(r,θ,t)
+              </button>
+              <button data-shader="turbulence" class="shader-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300 transition">
+                Kolmogorov Cascade E(r,θ)
+              </button>
+            </div>
+          </div>
+
+          <!-- Right HUD: Excitation Tool, Camera Presets, Zoom & Centering Bar -->
+          <div class="flex flex-col items-end gap-1.5 pointer-events-auto">
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <button id="btnModeStrike" class="btn-active-amber px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🔨 Click Gong = Strike
+              </button>
+              <button id="btnModeFlumi" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                🔮 Drag Gong = Flumi Bow
+              </button>
+              <button id="btnModePan" title="Drag anywhere to pan and manually center the 3D gong (or hold Right-Click / Alt+Drag)" class="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-900/90 border border-slate-700 text-slate-200 transition">
+                ✥ Drag = Pan / Center
+              </button>
+              <button id="btnStageFullscreen" class="px-2.5 py-1 rounded-md text-xs font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-200 transition">
+                ⛶ Full Screen [F]
+              </button>
+            </div>
+
+            <!-- 3D Camera Angles -->
+            <div class="flex flex-wrap items-center justify-end gap-1">
+              <span class="text-[10px] font-mono-tech uppercase text-slate-400">Camera:</span>
+              <button data-cam="front" class="cam-btn btn-active-cyan px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                1. Full Front
+              </button>
+              <button data-cam="wide" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                2. Wide Gantry
+              </button>
+              <button data-cam="oblique" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                3. Boss &amp; Rim 45°
+              </button>
+              <button data-cam="grazing" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                4. Rim Grazing
+              </button>
+              <button data-cam="section" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                5. Shell Profile
+              </button>
+              <button data-cam="orbit" class="cam-btn px-2 py-0.5 rounded text-[11px] font-mono-tech bg-slate-900/85 border border-slate-700 text-slate-300">
+                6. 360° Orbit
+              </button>
+            </div>
+
+            <!-- Dedicated Zoom & Manual Centering / Pan Controls -->
+            <div class="hud-pill px-2 py-1 rounded-md flex flex-wrap items-center gap-1.5 text-[11px] font-mono-tech">
+              <button id="btnCenterStage" title="Center and fit the entire gong in the viewport [C]" class="px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-200 font-semibold transition">
+                ⌖ Center &amp; Fit [C]
+              </button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Zoom:</span>
+              <button id="btnZoomIn" title="Zoom In" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">+</button>
+              <input id="sliderStageZoom" type="range" min="1.4" max="12.0" step="0.1" value="4.8" class="w-20" title="Camera Distance (Drag right to zoom out)" />
+              <button id="btnZoomOut" title="Zoom Out to see entire gong & frame" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-600 text-amber-300 font-bold">−</button>
+              <div class="h-3.5 w-px bg-slate-700"></div>
+              <span class="text-slate-400 text-[10px]">Pan:</span>
+              <button id="btnPanLeft" title="Pan Gong Left (or Left Arrow)" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">◀</button>
+              <button id="btnPanUp" title="Pan Gong Up (or Up Arrow)" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▲</button>
+              <button id="btnPanDown" title="Pan Gong Down (or Down Arrow)" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▼</button>
+              <button id="btnPanRight" title="Pan Gong Right (or Right Arrow)" class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">▶</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM FLOATING IN-STAGE HUD: Strike Target Readout + Quick In-Stage Controls -->
+        <div class="relative z-10 p-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none">
+          
+          <!-- Live 3D Strike / Flumi Coordinate & Nonlinear Regime Readout -->
+          <div class="hud-pill px-3 py-2 rounded-lg pointer-events-auto flex flex-wrap items-center gap-3 text-xs font-mono-tech">
+            <div>
+              <span class="text-slate-400 text-[10px] block">STRIKE POINT (r/R, θ)</span>
+              <span id="hudStrikeCoord" class="text-amber-300 font-semibold">r/R = 0.00 (Boss Center), θ = 0°</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800"></div>
+            <div>
+              <span class="text-slate-400 text-[10px] block">NONLINEAR SHELL REGIME</span>
+              <span id="hudRegimeText" class="text-cyan-300 font-semibold">Weak Wave Turbulence (Kolmogorov Cascade)</span>
+            </div>
+            <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
+            <div class="hidden sm:block">
+              <span class="text-slate-400 text-[10px] block">PEAK DEFLECTION |w_max|</span>
+              <span id="hudDeflectionMm" class="text-emerald-300 font-semibold">0.00 mm (w/h = 0.00)</span>
+            </div>
+          </div>
+
+          <!-- Quick Overlay Toggles & In-Stage Action Bar -->
+          <div class="hud-pill px-2.5 py-1.5 rounded-lg pointer-events-auto flex flex-wrap items-center gap-1.5 text-xs">
+            <button id="btnToggleWaveShells" class="btn-active-cyan px-2 py-1 rounded text-[11px] font-mono-tech bg-slate-900/80 border border-slate-700 text-slate-200">
+              3D Acoustic Shells
+            </button>
+            <button id="btnToggleNodalLines" class="btn-active-amber px-2 py-1 rounded text-[11px] font-mono-tech bg-slate-900/80 border border-slate-700 text-slate-200">
+              SLDV Nodal Rings
+            </button>
+            <button id="btnToggleCrossSection" class="px-2 py-1 rounded text-[11px] font-mono-tech bg-slate-900/80 border border-slate-700 text-slate-300">
+              3D Profile Slice
+            </button>
+            <button id="btnStageStrikeNow" class="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs transition">
+              🔨 Strike [Space]
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BOTTOM 3-PANEL SCIENTIFIC TELEMETRY STRIP -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+        
+        <!-- Panel A: Instantaneous Pitch Glissando & Spectral Centroid Tracker -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-amber-300 uppercase tracking-wider font-mono-tech">
+                A. Pitch Glissando f₀(t) &amp; Centroid f_c(t)
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                Real-time nonlinear pitch glide &amp; delayed wave-turbulence bloom
+              </p>
+            </div>
+            <span id="badgeGlideType" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Cascade f_c(t) ↗
+            </span>
+          </div>
+          <canvas id="canvasPitchGlide" width="420" height="155" class="w-full h-[145px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel B: Kolmogorov-Zakharov Wave Turbulence Spectrum & 16-Mode Cascade -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-cyan-300 uppercase tracking-wider font-mono-tech">
+                B. Wave-Turbulence Cascade E(ω) ∝ ω⁻ᵅ
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                16 coupled shell eigenmodes (m,n) + live 44.1 kHz FFT shimmer
+              </p>
+            </div>
+            <span id="badgeCascadeSlope" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              3-Wave + 4-Wave
+            </span>
+          </div>
+          <canvas id="canvasTurbulenceSpec" width="420" height="155" class="w-full h-[145px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+        <!-- Panel C: Föppl–von Kármán Asymmetric Potential V(q) & Phase Portrait -->
+        <div class="glass-panel rounded-xl p-2.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-1">
+            <div>
+              <h2 class="text-xs font-semibold text-emerald-300 uppercase tracking-wider font-mono-tech">
+                C. Shell Potential V(q₁) &amp; Ombak Phase
+              </h2>
+              <p class="text-[10px] text-slate-400">
+                V(q) = ½ω₀²q² + ⅓α_q q³ + ¼β_c q⁴ • Curvature asymmetry &amp; beating
+              </p>
+            </div>
+            <span id="badgeShellCoeff" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+              C_nl = +0.15
+            </span>
+          </div>
+          <canvas id="canvasPhasePotential" width="420" height="155" class="w-full h-[145px] rounded-lg bg-[#04060c] border border-slate-800/80"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT CONTROL DECK: 3D SHELL GEOMETRY, NONLINEAR PHYSICS, MALLET & SEQUENCER (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-2.5">
+
+      <!-- CARD 1: 3D GONG SHELL GEOMETRY & METALLURGY -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono-tech">
+            1. 3D Shell Geometry w₀(r) &amp; Metallurgy
+          </h2>
+          <select id="selectAlloy" class="bg-slate-900 border border-slate-700 rounded px-2 py-0.5 text-[11px] font-mono-tech text-slate-200 focus:outline-none focus:border-amber-400">
+            <option value="b20">B20 Cast Bell Bronze (80% Cu, 20% Sn — c_L = 3560 m/s)</option>
+            <option value="kerawang">Javanese Gangsa Perunggu (78% Cu, 22% Sn — Forged)</option>
+            <option value="b8">Paiste CuSn8 Bronze (92% Cu, 8% Sn — c_L = 3890 m/s)</option>
+            <option value="brass">Yellow Opera Brass (70% Cu, 30% Zn — c_L = 3480 m/s)</option>
+            <option value="titanium">Grade-5 Titanium Acoustic Alloy (c_L = 5090 m/s)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Gong Diameter D -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Diameter D:</span>
+              <span id="valDiameter" class="text-amber-300 font-semibold">96 cm</span>
+            </div>
+            <input id="sliderDiameter" type="range" min="20" max="130" step="1" value="96" class="w-full" />
+          </div>
+
+          <!-- Shell Thickness h0 -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Center Thickness h₀:</span>
+              <span id="valThickness" class="text-amber-300 font-semibold">2.4 mm</span>
+            </div>
+            <input id="sliderThickness" type="range" min="0.8" max="6.0" step="0.1" value="2.4" class="w-full" />
+          </div>
+
+          <!-- Central Boss Dome Height H_boss -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Boss Height H_boss:</span>
+              <span id="valBossHeight" class="text-cyan-300 font-semibold">4.0 mm</span>
+            </div>
+            <input id="sliderBossHeight" type="range" min="-20" max="75" step="1" value="4" class="w-full" />
+          </div>
+
+          <!-- Shell Camber / Bow Curvature H_c -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Shell Bow Camber H_c:</span>
+              <span id="valShellBow" class="text-cyan-300 font-semibold">14.0 mm</span>
+            </div>
+            <input id="sliderShellBow" type="range" min="-25" max="45" step="1" value="14" class="w-full" />
+          </div>
+
+          <!-- Turned Rim Flange Depth H_rim -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Rim Flange Depth:</span>
+              <span id="valRimDepth" class="text-emerald-300 font-semibold">32 mm</span>
+            </div>
+            <input id="sliderRimDepth" type="range" min="0" max="150" step="1" value="32" class="w-full" />
+          </div>
+
+          <!-- Edge Thickness Taper Ratio h_edge / h_0 -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Edge Taper h_e/h₀:</span>
+              <span id="valEdgeTaper" class="text-emerald-300 font-semibold">0.62×</span>
+            </div>
+            <input id="sliderEdgeTaper" type="range" min="0.30" max="1.20" step="0.02" value="0.62" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: FÖPPL–VON KÁRMÁN NONLINEARITY, GLISSANDO & OMBAK -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono-tech">
+            2. Nonlinear Wave Turbulence, Glissando &amp; Ombak
+          </h2>
+          <span class="text-[10px] font-mono-tech text-slate-400">Ducceschi–Touzé / Rossing</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Pitch Glissando Coefficient C_glide (Softening < 0 Upward Glide, Hardening > 0 Downward Glide) -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Glissando Coeff C_nl:</span>
+              <span id="valGlideCoeff" class="text-amber-300 font-semibold">+0.08 (Mild ↘)</span>
+            </div>
+            <input id="sliderGlideCoeff" type="range" min="-1.00" max="1.00" step="0.02" value="0.08" class="w-full" />
+          </div>
+
+          <!-- Wave-Turbulence Cascade Rate gamma_turb -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Turbulence Cascade γ:</span>
+              <span id="valCascadeGain" class="text-rose-400 font-semibold">0.84 (Strong)</span>
+            </div>
+            <input id="sliderCascadeGain" type="range" min="0.00" max="1.50" step="0.02" value="0.84" class="w-full" />
+          </div>
+
+          <!-- Cascade Build-Up Delay Time tau_bloom -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Shimmer Bloom τ_c:</span>
+              <span id="valBloomDelay" class="text-cyan-300 font-semibold">0.62 s</span>
+            </div>
+            <input id="sliderBloomDelay" type="range" min="0.08" max="1.80" step="0.02" value="0.62" class="w-full" />
+          </div>
+
+          <!-- Javanese Ombak Doublet Beat Frequency Delta f_ombak -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Ombak Beat Δf_ombak:</span>
+              <span id="valOmbakHz" class="text-violet-300 font-semibold">2.40 Hz</span>
+            </div>
+            <input id="sliderOmbakHz" type="range" min="0.00" max="8.00" step="0.10" value="2.40" class="w-full" />
+          </div>
+
+          <!-- Thermoelastic & Air Radiation Damping T60 -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Sustain Decay T₆₀:</span>
+              <span id="valDecayT60" class="text-emerald-300 font-semibold">9.5 s</span>
+            </div>
+            <input id="sliderDecayT60" type="range" min="1.5" max="22.0" step="0.5" value="9.5" class="w-full" />
+          </div>
+
+          <!-- Hammered Asymmetry / Inharmonicity Detuning -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Hammer Asymmetry:</span>
+              <span id="valHammerDetune" class="text-amber-300 font-semibold">35%</span>
+            </div>
+            <input id="sliderHammerDetune" type="range" min="0" max="100" step="1" value="35" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: MALLET EXCITATION, STRIKE ZONE & FLUMI BOWING -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono-tech">
+            3. Mallet Impact Physics &amp; Flumi Friction
+          </h2>
+          <span class="text-[10px] font-mono-tech text-slate-400">Hertzian Contact F = k δ^1.5</span>
+        </div>
+
+        <!-- Mallet Material Buttons -->
+        <div class="grid grid-cols-4 gap-1 text-[11px]">
+          <button data-mallet="fleece" class="mallet-btn btn-active-amber py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🐏 Heavy Fleece
+          </button>
+          <button data-mallet="felt" class="mallet-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🧶 Hard Felt Core
+          </button>
+          <button data-mallet="wood" class="mallet-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🪵 Opera Wood
+          </button>
+          <button data-mallet="flumi" class="mallet-btn py-1 px-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 font-medium">
+            🔮 Silicone Flumi
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <!-- Strike Radial Position r/R -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Strike Radius r/R:</span>
+              <span id="valStrikeRadius" class="text-amber-300 font-semibold">0.00 (Center)</span>
+            </div>
+            <input id="sliderStrikeRadius" type="range" min="0.00" max="0.92" step="0.01" value="0.00" class="w-full" />
+          </div>
+
+          <!-- Strike Force / Velocity -->
+          <div>
+            <div class="flex justify-between font-mono-tech text-[11px] mb-0.5">
+              <span class="text-slate-400">Impact Velocity v₀:</span>
+              <span id="valStrikeForce" class="text-amber-300 font-semibold">4.2 m/s (135 N)</span>
+            </div>
+            <input id="sliderStrikeForce" type="range" min="0.5" max="8.0" step="0.1" value="4.2" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 4: 16 SHELL EIGENMODES (m, n) INSPECTOR & RITUAL SEQUENCER -->
+      <div class="glass-panel rounded-xl p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-violet-400 font-mono-tech">
+            4. Coupled Shell Eigenmodes (m, n) &amp; Ritual Loom
+          </h2>
+          <button id="btnClearSolo" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+            All Modes Coupled
+          </button>
+        </div>
+
+        <!-- 8 Primary Interactive Eigenmode Pills (Click to Solo/Inspect Nodal Pattern on 3D Gong) -->
+        <div id="modeGridContainer" class="grid grid-cols-2 gap-1 text-[11px] font-mono-tech">
+          <!-- Populated dynamically by JS -->
+        </div>
+
+        <!-- Ritual Polyrhythmic Sequencer & Offline WAV/JSON Export -->
+        <div class="pt-1.5 border-t border-slate-800/80 flex flex-col gap-2">
+          <div class="flex items-center justify-between gap-1.5">
+            <button id="btnToggleRitual" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 flex items-center justify-center gap-1.5 transition">
+              <span>🔁 Auto Ritual Cadence</span>
+              <span id="ritualStatusBadge" class="text-[10px] font-mono-tech px-1.5 py-0.2 rounded bg-slate-900 text-slate-400">OFF</span>
+            </button>
+            <div class="w-32">
+              <div class="flex justify-between font-mono-tech text-[10px]">
+                <span class="text-slate-400">Tempo:</span>
+                <span id="valRitualBpm" class="text-amber-300">36 BPM</span>
+              </div>
+              <input id="sliderRitualBpm" type="range" min="12" max="108" step="2" value="36" class="w-full" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+            <button id="btnExportWav" class="py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-mono-tech font-semibold transition">
+              ⬇ Export 44.1kHz .WAV
+            </button>
+            <button id="btnExportJson" class="py-1.5 px-2.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-mono-tech font-semibold transition">
+              ⬇ Export Shell .JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LITERATURE & ACOUSTICS CITATIONS FOOTER -->
+      <div class="glass-panel rounded-xl px-3 py-2 text-[11px] text-slate-400 leading-relaxed">
+        <span class="text-slate-200 font-semibold font-mono-tech">Acoustics References:</span>
+        Föppl–von Kármán shallow shell &amp; wave-turbulence synthesis grounded in
+        <a href="https://www.researchgate.net/publication/236330234_Non-linear_axisymmetric_vibrations_of_gongs" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Touzé &amp; Chaigne (2000)</a>,
+        <a href="https://www.research.ed.ac.uk/en/publications/modal-approach-for-nonlinear-vibrations-of-damped-impacted-plates/" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Ducceschi &amp; Touzé (2015)</a>,
+        <a href="https://pubs.aip.org/asa/jasa/article/145/2/977/994459/Nonlinear-vibrations-of-thin-plates-with-variable" target="_blank" rel="noopener" class="text-cyan-400 hover:underline">JASA Variable-Thickness Shell Model (2019)</a>,
+        <a href="https://www.researchgate.net/publication/317704550_Modal_active_control_of_Chinese_gongs" target="_blank" rel="noopener" class="text-amber-400 hover:underline">Jossic et al. (2017, Xiaoluo/Daluo Glissando)</a>,
+        and <a href="https://pubs.aip.org/asa/jasa/article/128/1/EL8/655833/Acoustical-and-vibrometry-analysis-of-a-large" target="_blank" rel="noopener" class="text-emerald-400 hover:underline">Krueger, Gee &amp; Grimshaw (JASA 2010, Gong Ageng Ombak)</a>.
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- COMPLETE APPLICATION LOGIC: THREE.JS 3D SHELL ENGINE + FÖPPL-VON KÁRMÁN SOLVER + WEB AUDIO DSP -->
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. ARCHETYPE & ALLOY PHYSICAL CONSTANTS (Föppl–von Kármán Shell Parameters)
+      // =========================================================================
+      const ALLOYS = {
+        b20:      { name: 'B20 Cast Bell Bronze', cL: 3560, rho: 8600, baseTint: [0.83, 0.62, 0.28], darkTint: [0.16, 0.12, 0.08] },
+        kerawang: { name: 'Javanese Gangsa Perunggu', cL: 3420, rho: 8750, baseTint: [0.76, 0.53, 0.22], darkTint: [0.14, 0.09, 0.06] },
+        b8:       { name: 'Paiste CuSn8 Bronze', cL: 3890, rho: 8800, baseTint: [0.89, 0.58, 0.31], darkTint: [0.22, 0.14, 0.09] },
+        brass:    { name: 'Yellow Opera Brass', cL: 3480, rho: 8470, baseTint: [0.93, 0.78, 0.32], darkTint: [0.25, 0.20, 0.08] },
+        titanium: { name: 'Grade-5 Titanium Alloy', cL: 5090, rho: 4430, baseTint: [0.68, 0.75, 0.84], darkTint: [0.16, 0.20, 0.27] }
+      };
+
+      const ARCHETYPES = {
+        tamtam: {
+          id: 'tamtam',
+          title: 'Wuhan Chau Tam-Tam (100 cm Symphonic)',
+          alloy: 'b20',
+          diameterCm: 96,
+          thicknessMm: 2.4,
+          bossHeightMm: 4,
+          shellBowMm: 14,
+          rimDepthMm: 32,
+          edgeTaper: 0.62,
+          glideCoeff: 0.08,       // Slight initial compression then huge turbulent cascade
+          cascadeGain: 0.88,      // Strong Kolmogorov wave-turbulence cascade
+          bloomDelaySec: 0.62,    // Characteristic delayed crash buildup
+          ombakHz: 1.40,
+          decayT60: 10.5,
+          hammerDetune: 38,
+          bossRadiusRatio: 0.18,
+          oxideTargetRings: true,
+          regimeLabel: 'Weak Wave Turbulence (Delayed Kolmogorov Cascade)'
+        },
+        xiaoluo: {
+          id: 'xiaoluo',
+          title: 'Beijing Opera Xiaoluo (22 cm Upward Glissando)',
+          alloy: 'brass',
+          diameterCm: 24,
+          thicknessMm: 1.5,
+          bossHeightMm: 12,
+          shellBowMm: 18,
+          rimDepthMm: 18,
+          edgeTaper: 0.88,
+          glideCoeff: -0.78,      // C < 0 softening shell -> Upward pitch glide (370 -> 450 Hz) as amplitude decays!
+          cascadeGain: 0.26,
+          bloomDelaySec: 0.14,
+          ombakHz: 0.60,
+          decayT60: 2.8,
+          hammerDetune: 14,
+          bossRadiusRatio: 0.28,
+          oxideTargetRings: false,
+          regimeLabel: 'Softening Conical Shell (Upward Pitch Glide 370 → 450 Hz)'
+        },
+        daluo: {
+          id: 'daluo',
+          title: 'Beijing Opera Daluo (34 cm Downward Glissando)',
+          alloy: 'b20',
+          diameterCm: 36,
+          thicknessMm: 1.8,
+          bossHeightMm: -4,
+          shellBowMm: 6,
+          rimDepthMm: 36,
+          edgeTaper: 0.76,
+          glideCoeff: 0.85,       // C > 0 membrane hardening -> Downward pitch glide (265 -> 188 Hz) as amplitude decays!
+          cascadeGain: 0.58,
+          bloomDelaySec: 0.22,
+          ombakHz: 1.10,
+          decayT60: 4.6,
+          hammerDetune: 24,
+          bossRadiusRatio: 0.30,
+          oxideTargetRings: true,
+          regimeLabel: 'Hardening Flat-Center Shell (Downward Pitch Glide 265 → 188 Hz)'
+        },
+        ageng: {
+          id: 'ageng',
+          title: 'Javanese Gamelan Gong Ageng Wadon (95 cm Sacred Ombak)',
+          alloy: 'kerawang',
+          diameterCm: 95,
+          thicknessMm: 3.4,
+          bossHeightMm: 64,       // Prominent hemispherical Pencu boss
+          shellBowMm: 16,
+          rimDepthMm: 128,        // Deep turned Bahu flange rim
+          edgeTaper: 0.82,
+          glideCoeff: -0.14,
+          cascadeGain: 0.16,      // Focused, solemn fundamental & 2nd harmonic with minimal high crash
+          bloomDelaySec: 0.35,
+          ombakHz: 2.60,          // Iconic ~2.6 Hz sacred Ombak ocean-wave beating
+          decayT60: 14.5,
+          hammerDetune: 22,
+          bossRadiusRatio: 0.22,
+          oxideTargetRings: true,
+          regimeLabel: '1:2 Axisymmetric Internal Resonance & Sacred Ombak Beating'
+        },
+        wind: {
+          id: 'wind',
+          title: 'Feng Luo Wind Gong (55 cm Rimless Flumi Singer)',
+          alloy: 'b8',
+          diameterCm: 56,
+          thicknessMm: 1.9,
+          bossHeightMm: 2,
+          shellBowMm: 9,
+          rimDepthMm: 3,          // Rimless flat-turned edge -> explosive wash & singing flumi harmonics
+          edgeTaper: 0.48,
+          glideCoeff: 0.18,
+          cascadeGain: 1.12,
+          bloomDelaySec: 0.42,
+          ombakHz: 1.90,
+          decayT60: 12.0,
+          hammerDetune: 45,
+          bossRadiusRatio: 0.16,
+          oxideTargetRings: false,
+          regimeLabel: 'Free-Edge Whispering-Gallery & Stick-Slip Flumi Resonance'
+        }
+      };
+
+      // 16 Coupled Circular Shell Eigenmodes (m = nodal diameters, n = nodal circles)
+      const SHELL_MODES = [
+        { idx: 0,  m: 0, n: 1, ratio: 1.000, label: '(0,1) Boss Fund.',      isAxisym: true,  radialNodes: [0.92] },
+        { idx: 1,  m: 1, n: 1, ratio: 1.618, label: '(1,1) Dipole a/b',     isAxisym: false, radialNodes: [0.78] },
+        { idx: 2,  m: 2, n: 1, ratio: 1.942, label: '(2,1) Quadrupole',     isAxisym: false, radialNodes: [0.82] },
+        { idx: 3,  m: 0, n: 2, ratio: 2.008, label: '(0,2) 2nd Ring (2f₀)', isAxisym: true,  radialNodes: [0.44, 0.90] },
+        { idx: 4,  m: 3, n: 1, ratio: 2.764, label: '(3,1) Hexapole',       isAxisym: false, radialNodes: [0.85] },
+        { idx: 5,  m: 1, n: 2, ratio: 3.185, label: '(1,2) Shoulder Dipole',isAxisym: false, radialNodes: [0.49, 0.91] },
+        { idx: 6,  m: 4, n: 1, ratio: 3.680, label: '(4,1) Rim Octupole',   isAxisym: false, radialNodes: [0.87] },
+        { idx: 7,  m: 0, n: 3, ratio: 4.120, label: '(0,3) 3rd Ring Mode',  isAxisym: true,  radialNodes: [0.31, 0.64, 0.93] },
+        { idx: 8,  m: 2, n: 2, ratio: 4.690, label: '(2,2) Inner Lattice',  isAxisym: false, radialNodes: [0.52, 0.91] },
+        { idx: 9,  m: 5, n: 1, ratio: 5.240, label: '(5,1) Edge Whisper 5', isAxisym: false, radialNodes: [0.88] },
+        { idx: 10, m: 3, n: 2, ratio: 6.190, label: '(3,2) Mid-Shell 6',    isAxisym: false, radialNodes: [0.55, 0.92] },
+        { idx: 11, m: 6, n: 1, ratio: 7.050, label: '(6,1) Edge Whisper 6', isAxisym: false, radialNodes: [0.89] },
+        { idx: 12, m: 0, n: 4, ratio: 8.340, label: '(0,4) 4th Ring Cascade',isAxisym: true, radialNodes: [0.24, 0.50, 0.75, 0.94] },
+        { idx: 13, m: 7, n: 2, ratio: 10.12, label: '(7,2) Turbulent Rim',  isAxisym: false, radialNodes: [0.60, 0.93] },
+        { idx: 14, m: 9, n: 2, ratio: 13.45, label: '(9,2) Shimmer Mode',   isAxisym: false, radialNodes: [0.64, 0.94] },
+        { idx: 15, m: 12,n: 3, ratio: 18.20, label: '(12,3) Kolmogorov Tail',isAxisym: false, radialNodes: [0.45, 0.72, 0.95] }
+      ];
+
+      // =========================================================================
+      // 2. CENTRAL SIMULATION STATE
+      // =========================================================================
+      const state = {
+        archetype: 'tamtam',
+        alloy: 'b20',
+        diameterCm: 96,
+        thicknessMm: 2.4,
+        bossHeightMm: 4,
+        shellBowMm: 14,
+        rimDepthMm: 32,
+        edgeTaper: 0.62,
+        bossRadiusRatio: 0.18,
+        oxideTargetRings: true,
+
+        // Nonlinear Physics Parameters
+        glideCoeff: 0.08,
+        cascadeGain: 0.84,
+        bloomDelaySec: 0.62,
+        ombakHz: 2.40,
+        decayT60: 9.5,
+        hammerDetune: 35,
+
+        // Excitation & Strike State
+        interactionMode: 'strike', // 'strike', 'flumi', or 'pan'
+        malletType: 'fleece',      // 'fleece', 'felt', 'wood', 'flumi'
+        strikeRadiusNorm: 0.00,
+        strikeAngleRad: 0.0,
+        strikeVelocity: 4.2,
+
+        // Visual & Camera Options
+        shaderMode: 'bronze',      // 'bronze', 'stress', 'modal', 'turbulence'
+        cameraPreset: 'front',     // 'front', 'wide', 'oblique', 'grazing', 'section', 'orbit'
+        showWaveShells: true,
+        showNodalLines: true,
+        showCrossSection: false,
+        soloModeIndex: -1,         // -1 = all modes coupled
+
+        // Dynamical Variables for 16 Shell Modes + Wave Turbulence Reservoir
+        modeAmps: new Float32Array(16),
+        modePhases: new Float32Array(16),
+        modeBaseFreqs: new Float32Array(16),
+        modeInstFreqs: new Float32Array(16),
+        modeDoubletSplit: new Float32Array(16),
+
+        lowModeEnergy: 0.0,
+        turbulentEnergy: 0.0,
+        primedEnergySeed: 0.0,
+        instFundHz: 48.0,
+        baseFundHz: 48.0,
+        glideCents: 0.0,
+        spectralCentroidHz: 140.0,
+        peakDeflectionMm: 0.0,
+        timeSinceStrike: 99.0,
+
+        // Travelling radial shockwave ring from strike point
+        ripples: [],
+
+        // Phase portrait & Time-Frequency History Buffers
+        historyPitch: [],
+        historyCentroid: [],
+        historyTurb: [],
+        phaseTrail: [],
+
+        // Flumi continuous friction state
+        isFlumiDragging: false,
+        flumiRadiusNorm: 0.52,
+        flumiAngleRad: 0.4,
+        flumiSpeed: 0.0,
+
+        // Auto Ritual Sequencer
+        ritualActive: false,
+        ritualBpm: 36,
+        lastRitualBeatTime: 0,
+        ritualStep: 0
+      };
+
+      function recomputeModalFrequencies() {
+        const alloy = ALLOYS[state.alloy] || ALLOYS.b20;
+        const R = (state.diameterCm * 0.01) * 0.5;
+        const h = state.thicknessMm * 0.001;
+        const bowRatio = Math.abs(state.shellBowMm) / Math.max(1.0, state.diameterCm * 0.25);
+        const bossStiff = 1.0 + 0.0085 * state.bossHeightMm;
+        const rimStiff = 1.0 + 0.0022 * state.rimDepthMm;
+
+        let f0 = 0.48 * (alloy.cL * h) / (R * R) * (1.0 + 0.35 * bowRatio) * bossStiff * rimStiff;
+        if (state.archetype === 'xiaoluo') {
+          f0 = 450.0 * (24.0 / state.diameterCm) * (state.thicknessMm / 1.5) * (alloy.cL / 3480);
+        } else if (state.archetype === 'daluo') {
+          f0 = 188.0 * (36.0 / state.diameterCm) * (state.thicknessMm / 1.8) * (alloy.cL / 3560);
+        } else if (state.archetype === 'ageng') {
+          f0 = 49.0 * (95.0 / state.diameterCm) * (state.thicknessMm / 3.4) * (alloy.cL / 3420);
+        } else if (state.archetype === 'tamtam') {
+          f0 = 48.0 * (96.0 / state.diameterCm) * (state.thicknessMm / 2.4) * (alloy.cL / 3560);
+        }
+        f0 = Math.max(24.0, Math.min(950.0, f0));
+        state.baseFundHz = f0;
+
+        const taperFactor = 0.75 + 0.25 * state.edgeTaper;
+        for (let k = 0; k < 16; k++) {
+          const mode = SHELL_MODES[k];
+          let ratio = mode.ratio;
+          if (state.archetype === 'ageng' && k === 3) {
+            ratio = 2.000;
+          }
+          if (mode.m >= 3) {
+            ratio *= Math.pow(taperFactor, 0.38);
+          }
+          const detuneHash = Math.sin(k * 12.9898 + 4.1414) * (state.hammerDetune * 0.0008);
+          state.modeBaseFreqs[k] = f0 * ratio * (1.0 + detuneHash);
+          state.modeInstFreqs[k] = state.modeBaseFreqs[k];
+          state.modeDoubletSplit[k] = mode.isAxisym
+            ? (k === 3 ? state.ombakHz : 0.35 * state.ombakHz)
+            : state.ombakHz * (1.0 + 0.12 * (k % 3));
+        }
+      }
+
+      recomputeModalFrequencies();
+
+      // =========================================================================
+      // 3. WEB AUDIO API REAL-TIME NONLINEAR MODAL + WAVE-TURBULENCE SYNTHESIZER
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+      let analyserNode = null;
+      let fftDataArray = null;
+      let modalOscBanks = [];
+      let turbulenceNoiseGain = null;
+      let turbulenceFilterA = null;
+      let turbulenceFilterB = null;
+      let flumiBowGain = null;
+      let flumiBowOscA = null;
+      let flumiBowOscB = null;
+
+      function initAudioEngine() {
+        if (audioCtx) {
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          return;
+        }
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.78;
+
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.value = -10;
+        compressor.knee.value = 12;
+        compressor.ratio.value = 4;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.22;
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 1024;
+        analyserNode.smoothingTimeConstant = 0.78;
+        fftDataArray = new Uint8Array(analyserNode.frequencyBinCount);
+
+        masterGain.connect(compressor);
+        compressor.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+
+        modalOscBanks = [];
+        for (let k = 0; k < 16; k++) {
+          const oscA = audioCtx.createOscillator();
+          const oscB = audioCtx.createOscillator();
+          const gainA = audioCtx.createGain();
+          const gainB = audioCtx.createGain();
+
+          oscA.type = k === 0 ? 'sine' : (k < 4 ? 'triangle' : 'sine');
+          oscB.type = 'sine';
+
+          const baseF = state.modeBaseFreqs[k];
+          oscA.frequency.value = baseF;
+          oscB.frequency.value = baseF + state.modeDoubletSplit[k];
+
+          gainA.gain.value = 0.0;
+          gainB.gain.value = 0.0;
+
+          oscA.connect(gainA);
+          oscB.connect(gainB);
+          gainA.connect(masterGain);
+          gainB.connect(masterGain);
+
+          oscA.start();
+          oscB.start();
+
+          modalOscBanks.push({ oscA, oscB, gainA, gainB });
+        }
+
+        const bufferSize = audioCtx.sampleRate * 3;
+        const noiseBuffer = audioCtx.createBuffer(2, bufferSize, audioCtx.sampleRate);
+        for (let ch = 0; ch < 2; ch++) {
+          const out = noiseBuffer.getChannelData(ch);
+          let b0 = 0, b1 = 0;
+          for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            const ring = Math.sin(i * 0.137) * Math.cos(i * 0.059) * 0.65 + white * 0.35;
+            b0 = 0.92 * b0 + 0.08 * ring;
+            b1 = ring - b0;
+            out[i] = b1 * 0.9;
+          }
+        }
+        const noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+        noiseSource.loop = true;
+
+        turbulenceFilterA = audioCtx.createBiquadFilter();
+        turbulenceFilterA.type = 'bandpass';
+        turbulenceFilterA.frequency.value = 950;
+        turbulenceFilterA.Q.value = 1.4;
+
+        turbulenceFilterB = audioCtx.createBiquadFilter();
+        turbulenceFilterB.type = 'highshelf';
+        turbulenceFilterB.frequency.value = 2200;
+        turbulenceFilterB.gain.value = 8.0;
+
+        turbulenceNoiseGain = audioCtx.createGain();
+        turbulenceNoiseGain.gain.value = 0.0;
+
+        noiseSource.connect(turbulenceFilterA);
+        turbulenceFilterA.connect(turbulenceFilterB);
+        turbulenceFilterB.connect(turbulenceNoiseGain);
+        turbulenceNoiseGain.connect(masterGain);
+        noiseSource.start();
+
+        flumiBowOscA = audioCtx.createOscillator();
+        flumiBowOscB = audioCtx.createOscillator();
+        flumiBowOscA.type = 'sawtooth';
+        flumiBowOscB.type = 'triangle';
+        const flumiFilter = audioCtx.createBiquadFilter();
+        flumiFilter.type = 'bandpass';
+        flumiFilter.frequency.value = 420;
+        flumiFilter.Q.value = 6.5;
+        flumiBowGain = audioCtx.createGain();
+        flumiBowGain.gain.value = 0.0;
+
+        flumiBowOscA.connect(flumiFilter);
+        flumiBowOscB.connect(flumiFilter);
+        flumiFilter.connect(flumiBowGain);
+        flumiBowGain.connect(masterGain);
+        flumiBowOscA.start();
+        flumiBowOscB.start();
+        flumiBowGain._filter = flumiFilter;
+      }
+
+      function updateAudioEngineFromPhysics() {
+        if (!audioCtx || modalOscBanks.length === 0) return;
+        const now = audioCtx.currentTime;
+
+        for (let k = 0; k < 16; k++) {
+          const bank = modalOscBanks[k];
+          const isMutedBySolo = (state.soloModeIndex !== -1 && state.soloModeIndex !== k);
+          const amp = isMutedBySolo ? 0.0 : state.modeAmps[k];
+          const instF = Math.max(20, Math.min(14000, state.modeInstFreqs[k]));
+          const split = state.modeDoubletSplit[k];
+
+          bank.oscA.frequency.setTargetAtTime(instF, now, 0.012);
+          bank.oscB.frequency.setTargetAtTime(instF + split, now, 0.012);
+
+          const weight = k === 0 ? 0.24 : (k < 4 ? 0.14 : 0.065 / Math.sqrt(k));
+          const targetGainA = Math.min(0.32, amp * weight);
+          const ombakDepth = Math.min(0.95, state.ombakHz > 0.05 ? 0.68 : 0.0);
+          const targetGainB = targetGainA * ombakDepth;
+
+          bank.gainA.gain.setTargetAtTime(targetGainA, now, 0.015);
+          bank.gainB.gain.setTargetAtTime(targetGainB, now, 0.015);
+        }
+
+        if (turbulenceNoiseGain && turbulenceFilterA) {
+          const turbLevel = state.soloModeIndex !== -1 ? 0.0 : Math.min(0.38, state.turbulentEnergy * 0.26);
+          turbulenceNoiseGain.gain.setTargetAtTime(turbLevel, now, 0.025);
+          const filterFreq = Math.max(350, Math.min(6200, state.spectralCentroidHz * 1.45));
+          turbulenceFilterA.frequency.setTargetAtTime(filterFreq, now, 0.03);
+        }
+
+        if (flumiBowGain) {
+          if (state.isFlumiDragging && state.flumiSpeed > 0.01) {
+            const rNorm = state.flumiRadiusNorm;
+            const modeIdx = Math.min(15, Math.max(1, Math.floor(rNorm * 11)));
+            const singFreq = state.modeInstFreqs[modeIdx];
+            flumiBowOscA.frequency.setTargetAtTime(singFreq, now, 0.02);
+            flumiBowOscB.frequency.setTargetAtTime(singFreq * 1.502 + state.ombakHz, now, 0.02);
+            flumiBowGain._filter.frequency.setTargetAtTime(singFreq * 1.8, now, 0.03);
+            const bowAmp = Math.min(0.18, state.flumiSpeed * 0.14);
+            flumiBowGain.gain.setTargetAtTime(bowAmp, now, 0.04);
+          } else {
+            flumiBowGain.gain.setTargetAtTime(0.0, now, 0.08);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 4. PERCUSSIVE STRIKE, PRIMING & HAND-DAMPING EXCITATION ENGINE
+      // =========================================================================
+      function triggerGongStrike(rNorm, thetaRad, velocityOverride) {
+        initAudioEngine();
+        recomputeModalFrequencies();
+
+        const r = Math.max(0.0, Math.min(0.95, rNorm !== undefined ? rNorm : state.strikeRadiusNorm));
+        const theta = thetaRad !== undefined ? thetaRad : state.strikeAngleRad;
+        const v0 = velocityOverride !== undefined ? velocityOverride : state.strikeVelocity;
+
+        state.strikeRadiusNorm = r;
+        state.strikeAngleRad = theta;
+        state.timeSinceStrike = 0.0;
+
+        const sliderR = document.getElementById('sliderStrikeRadius');
+        if (sliderR) {
+          sliderR.value = r.toFixed(2);
+          document.getElementById('valStrikeRadius').textContent =
+            r < 0.18 ? `${r.toFixed(2)} (Boss)` : (r > 0.75 ? `${r.toFixed(2)} (Rim)` : `${r.toFixed(2)} (Shoulder)`);
+        }
+
+        let hardnessCutoff = 5.0;
+        if (state.malletType === 'fleece') hardnessCutoff = 4.2;
+        else if (state.malletType === 'felt') hardnessCutoff = 8.5;
+        else if (state.malletType === 'wood') hardnessCutoff = 16.0;
+        else if (state.malletType === 'flumi') hardnessCutoff = 6.5;
+
+        const forceNorm = v0 / 4.2;
+
+        for (let k = 0; k < 16; k++) {
+          const mode = SHELL_MODES[k];
+          let radialFactor = 1.0;
+          if (mode.m === 0) {
+            radialFactor = Math.cos(r * Math.PI * (mode.n - 0.35));
+          } else {
+            radialFactor = Math.pow(r, Math.min(3, mode.m * 0.55)) * Math.cos((r - 0.5) * Math.PI * (mode.n - 1));
+          }
+          for (let nIdx = 0; nIdx < mode.radialNodes.length; nIdx++) {
+            const distNode = Math.abs(r - mode.radialNodes[nIdx]);
+            if (distNode < 0.08) radialFactor *= (distNode / 0.08);
+          }
+
+          const malletRollOff = Math.exp(-k / hardnessCutoff);
+          const deltaAmp = Math.abs(radialFactor) * malletRollOff * forceNorm * (k === 0 ? 1.15 : 0.75);
+
+          state.modeAmps[k] = Math.min(2.5, state.modeAmps[k] * 0.55 + deltaAmp);
+          state.modePhases[k] = theta * mode.m;
+        }
+
+        if (state.primedEnergySeed > 0.02) {
+          state.turbulentEnergy += state.primedEnergySeed * forceNorm * 0.45;
+        }
+
+        state.ripples.push({
+          r0: r,
+          theta0: theta,
+          radius: 0.01,
+          amp: Math.min(1.6, forceNorm * 0.95),
+          age: 0.0
+        });
+        if (state.ripples.length > 6) state.ripples.shift();
+
+        malletAnimState.active = true;
+        malletAnimState.progress = 0.0;
+        malletAnimState.targetR = r;
+        malletAnimState.targetTheta = theta;
+
+        updateStrikeHudReadout(r, theta);
+      }
+
+      function primeGongWarmup() {
+        initAudioEngine();
+        state.primedEnergySeed = Math.min(1.2, state.primedEnergySeed + 0.45);
+        for (let k = 0; k < 6; k++) {
+          state.modeAmps[k] = Math.min(1.2, state.modeAmps[k] + 0.16 / (1 + k * 0.3));
+        }
+        state.ripples.push({
+          r0: 0.25,
+          theta0: Math.random() * Math.PI * 2,
+          radius: 0.02,
+          amp: 0.35,
+          age: 0.0
+        });
+      }
+
+      function dampGong() {
+        for (let k = 0; k < 16; k++) {
+          state.modeAmps[k] *= 0.06;
+        }
+        state.turbulentEnergy *= 0.04;
+        state.primedEnergySeed = 0.0;
+        state.ripples.length = 0;
+      }
+
+      function updateStrikeHudReadout(rNorm, thetaRad) {
+        const deg = Math.round(((thetaRad * 180) / Math.PI + 360) % 360);
+        const zone = rNorm < 0.20 ? 'Boss Dome' : (rNorm < 0.74 ? 'Conical Shoulder' : 'Turned Rim Flange');
+        document.getElementById('hudStrikeCoord').textContent =
+          `r/R = ${rNorm.toFixed(2)} (${zone}), θ = ${deg}°`;
+        const arch = ARCHETYPES[state.archetype];
+        document.getElementById('hudRegimeText').textContent = arch ? arch.regimeLabel : 'Nonlinear Föppl–von Kármán Shell';
+      }
+
+      // =========================================================================
+      // 5. FÖPPL–VON KÁRMÁN TIME-DOMAIN MODAL & WAVE-TURBULENCE STEPPER (60 FPS)
+      // =========================================================================
+      function stepNonlinearShellPhysics(dt) {
+        const safeDt = Math.min(0.033, Math.max(0.001, dt));
+        state.timeSinceStrike += safeDt;
+
+        if (state.isFlumiDragging && state.flumiSpeed > 0.005) {
+          const r = state.flumiRadiusNorm;
+          for (let k = 1; k < 14; k++) {
+            const mode = SHELL_MODES[k];
+            const ringMatch = Math.exp(-Math.pow((r - (0.25 + 0.05 * mode.m)), 2) / 0.04);
+            state.modeAmps[k] = Math.min(1.4, state.modeAmps[k] + ringMatch * state.flumiSpeed * safeDt * 2.8);
+          }
+          state.turbulentEnergy = Math.min(1.2, state.turbulentEnergy + state.flumiSpeed * safeDt * 0.65);
+        }
+
+        let lowE = 0.0;
+        for (let k = 0; k < 5; k++) {
+          lowE += state.modeAmps[k] * state.modeAmps[k];
+        }
+        state.lowModeEnergy = lowE;
+
+        const nonlinShift = Math.max(-0.24, Math.min(0.45, state.glideCoeff * Math.min(1.4, lowE * 0.38)));
+        state.instFundHz = state.baseFundHz * (1.0 + nonlinShift);
+        state.glideCents = 1200.0 * Math.log2(Math.max(0.1, state.instFundHz / state.baseFundHz));
+
+        const bloomGate = 1.0 - Math.exp(-Math.pow(state.timeSinceStrike / Math.max(0.06, state.bloomDelaySec), 2.1));
+        const cascadeFlux = state.cascadeGain * Math.pow(lowE, 1.35) * bloomGate * safeDt * 0.55;
+
+        if (cascadeFlux > 0.00001) {
+          for (let k = 0; k < 4; k++) {
+            state.modeAmps[k] = Math.max(0.0, state.modeAmps[k] - cascadeFlux * 0.08);
+          }
+          for (let k = 5; k < 16; k++) {
+            const kolmogorovWeight = Math.pow(SHELL_MODES[k].ratio, -0.68);
+            state.modeAmps[k] = Math.min(1.8, state.modeAmps[k] + cascadeFlux * kolmogorovWeight * 1.45);
+          }
+          state.turbulentEnergy = Math.min(1.6, state.turbulentEnergy + cascadeFlux * 1.9);
+        }
+
+        const baseDecayRate = 6.908 / Math.max(1.0, state.decayT60);
+        let weightedFreqSum = 0.0;
+        let totalEnergySum = 0.0001;
+        let maxDisp = 0.0;
+
+        for (let k = 0; k < 16; k++) {
+          const freqDecayMult = 1.0 + 0.09 * Math.pow(SHELL_MODES[k].ratio, 0.85);
+          state.modeAmps[k] *= Math.exp(-baseDecayRate * freqDecayMult * safeDt);
+
+          const ombakMod = 1.0 + 0.0035 * Math.sin(performance.now() * 0.001 * Math.PI * 2 * state.ombakHz + k);
+          const modeShift = nonlinShift * (k === 0 ? 1.0 : Math.pow(SHELL_MODES[k].ratio, -0.35));
+          state.modeInstFreqs[k] = state.modeBaseFreqs[k] * (1.0 + modeShift) * ombakMod;
+
+          const visualOmega = (20.0 + k * 5.5) * (1.0 + 0.5 * modeShift);
+          state.modePhases[k] += visualOmega * safeDt;
+
+          const eK = state.modeAmps[k] * state.modeAmps[k];
+          weightedFreqSum += state.modeInstFreqs[k] * eK;
+          totalEnergySum += eK;
+          maxDisp += state.modeAmps[k] * (k === 0 ? 1.4 : 0.45);
+        }
+
+        state.turbulentEnergy *= Math.exp(-baseDecayRate * 1.65 * safeDt);
+        state.primedEnergySeed *= Math.exp(-0.15 * safeDt);
+
+        const turbCentroidContrib = state.turbulentEnergy * 2400.0;
+        state.spectralCentroidHz =
+          (weightedFreqSum + turbCentroidContrib) / (totalEnergySum + state.turbulentEnergy * 0.85);
+        state.peakDeflectionMm = maxDisp * (state.thicknessMm * 0.85);
+
+        for (let i = state.ripples.length - 1; i >= 0; i--) {
+          const rp = state.ripples[i];
+          rp.age += safeDt;
+          rp.radius += safeDt * 1.65;
+          rp.amp *= Math.exp(-safeDt * 3.2);
+          if (rp.amp < 0.015 || rp.radius > 2.2) {
+            state.ripples.splice(i, 1);
+          }
+        }
+
+        state.historyPitch.push(state.instFundHz);
+        state.historyCentroid.push(state.spectralCentroidHz);
+        state.historyTurb.push(state.turbulentEnergy);
+        if (state.historyPitch.length > 180) {
+          state.historyPitch.shift();
+          state.historyCentroid.shift();
+          state.historyTurb.shift();
+        }
+
+        const q1 = state.modeAmps[0] * Math.cos(state.modePhases[0]);
+        const p1 = -state.modeAmps[0] * Math.sin(state.modePhases[0]);
+        state.phaseTrail.push({ q: q1, p: p1 });
+        if (state.phaseTrail.length > 90) state.phaseTrail.shift();
+
+        if (state.ritualActive) {
+          const nowSec = performance.now() * 0.001;
+          const beatInterval = 60.0 / Math.max(10, state.ritualBpm);
+          if (nowSec - state.lastRitualBeatTime >= beatInterval) {
+            state.lastRitualBeatTime = nowSec;
+            const pattern = [
+              { r: 0.00, v: 4.8 },
+              { r: 0.38, v: 2.4 },
+              { r: 0.72, v: 3.1 },
+              { r: 0.06, v: 5.6 }
+            ];
+            const stepObj = pattern[state.ritualStep % pattern.length];
+            state.ritualStep++;
+            triggerGongStrike(stepObj.r, (state.ritualStep * 1.7) % (Math.PI * 2), stepObj.v);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. THREE.JS 3D FULL-SCREEN GONG STAGE, SHELL DEFORMER & SHADER ENGINE
+      // =========================================================================
+      const mountEl = document.getElementById('threeCanvasMount');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04050a);
+      scene.fog = new THREE.FogExp2(0x04050a, 0.045);
+
+      const camera = new THREE.PerspectiveCamera(45, 16 / 9, 0.1, 100);
+      camera.position.set(0, 0.0, 4.8);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.18;
+      // Ensure CSS style width/height is always 100% of container on HiDPI / Retina screens
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      mountEl.appendChild(renderer.domElement);
+
+      // Studio & Temple Lighting Rig
+      const ambientLight = new THREE.AmbientLight(0x334155, 0.92);
+      scene.add(ambientLight);
+
+      const keyLight = new THREE.DirectionalLight(0xffedd5, 2.2);
+      keyLight.position.set(3.2, 4.0, 4.5);
+      scene.add(keyLight);
+
+      const rimCyanLight = new THREE.PointLight(0x22d3ee, 1.65, 14);
+      rimCyanLight.position.set(-3.4, -1.8, 2.5);
+      scene.add(rimCyanLight);
+
+      const backAmberLight = new THREE.PointLight(0xf59e0b, 1.9, 14);
+      backAmberLight.position.set(0, 2.5, -3.2);
+      scene.add(backAmberLight);
+
+      // Root Assembly Group
+      const gongRoot = new THREE.Group();
+      scene.add(gongRoot);
+
+      // -------------------------------------------------------------------------
+      // 6A. Architectural Suspension Gantry Frame & Braided Silk Cords
+      // -------------------------------------------------------------------------
+      const gantryGroup = new THREE.Group();
+      gongRoot.add(gantryGroup);
+
+      const frameMat = new THREE.MeshStandardMaterial({
+        color: 0x1c1917,
+        roughness: 0.45,
+        metalness: 0.35
+      });
+      const goldTrimMat = new THREE.MeshStandardMaterial({
+        color: 0xd97706,
+        roughness: 0.25,
+        metalness: 0.85
+      });
+
+      const topBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 3.3, 20), frameMat);
+      topBeam.rotation.z = Math.PI / 2;
+      topBeam.position.set(0, 1.62, 0);
+      gantryGroup.add(topBeam);
+
+      [-1.42, 1.42].forEach((xPos) => {
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.058, 3.25, 20), frameMat);
+        pillar.position.set(xPos, 0.0, 0);
+        gantryGroup.add(pillar);
+
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.12, 20), goldTrimMat);
+        collar.position.set(xPos, 1.62, 0);
+        gantryGroup.add(collar);
+
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.95), frameMat);
+        foot.position.set(xPos, -1.62, 0);
+        gantryGroup.add(foot);
+      });
+
+      const cordMat = new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7, metalness: 0.1 });
+      const leftCord = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.0, 10), cordMat);
+      const rightCord = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 1.0, 10), cordMat);
+      gantryGroup.add(leftCord, rightCord);
+
+      const gridHelper = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      gridHelper.position.y = -1.66;
+      scene.add(gridHelper);
+
+      // -------------------------------------------------------------------------
+      // 6B. High-Resolution Parametric 3D Gong Shell Mesh (56 Radial Rings x 96 Sectors)
+      // -------------------------------------------------------------------------
+      const NR = 56;
+      const NTHETA = 96;
+      const totalRings = NR + 1;
+      const totalSectors = NTHETA + 1;
+      const vertCount = totalRings * totalSectors;
+
+      const gongGeo = new THREE.BufferGeometry();
+      const positions = new Float32Array(vertCount * 3);
+      const normals = new Float32Array(vertCount * 3);
+      const colors = new Float32Array(vertCount * 3);
+      const uvs = new Float32Array(vertCount * 2);
+
+      const vertRNorm = new Float32Array(vertCount);
+      const vertTheta = new Float32Array(vertCount);
+      const vertHammerNoise = new Float32Array(vertCount);
+
+      let vIdx = 0;
+      for (let ir = 0; ir <= NR; ir++) {
+        const rFrac = ir / NR;
+        for (let it = 0; it <= NTHETA; it++) {
+          const theta = (it / NTHETA) * Math.PI * 2;
+          vertRNorm[vIdx] = rFrac;
+          vertTheta[vIdx] = theta;
+          const x0 = rFrac * Math.cos(theta);
+          const y0 = rFrac * Math.sin(theta);
+          const hammer =
+            Math.sin(x0 * 38.0) * Math.cos(y0 * 38.0) * 0.5 +
+            Math.sin((x0 + y0) * 62.0) * 0.3 +
+            Math.cos(rFrac * 85.0 + theta * 7.0) * 0.2;
+          vertHammerNoise[vIdx] = hammer;
+
+          uvs[vIdx * 2] = 0.5 + 0.5 * x0;
+          uvs[vIdx * 2 + 1] = 0.5 + 0.5 * y0;
+          vIdx++;
+        }
+      }
+
+      const indices = [];
+      for (let ir = 0; ir < NR; ir++) {
+        for (let it = 0; it < NTHETA; it++) {
+          const a = ir * totalSectors + it;
+          const b = (ir + 1) * totalSectors + it;
+          const c = (ir + 1) * totalSectors + (it + 1);
+          const d = ir * totalSectors + (it + 1);
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+
+      gongGeo.setIndex(indices);
+      gongGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      gongGeo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      gongGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      gongGeo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+
+      const gongMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.28,
+        metalness: 0.86,
+        side: THREE.DoubleSide
+      });
+
+      const gongMesh = new THREE.Mesh(gongGeo, gongMat);
+      // Disable frustum culling on dynamic deforming gong mesh so it's never clipped
+      gongMesh.frustumCulled = false;
+      gongRoot.add(gongMesh);
+
+      // -------------------------------------------------------------------------
+      // 6C. SLDV Laser Vibrometer Nodal Rings Overlay & Cross-Section Slice Plane
+      // -------------------------------------------------------------------------
+      const nodalGroup = new THREE.Group();
+      gongRoot.add(nodalGroup);
+
+      const nodalLineMat = new THREE.LineBasicMaterial({
+        color: 0x22d3ee,
+        transparent: true,
+        opacity: 0.72
+      });
+      const nodalCircles = [];
+      for (let c = 0; c < 4; c++) {
+        const pts = [];
+        for (let i = 0; i <= 96; i++) {
+          const ang = (i / 96) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(ang), Math.sin(ang), 0.02));
+        }
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+        const line = new THREE.Line(lineGeo, nodalLineMat);
+        nodalGroup.add(line);
+        nodalCircles.push(line);
+      }
+
+      const slicePtsCount = 113;
+      const slicePositions = new Float32Array(slicePtsCount * 3);
+      const sliceGeo = new THREE.BufferGeometry();
+      sliceGeo.setAttribute('position', new THREE.BufferAttribute(slicePositions, 3));
+      const sliceMat = new THREE.LineBasicMaterial({ color: 0xf43f5e, linewidth: 2 });
+      const crossSectionLine = new THREE.Line(sliceGeo, sliceMat);
+      crossSectionLine.visible = false;
+      gongRoot.add(crossSectionLine);
+
+      // -------------------------------------------------------------------------
+      // 6D. 3D Volumetric Acoustic Radiation Wave Shells
+      // -------------------------------------------------------------------------
+      const waveShellGroup = new THREE.Group();
+      gongRoot.add(waveShellGroup);
+      const waveRings = [];
+      for (let w = 0; w < 5; w++) {
+        const torusGeo = new THREE.TorusGeometry(0.65 + w * 0.22, 0.008, 12, 72);
+        const torusMat = new THREE.MeshBasicMaterial({
+          color: w % 2 === 0 ? 0xf59e0b : 0x22d3ee,
+          transparent: true,
+          opacity: 0.0
+        });
+        const torus = new THREE.Mesh(torusGeo, torusMat);
+        waveShellGroup.add(torus);
+        waveRings.push({ mesh: torus, baseRadius: 0.55 + w * 0.24, phaseOffset: w * 1.25 });
+      }
+
+      // -------------------------------------------------------------------------
+      // 6E. 3D Percussive Mallet & Silicone Flumi Friction Striker Assembly
+      // -------------------------------------------------------------------------
+      const malletGroup = new THREE.Group();
+      gongRoot.add(malletGroup);
+
+      const handleGeo = new THREE.CylinderGeometry(0.016, 0.02, 0.78, 14);
+      const handleMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.5 });
+      const malletHandle = new THREE.Mesh(handleGeo, handleMat);
+      malletHandle.position.set(0, -0.36, 0.14);
+      malletHandle.rotation.x = 0.28;
+      malletGroup.add(malletHandle);
+
+      const malletHeadGeo = new THREE.SphereGeometry(0.095, 24, 24);
+      malletHeadGeo.scale(1.0, 0.88, 1.12);
+      const malletHeadMat = new THREE.MeshStandardMaterial({
+        color: 0xfef3c7,
+        roughness: 0.75,
+        metalness: 0.05,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.15
+      });
+      const malletHead = new THREE.Mesh(malletHeadGeo, malletHeadMat);
+      malletGroup.add(malletHead);
+
+      const targetRingGeo = new THREE.RingGeometry(0.045, 0.062, 32);
+      const targetRingMat = new THREE.MeshBasicMaterial({
+        color: 0xf59e0b,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.78
+      });
+      const strikeTargetRing = new THREE.Mesh(targetRingGeo, targetRingMat);
+      gongRoot.add(strikeTargetRing);
+
+      const malletAnimState = {
+        active: false,
+        progress: 0.0,
+        targetR: 0.0,
+        targetTheta: 0.0
+      };
+
+      function evalStaticShellProfileZ(rNorm) {
+        const bR = state.bossRadiusRatio;
+        const bossZ = (state.bossHeightMm * 0.0042);
+        const bowZ = (state.shellBowMm * 0.0042);
+        const rimZ = (state.rimDepthMm * 0.0038);
+
+        let z = 0.0;
+        if (rNorm < bR) {
+          const u = rNorm / bR;
+          z += bossZ * Math.cos(u * Math.PI * 0.5) * Math.cos(u * Math.PI * 0.5);
+        }
+        const shoulderEnv = Math.sin(Math.min(1.0, rNorm / 0.92) * Math.PI);
+        z += bowZ * shoulderEnv;
+
+        if (rNorm > 0.90) {
+          const rimU = (rNorm - 0.90) / 0.10;
+          z -= rimZ * Math.pow(rimU, 1.45);
+        }
+        return z;
+      }
+
+      function update3DGongGeometry(timeSec) {
+        const visualRadius = 0.48 + (state.diameterCm / 130.0) * 0.78;
+        const alloy = ALLOYS[state.alloy] || ALLOYS.b20;
+        const posAttr = gongGeo.attributes.position;
+        const colAttr = gongGeo.attributes.color;
+        const posArr = posAttr.array;
+        const colArr = colAttr.array;
+
+        const hangX = visualRadius * 0.62;
+        const hangY = Math.sqrt(Math.max(0.05, visualRadius * visualRadius - hangX * hangX));
+        const cordLen = Math.max(0.2, 1.62 - hangY);
+        leftCord.scale.set(1, cordLen, 1);
+        leftCord.position.set(-hangX * 1.05, hangY + cordLen * 0.5, -0.02);
+        leftCord.rotation.z = 0.12;
+        rightCord.scale.set(1, cordLen, 1);
+        rightCord.position.set(hangX * 1.05, hangY + cordLen * 0.5, -0.02);
+        rightCord.rotation.z = -0.12;
+
+        const modeCos = new Float32Array(16);
+        for (let k = 0; k < 16; k++) {
+          const isMuted = (state.soloModeIndex !== -1 && state.soloModeIndex !== k);
+          modeCos[k] = isMuted ? 0.0 : state.modeAmps[k] * Math.cos(state.modePhases[k]);
+        }
+
+        const shader = state.shaderMode;
+        const bR = state.bossRadiusRatio;
+
+        for (let i = 0; i < vertCount; i++) {
+          const rNorm = vertRNorm[i];
+          const theta = vertTheta[i];
+          const hammer = vertHammerNoise[i];
+
+          const effRNorm = rNorm <= 0.90 ? (rNorm / 0.90) : (1.0 - (rNorm - 0.90) * 0.18);
+          const rWorld = effRNorm * visualRadius;
+
+          const x = rWorld * Math.cos(theta);
+          const y = rWorld * Math.sin(theta);
+          const zStatic = evalStaticShellProfileZ(rNorm) + hammer * 0.0022 * (state.hammerDetune / 35.0);
+
+          let wModal = 0.0;
+          wModal += modeCos[0] * Math.cos(rNorm * 1.45);
+          wModal += modeCos[3] * Math.cos(rNorm * 3.65) * 0.48;
+          wModal += modeCos[7] * Math.cos(rNorm * 6.40) * 0.26;
+          const rPow1 = rNorm * (1.0 - 0.25 * rNorm);
+          wModal += modeCos[1] * rPow1 * Math.cos(theta + 0.2) * 0.65;
+          wModal += modeCos[2] * rPow1 * rNorm * Math.cos(2 * theta) * 0.55;
+          wModal += modeCos[4] * rPow1 * rNorm * Math.cos(3 * theta) * 0.42;
+          wModal += modeCos[6] * Math.pow(rNorm, 1.6) * Math.cos(4 * theta) * 0.36;
+          if (state.turbulentEnergy > 0.002 || state.soloModeIndex >= 8) {
+            wModal += modeCos[9] * Math.pow(rNorm, 2.0) * Math.cos(5 * theta) * 0.28;
+            wModal += modeCos[11] * Math.pow(rNorm, 2.2) * Math.cos(6 * theta) * 0.25;
+            wModal += modeCos[13] * Math.pow(rNorm, 1.8) * Math.cos(7 * theta) * Math.sin(rNorm * 9.0) * 0.24;
+            wModal += modeCos[15] * Math.pow(rNorm, 1.5) * Math.cos(12 * theta) * Math.sin(rNorm * 14.0) * 0.22;
+          }
+
+          let wRipple = 0.0;
+          for (let rpIdx = 0; rpIdx < state.ripples.length; rpIdx++) {
+            const rp = state.ripples[rpIdx];
+            const dx = effRNorm * Math.cos(theta) - rp.r0 * Math.cos(rp.theta0);
+            const dy = effRNorm * Math.sin(theta) - rp.r0 * Math.sin(rp.theta0);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const waveArg = (dist - rp.radius) * 26.0;
+            if (Math.abs(waveArg) < Math.PI * 2.5) {
+              wRipple += rp.amp * Math.cos(waveArg) * Math.exp(-waveArg * waveArg * 0.14);
+            }
+          }
+
+          const rimClamp = rNorm > 0.91 ? Math.max(0.15, 1.0 - (rNorm - 0.91) * 8.5) : 1.0;
+          const totalW = (wModal * 0.055 + wRipple * 0.032) * rimClamp;
+
+          posArr[i * 3] = x;
+          posArr[i * 3 + 1] = y;
+          posArr[i * 3 + 2] = zStatic + totalW;
+
+          let rCol = 0.8, gCol = 0.6, bCol = 0.3;
+
+          if (shader === 'bronze') {
+            const isBoss = rNorm < bR;
+            const isOuterOxide = state.oxideTargetRings && (rNorm > 0.74 && rNorm < 0.91);
+            const isInnerOxide = state.oxideTargetRings && (rNorm > bR && rNorm < bR + 0.08);
+            const latheGroove = 0.92 + 0.08 * Math.sin(rNorm * 190.0) + 0.05 * hammer;
+            const vibGlow = Math.min(0.42, Math.abs(totalW) * 8.5);
+
+            if (isOuterOxide || isInnerOxide) {
+              rCol = alloy.darkTint[0] * latheGroove + vibGlow * 0.9;
+              gCol = alloy.darkTint[1] * latheGroove + vibGlow * 0.55;
+              bCol = alloy.darkTint[2] * latheGroove + vibGlow * 0.15;
+            } else if (isBoss) {
+              rCol = Math.min(1.0, alloy.baseTint[0] * 1.12 + vibGlow * 0.5);
+              gCol = Math.min(1.0, alloy.baseTint[1] * 1.08 + vibGlow * 0.4);
+              bCol = Math.min(1.0, alloy.baseTint[2] * 1.02 + vibGlow * 0.2);
+            } else {
+              rCol = Math.min(1.0, alloy.baseTint[0] * latheGroove + vibGlow * 0.45);
+              gCol = Math.min(1.0, alloy.baseTint[1] * latheGroove + vibGlow * 0.32);
+              bCol = Math.min(1.0, alloy.baseTint[2] * latheGroove + vibGlow * 0.15);
+            }
+          } else if (shader === 'stress') {
+            const bossCurvStress = Math.exp(-Math.pow((rNorm - bR) / 0.07, 2)) * 1.35;
+            const rimFoldStress = Math.exp(-Math.pow((rNorm - 0.89) / 0.06, 2)) * 1.25;
+            const dynStrain = Math.min(1.0, (Math.abs(totalW) * 16.0 + state.turbulentEnergy * 0.55) * (0.45 + bossCurvStress + rimFoldStress));
+            rCol = Math.min(1.0, 0.08 + Math.pow(dynStrain, 0.8) * 1.25);
+            gCol = Math.min(1.0, 0.14 + Math.sin(dynStrain * Math.PI) * 0.72);
+            bCol = Math.max(0.08, 0.45 - dynStrain * 0.35 + (1.0 - dynStrain) * 0.25);
+          } else if (shader === 'modal') {
+            const normW = Math.max(-1.0, Math.min(1.0, totalW * 24.0));
+            const mag = Math.abs(normW);
+            if (normW >= 0) {
+              rCol = 0.06 + mag * 0.15;
+              gCol = 0.12 + mag * 0.82;
+              bCol = 0.18 + mag * 0.88;
+            } else {
+              rCol = 0.16 + mag * 0.85;
+              gCol = 0.06 + mag * 0.18;
+              bCol = 0.18 + mag * 0.72;
+            }
+          } else if (shader === 'turbulence') {
+            const highFreqRipple =
+              Math.abs(Math.sin(rNorm * 28.0 - timeSec * 14.0) * Math.cos(theta * 8.0)) *
+              (state.turbulentEnergy * (0.35 + 0.85 * Math.pow(rNorm, 1.2)));
+            const eNorm = Math.min(1.0, highFreqRipple * 1.6 + Math.abs(totalW) * 8.0);
+            rCol = 0.07 + eNorm * 0.95;
+            gCol = 0.09 + Math.pow(eNorm, 1.5) * 0.78;
+            bCol = 0.18 + (1.0 - eNorm) * 0.35;
+          }
+
+          colArr[i * 3] = rCol;
+          colArr[i * 3 + 1] = gCol;
+          colArr[i * 3 + 2] = bCol;
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+        gongGeo.computeVertexNormals();
+        // Keep bounding sphere up to date so 3D raycasting hits all 4 quadrants accurately
+        gongGeo.computeBoundingSphere();
+
+        nodalGroup.visible = state.showNodalLines;
+        if (state.showNodalLines) {
+          const activeMode = SHELL_MODES[state.soloModeIndex !== -1 ? state.soloModeIndex : 3];
+          for (let c = 0; c < nodalCircles.length; c++) {
+            const line = nodalCircles[c];
+            if (c < activeMode.radialNodes.length) {
+              line.visible = true;
+              const nodeR = activeMode.radialNodes[c] * visualRadius;
+              const nodeZ = evalStaticShellProfileZ(activeMode.radialNodes[c]) + 0.018;
+              line.scale.set(nodeR, nodeR, 1);
+              line.position.z = nodeZ;
+            } else {
+              line.visible = false;
+            }
+          }
+        }
+
+        crossSectionLine.visible = state.showCrossSection;
+        if (state.showCrossSection) {
+          const sArr = sliceGeo.attributes.position.array;
+          for (let s = 0; s < slicePtsCount; s++) {
+            const u = (s / (slicePtsCount - 1)) * 2.0 - 1.0;
+            const rN = Math.abs(u);
+            const effR = rN <= 0.90 ? (rN / 0.90) : (1.0 - (rN - 0.90) * 0.18);
+            const xS = Math.sign(u) * effR * visualRadius;
+            const zS = evalStaticShellProfileZ(rN) + 0.035;
+            sArr[s * 3] = xS;
+            sArr[s * 3 + 1] = 0.0;
+            sArr[s * 3 + 2] = zS;
+          }
+          sliceGeo.attributes.position.needsUpdate = true;
+        }
+
+        waveShellGroup.visible = state.showWaveShells;
+        if (state.showWaveShells) {
+          const totalAcousticAmp = Math.min(1.0, Math.sqrt(state.lowModeEnergy) * 0.55 + state.turbulentEnergy * 0.65);
+          for (let w = 0; w < waveRings.length; w++) {
+            const wr = waveRings[w];
+            const cycle = ((timeSec * 1.15 + wr.phaseOffset * 0.25) % 1.0);
+            const rScale = (0.35 + cycle * 1.25) * visualRadius;
+            wr.mesh.scale.set(rScale, rScale, 1.0);
+            wr.mesh.position.z = (w % 2 === 0 ? 1 : -1) * (0.08 + cycle * 0.95);
+            wr.mesh.material.opacity = totalAcousticAmp * (1.0 - cycle) * 0.42;
+          }
+        }
+
+        const targetRWorld = (state.strikeRadiusNorm / 0.90) * visualRadius;
+        const targetX = targetRWorld * Math.cos(state.strikeAngleRad);
+        const targetY = targetRWorld * Math.sin(state.strikeAngleRad);
+        const targetZ = evalStaticShellProfileZ(state.strikeRadiusNorm);
+
+        strikeTargetRing.position.set(targetX, targetY, targetZ + 0.012);
+
+        if (state.isFlumiDragging) {
+          const flumiRWorld = (state.flumiRadiusNorm / 0.90) * visualRadius;
+          const fx = flumiRWorld * Math.cos(state.flumiAngleRad);
+          const fy = flumiRWorld * Math.sin(state.flumiAngleRad);
+          const fz = evalStaticShellProfileZ(state.flumiRadiusNorm);
+          malletGroup.position.set(fx, fy, fz + 0.085);
+          malletHeadMat.color.setHex(0x38bdf8);
+          malletHeadMat.emissive.setHex(0x0284c7);
+        } else {
+          let zOffset = 0.34;
+          if (malletAnimState.active) {
+            malletAnimState.progress += 0.14;
+            if (malletAnimState.progress >= Math.PI) {
+              malletAnimState.active = false;
+              malletAnimState.progress = 0.0;
+            } else {
+              zOffset = 0.34 - Math.sin(malletAnimState.progress) * 0.26;
+            }
+          }
+          malletGroup.position.set(targetX, targetY, targetZ + zOffset);
+          if (state.malletType === 'fleece') malletHeadMat.color.setHex(0xfef3c7);
+          else if (state.malletType === 'felt') malletHeadMat.color.setHex(0xfb7185);
+          else if (state.malletType === 'wood') malletHeadMat.color.setHex(0xb45309);
+          else malletHeadMat.color.setHex(0x38bdf8);
+        }
+      }
+
+      // =========================================================================
+      // 7. 3D CAMERA ORBIT, PAN/CENTER, ZOOM & DIRECT RAYCAST STRIKE / FLUMI BOWING
+      // =========================================================================
+      const camSpherical = {
+        radius: 4.8,
+        theta: 0.0,
+        phi: Math.PI * 0.50,
+        targetX: 0.0,
+        targetY: 0.0,
+        targetZ: 0.0,
+        isOrbitDragging: false,
+        isPanDragging: false,
+        lastMouseX: 0,
+        lastMouseY: 0,
+        downMouseX: 0,
+        downMouseY: 0
+      };
+
+      function syncZoomSliderUI() {
+        const sliderZoom = document.getElementById('sliderStageZoom');
+        if (sliderZoom) {
+          sliderZoom.value = String(Math.max(1.4, Math.min(12.0, camSpherical.radius)).toFixed(1));
+        }
+      }
+
+      function centerAndFitGong() {
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = 0.0;
+        camSpherical.targetZ = 0.0;
+        camSpherical.theta = 0.0;
+        camSpherical.phi = Math.PI * 0.50;
+        // Scale camera distance so both gong and full suspension gantry fit with generous margin
+        const aspect = Math.max(0.6, camera.aspect || 1.5);
+        const baseDist = 4.75;
+        camSpherical.radius = aspect < 1.2 ? baseDist / Math.max(0.65, aspect * 0.85) : baseDist;
+        syncZoomSliderUI();
+      }
+
+      function applyCameraPreset(preset) {
+        state.cameraPreset = preset;
+        camSpherical.targetX = 0.0;
+        camSpherical.targetY = 0.0;
+        camSpherical.targetZ = 0.0;
+        if (preset === 'front') {
+          camSpherical.radius = 4.8;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = Math.PI * 0.50;
+        } else if (preset === 'wide') {
+          camSpherical.radius = 6.6;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = Math.PI * 0.49;
+        } else if (preset === 'oblique') {
+          camSpherical.radius = 4.6;
+          camSpherical.theta = 0.68;
+          camSpherical.phi = Math.PI * 0.44;
+        } else if (preset === 'grazing') {
+          camSpherical.radius = 3.9;
+          camSpherical.theta = 1.22;
+          camSpherical.phi = Math.PI * 0.49;
+        } else if (preset === 'section') {
+          camSpherical.radius = 4.4;
+          camSpherical.theta = 0.0;
+          camSpherical.phi = Math.PI * 0.22;
+          state.showCrossSection = true;
+          document.getElementById('btnToggleCrossSection').classList.add('btn-active-amber');
+        }
+        syncZoomSliderUI();
+        document.querySelectorAll('.cam-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-cam') === preset);
+        });
+      }
+
+      function updateCameraTransform(timeSec) {
+        if (state.cameraPreset === 'orbit' && !camSpherical.isOrbitDragging && !camSpherical.isPanDragging) {
+          camSpherical.theta = timeSec * 0.32;
+          camSpherical.phi = Math.PI * 0.46 + Math.sin(timeSec * 0.4) * 0.07;
+        }
+        const sinPhi = Math.sin(camSpherical.phi);
+        camera.position.x = camSpherical.targetX + camSpherical.radius * sinPhi * Math.sin(camSpherical.theta);
+        camera.position.y = camSpherical.targetY + camSpherical.radius * Math.cos(camSpherical.phi);
+        camera.position.z = camSpherical.targetZ + camSpherical.radius * sinPhi * Math.cos(camSpherical.theta);
+        camera.lookAt(camSpherical.targetX, camSpherical.targetY, camSpherical.targetZ);
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+      const fallbackPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const planeHitPoint = new THREE.Vector3();
+
+      function raycastGongSurface(clientX, clientY) {
+        // Always measure against mountEl bounding box so HiDPI / Fullscreen coordinates are 100% aligned
+        const rect = mountEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return { hit: false };
+        pointerNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+        pointerNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointerNDC, camera);
+
+        const visualRadius = 0.48 + (state.diameterCm / 130.0) * 0.78;
+        const hits = raycaster.intersectObject(gongMesh, false);
+        if (hits.length > 0) {
+          const pt = hits[0].point;
+          const rWorld = Math.sqrt(pt.x * pt.x + pt.y * pt.y);
+          const rNorm = Math.min(0.92, (rWorld / visualRadius) * 0.90);
+          const theta = Math.atan2(pt.y, pt.x);
+          return { hit: true, rNorm, theta };
+        }
+
+        // Analytical z=0 disc fallback so edge clicks never miss during extreme deformation
+        if (raycaster.ray.intersectPlane(fallbackPlane, planeHitPoint)) {
+          const rWorld = Math.sqrt(planeHitPoint.x * planeHitPoint.x + planeHitPoint.y * planeHitPoint.y);
+          if (rWorld <= visualRadius * 1.05) {
+            const rNorm = Math.min(0.92, (rWorld / visualRadius) * 0.90);
+            const theta = Math.atan2(planeHitPoint.y, planeHitPoint.x);
+            return { hit: true, rNorm, theta };
+          }
+        }
+        return { hit: false };
+      }
+
+      // Prevent context menu on right-click pan inside 3D stage
+      renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        camSpherical.downMouseX = e.clientX;
+        camSpherical.downMouseY = e.clientY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        // Right-click, middle-click, Alt+click, or 'pan' mode -> manual 3D pan/center
+        if (e.button === 2 || e.button === 1 || e.altKey || state.interactionMode === 'pan') {
+          camSpherical.isPanDragging = true;
+          return;
+        }
+
+        const rc = raycastGongSurface(e.clientX, e.clientY);
+        const wantFlumi = state.interactionMode === 'flumi' || e.shiftKey;
+
+        if (rc.hit && wantFlumi) {
+          initAudioEngine();
+          state.isFlumiDragging = true;
+          state.flumiRadiusNorm = rc.rNorm;
+          state.flumiAngleRad = rc.theta;
+          state.flumiSpeed = 0.25;
+          updateStrikeHudReadout(rc.rNorm, rc.theta);
+          return;
+        }
+        camSpherical.isOrbitDragging = true;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (state.isFlumiDragging) {
+          const rc = raycastGongSurface(e.clientX, e.clientY);
+          if (rc.hit) {
+            const dr = rc.rNorm - state.flumiRadiusNorm;
+            const dth = rc.theta - state.flumiAngleRad;
+            const moveMag = Math.sqrt(dr * dr + (rc.rNorm * dth) * (rc.rNorm * dth));
+            state.flumiSpeed = Math.min(1.5, 0.15 + moveMag * 18.0);
+            state.flumiRadiusNorm = rc.rNorm;
+            state.flumiAngleRad = rc.theta;
+            updateStrikeHudReadout(rc.rNorm, rc.theta);
+          }
+          return;
+        }
+
+        const dx = e.clientX - camSpherical.lastMouseX;
+        const dy = e.clientY - camSpherical.lastMouseY;
+        camSpherical.lastMouseX = e.clientX;
+        camSpherical.lastMouseY = e.clientY;
+
+        if (camSpherical.isPanDragging) {
+          const panScale = camSpherical.radius * 0.0016;
+          camSpherical.targetX -= dx * panScale * Math.cos(camSpherical.theta);
+          camSpherical.targetZ += dx * panScale * Math.sin(camSpherical.theta);
+          camSpherical.targetY += dy * panScale;
+          return;
+        }
+
+        if (!camSpherical.isOrbitDragging) return;
+        camSpherical.theta -= dx * 0.0065;
+        camSpherical.phi = Math.max(0.15, Math.min(Math.PI - 0.15, camSpherical.phi - dy * 0.0065));
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (state.isFlumiDragging) {
+          state.isFlumiDragging = false;
+          state.flumiSpeed = 0.0;
+        }
+        if (camSpherical.isPanDragging) {
+          camSpherical.isPanDragging = false;
+          return;
+        }
+        if (camSpherical.isOrbitDragging) {
+          camSpherical.isOrbitDragging = false;
+          const moveDist = Math.hypot(e.clientX - camSpherical.downMouseX, e.clientY - camSpherical.downMouseY);
+          if (moveDist < 6) {
+            const rc = raycastGongSurface(e.clientX, e.clientY);
+            if (rc.hit) {
+              triggerGongStrike(rc.rNorm, rc.theta);
+            }
+          }
+        }
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(1.2, Math.min(14.0, camSpherical.radius + e.deltaY * 0.0035));
+        syncZoomSliderUI();
+      }, { passive: false });
+
+      // Responsive Resize Handler: Explicitly updates both WebGL buffer AND CSS pixel dimensions
+      function syncViewportSize() {
+        const rect = mountEl.getBoundingClientRect();
+        const w = Math.max(300, Math.floor(rect.width || mountEl.clientWidth || 800));
+        const h = Math.max(260, Math.floor(rect.height || mountEl.clientHeight || 540));
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(w, h, true);
+      }
+      window.addEventListener('resize', syncViewportSize);
+      const resizeObserver = new ResizeObserver(() => {
+        syncViewportSize();
+      });
+      resizeObserver.observe(mountEl);
+      syncViewportSize();
+
+      // =========================================================================
+      // 8. 2D SCIENTIFIC TELEMETRY CANVASES (Pitch Glissando, Wave Turbulence, Potential)
+      // =========================================================================
+      const canvasGlide = document.getElementById('canvasPitchGlide');
+      const ctxGlide = canvasGlide.getContext('2d');
+      const canvasTurb = document.getElementById('canvasTurbulenceSpec');
+      const ctxTurb = canvasTurb.getContext('2d');
+      const canvasPhase = document.getElementById('canvasPhasePotential');
+      const ctxPhase = canvasPhase.getContext('2d');
+
+      function renderTelemetryCanvases() {
+        // Canvas A: Instantaneous Pitch Glissando f_0(t) & Spectral Centroid f_c(t)
+        const wA = canvasGlide.width;
+        const hA = canvasGlide.height;
+        ctxGlide.fillStyle = '#04060c';
+        ctxGlide.fillRect(0, 0, wA, hA);
+
+        ctxGlide.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+        ctxGlide.lineWidth = 1;
+        for (let g = 1; g < 4; g++) {
+          const yG = (g / 4) * hA;
+          ctxGlide.beginPath();
+          ctxGlide.moveTo(0, yG);
+          ctxGlide.lineTo(wA, yG);
+          ctxGlide.stroke();
+        }
+
+        ctxGlide.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+        ctxGlide.setLineDash([4, 4]);
+        ctxGlide.beginPath();
+        ctxGlide.moveTo(0, hA * 0.58);
+        ctxGlide.lineTo(wA, hA * 0.58);
+        ctxGlide.stroke();
+        ctxGlide.setLineDash([]);
+
+        const nHist = state.historyPitch.length;
+        if (nHist > 1) {
+          ctxGlide.strokeStyle = '#22d3ee';
+          ctxGlide.lineWidth = 1.8;
+          ctxGlide.beginPath();
+          for (let i = 0; i < nHist; i++) {
+            const x = (i / 179) * wA;
+            const cRatio = Math.min(1.0, Math.log10(Math.max(20, state.historyCentroid[i]) / 30) / 2.2);
+            const y = hA - 14 - cRatio * (hA - 28);
+            if (i === 0) ctxGlide.moveTo(x, y);
+            else ctxGlide.lineTo(x, y);
+          }
+          ctxGlide.stroke();
+
+          ctxGlide.strokeStyle = '#f59e0b';
+          ctxGlide.lineWidth = 2.4;
+          ctxGlide.beginPath();
+          for (let i = 0; i < nHist; i++) {
+            const x = (i / 179) * wA;
+            const relShift = (state.historyPitch[i] - state.baseFundHz) / Math.max(10, state.baseFundHz * 0.38);
+            const y = hA * 0.58 - Math.max(-0.9, Math.min(0.9, relShift)) * (hA * 0.38);
+            if (i === 0) ctxGlide.moveTo(x, y);
+            else ctxGlide.lineTo(x, y);
+          }
+          ctxGlide.stroke();
+        }
+
+        ctxGlide.fillStyle = '#fde68a';
+        ctxGlide.font = '10px "JetBrains Mono", monospace';
+        const signStr = state.glideCents >= 0 ? '+' : '';
+        ctxGlide.fillText(
+          `f₀(t) = ${state.instFundHz.toFixed(1)} Hz (${signStr}${state.glideCents.toFixed(0)}¢ vs resting ${state.baseFundHz.toFixed(1)} Hz)`,
+          8, 14
+        );
+        ctxGlide.fillStyle = '#67e8f9';
+        ctxGlide.fillText(`f_c(t) Centroid = ${state.spectralCentroidHz.toFixed(0)} Hz`, 8, hA - 6);
+
+        // Canvas B: Kolmogorov-Zakharov Wave Turbulence Spectrum & 16-Mode Bars
+        const wB = canvasTurb.width;
+        const hB = canvasTurb.height;
+        ctxTurb.fillStyle = '#04060c';
+        ctxTurb.fillRect(0, 0, wB, hB);
+
+        if (analyserNode && fftDataArray) {
+          analyserNode.getByteFrequencyData(fftDataArray);
+          ctxTurb.fillStyle = 'rgba(34, 211, 238, 0.14)';
+          const bins = 64;
+          for (let b = 0; b < bins; b++) {
+            const val = fftDataArray[b * 2] / 255.0;
+            const bx = (b / bins) * wB;
+            const bh = val * (hB - 24);
+            ctxTurb.fillRect(bx, hB - 14 - bh, wB / bins - 1, bh);
+          }
+        }
+
+        const barW = (wB - 24) / 16;
+        for (let k = 0; k < 16; k++) {
+          const x = 12 + k * barW;
+          const amp = Math.min(1.0, state.modeAmps[k] * 0.75);
+          const barH = amp * (hB - 32);
+          const isSolo = state.soloModeIndex === k;
+          ctxTurb.fillStyle = isSolo ? '#22d3ee' : (k < 4 ? '#f59e0b' : (k < 8 ? '#38bdf8' : '#f43f5e'));
+          ctxTurb.fillRect(x + 2, hB - 16 - barH, barW - 4, barH);
+
+          ctxTurb.fillStyle = '#94a3b8';
+          ctxTurb.font = '8.5px "JetBrains Mono", monospace';
+          ctxTurb.fillText(`${SHELL_MODES[k].m},${SHELL_MODES[k].n}`, x + 2, hB - 4);
+        }
+
+        ctxTurb.strokeStyle = 'rgba(244, 63, 94, 0.72)';
+        ctxTurb.setLineDash([3, 3]);
+        ctxTurb.beginPath();
+        ctxTurb.moveTo(16, 26);
+        ctxTurb.lineTo(wB - 14, hB - 28);
+        ctxTurb.stroke();
+        ctxTurb.setLineDash([]);
+
+        ctxTurb.fillStyle = '#fda4af';
+        ctxTurb.font = '10px "JetBrains Mono", monospace';
+        ctxTurb.fillText(`Turbulence Cascade E_turb = ${(state.turbulentEnergy * 100).toFixed(1)}%`, 8, 14);
+
+        // Canvas C: Föppl–von Kármán Asymmetric Potential Well V(q₁) & Phase Portrait
+        const wC = canvasPhase.width;
+        const hC = canvasPhase.height;
+        ctxPhase.fillStyle = '#04060c';
+        ctxPhase.fillRect(0, 0, wC, hC);
+
+        const halfW = wC * 0.5;
+        ctxPhase.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+        ctxPhase.beginPath();
+        ctxPhase.moveTo(halfW, 8);
+        ctxPhase.lineTo(halfW, hC - 8);
+        ctxPhase.stroke();
+
+        ctxPhase.strokeStyle = '#10b981';
+        ctxPhase.lineWidth = 2;
+        ctxPhase.beginPath();
+        for (let ix = -70; ix <= 70; ix += 2) {
+          const qNorm = ix / 65.0;
+          const vVal = 0.5 * qNorm * qNorm - 0.24 * state.glideCoeff * Math.pow(qNorm, 3) + 0.18 * state.glideCoeff * Math.pow(qNorm, 4);
+          const px = halfW * 0.5 + ix;
+          const py = hC - 20 - Math.min(1.0, Math.max(0, vVal * 1.35)) * (hC - 42);
+          if (ix === -70) ctxPhase.moveTo(px, py);
+          else ctxPhase.lineTo(px, py);
+        }
+        ctxPhase.stroke();
+
+        const qCurr = state.phaseTrail.length > 0 ? state.phaseTrail[state.phaseTrail.length - 1].q : 0;
+        const qClamped = Math.max(-0.95, Math.min(0.95, qCurr * 0.7));
+        const vCurr = 0.5 * qClamped * qClamped - 0.24 * state.glideCoeff * Math.pow(qClamped, 3) + 0.18 * state.glideCoeff * Math.pow(qClamped, 4);
+        const ballX = halfW * 0.5 + qClamped * 65.0;
+        const ballY = hC - 20 - Math.min(1.0, Math.max(0, vCurr * 1.35)) * (hC - 42);
+        ctxPhase.fillStyle = '#f59e0b';
+        ctxPhase.beginPath();
+        ctxPhase.arc(ballX, ballY, 4.5, 0, Math.PI * 2);
+        ctxPhase.fill();
+
+        const cxP = halfW + halfW * 0.5;
+        const cyP = hC * 0.54;
+        ctxPhase.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+        ctxPhase.beginPath();
+        ctxPhase.arc(cxP, cyP, 48, 0, Math.PI * 2);
+        ctxPhase.stroke();
+
+        if (state.phaseTrail.length > 1) {
+          ctxPhase.strokeStyle = '#a78bfa';
+          ctxPhase.lineWidth = 1.8;
+          ctxPhase.beginPath();
+          for (let i = 0; i < state.phaseTrail.length; i++) {
+            const pt = state.phaseTrail[i];
+            const px = cxP + Math.max(-1.1, Math.min(1.1, pt.q * 0.65)) * 52;
+            const py = cyP + Math.max(-1.1, Math.min(1.1, pt.p * 0.65)) * 52;
+            if (i === 0) ctxPhase.moveTo(px, py);
+            else ctxPhase.lineTo(px, py);
+          }
+          ctxPhase.stroke();
+        }
+
+        ctxPhase.fillStyle = '#6ee7b7';
+        ctxPhase.font = '10px "JetBrains Mono", monospace';
+        ctxPhase.fillText('V(q₁) Shell Well', 8, 14);
+        ctxPhase.fillStyle = '#c4b5fd';
+        ctxPhase.fillText('Phase (q₁, q̇₁)', halfW + 10, 14);
+      }
+
+      // =========================================================================
+      // 9. UI BINDINGS, ARCHETYPE LOADER, FULL-SCREEN & WAV/JSON EXPORTERS
+      // =========================================================================
+      function buildModeButtonsGrid() {
+        const container = document.getElementById('modeGridContainer');
+        container.innerHTML = '';
+        for (let k = 0; k < 8; k++) {
+          const m = SHELL_MODES[k];
+          const btn = document.createElement('button');
+          btn.className = 'mode-pill-btn flex items-center justify-between px-2 py-1 rounded bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-left transition';
+          btn.setAttribute('data-mode-idx', String(k));
+          btn.innerHTML = `
+            <span class="text-slate-200 font-medium">${m.label}</span>
+            <span id="modeFreqLbl_${k}" class="text-amber-300 text-[10px]">${state.modeBaseFreqs[k].toFixed(0)}Hz</span>
+          `;
+          btn.addEventListener('click', () => {
+            if (state.soloModeIndex === k) {
+              state.soloModeIndex = -1;
+            } else {
+              state.soloModeIndex = k;
+              state.shaderMode = 'modal';
+              syncShaderButtons();
+            }
+            syncModePillButtons();
+            triggerGongStrike(m.m === 0 ? 0.0 : 0.58, 0.35);
+          });
+          container.appendChild(btn);
+        }
+      }
+
+      function syncModePillButtons() {
+        document.querySelectorAll('.mode-pill-btn').forEach((btn) => {
+          const idx = parseInt(btn.getAttribute('data-mode-idx'), 10);
+          btn.classList.toggle('btn-active-cyan', state.soloModeIndex === idx);
+          const lbl = document.getElementById(`modeFreqLbl_${idx}`);
+          if (lbl) lbl.textContent = `${state.modeBaseFreqs[idx].toFixed(0)}Hz`;
+        });
+      }
+
+      function syncShaderButtons() {
+        document.querySelectorAll('.shader-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-cyan', btn.getAttribute('data-shader') === state.shaderMode);
+        });
+      }
+
+      function loadGongArchetype(archKey) {
+        const arch = ARCHETYPES[archKey];
+        if (!arch) return;
+        state.archetype = arch.id;
+        state.alloy = arch.alloy;
+        state.diameterCm = arch.diameterCm;
+        state.thicknessMm = arch.thicknessMm;
+        state.bossHeightMm = arch.bossHeightMm;
+        state.shellBowMm = arch.shellBowMm;
+        state.rimDepthMm = arch.rimDepthMm;
+        state.edgeTaper = arch.edgeTaper;
+        state.glideCoeff = arch.glideCoeff;
+        state.cascadeGain = arch.cascadeGain;
+        state.bloomDelaySec = arch.bloomDelaySec;
+        state.ombakHz = arch.ombakHz;
+        state.decayT60 = arch.decayT60;
+        state.hammerDetune = arch.hammerDetune;
+        state.bossRadiusRatio = arch.bossRadiusRatio;
+        state.oxideTargetRings = arch.oxideTargetRings;
+
+        document.getElementById('selectAlloy').value = state.alloy;
+        document.getElementById('sliderDiameter').value = state.diameterCm;
+        document.getElementById('valDiameter').textContent = `${state.diameterCm} cm`;
+
+        document.getElementById('sliderThickness').value = state.thicknessMm;
+        document.getElementById('valThickness').textContent = `${state.thicknessMm.toFixed(1)} mm`;
+
+        document.getElementById('sliderBossHeight').value = state.bossHeightMm;
+        document.getElementById('valBossHeight').textContent = `${state.bossHeightMm.toFixed(1)} mm`;
+
+        document.getElementById('sliderShellBow').value = state.shellBowMm;
+        document.getElementById('valShellBow').textContent = `${state.shellBowMm.toFixed(1)} mm`;
+
+        document.getElementById('sliderRimDepth').value = state.rimDepthMm;
+        document.getElementById('valRimDepth').textContent = `${state.rimDepthMm} mm`;
+
+        document.getElementById('sliderEdgeTaper').value = state.edgeTaper;
+        document.getElementById('valEdgeTaper').textContent = `${state.edgeTaper.toFixed(2)}×`;
+
+        document.getElementById('sliderGlideCoeff').value = state.glideCoeff;
+        updateGlideCoeffLabel();
+
+        document.getElementById('sliderCascadeGain').value = state.cascadeGain;
+        document.getElementById('valCascadeGain').textContent = state.cascadeGain.toFixed(2);
+
+        document.getElementById('sliderBloomDelay').value = state.bloomDelaySec;
+        document.getElementById('valBloomDelay').textContent = `${state.bloomDelaySec.toFixed(2)} s`;
+
+        document.getElementById('sliderOmbakHz').value = state.ombakHz;
+        document.getElementById('valOmbakHz').textContent = `${state.ombakHz.toFixed(2)} Hz`;
+
+        document.getElementById('sliderDecayT60').value = state.decayT60;
+        document.getElementById('valDecayT60').textContent = `${state.decayT60.toFixed(1)} s`;
+
+        document.getElementById('sliderHammerDetune').value = state.hammerDetune;
+        document.getElementById('valHammerDetune').textContent = `${state.hammerDetune}%`;
+
+        document.querySelectorAll('.archetype-btn').forEach((btn) => {
+          btn.classList.toggle('btn-active-amber', btn.getAttribute('data-archetype') === archKey);
+        });
+
+        recomputeModalFrequencies();
+        syncModePillButtons();
+        triggerGongStrike(0.0, 0.0);
+      }
+
+      function updateGlideCoeffLabel() {
+        const c = state.glideCoeff;
+        const dir = c < -0.05 ? 'Soft ↗' : (c > 0.05 ? 'Hard ↘' : 'Linear');
+        const sign = c >= 0 ? '+' : '';
+        document.getElementById('valGlideCoeff').textContent = `${sign}${c.toFixed(2)} (${dir})`;
+        document.getElementById('badgeShellCoeff').textContent = `C_nl = ${sign}${c.toFixed(2)}`;
+        document.getElementById('badgeGlideType').textContent =
+          c < -0.15 ? 'Upward Glissando ↗' : (c > 0.15 ? 'Downward Glissando ↘' : 'Cascade Bloom ↗');
+      }
+
+      document.querySelectorAll('.archetype-btn').forEach((btn) => {
+        btn.addEventListener('click', () => loadGongArchetype(btn.getAttribute('data-archetype')));
+      });
+
+      document.querySelectorAll('.shader-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.shaderMode = btn.getAttribute('data-shader');
+          syncShaderButtons();
+        });
+      });
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => applyCameraPreset(btn.getAttribute('data-cam')));
+      });
+
+      document.querySelectorAll('.mallet-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.malletType = btn.getAttribute('data-mallet');
+          document.querySelectorAll('.mallet-btn').forEach((b) => {
+            b.classList.toggle('btn-active-amber', b.getAttribute('data-mallet') === state.malletType);
+          });
+          if (state.malletType === 'flumi') {
+            setInteractionMode('flumi');
+          }
+        });
+      });
+
+      function setInteractionMode(mode) {
+        state.interactionMode = mode;
+        document.getElementById('btnModeStrike').classList.toggle('btn-active-amber', mode === 'strike');
+        document.getElementById('btnModeFlumi').classList.toggle('btn-active-cyan', mode === 'flumi');
+        document.getElementById('btnModePan').classList.toggle('btn-active-cyan', mode === 'pan');
+      }
+      document.getElementById('btnModeStrike').addEventListener('click', () => setInteractionMode('strike'));
+      document.getElementById('btnModeFlumi').addEventListener('click', () => setInteractionMode('flumi'));
+      document.getElementById('btnModePan').addEventListener('click', () => setInteractionMode('pan'));
+
+      // Bind Zoom, Center & Manual Pan Controls
+      document.getElementById('btnCenterHeader').addEventListener('click', centerAndFitGong);
+      document.getElementById('btnCenterStage').addEventListener('click', centerAndFitGong);
+
+      document.getElementById('sliderStageZoom').addEventListener('input', (e) => {
+        camSpherical.radius = parseFloat(e.target.value);
+      });
+      document.getElementById('btnZoomIn').addEventListener('click', () => {
+        camSpherical.radius = Math.max(1.2, camSpherical.radius - 0.55);
+        syncZoomSliderUI();
+      });
+      document.getElementById('btnZoomOut').addEventListener('click', () => {
+        camSpherical.radius = Math.min(14.0, camSpherical.radius + 0.55);
+        syncZoomSliderUI();
+      });
+
+      const panStep = 0.22;
+      document.getElementById('btnPanLeft').addEventListener('click', () => { camSpherical.targetX -= panStep; });
+      document.getElementById('btnPanRight').addEventListener('click', () => { camSpherical.targetX += panStep; });
+      document.getElementById('btnPanUp').addEventListener('click', () => { camSpherical.targetY += panStep; });
+      document.getElementById('btnPanDown').addEventListener('click', () => { camSpherical.targetY -= panStep; });
+
+      document.getElementById('selectAlloy').addEventListener('change', (e) => {
+        state.alloy = e.target.value;
+        recomputeModalFrequencies();
+        syncModePillButtons();
+      });
+
+      const bindSlider = (id, valId, prop, fmtFn, recompute) => {
+        const el = document.getElementById(id);
+        const valEl = document.getElementById(valId);
+        el.addEventListener('input', () => {
+          state[prop] = parseFloat(el.value);
+          if (valEl && fmtFn) valEl.textContent = fmtFn(state[prop]);
+          if (recompute) {
+            recomputeModalFrequencies();
+            syncModePillButtons();
+          }
+        });
+      };
+
+      bindSlider('sliderDiameter', 'valDiameter', 'diameterCm', (v) => `${v} cm`, true);
+      bindSlider('sliderThickness', 'valThickness', 'thicknessMm', (v) => `${v.toFixed(1)} mm`, true);
+      bindSlider('sliderBossHeight', 'valBossHeight', 'bossHeightMm', (v) => `${v.toFixed(1)} mm`, true);
+      bindSlider('sliderShellBow', 'valShellBow', 'shellBowMm', (v) => `${v.toFixed(1)} mm`, true);
+      bindSlider('sliderRimDepth', 'valRimDepth', 'rimDepthMm', (v) => `${v} mm`, true);
+      bindSlider('sliderEdgeTaper', 'valEdgeTaper', 'edgeTaper', (v) => `${v.toFixed(2)}×`, true);
+
+      document.getElementById('sliderGlideCoeff').addEventListener('input', (e) => {
+        state.glideCoeff = parseFloat(e.target.value);
+        updateGlideCoeffLabel();
+      });
+
+      bindSlider('sliderCascadeGain', 'valCascadeGain', 'cascadeGain', (v) => v.toFixed(2), false);
+      bindSlider('sliderBloomDelay', 'valBloomDelay', 'bloomDelaySec', (v) => `${v.toFixed(2)} s`, false);
+      bindSlider('sliderOmbakHz', 'valOmbakHz', 'ombakHz', (v) => `${v.toFixed(2)} Hz`, true);
+      bindSlider('sliderDecayT60', 'valDecayT60', 'decayT60', (v) => `${v.toFixed(1)} s`, false);
+      bindSlider('sliderHammerDetune', 'valHammerDetune', 'hammerDetune', (v) => `${v}%`, true);
+
+      bindSlider('sliderStrikeRadius', 'valStrikeRadius', 'strikeRadiusNorm', (v) =>
+        v < 0.18 ? `${v.toFixed(2)} (Boss)` : (v > 0.75 ? `${v.toFixed(2)} (Rim)` : `${v.toFixed(2)} (Shoulder)`), false);
+      bindSlider('sliderStrikeForce', 'valStrikeForce', 'strikeVelocity', (v) => `${v.toFixed(1)} m/s (${Math.round(v * 32)} N)`, false);
+      bindSlider('sliderRitualBpm', 'valRitualBpm', 'ritualBpm', (v) => `${v} BPM`, false);
+
+      document.getElementById('btnStrikeHeader').addEventListener('click', () => triggerGongStrike());
+      document.getElementById('btnStageStrikeNow').addEventListener('click', () => triggerGongStrike());
+      document.getElementById('btnPrimeHeader').addEventListener('click', () => primeGongWarmup());
+      document.getElementById('btnDampHeader').addEventListener('click', () => dampGong());
+
+      document.getElementById('btnClearSolo').addEventListener('click', () => {
+        state.soloModeIndex = -1;
+        syncModePillButtons();
+      });
+
+      document.getElementById('btnToggleWaveShells').addEventListener('click', (e) => {
+        state.showWaveShells = !state.showWaveShells;
+        e.currentTarget.classList.toggle('btn-active-cyan', state.showWaveShells);
+      });
+      document.getElementById('btnToggleNodalLines').addEventListener('click', (e) => {
+        state.showNodalLines = !state.showNodalLines;
+        e.currentTarget.classList.toggle('btn-active-amber', state.showNodalLines);
+      });
+      document.getElementById('btnToggleCrossSection').addEventListener('click', (e) => {
+        state.showCrossSection = !state.showCrossSection;
+        e.currentTarget.classList.toggle('btn-active-amber', state.showCrossSection);
+      });
+
+      document.getElementById('btnToggleRitual').addEventListener('click', (e) => {
+        initAudioEngine();
+        state.ritualActive = !state.ritualActive;
+        state.lastRitualBeatTime = 0;
+        const badge = document.getElementById('ritualStatusBadge');
+        badge.textContent = state.ritualActive ? 'ON' : 'OFF';
+        e.currentTarget.classList.toggle('btn-active-amber', state.ritualActive);
+      });
+
+      // Full-Screen 3D Theater Mode Toggle (`F` or `Esc`)
+      const stageContainer = document.getElementById('gongStageContainer');
+      let isStageFullscreen = false;
+
+      function toggleFullScreenStage() {
+        isStageFullscreen = !isStageFullscreen;
+        stageContainer.classList.toggle('gong-fullscreen-stage', isStageFullscreen);
+        const label = isStageFullscreen ? '✕ Exit Full Screen [F]' : '⛶ Full Screen [F]';
+        document.getElementById('btnStageFullscreen').textContent = label;
+        if (isStageFullscreen && stageContainer.requestFullscreen) {
+          stageContainer.requestFullscreen().catch(() => {});
+        } else if (!isStageFullscreen && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+        setTimeout(() => {
+          syncViewportSize();
+          centerAndFitGong();
+        }, 60);
+      }
+
+      document.getElementById('btnFullscreenHeader').addEventListener('click', toggleFullScreenStage);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleFullScreenStage);
+
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && isStageFullscreen) {
+          isStageFullscreen = false;
+          stageContainer.classList.remove('gong-fullscreen-stage');
+          document.getElementById('btnStageFullscreen').textContent = '⛶ Full Screen [F]';
+        }
+        setTimeout(() => {
+          syncViewportSize();
+        }, 60);
+      });
+
+      // Keyboard Shortcuts (including C to Center, +/- to Zoom, Arrow Keys to Pan)
+      window.addEventListener('keydown', (e) => {
+        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          triggerGongStrike();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleFullScreenStage();
+        } else if (e.key === 'c' || e.key === 'C' || e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
+          centerAndFitGong();
+        } else if (e.key === '+' || e.key === '=') {
+          camSpherical.radius = Math.max(1.2, camSpherical.radius - 0.45);
+          syncZoomSliderUI();
+        } else if (e.key === '-' || e.key === '_') {
+          camSpherical.radius = Math.min(14.0, camSpherical.radius + 0.45);
+          syncZoomSliderUI();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          camSpherical.targetX -= panStep;
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          camSpherical.targetX += panStep;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          camSpherical.targetY += panStep;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          camSpherical.targetY -= panStep;
+        } else if (e.key === 'Escape' && isStageFullscreen) {
+          toggleFullScreenStage();
+        } else if (e.key === 'p' || e.key === 'P') {
+          primeGongWarmup();
+        } else if (e.key === 'd' || e.key === 'D') {
+          dampGong();
+        } else if (e.key >= '1' && e.key <= '5') {
+          const keys = ['tamtam', 'xiaoluo', 'daluo', 'ageng', 'wind'];
+          loadGongArchetype(keys[parseInt(e.key, 10) - 1]);
+        }
+      });
+
+      // -------------------------------------------------------------------------
+      // Lossless 44.1 kHz 16-Bit Stereo .WAV Offline Renderer & .JSON Exporter
+      // -------------------------------------------------------------------------
+      document.getElementById('btnExportWav').addEventListener('click', async () => {
+        const btn = document.getElementById('btnExportWav');
+        const origText = btn.textContent;
+        btn.textContent = '⏳ Rendering WAV...';
+        try {
+          const sampleRate = 44100;
+          const duration = 5.0;
+          const totalSamples = sampleRate * duration;
+
+          const leftBuf = new Float32Array(totalSamples);
+          const rightBuf = new Float32Array(totalSamples);
+
+          const decayRate = 6.908 / Math.max(1.5, state.decayT60);
+          for (let i = 0; i < totalSamples; i++) {
+            const t = i / sampleRate;
+            const envLow = Math.exp(-decayRate * t);
+            let sampleL = 0.0;
+            let sampleR = 0.0;
+
+            for (let k = 0; k < 10; k++) {
+              const fBase = state.modeBaseFreqs[k];
+              const phaseInt = 2 * Math.PI * fBase * (t + (state.glideCoeff * 0.25 * (1 - envLow)) / decayRate);
+              const splitPhase = 2 * Math.PI * state.modeDoubletSplit[k] * t;
+              const modeEnv = Math.exp(-decayRate * (1 + k * 0.14) * t) / (1 + k * 0.45);
+              const sA = Math.sin(phaseInt) * modeEnv;
+              const sB = Math.sin(phaseInt + splitPhase) * modeEnv * 0.65;
+              sampleL += (sA + sB) * 0.18;
+              sampleR += (sA - sB * 0.35) * 0.18;
+            }
+
+            const bloom = (1.0 - Math.exp(-Math.pow(t / Math.max(0.08, state.bloomDelaySec), 2))) * Math.exp(-decayRate * 1.45 * t);
+            const shimmer = (Math.sin(t * 4820 + Math.sin(t * 913) * 3.0) * 0.5 + (Math.random() * 2 - 1) * 0.5) * bloom * state.cascadeGain * 0.16;
+
+            leftBuf[i] = Math.max(-0.98, Math.min(0.98, sampleL + shimmer));
+            rightBuf[i] = Math.max(-0.98, Math.min(0.98, sampleR + shimmer * 0.92));
+          }
+
+          const wavBuffer = new ArrayBuffer(44 + totalSamples * 4);
+          const view = new DataView(wavBuffer);
+          const writeStr = (off, str) => { for (let c = 0; c < str.length; c++) view.setUint8(off + c, str.charCodeAt(c)); };
+          writeStr(0, 'RIFF');
+          view.setUint32(4, 36 + totalSamples * 4, true);
+          writeStr(8, 'WAVE');
+          writeStr(12, 'fmt ');
+          view.setUint32(16, 16, true);
+          view.setUint16(20, 1, true);
+          view.setUint16(22, 2, true);
+          view.setUint32(24, sampleRate, true);
+          view.setUint32(28, sampleRate * 4, true);
+          view.setUint16(32, 4, true);
+          view.setUint16(34, 16, true);
+          writeStr(36, 'data');
+          view.setUint32(40, totalSamples * 4, true);
+
+          let offset = 44;
+          for (let i = 0; i < totalSamples; i++) {
+            view.setInt16(offset, leftBuf[i] * 32767, true);
+            view.setInt16(offset + 2, rightBuf[i] * 32767, true);
+            offset += 4;
+          }
+
+          const blob = new Blob([wavBuffer], { type: 'audio/wav' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `karman_gong_${state.archetype}_${Math.round(state.baseFundHz)}Hz.wav`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } finally {
+          btn.textContent = origText;
+        }
+      });
+
+      document.getElementById('btnExportJson').addEventListener('click', () => {
+        const payload = {
+          instrument: 'KÁRMÁN-GONG 3D // Föppl–von Kármán Nonlinear Shell & Wave Turbulence Lab',
+          timestamp: new Date().toISOString(),
+          archetype: state.archetype,
+          alloy: ALLOYS[state.alloy],
+          shellGeometry: {
+            diameterCm: state.diameterCm,
+            centerThicknessMm: state.thicknessMm,
+            bossHeightMm: state.bossHeightMm,
+            shellBowCamberMm: state.shellBowMm,
+            rimFlangeDepthMm: state.rimDepthMm,
+            edgeTaperRatio: state.edgeTaper
+          },
+          nonlinearDynamics: {
+            glissandoCoefficient: state.glideCoeff,
+            waveTurbulenceCascadeGain: state.cascadeGain,
+            shimmerBloomDelaySec: state.bloomDelaySec,
+            ombakDoubletBeatHz: state.ombakHz,
+            restingFundamentalHz: state.baseFundHz,
+            instantaneousFundamentalHz: state.instFundHz,
+            spectralCentroidHz: state.spectralCentroidHz
+          },
+          eigenmodes: SHELL_MODES.map((m, idx) => ({
+            mode: m.label,
+            m: m.m,
+            n: m.n,
+            restingHz: Number(state.modeBaseFreqs[idx].toFixed(2)),
+            instantaneousHz: Number(state.modeInstFreqs[idx].toFixed(2)),
+            doubletSplitHz: Number(state.modeDoubletSplit[idx].toFixed(2))
+          }))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `karman_gong_telemetry_${state.archetype}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // =========================================================================
+      // 10. MASTER 60 FPS ANIMATION LOOP & INITIAL SEED STRIKE
+      // =========================================================================
+      buildModeButtonsGrid();
+      centerAndFitGong();
+
+      state.modeAmps[0] = 0.85;
+      state.modeAmps[1] = 0.42;
+      state.modeAmps[2] = 0.35;
+      state.modeAmps[3] = 0.48;
+      state.turbulentEnergy = 0.28;
+      state.timeSinceStrike = 0.25;
+      state.ripples.push({ r0: 0.0, theta0: 0.0, radius: 0.08, amp: 0.85, age: 0.0 });
+
+      let lastTimeMs = performance.now();
+
+      function animate(nowMs) {
+        requestAnimationFrame(animate);
+        const dt = (nowMs - lastTimeMs) * 0.001;
+        lastTimeMs = nowMs;
+        const timeSec = nowMs * 0.001;
+
+        stepNonlinearShellPhysics(dt);
+        updateAudioEngineFromPhysics();
+        update3DGongGeometry(timeSec);
+        updateCameraTransform(timeSec);
+        renderer.render(scene, camera);
+        renderTelemetryCanvases();
+
+        document.getElementById('hdrFundHz').textContent = `${state.instFundHz.toFixed(1)} Hz`;
+        const sign = state.glideCents >= 0 ? '+' : '';
+        document.getElementById('hdrGlideDelta').textContent = `(${sign}${state.glideCents.toFixed(0)}¢)`;
+        document.getElementById('hdrCentroidHz').textContent = `${state.spectralCentroidHz.toFixed(0)} Hz`;
+        document.getElementById('hdrTurbPct').textContent = `${(state.turbulentEnergy * 100).toFixed(1)}%`;
+        document.getElementById('hdrOmbakHz').textContent = `${state.ombakHz.toFixed(2)} Hz`;
+
+        const wOverH = state.peakDeflectionMm / Math.max(0.5, state.thicknessMm);
+        document.getElementById('hudDeflectionMm').textContent =
+          `${state.peakDeflectionMm.toFixed(2)} mm (w/h = ${wOverH.toFixed(2)})`;
+      }
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

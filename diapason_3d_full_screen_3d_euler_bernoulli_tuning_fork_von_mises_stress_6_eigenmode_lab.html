@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DIAPASON-3D // Full-Screen 3D Euler-Bernoulli Tuning Fork, Von Mises Stress &amp; 6-Eigenmode Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            forge: {
+              950: '#04060b',
+              900: '#080c16',
+              800: '#101728',
+              700: '#192540',
+              600: '#273a63'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #04060b;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080c16; }
+    ::-webkit-scrollbar-thumb { background: #273a63; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b5794; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #192540;
+      border: 1px solid #273a63;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.65);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.65) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.65) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.65) !important;
+    }
+    .slider-rose::-webkit-slider-thumb {
+      background: #f43f5e !important;
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.65) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(16, 23, 40, 0.94) 0%, rgba(8, 12, 22, 0.98) 100%);
+      border: 1px solid rgba(51, 75, 126, 0.55);
+    }
+    /* Full-Screen Theater Overlay Class (works in both native Fullscreen API and sandboxed iframe fallback) */
+    .diapason-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+    @keyframes pulseFork {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(245, 158, 11, 0.28); }
+    }
+    .fork-ringing {
+      animation: pulseFork 1.3s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP STUDIO HEADER & 3D TUNING FORK MASTER TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-forge-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1640px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 via-sky-500/20 to-emerald-500/25 border border-amber-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3V12C8 14.2 9.8 16 12 16C14.2 16 16 14.2 16 12V3" stroke="#f59e0b"></path>
+            <line x1="12" y1="16" x2="12" y2="22" stroke="#38bdf8"></line>
+            <circle cx="8" cy="6" r="1.5" fill="#f43f5e"></circle>
+            <circle cx="16" cy="6" r="1.5" fill="#f43f5e"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">DIAPASON-3D // EULER-BERNOULLI TUNING FORK LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Full-Screen 3D WebGL</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">3D Parametric Cantilever Mesh (cos α cosh α = −1) • Von Mises Bending Stress σ_xx • 6 Eigenmodes (f₁, 6.267f₁ Clang, Dipole, Twist)</p>
+        </div>
+      </div>
+
+      <!-- Center Master Strike & Strobe Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-forge-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnStrikeMain" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg shadow-amber-500/20 fork-ringing">
+          <span>🔨 STRIKE 3D FORK [Space]</span>
+        </button>
+
+        <button id="btnStrikePureNode" type="button" class="px-2.5 py-2 rounded-lg bg-forge-800 hover:bg-forge-700 text-sky-300 border border-sky-500/40 text-xs font-mono font-semibold transition" title="Strike exactly at the x/L = 0.774 Clang Node to cancel the 6.267·f₁ overtone">
+          0.774L NODE STRIKE 🎯
+        </button>
+
+        <button id="btnPinchFundamental" type="button" class="px-2.5 py-2 rounded-lg bg-forge-800 hover:bg-forge-700 text-rose-300 border border-rose-500/40 text-xs font-mono font-semibold transition" title="Touch finger to x/L = 0.774 node to damp f₁ and isolate the 6.267·f₁ Clang Bell!">
+          ISOLATE CLANG 🔔
+        </button>
+
+        <!-- 3D Camera Preset Selector -->
+        <div class="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+          <span class="text-[10px] font-mono text-slate-400">3D Cam:</span>
+          <select id="selectCameraView" class="bg-forge-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+            <option value="hero" selected>1. Hero 3D Fork &amp; Box</option>
+            <option value="profile">2. Cantilever Node Profile</option>
+            <option value="tips">3. Axial Tine-Tip Quadrupole</option>
+            <option value="yoke">4. U-Yoke Stress &amp; 2f₁ Stem</option>
+            <option value="drone">5. Slow 360° Orbit Drone</option>
+          </select>
+        </div>
+
+        <!-- Live Frequency Readout -->
+        <div class="flex items-center gap-2 px-2 border-l border-slate-800">
+          <div class="text-right">
+            <div id="headerF1Readout" class="font-mono text-sm font-extrabold text-amber-400">f₁ = 440.0 Hz</div>
+            <div id="headerClangReadout" class="text-[10px] text-sky-400 font-mono">Clang = 2,757.5 Hz</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Action Buttons: Fullscreen & WAV Export -->
+      <div class="flex items-center gap-2">
+        <button id="btnHeaderFullscreen" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/50 text-xs font-bold transition shadow-md shadow-sky-500/10" title="Launch Immersive Full-Screen 3D Tuning Fork Lab (Shortcut: F)">
+          <span>⛶ Full Screen [F]</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1640px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): HISTORICAL FORK STANDARDS, 3D PRONG GEOMETRY, ALLOY & COLLAR BENCH -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated Historical & Metrological Tuning Fork Standards -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Historical &amp; Precision Forks</h2>
+            <p class="text-[11px] text-slate-400">Shore, Koenig, Scheibler &amp; Watch QTF</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">8 Standards</span>
+        </div>
+
+        <div id="forkPresetList" class="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- 3D EULER-BERNOULLI PRONG GEOMETRY, ALLOY & COLLAR TUNING BENCH -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">3D Prong &amp; Alloy Sculptor</h2>
+            <p class="text-[10px] text-slate-400">f_n = (α_n² / 2πL²) · √(EI / ρA)</p>
+          </div>
+          <select id="selectForkAlloy" class="bg-forge-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] font-mono text-amber-300 outline-none">
+            <option value="steel" selected>Steel (E=210 GPa)</option>
+            <option value="brass">Koenig Brass (105 GPa)</option>
+            <option value="quartz">Quartz SiO₂ (78 GPa)</option>
+            <option value="titanium">Titanium Ti-6Al (114 GPa)</option>
+            <option value="aluminum">Aluminum (69 GPa)</option>
+          </select>
+        </div>
+
+        <!-- 5 Core Physical Dimension Sliders -->
+        <div class="bg-forge-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Tine Length (L)</span>
+              <span id="valTineLength" class="text-amber-400 font-bold">103.4 mm</span>
+            </div>
+            <input id="sliderTineLength" type="range" min="45" max="175" step="0.2" value="103.4" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">In-Plane Thickness (b)</span>
+              <span id="valTineThick" class="text-sky-400 font-bold">6.0 mm</span>
+            </div>
+            <input id="sliderTineThick" type="range" min="2.5" max="12.0" step="0.1" value="6.0" class="w-full slider-cyan" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">U-Saddle Gap (2R_yoke)</span>
+              <span id="valYokeGap" class="text-emerald-400 font-bold">18.0 mm</span>
+            </div>
+            <input id="sliderYokeGap" type="range" min="10" max="34" step="0.5" value="18.0" class="w-full slider-emerald" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Vernier Collar Weights</span>
+              <span id="valCollarMass" class="text-purple-400 font-bold">0% (Unweighted)</span>
+            </div>
+            <input id="sliderCollarMass" type="range" min="0" max="45" step="1" value="0" class="w-full slider-purple" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Collar Position (x_c / L)</span>
+              <span id="valCollarPos" class="text-rose-400 font-bold">0.82 L</span>
+            </div>
+            <input id="sliderCollarPos" type="range" min="20" max="95" value="82" class="w-full slider-rose" />
+          </div>
+        </div>
+
+        <!-- Craftsman Filing & Mounting Base Controls -->
+        <div class="bg-forge-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Craftsman Filing Trim</span>
+              <span id="valFilingTrim" class="text-emerald-400 font-bold">0.0% (Factory)</span>
+            </div>
+            <input id="sliderFilingTrim" type="range" min="-80" max="80" value="0" class="w-full slider-emerald" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">−Base Yoke Filing (Lowers f₁) • +Tip Filing (Raises f₁)</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
+            <div>
+              <label class="block text-[9px] font-mono uppercase text-slate-400 mb-0.5">Resonator Mount</label>
+              <select id="selectBoxMount" class="w-full bg-forge-900 border border-slate-700 rounded-lg px-1.5 py-1 text-[11px] font-mono text-amber-300 outline-none">
+                <option value="box_f1" selected>Helmholtz Box (f₁)</option>
+                <option value="box_2f1">Stem Box (2·f₁ Octave)</option>
+                <option value="handheld">Unmounted Hand-Held</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[9px] font-mono uppercase text-slate-400 mb-0.5">Fluid Medium</label>
+              <select id="selectFluidMedium" class="w-full bg-forge-900 border border-slate-700 rounded-lg px-1.5 py-1 text-[11px] font-mono text-sky-300 outline-none">
+                <option value="air" selected>Air 20°C (Q=4,850)</option>
+                <option value="vacuum">Vacuum (Q=14,000)</option>
+                <option value="water">H₂O Immersion (Q=95)</option>
+                <option value="oil">Viscous Oil (Q=38)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): FULL-SCREEN CAPABLE 3D TUNING FORK VIEWPORT + 6-EIGENMODE SELECTOR -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- 3D WEBGL TUNING FORK HERO STAGE -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 4 3D Surface & Stress Shader Modes -->
+          <div class="flex flex-wrap items-center gap-1 bg-forge-950 p-1 rounded-xl border border-slate-800">
+            <button id="shaderBtnStress" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition">
+              🔥 1. Von Mises Stress σ_xx
+            </button>
+            <button id="shaderBtnVelocity" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              ⚡ 2. Antinode Velocity
+            </button>
+            <button id="shaderBtnAlloy" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🔩 3. Brushed Alloy
+            </button>
+            <button id="shaderBtnWireframe" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🕸️ 4. Nodal X-Ray
+            </button>
+          </div>
+
+          <!-- 3D Quadrupole Shells & Nodal Rings Toggle -->
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1 text-[11px] font-mono text-sky-300 cursor-pointer">
+              <input id="chkQuadrupoleWaves" type="checkbox" checked class="rounded bg-forge-800 border-slate-600 text-sky-500 focus:ring-0" />
+              <span>Quadrupole Waves</span>
+            </label>
+            <label class="flex items-center gap-1 text-[11px] font-mono text-rose-300 cursor-pointer">
+              <input id="chkNodalRings" type="checkbox" checked class="rounded bg-forge-800 border-slate-600 text-rose-500 focus:ring-0" />
+              <span>0.774L Node</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- FULL-SCREEN CAPABLE 3D VIEWPORT CONTAINER -->
+        <div id="diapasonStageWrapper" class="relative w-full h-80 sm:h-[400px] bg-forge-950 rounded-xl border border-slate-800/90 overflow-hidden flex flex-col justify-between">
+          <!-- Three.js WebGL Canvas mounts here -->
+          <div id="threeDiapasonMount" class="absolute inset-0 w-full h-full"></div>
+
+          <!-- Top Floating HUD Overlay (Visible in both normal & full-screen modes!) -->
+          <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-2 pointer-events-auto">
+              <div id="hudForkModeBadge" class="px-3 py-1 rounded-lg bg-forge-900/90 backdrop-blur-md border border-amber-500/40 text-xs font-mono font-bold text-amber-300">
+                Mode: Symmetric f₁ (440.0 Hz) + Clang 6.267·f₁ (2,757.5 Hz)
+              </div>
+              <span id="hudStrikeReadout" class="hidden sm:inline-block px-2.5 py-1 rounded-lg bg-forge-900/90 border border-slate-800 text-[10px] font-mono text-sky-300">
+                Click 3D Tine at any height x/L to Strike • Drag to Orbit
+              </span>
+            </div>
+
+            <!-- Full-Screen & Camera Quick Switcher inside Stage -->
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnStageCamCycle" type="button" class="px-2.5 py-1 rounded-lg bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[11px] font-mono text-sky-300 transition">
+                🎥 Next Angle
+              </button>
+              <button id="btnStageFullscreen" type="button" class="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-lg">
+                ⛶ Full Screen
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Floating HUD Dock (Allows Full Control While in Full-Screen!) -->
+          <div class="relative z-10 p-3 bg-gradient-to-t from-forge-950/95 via-forge-950/75 to-transparent flex flex-col gap-2 pointer-events-auto">
+            <!-- 6 Physical Eigenmode Solo / Superposition Buttons -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex flex-wrap items-center gap-1">
+                <span class="text-[10px] font-mono uppercase text-slate-400 mr-1">Excite 3D Mode:</span>
+                <button type="button" data-mode="natural" class="eigen-mode-btn px-2 py-0.5 rounded bg-amber-500/25 border border-amber-400 text-[10px] font-mono text-amber-200 font-bold">All (Natural Strike)</button>
+                <button type="button" data-mode="f1" class="eigen-mode-btn px-2 py-0.5 rounded bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[10px] font-mono text-amber-300">1. Symmetric f₁</button>
+                <button type="button" data-mode="clang" class="eigen-mode-btn px-2 py-0.5 rounded bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[10px] font-mono text-sky-300">2. Clang (6.27·f₁)</button>
+                <button type="button" data-mode="mode3" class="eigen-mode-btn px-2 py-0.5 rounded bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[10px] font-mono text-emerald-300">3. 3rd (17.5·f₁)</button>
+                <button type="button" data-mode="dipole" class="eigen-mode-btn px-2 py-0.5 rounded bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[10px] font-mono text-purple-300">4. Rocking Dipole</button>
+                <button type="button" data-mode="twist" class="eigen-mode-btn px-2 py-0.5 rounded bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[10px] font-mono text-rose-300">5. 3D Out-of-Plane Twist</button>
+              </div>
+            </div>
+
+            <!-- Interactive Strike Height x_s/L & Stroboscopic Visual Exaggeration Sliders -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono text-slate-400 shrink-0">Strike Height x_s/L:</span>
+                <input id="sliderStrikeHeight" type="range" min="15" max="100" value="92" class="flex-1 slider-rose" />
+                <span id="lblStrikeHeight" class="text-[11px] font-mono font-bold text-rose-400 w-16 text-right">0.92 L</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono text-slate-400 shrink-0">3D Flex Gain:</span>
+                <input id="sliderFlexGain" type="range" min="20" max="250" value="115" class="flex-1 slider-cyan" />
+                <span id="lblFlexGain" class="text-[11px] font-mono font-bold text-sky-400 w-12 text-right">1.15×</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CANTILEVER EIGENFUNCTION CURVATURE w(x) & KOENIG-LISSAJOUS BEAT SCOPE -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-forge-950/90 border border-slate-800 rounded-xl p-3 items-center">
+          <!-- 2D Cantilever Eigenfunction & Nodal Point Profile w(x/L) (6 cols) -->
+          <div class="sm:col-span-6 flex flex-col">
+            <div class="flex items-center justify-between text-[10px] font-mono uppercase text-slate-400 mb-1">
+              <span>Cantilever Mode Shape φ_n(x/L)</span>
+              <span class="text-rose-400">● Node @ 0.774 L</span>
+            </div>
+            <canvas id="eigenProfileCanvas" width="260" height="86" class="w-full h-20 rounded-xl bg-forge-900 border border-slate-800"></canvas>
+          </div>
+
+          <!-- Koenig-Lissajous Optical Phase & Sympathetic Beat Scope (6 cols) -->
+          <div class="sm:col-span-6 flex flex-col">
+            <div class="flex items-center justify-between text-[10px] font-mono uppercase text-slate-400 mb-1">
+              <span>Koenig-Lissajous Optical Mirror</span>
+              <span id="lblBeatFreq" class="text-emerald-400">Beat Δf = 4.0 Hz</span>
+            </div>
+            <canvas id="lissajousMiniCanvas" width="260" height="86" class="w-full h-20 rounded-xl bg-forge-900 border border-slate-800"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): MALLET HARDNESS, 6-MODE SPECTRUM, RHYTHMIC TONOMETER & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- MALLET HARDNESS, MODAL SPECTRUM & RHYTHMIC STRIKE SEQUENCER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Mallet Striker &amp; 6-Mode Spectrum</h2>
+            <p class="text-[11px] text-slate-400">Contact duration τ_c governs Clang (6.267·f₁) excitation</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <button id="btnPlayRhythmToggle" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-[11px] font-mono text-amber-300 font-bold transition">
+              ▶ Auto-Striker
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Mallet Material Selectors -->
+        <div class="grid grid-cols-4 gap-1.5 text-center font-mono">
+          <button type="button" data-mallet="rubber" class="mallet-select-btn py-1.5 rounded-lg border text-[11px] bg-forge-900 border-slate-700 text-slate-300">
+            Soft Rubber
+          </button>
+          <button type="button" data-mallet="felt" class="mallet-select-btn py-1.5 rounded-lg border text-[11px] bg-forge-900 border-slate-700 text-slate-300">
+            Piano Felt
+          </button>
+          <button type="button" data-mallet="maple" class="mallet-select-btn py-1.5 rounded-lg border text-[11px] bg-forge-900 border-slate-700 text-slate-300">
+            Hardwood
+          </button>
+          <button type="button" data-mallet="steel" class="mallet-select-btn py-1.5 rounded-lg border text-[11px] font-bold bg-amber-500/20 border-amber-400 text-amber-300">
+            Steel (Clang)
+          </button>
+        </div>
+
+        <!-- 6 Eigenmode Amplitude Bars (Click any bar to solo/excite that 3D mode!) -->
+        <div class="bg-forge-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>6 CANTILEVER EIGENMODES (Click bar to solo mode)</span>
+            <span id="qFactorBadge" class="text-emerald-400">Q = 4,850</span>
+          </div>
+          <div id="eigenSpectrumBars" class="grid grid-cols-6 gap-1.5 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 16-Step Percussive Strike-Point Sequencer (Tip Clang vs 0.774L Node vs Stem) -->
+        <div class="bg-forge-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-slate-200">16-Step Mallet Strike-Zone Sequencer</span>
+            <div class="flex items-center gap-1.5 text-[10px] font-mono">
+              <span class="text-slate-400">BPM:</span>
+              <input id="sliderSeqBpm" type="range" min="60" max="190" value="124" class="w-20" />
+              <span id="valSeqBpm" class="text-amber-400 font-bold">124</span>
+            </div>
+          </div>
+          <div id="malletStepGrid" class="grid grid-cols-8 sm:grid-cols-16 gap-1">
+            <!-- Populated dynamically: 0=Rest, 1=0.774L Pure Node, 2=0.95L Tip Clang, 3=0.45L Mid-Tine -->
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & METROLOGY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Tuning Fork WAV &amp; Metrology Lab</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportForkStrikeWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              💾 Export 3D Fork Strike (.WAV)
+            </button>
+            <button id="btnExportSequenceWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              🥁 Export Mallet Sequence (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Acoustic Stems (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="pure_node" class="diapason-shot-btn px-2 py-1.5 rounded-lg bg-forge-900 hover:bg-forge-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                PureNode_f1.wav
+              </button>
+              <button type="button" data-shot="clang_bell" class="diapason-shot-btn px-2 py-1.5 rounded-lg bg-forge-900 hover:bg-forge-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                Clang6.27f1.wav
+              </button>
+              <button type="button" data-shot="scheibler_beat" class="diapason-shot-btn px-2 py-1.5 rounded-lg bg-forge-900 hover:bg-forge-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                Scheibler4Hz.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Euler-Bernoulli Eigenmodes JSON</span>
+            <button id="btnExportDiapasonJson" type="button" class="px-2.5 py-1 rounded-lg bg-forge-800 hover:bg-forge-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="diapasonVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="diapasonVaultList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-forge-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-[10000] hidden px-4 py-2.5 rounded-xl bg-forge-800/95 border border-amber-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. ALLOYS, FLUID MEDIA & 8 HISTORICAL TUNING FORK STANDARDS
+    // =========================================================================
+    const ALLOYS = {
+      steel:    { name: "Stainless Steel",    E_GPa: 210, rho: 7850, baseColor: 0x94a3b8 },
+      brass:    { name: "Koenig Bell Brass",  E_GPa: 105, rho: 8600, baseColor: 0xf59e0b },
+      quartz:   { name: "Quartz Crystal SiO₂", E_GPa: 78,  rho: 2648, baseColor: 0x38bdf8 },
+      titanium: { name: "Titanium Ti-6Al-4V", E_GPa: 114, rho: 4430, baseColor: 0x818cf8 },
+      aluminum: { name: "Acoustic Aluminum",  E_GPa: 69,  rho: 2700, baseColor: 0xcbd5e1 }
+    };
+
+    const FLUID_MEDIA = {
+      air:    { name: "Air 20°C",      qFactor: 4850,  freqMult: 1.000, dampRate: 0.35 },
+      vacuum: { name: "High Vacuum",   qFactor: 14000, freqMult: 1.002, dampRate: 0.12 },
+      water:  { name: "H₂O Immersion", qFactor: 95,    freqMult: 0.912, dampRate: 2.20 },
+      oil:    { name: "Viscous Oil",   qFactor: 38,    freqMult: 0.845, dampRate: 3.80 }
+    };
+
+    const FORK_PRESETS = [
+      {
+        id: "iso_440",
+        name: "ISO 16 Concert Pitch Standard (440.0 Hz)",
+        desc: "103.4 mm × 6.0 mm hardened steel fork with Clang overtone at 2,757.5 Hz",
+        alloy: "steel", lengthMm: 103.4, thickMm: 6.0, gapMm: 18.0, collarPct: 0, strikeNorm: 0.92, mount: "box_f1"
+      },
+      {
+        id: "russell_426",
+        name: "Russell Penn State Benchmark (426.6 Hz)",
+        desc: "Daniel A. Russell (2000) modal analysis fork: f₁=426.6 Hz, Clang=2,673 Hz, Node @ 0.774L",
+        alloy: "steel", lengthMm: 105.0, thickMm: 6.0, gapMm: 18.0, collarPct: 0, strikeNorm: 0.774, mount: "box_f1"
+      },
+      {
+        id: "shore_1711",
+        name: "John Shore 1711 Original Pitch Fork (423.5 Hz)",
+        desc: "Historical Baroque steel fork invented by Sergeant Trumpeter John Shore in 1711",
+        alloy: "steel", lengthMm: 105.4, thickMm: 6.0, gapMm: 17.5, collarPct: 0, strikeNorm: 0.88, mount: "handheld"
+      },
+      {
+        id: "koenig_256_c4",
+        name: "Rudolph Koenig Scientific C4 (256.0 Hz)",
+        desc: "Mounted on a 2·f₁ (512 Hz) octave Helmholtz resonator box with gold-brass tines",
+        alloy: "brass", lengthMm: 114.8, thickMm: 6.2, gapMm: 22.0, collarPct: 0, strikeNorm: 0.90, mount: "box_2f1"
+      },
+      {
+        id: "weighted_128_clinical",
+        name: "128.0 Hz Weighted Vernier Collar Fork",
+        desc: "Heavy sliding collar masses (m_c = 35%) lowering α₁ from 1.875 to 1.54 for deep bone-conduction",
+        alloy: "steel", lengthMm: 152.0, thickMm: 5.2, gapMm: 24.0, collarPct: 35, strikeNorm: 0.95, mount: "handheld"
+      },
+      {
+        id: "lissajous_335_mirror",
+        name: "Jules Lissajous 1855 Optical Mirror Fork (335.0 Hz)",
+        desc: "Polished mirror-tipped fork projecting optical phase figures against a reference beam",
+        alloy: "brass", lengthMm: 100.3, thickMm: 6.2, gapMm: 19.0, collarPct: 8, strikeNorm: 0.774, mount: "box_f1"
+      },
+      {
+        id: "accutron_360_watch",
+        name: "1960 Max Hetzel Bulova Accutron Resonator (360.0 Hz)",
+        desc: "Precision temperature-compensated Ni-Span-C watch fork driving a 360 Hz index wheel",
+        alloy: "titanium", lengthMm: 109.5, thickMm: 5.5, gapMm: 16.0, collarPct: 12, strikeNorm: 0.85, mount: "handheld"
+      },
+      {
+        id: "quartz_1024_qtf",
+        name: "1,024.0 Hz Crystalline Quartz Metrology Fork",
+        desc: "High-stiffness piezoelectric SiO₂ crystal fork with razor-sharp Q and ultrasonic 6.4 kHz clang",
+        alloy: "quartz", lengthMm: 66.2, thickMm: 6.4, gapMm: 15.0, collarPct: 0, strikeNorm: 0.94, mount: "box_f1"
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "iso_440",
+      shaderMode: "stress", // 'stress' | 'velocity' | 'alloy' | 'wireframe'
+      activeEigenSelection: "natural", // 'natural' | 'f1' | 'clang' | 'mode3' | 'dipole' | 'twist'
+      isFullscreen: false,
+      cameraPreset: "hero", // 'hero' | 'profile' | 'tips' | 'yoke' | 'drone'
+
+      // Physical Geometry & Material Parameters
+      alloyKey: "steel",
+      lengthMm: 103.4,
+      thickMm: 6.0,
+      yokeGapMm: 18.0,
+      collarMassPct: 0,
+      collarPosNorm: 0.82,
+      filingTrimPct: 0.0,
+      boxMount: "box_f1", // 'box_f1' | 'box_2f1' | 'handheld'
+      fluidKey: "air",
+
+      // Excitation & Visual Gain
+      malletKey: "steel", // 'rubber' | 'felt' | 'maple' | 'steel'
+      strikeHeightNorm: 0.92, // x_s / L (0.774 = Clang Node!)
+      flexGain: 1.15,
+      showQuadrupoleWaves: true,
+      showNodalRings: true,
+
+      // Computed Eigenfrequencies (Hz)
+      f1Hz: 440.0,
+      fClangHz: 2757.5,  // 6.2669 * f1
+      fMode3Hz: 7721.1,  // 17.548 * f1
+      fStem2Hz: 880.0,   // 2.000 * f1
+      fDipoleHz: 283.8,  // 0.645 * f1
+      fTwistHz: 498.1,   // 1.132 * f1
+      qFactor: 4850,
+
+      // Live Decaying Modal Amplitudes [f1, clang, mode3, stem2f, dipole, twist]
+      modeAmps: [0.92, 0.54, 0.22, 0.35, 0.14, 0.12],
+      malletSwingAnim: 0.0, // 1.0 -> 0.0 on strike
+      waveShells: [],
+
+      // 16-Step Mallet Sequencer (0=Rest, 1=0.774L Pure Node, 2=0.95L Tip Clang, 3=Isolate Clang Pinch)
+      seqPlaying: false,
+      seqBpm: 124,
+      seqStepIdx: -1,
+      seqPattern: [2, 0, 1, 0,  3, 0, 1, 1,  2, 0, 1, 0,  3, 1, 2, 0],
+
+      // Vault
+      vault: []
+    };
+
+    // =========================================================================
+    // 3. EXACT EULER-BERNOULLI CANTILEVER EIGENFUNCTIONS & FREQUENCY SOLVER
+    //    Eigenvalues of cos(\alpha) cosh(\alpha) = -1:
+    //      \alpha_1 = 1.87510407, \alpha_2 = 4.69409113, \alpha_3 = 7.85475744
+    // =========================================================================
+    const CANTILEVER_ALPHAS = [1.87510407, 4.69409113, 7.85475744];
+
+    /**
+     * Evaluates the exact normalized Euler-Bernoulli cantilever mode shape \phi_n(s) for s \in [0, 1]
+     */
+    function evalCantileverModeShape(nIdx, s) {
+      const a = CANTILEVER_ALPHAS[nIdx] || 1.87510407;
+      const as = a * s;
+      const sigma = (Math.cosh(a) + Math.cos(a)) / (Math.sinh(a) + Math.sin(a));
+      const val = Math.cosh(as) - Math.cos(as) - sigma * (Math.sinh(as) - Math.sin(as));
+      return val * 0.5; // Normalized so tip |\phi_n(1)| = 1.0
+    }
+
+    /**
+     * Evaluates the normalized second spatial derivative \phi_n''(s) \propto bending stress \sigma_{xx}(s)
+     */
+    function evalCantileverBendingCurvature(nIdx, s) {
+      const a = CANTILEVER_ALPHAS[nIdx] || 1.87510407;
+      const as = a * s;
+      const sigma = (Math.cosh(a) + Math.cos(a)) / (Math.sinh(a) + Math.sin(a));
+      const d2 = Math.cosh(as) + Math.cos(as) - sigma * (Math.sinh(as) + Math.sin(as));
+      return d2 * 0.5; // Maximum bending stress = 1.0 at clamped root s = 0!
+    }
+
+    function computeForkEigenfrequencies() {
+      const alloy = ALLOYS[state.alloyKey] || ALLOYS.steel;
+      const fluid = FLUID_MEDIA[state.fluidKey] || FLUID_MEDIA.air;
+
+      // Laura et al. (1974): Sliding collar mass at x_c/L shifts eigenvalue \alpha_1 downward
+      const effMassLoad = (state.collarMassPct / 100) * Math.pow(state.collarPosNorm, 2);
+      const alpha1 = 1.87510407 / Math.pow(1.0 + 1.85 * effMassLoad, 0.25);
+      const alpha2 = 4.69409113 / Math.pow(1.0 + 1.45 * effMassLoad, 0.25);
+      const alpha3 = 7.85475744 / Math.pow(1.0 + 1.20 * effMassLoad, 0.25);
+
+      const Lm = state.lengthMm / 1000;
+      const bm = state.thickMm / 1000;
+      const cBar = Math.sqrt((alloy.E_GPa * 1e9) / alloy.rho);
+      const radGyr = bm / Math.sqrt(12);
+
+      let f1 = ((alpha1 * alpha1) / (2 * Math.PI * Lm * Lm)) * cBar * radGyr * 0.884;
+      // Apply craftsman filing trim (-Base Yoke filing lowers stiffness; +Tip filing reduces end mass)
+      f1 *= (1.0 + (state.filingTrimPct / 10) * 0.01);
+      // Apply fluid added-mass factor
+      f1 *= fluid.freqMult;
+
+      state.f1Hz = Number(Math.max(24, f1).toFixed(1));
+      state.fClangHz = Number((state.f1Hz * Math.pow(alpha2 / alpha1, 2)).toFixed(1));
+      state.fMode3Hz = Number((state.f1Hz * Math.pow(alpha3 / alpha1, 2)).toFixed(1));
+      state.fStem2Hz = Number((state.f1Hz * 2.0).toFixed(1));
+      state.fDipoleHz = Number((state.f1Hz * 0.645).toFixed(1));
+      state.fTwistHz = Number((state.f1Hz * 1.132).toFixed(1));
+      state.qFactor = fluid.qFactor;
+
+      document.getElementById('headerF1Readout').textContent = `f₁ = ${state.f1Hz.toFixed(1)} Hz`;
+      document.getElementById('headerClangReadout').textContent = `Clang = ${state.fClangHz.toFixed(1)} Hz`;
+      document.getElementById('qFactorBadge').textContent = `Q = ${state.qFactor.toLocaleString()}`;
+      updateHudModeBadge();
+    }
+
+    function updateHudModeBadge() {
+      const m = state.activeEigenSelection;
+      const el = document.getElementById('hudForkModeBadge');
+      if (!el) return;
+      if (m === 'f1') el.textContent = `Solo Mode 1: Symmetric Principal f₁ = ${state.f1Hz} Hz (α₁ = 1.875)`;
+      else if (m === 'clang') el.textContent = `Solo Mode 2: Symmetric Clang = ${state.fClangHz} Hz (Node @ 0.774L)`;
+      else if (m === 'mode3') el.textContent = `Solo Mode 3: 3rd Cantilever = ${state.fMode3Hz} Hz (Nodes @ 0.50L, 0.87L)`;
+      else if (m === 'dipole') el.textContent = `Solo Mode 4: Antisymmetric Rocking Dipole = ${state.fDipoleHz} Hz`;
+      else if (m === 'twist') el.textContent = `Solo Mode 5: Out-of-Plane Torsional Twist = ${state.fTwistHz} Hz`;
+      else el.textContent = `Natural Superposition: f₁ (${state.f1Hz} Hz) + Clang (${state.fClangHz} Hz)`;
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO MULTI-EIGENMODE TUNING FORK SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     * Synthesizes a 3D Tuning Fork Strike with exact Euler-Bernoulli modal excitation weights
+     * governed by strike position x_s/L, mallet hardness, and solo/pinch state!
+     */
+    function triggerForkStrikeAudio(ctx, destNode, when, options = {}) {
+      const {
+        strikeNorm = state.strikeHeightNorm,
+        mallet = state.malletKey,
+        modeOverride = state.activeEigenSelection,
+        velocity = 0.90
+      } = options;
+
+      computeForkEigenfrequencies();
+
+      // Modal excitation weights |\phi_n(x_s/L)| at the strike point x_s/L!
+      // Because \phi_2(0.774) = 0, striking at x_s/L = 0.774 produces ZERO clang overtone!
+      const w1 = Math.abs(evalCantileverModeShape(0, strikeNorm));
+      const w2 = Math.abs(evalCantileverModeShape(1, strikeNorm));
+      const w3 = Math.abs(evalCantileverModeShape(2, strikeNorm));
+
+      const hardness = mallet === 'steel' ? 1.0 : (mallet === 'maple' ? 0.62 : (mallet === 'felt' ? 0.22 : 0.06));
+      const boxGain = state.boxMount === 'handheld' ? 0.55 : 1.0;
+
+      let a1 = Math.min(1.0, (0.35 + 0.65 * w1) * velocity);
+      let aClang = Math.min(1.0, w2 * hardness * 1.15 * velocity);
+      let aMode3 = Math.min(1.0, w3 * hardness * 0.55 * velocity);
+      let aStem2 = state.boxMount === 'box_2f1' ? 0.72 : 0.24;
+      let aDipole = 0.16 * hardness;
+      let aTwist = 0.14 * hardness;
+
+      if (modeOverride === 'f1') {
+        a1 = 1.0; aClang = 0.02; aMode3 = 0.0; aDipole = 0.0; aTwist = 0.0;
+      } else if (modeOverride === 'clang') {
+        a1 = 0.04; aClang = 1.0; aMode3 = 0.18; aDipole = 0.0; aTwist = 0.0;
+      } else if (modeOverride === 'mode3') {
+        a1 = 0.05; aClang = 0.15; aMode3 = 1.0; aDipole = 0.0; aTwist = 0.0;
+      } else if (modeOverride === 'dipole') {
+        a1 = 0.12; aClang = 0.05; aDipole = 1.0; aTwist = 0.0;
+      } else if (modeOverride === 'twist') {
+        a1 = 0.12; aClang = 0.05; aDipole = 0.0; aTwist = 1.0;
+      }
+
+      // Store visual amplitudes & trigger 3D mallet animation + quadrupole wave shell
+      if (ctx === audioCtx) {
+        state.modeAmps = [a1, aClang, aMode3, aStem2, aDipole, aTwist];
+        state.malletSwingAnim = 1.0;
+        state.waveShells.push({ r: 0.5, alpha: 0.92 });
+        renderEigenSpectrumBarsDOM();
+      }
+
+      const fluid = FLUID_MEDIA[state.fluidKey] || FLUID_MEDIA.air;
+      const qScale = Math.max(0.18, Math.min(3.2, 0.45 / fluid.dampRate));
+
+      const schedulePartial = (freq, amp, baseDecaySec, pan = 0) => {
+        if (amp < 0.004 || freq > 18000) return;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, when);
+
+        const dSec = Math.max(0.08, baseDecaySec * qScale);
+        g.gain.setValueAtTime(0.0001, when);
+        g.gain.linearRampToValueAtTime(amp * 0.32 * boxGain, when + 0.003);
+        g.gain.exponentialRampToValueAtTime(0.0001, when + dSec);
+
+        if (ctx.createStereoPanner) {
+          const panner = ctx.createStereoPanner();
+          panner.pan.setValueAtTime(pan, when);
+          osc.connect(g);
+          g.connect(panner);
+          panner.connect(destNode);
+        } else {
+          osc.connect(g);
+          g.connect(destNode);
+        }
+
+        osc.start(when);
+        osc.stop(when + dSec + 0.03);
+      };
+
+      schedulePartial(state.f1Hz, a1, 3.8, -0.15);
+      schedulePartial(state.fStem2Hz, aStem2, 2.1, 0.0);
+      schedulePartial(state.fClangHz, aClang, 1.35, 0.25);
+      schedulePartial(state.fMode3Hz, aMode3, 0.65, -0.25);
+      schedulePartial(state.fDipoleHz, aDipole, 0.95, -0.35);
+      schedulePartial(state.fTwistHz, aTwist, 1.05, 0.35);
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D WEBGL SCENE: PARAMETRIC VERTEX-DEFORMING 3D TUNING FORK,
+    //    VON MISES STRESS SHADER, 0.774L NODAL RINGS, COLLARS & MALLET STRIKER
+    // =========================================================================
+    let scene, camera, renderer, raycaster, mouseVec;
+    let forkRootGroup, leftTineMesh, rightTineMesh, yokeMesh, stemMesh, resonatorBoxGroup;
+    let leftNodeRing, rightNodeRing, leftCollarMesh, rightCollarMesh, malletGroup, quadWaveGroup;
+    let isDraggingOrbit = false;
+    let prevPointer = { x: 0, y: 0 };
+    let camSpherical = { theta: 0.48, phi: 1.22, radius: 11.2, targetY: 0.4 };
+
+    function initThreeDiapasonEngine() {
+      const mount = document.getElementById('threeDiapasonMount');
+      const w = mount.clientWidth || 640;
+      const h = mount.clientHeight || 400;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04060b);
+
+      camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 200);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      mount.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      // Studio Three-Point Lighting
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfef3c7, 1.15);
+      keyLight.position.set(8, 14, 12);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.90);
+      rimLight.position.set(-10, 6, -10);
+      scene.add(rimLight);
+
+      // Subtle Studio Floor Grid
+      const grid = new THREE.GridHelper(16, 32, 0x1e293b, 0x0b1120);
+      grid.position.y = -4.2;
+      scene.add(grid);
+
+      forkRootGroup = new THREE.Group();
+      scene.add(forkRootGroup);
+
+      quadWaveGroup = new THREE.Group();
+      scene.add(quadWaveGroup);
+
+      buildThreeTuningForkAssembly();
+      applyCameraPreset(state.cameraPreset);
+
+      window.addEventListener('resize', handleViewportResize);
+      document.addEventListener('fullscreenchange', handleViewportResize);
+
+      // Orbit Dragging & Direct 3D Tine Raycast Striking!
+      let downPos = { x: 0, y: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDraggingOrbit = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        downPos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingOrbit) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        camSpherical.theta -= dx * 0.0075;
+        camSpherical.phi = Math.max(0.08, Math.min(Math.PI - 0.12, camSpherical.phi - dy * 0.0075));
+        updateCameraPosition();
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!isDraggingOrbit) return;
+        isDraggingOrbit = false;
+        if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 6) {
+          handleThreeForkClick(e);
+        }
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(4.2, Math.min(24, camSpherical.radius + e.deltaY * 0.01));
+        updateCameraPosition();
+      }, { passive: false });
+    }
+
+    function handleViewportResize() {
+      const mount = document.getElementById('threeDiapasonMount');
+      if (!mount || !renderer || !camera) return;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      if (!w || !h) return;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function applyCameraPreset(preset) {
+      state.cameraPreset = preset;
+      document.getElementById('selectCameraView').value = preset;
+      if (preset === 'hero') {
+        camSpherical = { theta: 0.48, phi: 1.22, radius: 11.2, targetY: 0.4 };
+      } else if (preset === 'profile') {
+        camSpherical = { theta: 0.0, phi: Math.PI / 2, radius: 10.6, targetY: 0.8 };
+      } else if (preset === 'tips') {
+        camSpherical = { theta: 0.0, phi: 0.12, radius: 9.8, targetY: 1.5 };
+      } else if (preset === 'yoke') {
+        camSpherical = { theta: 0.32, phi: 1.38, radius: 6.4, targetY: -1.4 };
+      }
+      updateCameraPosition();
+    }
+
+    function updateCameraPosition() {
+      if (!camera) return;
+      const r = camSpherical.radius;
+      const x = r * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      const y = r * Math.cos(camSpherical.phi) + camSpherical.targetY;
+      const z = r * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.position.set(x, y, z);
+      camera.lookAt(0, camSpherical.targetY, 0);
+    }
+
+    /**
+     * Builds the high-resolution 3D Tuning Fork Mesh with per-vertex color attributes
+     * so we can deform both tines in 3D AND shade Von Mises stress \sigma_{xx} in real time!
+     */
+    function buildThreeTuningForkAssembly() {
+      if (!forkRootGroup) return;
+      while (forkRootGroup.children.length > 0) {
+        forkRootGroup.remove(forkRootGroup.children[0]);
+      }
+
+      const tineHeight = (state.lengthMm / 103.4) * 4.6;
+      const tineWidthX = (state.thickMm / 6.0) * 0.28;
+      const tineDepthZ = 0.44;
+      const yokeRadius = (state.yokeGapMm / 18.0) * 0.92;
+      const yokeBaseY = -1.2;
+
+      // 1. Create Left & Right Deformable Cantilever Tine Meshes (BoxGeometry with 48 height segments!)
+      const createDeformableTine = () => {
+        const geo = new THREE.BoxGeometry(tineWidthX, tineHeight, tineDepthZ, 2, 48, 2);
+        // Shift geometry so y = 0 is the clamped root and y = tineHeight is the free tip!
+        geo.translate(0, tineHeight / 2, 0);
+
+        const count = geo.attributes.position.count;
+        const basePos = new Float32Array(geo.attributes.position.array);
+        const colors = new Float32Array(count * 3);
+        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geo.userData = { basePos, tineHeight, tineWidthX };
+
+        const mat = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          metalness: 0.65,
+          roughness: 0.22,
+          wireframe: state.shaderMode === 'wireframe'
+        });
+        return new THREE.Mesh(geo, mat);
+      };
+
+      leftTineMesh = createDeformableTine();
+      leftTineMesh.position.set(-yokeRadius, yokeBaseY, 0);
+      leftTineMesh.userData.side = -1;
+      forkRootGroup.add(leftTineMesh);
+
+      rightTineMesh = createDeformableTine();
+      rightTineMesh.position.set(yokeRadius, yokeBaseY, 0);
+      rightTineMesh.userData.side = 1;
+      forkRootGroup.add(rightTineMesh);
+
+      // 2. U-Shaped Saddle Yoke Base (Half-Torus connecting (-yokeRadius, yokeBaseY) to (+yokeRadius, yokeBaseY))
+      const yokeGeo = new THREE.TorusGeometry(yokeRadius, tineWidthX * 0.68, 18, 40, Math.PI);
+      yokeGeo.rotateZ(Math.PI); // Bowl curves downward from y = yokeBaseY to y = yokeBaseY - yokeRadius
+      const alloyColor = (ALLOYS[state.alloyKey] || ALLOYS.steel).baseColor;
+      const yokeMat = new THREE.MeshStandardMaterial({
+        color: alloyColor,
+        metalness: 0.72,
+        roughness: 0.22,
+        wireframe: state.shaderMode === 'wireframe'
+      });
+      yokeMesh = new THREE.Mesh(yokeGeo, yokeMat);
+      yokeMesh.position.set(0, yokeBaseY, 0);
+      forkRootGroup.add(yokeMesh);
+
+      // 3. Cylindrical Handle Stem + Terminal Knurled Ball
+      const stemLen = 1.65;
+      const stemTopY = yokeBaseY - yokeRadius;
+      const stemGeo = new THREE.CylinderGeometry(tineWidthX * 0.58, tineWidthX * 0.52, stemLen, 20);
+      const stemMat = new THREE.MeshStandardMaterial({
+        color: alloyColor,
+        metalness: 0.75,
+        roughness: 0.22,
+        wireframe: state.shaderMode === 'wireframe'
+      });
+      stemMesh = new THREE.Mesh(stemGeo, stemMat);
+      stemMesh.position.set(0, stemTopY - stemLen / 2, 0);
+      forkRootGroup.add(stemMesh);
+
+      // 4. Glowing Clang-Mode Nodal Rings at x/L = 0.774 on both tines!
+      const ringGeo = new THREE.TorusGeometry(tineDepthZ * 0.78, 0.032, 12, 32);
+      ringGeo.rotateX(Math.PI / 2);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+      leftNodeRing = new THREE.Mesh(ringGeo, ringMat);
+      rightNodeRing = new THREE.Mesh(ringGeo, ringMat);
+      forkRootGroup.add(leftNodeRing);
+      forkRootGroup.add(rightNodeRing);
+
+      // 5. Sliding Vernier Collar Weights on Both Tines
+      const collarGeo = new THREE.CylinderGeometry(tineDepthZ * 0.92, tineDepthZ * 0.92, 0.36, 20);
+      const collarMat = new THREE.MeshStandardMaterial({ color: 0xc084fc, metalness: 0.8, roughness: 0.2 });
+      leftCollarMesh = new THREE.Mesh(collarGeo, collarMat);
+      rightCollarMesh = new THREE.Mesh(collarGeo, collarMat);
+      forkRootGroup.add(leftCollarMesh);
+      forkRootGroup.add(rightCollarMesh);
+
+      // 6. 3D Wooden Acoustic Helmholtz Resonator Box at Base of Stem
+      resonatorBoxGroup = new THREE.Group();
+      const boxGeo = new THREE.BoxGeometry(3.8, 1.25, 2.2);
+      const boxMat = new THREE.MeshStandardMaterial({
+        color: 0x78350f,
+        roughness: 0.55,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.88
+      });
+      const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+      const boxWire = new THREE.LineSegments(
+        new THREE.EdgesGeometry(boxGeo),
+        new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.55 })
+      );
+      resonatorBoxGroup.add(boxMesh);
+      resonatorBoxGroup.add(boxWire);
+      resonatorBoxGroup.position.set(0, stemTopY - stemLen - 0.62, 0);
+      resonatorBoxGroup.visible = state.boxMount !== 'handheld';
+      forkRootGroup.add(resonatorBoxGroup);
+
+      // 7. 3D Animated Percussive Mallet Striker Positioned Alongside Right Tine at x_s / L
+      malletGroup = new THREE.Group();
+      const headGeo = new THREE.SphereGeometry(0.28, 20, 20);
+      const malletColors = { rubber: 0x10b981, felt: 0x38bdf8, maple: 0xd97706, steel: 0xf59e0b };
+      const headMat = new THREE.MeshStandardMaterial({
+        color: malletColors[state.malletKey] || 0xf59e0b,
+        emissive: malletColors[state.malletKey] || 0xf59e0b,
+        emissiveIntensity: 0.35,
+        metalness: 0.5,
+        roughness: 0.2
+      });
+      const headMesh = new THREE.Mesh(headGeo, headMat);
+      const stickGeo = new THREE.CylinderGeometry(0.045, 0.045, 2.2, 12);
+      stickGeo.rotateZ(Math.PI / 2.4);
+      stickGeo.translate(0.95, -0.45, 0);
+      const stickMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+      const stickMesh = new THREE.Mesh(stickGeo, stickMat);
+      malletGroup.add(headMesh);
+      malletGroup.add(stickMesh);
+      forkRootGroup.add(malletGroup);
+    }
+
+    function handleThreeForkClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouseVec, camera);
+      const hits = raycaster.intersectObjects([leftTineMesh, rightTineMesh]);
+      if (hits.length > 0) {
+        const hitPt = hits[0].point;
+        const yokeBaseY = -1.2;
+        const tineHeight = leftTineMesh.geometry.userData.tineHeight;
+        const clickedNorm = Math.max(0.15, Math.min(1.0, (hitPt.y - yokeBaseY) / tineHeight));
+
+        state.strikeHeightNorm = Number(clickedNorm.toFixed(2));
+        document.getElementById('sliderStrikeHeight').value = Math.round(state.strikeHeightNorm * 100);
+        const nearNode = Math.abs(state.strikeHeightNorm - 0.774) < 0.04;
+        document.getElementById('lblStrikeHeight').textContent =
+          `${state.strikeHeightNorm.toFixed(2)} L${nearNode ? ' 🎯' : ''}`;
+        document.getElementById('hudStrikeReadout').textContent =
+          `Struck 3D Tine @ x/L = ${state.strikeHeightNorm.toFixed(2)} ${nearNode ? '(Clang Node Suppressed!)' : ''}`;
+
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { strikeNorm: state.strikeHeightNorm });
+      }
+    }
+
+    // =========================================================================
+    // 6. REAL-TIME 60 FPS 3D CANTILEVER DEFORMATION & VON MISES STRESS LOOP
+    // =========================================================================
+    const eigenProfileCanvas = document.getElementById('eigenProfileCanvas');
+    const eigenProfileCtx = eigenProfileCanvas.getContext('2d');
+    const lissajousMiniCanvas = document.getElementById('lissajousMiniCanvas');
+    const lissajousMiniCtx = lissajousMiniCanvas.getContext('2d');
+
+    let simPhase = 0;
+    let lastTs = performance.now();
+
+    function animateMainLoop() {
+      const now = performance.now();
+      const dt = Math.min(0.04, (now - lastTs) / 1000);
+      lastTs = now;
+
+      simPhase += dt * 16.5;
+
+      if (state.cameraPreset === 'drone' && !isDraggingOrbit) {
+        camSpherical.theta += dt * 0.32;
+        updateCameraPosition();
+      }
+
+      // Exponentially decay live modal amplitudes according to Fluid Medium Q-factor
+      const fluid = FLUID_MEDIA[state.fluidKey] || FLUID_MEDIA.air;
+      const damp = fluid.dampRate * dt;
+      state.modeAmps[0] = Math.max(0.12, state.modeAmps[0] * (1.0 - damp * 0.25));
+      state.modeAmps[1] = Math.max(0.02, state.modeAmps[1] * (1.0 - damp * 0.65));
+      state.modeAmps[2] = Math.max(0.01, state.modeAmps[2] * (1.0 - damp * 1.10));
+      state.modeAmps[3] = Math.max(0.04, state.modeAmps[3] * (1.0 - damp * 0.40));
+      state.modeAmps[4] = Math.max(0.02, state.modeAmps[4] * (1.0 - damp * 0.75));
+      state.modeAmps[5] = Math.max(0.02, state.modeAmps[5] * (1.0 - damp * 0.75));
+
+      state.malletSwingAnim = Math.max(0, state.malletSwingAnim - dt * 5.5);
+
+      updateThreeForkVertexDeformation();
+      updateQuadrupoleWaveShells(dt);
+      render2DEigenProfileCanvas();
+      render2DLissajousMiniCanvas();
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animateMainLoop);
+    }
+
+    function updateThreeForkVertexDeformation() {
+      if (!leftTineMesh || !rightTineMesh) return;
+
+      const gain = state.flexGain * 0.36;
+      const [a1, aClang, aMode3, aStem2, aDipole, aTwist] = state.modeAmps;
+
+      // Instantaneous modal time factors
+      const osc1 = Math.sin(simPhase) * a1;
+      const oscClang = Math.sin(simPhase * 3.15) * aClang;
+      const oscMode3 = Math.sin(simPhase * 5.2) * aMode3;
+      const oscDipole = Math.sin(simPhase * 0.65) * aDipole;
+      const oscTwist = Math.sin(simPhase * 1.13) * aTwist;
+      const stemPump2F = Math.cos(simPhase * 2.0) * aStem2 * 0.08 * state.flexGain;
+
+      const yokeBaseY = -1.2 + stemPump2F;
+      const yokeRadius = (state.yokeGapMm / 18.0) * 0.92;
+      const alloyCol = new THREE.Color((ALLOYS[state.alloyKey] || ALLOYS.steel).baseColor);
+
+      yokeMesh.position.y = yokeBaseY;
+      stemMesh.position.y = yokeBaseY - yokeRadius - 0.825 + stemPump2F * 0.5;
+
+      [leftTineMesh, rightTineMesh].forEach(mesh => {
+        const side = mesh.userData.side; // -1 Left, +1 Right
+        mesh.position.y = yokeBaseY;
+
+        const geo = mesh.geometry;
+        const posAttr = geo.attributes.position;
+        const colAttr = geo.attributes.color;
+        const { basePos, tineHeight, tineWidthX } = geo.userData;
+        const count = posAttr.count;
+
+        for (let i = 0; i < count; i++) {
+          const bx = basePos[i * 3];
+          const by = basePos[i * 3 + 1];
+          const bz = basePos[i * 3 + 2];
+
+          const s = Math.max(0, Math.min(1, by / tineHeight)); //Normalized height x/L \in [0, 1]
+
+          // Evaluate exact Euler-Bernoulli cantilever mode shapes \phi_1(s), \phi_2(s), \phi_3(s)
+          const phi1 = evalCantileverModeShape(0, s);
+          const phi2 = evalCantileverModeShape(1, s);
+          const phi3 = evalCantileverModeShape(2, s);
+
+          // Symmetric modes move opposite for left (-1) vs right (+1) tine; Dipole moves same direction
+          const dxSym = side * (phi1 * osc1 + phi2 * oscClang * 0.85 + phi3 * oscMode3 * 0.6) * gain;
+          const dxDip = (phi1 * oscDipole) * gain * 0.85;
+          const dzTwist = side * (phi1 * oscTwist) * gain * 0.95;
+
+          posAttr.setXYZ(i, bx + dxSym + dxDip, by, bz + dzTwist);
+
+          // Compute vertex color based on selected 3D Shader Mode
+          if (state.shaderMode === 'stress') {
+            // Von Mises Bending Stress |\sigma_{xx}| \propto |\phi''(s)|
+            const curv1 = evalCantileverBendingCurvature(0, s) * osc1;
+            const curv2 = evalCantileverBendingCurvature(1, s) * oscClang * 1.4;
+            const stressMag = Math.min(1.0, Math.abs(curv1 + curv2) * 1.45);
+            // Map low stress -> deep cyan/slate, high bending stress -> glowing amber/crimson
+            colAttr.setXYZ(
+              i,
+              0.12 + stressMag * 0.88,
+              0.22 + Math.sin(stressMag * Math.PI) * 0.55,
+              0.45 * (1.0 - stressMag)
+            );
+          } else if (state.shaderMode === 'velocity') {
+            const dispMag = Math.min(1.0, Math.abs(dxSym + dxDip + dzTwist) * 2.6);
+            colAttr.setXYZ(i, 0.08 + dispMag * 0.85, 0.35 + dispMag * 0.55, 0.85 - dispMag * 0.65);
+          } else {
+            colAttr.setXYZ(i, alloyCol.r, alloyCol.g, alloyCol.b);
+          }
+        }
+
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+      });
+
+      // Position Clang Nodal Rings at s = 0.774 and Collar Weights at s = state.collarPosNorm
+      const tineH = leftTineMesh.geometry.userData.tineHeight;
+      const nodeS = 0.774;
+      const nodePhi1 = evalCantileverModeShape(0, nodeS);
+      const nodeDx = (nodePhi1 * osc1) * gain;
+
+      leftNodeRing.visible = state.showNodalRings;
+      rightNodeRing.visible = state.showNodalRings;
+      leftNodeRing.position.set(-yokeRadius - nodeDx, yokeBaseY + nodeS * tineH, 0);
+      rightNodeRing.position.set(yokeRadius + nodeDx, yokeBaseY + nodeS * tineH, 0);
+
+      const hasCollars = state.collarMassPct > 0;
+      leftCollarMesh.visible = hasCollars;
+      rightCollarMesh.visible = hasCollars;
+      if (hasCollars) {
+        const cS = state.collarPosNorm;
+        const cDx = (evalCantileverModeShape(0, cS) * osc1 + evalCantileverModeShape(1, cS) * oscClang * 0.85) * gain;
+        leftCollarMesh.position.set(-yokeRadius - cDx, yokeBaseY + cS * tineH, 0);
+        rightCollarMesh.position.set(yokeRadius + cDx, yokeBaseY + cS * tineH, 0);
+      }
+
+      // Position 3D Mallet Striker at s = state.strikeHeightNorm alongside Right Tine
+      if (malletGroup) {
+        const strikeY = yokeBaseY + state.strikeHeightNorm * tineH;
+        const swingOffset = (1.0 - state.malletSwingAnim) * 0.55 + 0.32;
+        malletGroup.position.set(yokeRadius + swingOffset, strikeY, 0);
+      }
+    }
+
+    function updateQuadrupoleWaveShells(dt) {
+      while (quadWaveGroup.children.length > 0) {
+        quadWaveGroup.remove(quadWaveGroup.children[0]);
+      }
+      if (!state.showQuadrupoleWaves) return;
+
+      for (let i = state.waveShells.length - 1; i >= 0; i--) {
+        const sh = state.waveShells[i];
+        sh.r += dt * 4.5;
+        sh.alpha -= dt * 0.48;
+        if (sh.alpha <= 0) {
+          state.waveShells.splice(i, 1);
+          continue;
+        }
+
+        // Build 4-lobed Linear Quadrupole wave contour in the X-Z horizontal plane around the tines
+        const pts = [];
+        for (let a = 0; a <= 64; a++) {
+          const ang = (a / 64) * Math.PI * 2;
+          const quadLobe = 0.55 + 0.45 * Math.cos(2 * ang);
+          const rad = sh.r * quadLobe;
+          pts.push(new THREE.Vector3(Math.cos(ang) * rad, 0.8, Math.sin(ang) * rad));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: sh.alpha
+        });
+        quadWaveGroup.add(new THREE.Line(geo, mat));
+      }
+    }
+
+    // =========================================================================
+    // 7. 2D CANTILEVER PROFILE & KOENIG-LISSAJOUS SCOPES + SEQUENCER
+    // =========================================================================
+    function render2DEigenProfileCanvas() {
+      const W = eigenProfileCanvas.width;
+      const H = eigenProfileCanvas.height;
+      eigenProfileCtx.fillStyle = '#080c16';
+      eigenProfileCtx.fillRect(0, 0, W, H);
+
+      const midY = H * 0.5;
+      eigenProfileCtx.strokeStyle = '#1e293b';
+      eigenProfileCtx.beginPath();
+      eigenProfileCtx.moveTo(14, midY);
+      eigenProfileCtx.lineTo(W - 14, midY);
+      eigenProfileCtx.stroke();
+
+      // Plot Fundamental \phi_1(s) (Amber) and Clang \phi_2(s) (Cyan) along s \in [0, 1]
+      const osc1 = Math.sin(simPhase) * state.modeAmps[0];
+      const osc2 = Math.sin(simPhase * 3.15) * state.modeAmps[1];
+
+      // Fundamental curve
+      eigenProfileCtx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const s = i / 60;
+        const px = 14 + s * (W - 28);
+        const py = midY - evalCantileverModeShape(0, s) * osc1 * (H * 0.36);
+        if (i === 0) eigenProfileCtx.moveTo(px, py);
+        else eigenProfileCtx.lineTo(px, py);
+      }
+      eigenProfileCtx.strokeStyle = '#f59e0b';
+      eigenProfileCtx.lineWidth = 2;
+      eigenProfileCtx.stroke();
+
+      // Clang 6.267*f1 curve
+      eigenProfileCtx.beginPath();
+      for (let i = 0; i <= 60; i++) {
+        const s = i / 60;
+        const px = 14 + s * (W - 28);
+        const py = midY - evalCantileverModeShape(1, s) * osc2 * (H * 0.38);
+        if (i === 0) eigenProfileCtx.moveTo(px, py);
+        else eigenProfileCtx.lineTo(px, py);
+      }
+      eigenProfileCtx.strokeStyle = '#38bdf8';
+      eigenProfileCtx.lineWidth = 1.8;
+      eigenProfileCtx.stroke();
+
+      // Mark Clang Nodal Point at s = 0.774 and Active Strike Point at s = state.strikeHeightNorm
+      const nodeX = 14 + 0.774 * (W - 28);
+      eigenProfileCtx.fillStyle = '#f43f5e';
+      eigenProfileCtx.beginPath();
+      eigenProfileCtx.arc(nodeX, midY, 4, 0, Math.PI * 2);
+      eigenProfileCtx.fill();
+
+      const strikeX = 14 + state.strikeHeightNorm * (W - 28);
+      eigenProfileCtx.strokeStyle = '#10b981';
+      eigenProfileCtx.beginPath();
+      eigenProfileCtx.moveTo(strikeX, 6);
+      eigenProfileCtx.lineTo(strikeX, H - 6);
+      eigenProfileCtx.stroke();
+    }
+
+    function render2DLissajousMiniCanvas() {
+      const W = lissajousMiniCanvas.width;
+      const H = lissajousMiniCanvas.height;
+      lissajousMiniCtx.fillStyle = '#080c16';
+      lissajousMiniCtx.fillRect(0, 0, W, H);
+
+      // Left: Laser Lissajous figure of f1 vs Clang (1 : 6.267)
+      const cx = W * 0.25;
+      const cy = H * 0.5;
+      const R = Math.min(W * 0.18, H * 0.38);
+      lissajousMiniCtx.beginPath();
+      for (let i = 0; i <= 180; i++) {
+        const u = (i / 180) * Math.PI * 2;
+        const x = cx + R * Math.sin(u + simPhase * 0.08);
+        const y = cy + R * (0.75 * Math.cos(u) + 0.28 * state.modeAmps[1] * Math.sin(6.267 * u));
+        if (i === 0) lissajousMiniCtx.moveTo(x, y);
+        else lissajousMiniCtx.lineTo(x, y);
+      }
+      lissajousMiniCtx.strokeStyle = '#38bdf8';
+      lissajousMiniCtx.lineWidth = 1.6;
+      lissajousMiniCtx.stroke();
+
+      // Right: Time-domain acoustic waveform with Clang ripple
+      const x0 = W * 0.50;
+      const plotW = W * 0.46;
+      lissajousMiniCtx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const u = (i / 100) * Math.PI * 4;
+        const wVal = state.modeAmps[0] * Math.sin(u + simPhase * 0.4) + state.modeAmps[1] * 0.55 * Math.sin(u * 6.267);
+        const px = x0 + (i / 100) * plotW;
+        const py = cy - wVal * (H * 0.28);
+        if (i === 0) lissajousMiniCtx.moveTo(px, py);
+        else lissajousMiniCtx.lineTo(px, py);
+      }
+      lissajousMiniCtx.strokeStyle = '#f59e0b';
+      lissajousMiniCtx.lineWidth = 1.6;
+      lissajousMiniCtx.stroke();
+    }
+
+    function renderEigenSpectrumBarsDOM() {
+      const container = document.getElementById('eigenSpectrumBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const modes = [
+        { key: 'f1',     label: 'f₁',    freq: state.f1Hz,     amp: state.modeAmps[0], col: 'bg-amber-400' },
+        { key: 'clang',  label: '6.27f₁', freq: state.fClangHz, amp: state.modeAmps[1], col: 'bg-sky-400' },
+        { key: 'mode3',  label: '17.5f₁', freq: state.fMode3Hz, amp: state.modeAmps[2], col: 'bg-emerald-400' },
+        { key: 'f1',     label: '2f₁Stem',freq: state.fStem2Hz, amp: state.modeAmps[3], col: 'bg-teal-400' },
+        { key: 'dipole', label: 'Dipole', freq: state.fDipoleHz,amp: state.modeAmps[4], col: 'bg-purple-400' },
+        { key: 'twist',  label: 'Twist',  freq: state.fTwistHz, amp: state.modeAmps[5], col: 'bg-rose-400' }
+      ];
+
+      modes.forEach(m => {
+        const pct = Math.min(100, Math.max(12, Math.round(m.amp * 100)));
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer group';
+        wrap.innerHTML = `
+          <div class="w-full rounded-t transition-all ${m.col} group-hover:brightness-125" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono text-slate-300">${m.label}</span>
+        `;
+        wrap.addEventListener('click', () => {
+          setEigenModeSelection(m.key);
+          const ctx = ensureAudio();
+          triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { modeOverride: m.key });
+        });
+        container.appendChild(wrap);
+      });
+    }
+
+    function renderMalletStepGridDOM() {
+      const grid = document.getElementById('malletStepGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const labels = ['·', 'NOD', 'TIP', 'CLG'];
+      const styles = [
+        'bg-forge-950 border-slate-800 text-slate-600 hover:border-slate-700',
+        'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-bold',
+        'bg-amber-500/20 border-amber-500/60 text-amber-300 font-bold',
+        'bg-sky-500/20 border-sky-500/60 text-sky-300 font-bold'
+      ];
+
+      state.seqPattern.forEach((code, idx) => {
+        const isCur = state.seqStepIdx === idx;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `h-8 rounded-lg border text-[9px] font-mono transition ${styles[code]} ${
+          isCur ? 'ring-2 ring-white scale-105' : ''
+        }`;
+        btn.textContent = labels[code];
+        btn.addEventListener('click', () => {
+          state.seqPattern[idx] = (code + 1) % 4;
+          const next = state.seqPattern[idx];
+          if (next > 0) executeSequencerStep(next);
+          renderMalletStepGridDOM();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    let seqTimerId = null;
+    function executeSequencerStep(code) {
+      const ctx = ensureAudio();
+      if (code === 1) {
+        // Pure 0.774L Node Strike
+        state.strikeHeightNorm = 0.774;
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { strikeNorm: 0.774, mallet: 'felt', modeOverride: 'natural' });
+      } else if (code === 2) {
+        // Tip Clang Strike (0.95L)
+        state.strikeHeightNorm = 0.95;
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { strikeNorm: 0.95, mallet: state.malletKey, modeOverride: 'natural' });
+      } else if (code === 3) {
+        // Isolate 6.267*f1 Clang Bell
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { strikeNorm: 0.96, mallet: 'steel', modeOverride: 'clang' });
+      }
+      document.getElementById('sliderStrikeHeight').value = Math.round(state.strikeHeightNorm * 100);
+      document.getElementById('lblStrikeHeight').textContent = `${state.strikeHeightNorm.toFixed(2)} L`;
+    }
+
+    function toggleMalletSequencer() {
+      ensureAudio();
+      state.seqPlaying = !state.seqPlaying;
+      const btn = document.getElementById('btnPlayRhythmToggle');
+      if (state.seqPlaying) {
+        btn.textContent = '■ Stop Striker';
+        btn.className = 'px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 text-[11px] font-mono font-bold transition';
+        tickSequencer();
+      } else {
+        clearTimeout(seqTimerId);
+        state.seqStepIdx = -1;
+        btn.textContent = '▶ Auto-Striker';
+        btn.className = 'px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-[11px] font-mono text-amber-300 font-bold transition';
+        renderMalletStepGridDOM();
+      }
+    }
+
+    function tickSequencer() {
+      if (!state.seqPlaying) return;
+      state.seqStepIdx = (state.seqStepIdx + 1) % 16;
+      const code = state.seqPattern[state.seqStepIdx] || 0;
+      if (code > 0) executeSequencerStep(code);
+      renderMalletStepGridDOM();
+      const stepSec = (60 / state.seqBpm) * 0.25;
+      seqTimerId = setTimeout(tickSequencer, stepSec * 1000);
+    }
+
+    function toggleDiapasonFullscreen() {
+      const wrapper = document.getElementById('diapasonStageWrapper');
+      const btnStage = document.getElementById('btnStageFullscreen');
+      const btnHeader = document.getElementById('btnHeaderFullscreen');
+
+      state.isFullscreen = !state.isFullscreen;
+
+      if (state.isFullscreen) {
+        wrapper.classList.add('diapason-fullscreen-stage');
+        btnStage.textContent = '✕ Exit Full Screen [Esc]';
+        btnHeader.innerHTML = '<span>✕ Exit Full Screen</span>';
+        if (wrapper.requestFullscreen) {
+          wrapper.requestFullscreen().catch(() => {});
+        }
+        showToast('Entered Full-Screen 3D Tuning Fork Theater Mode (Press F or Esc to exit)');
+      } else {
+        wrapper.classList.remove('diapason-fullscreen-stage');
+        btnStage.textContent = '⛶ Full Screen';
+        btnHeader.innerHTML = '<span>⛶ Full Screen [F]</span>';
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      setTimeout(handleViewportResize, 60);
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderDiapasonWav(mode = 'fork_strike') {
+      const sr = 44100;
+      const stepSec = (60 / state.seqBpm) * 0.25;
+      const totalSec = mode === 'sequence' ? (16 * stepSec + 1.4) : 2.8;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'pure_node') {
+        triggerForkStrikeAudio(offCtx, offCtx.destination, 0.05, { strikeNorm: 0.774, mallet: 'felt', modeOverride: 'f1' });
+      } else if (mode === 'clang_bell') {
+        triggerForkStrikeAudio(offCtx, offCtx.destination, 0.05, { strikeNorm: 0.96, mallet: 'steel', modeOverride: 'clang' });
+      } else if (mode === 'scheibler_beat') {
+        triggerForkStrikeAudio(offCtx, offCtx.destination, 0.05, { strikeNorm: 0.85 });
+        const oscB = offCtx.createOscillator();
+        const gB = offCtx.createGain();
+        oscB.frequency.setValueAtTime(state.f1Hz - 4.0, 0.05);
+        gB.gain.setValueAtTime(0.28, 0.05);
+        gB.gain.exponentialRampToValueAtTime(0.0005, 2.6);
+        oscB.connect(gB); gB.connect(offCtx.destination);
+        oscB.start(0.05); oscB.stop(2.65);
+      } else if (mode === 'sequence') {
+        for (let s = 0; s < 16; s++) {
+          const code = state.seqPattern[s];
+          if (code > 0) {
+            triggerForkStrikeAudio(offCtx, offCtx.destination, 0.05 + s * stepSec, {
+              strikeNorm: code === 1 ? 0.774 : 0.95,
+              mallet: code === 1 ? 'felt' : state.malletKey,
+              modeOverride: code === 3 ? 'clang' : 'natural'
+            });
+          }
+        }
+      } else {
+        triggerForkStrikeAudio(offCtx, offCtx.destination, 0.05, {});
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `diapason3d_${mode}_${Math.round(state.f1Hz)}Hz.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('diapasonVaultList');
+      const count = document.getElementById('diapasonVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-forge-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyForkPreset(pr) {
+      state.activePresetId = pr.id;
+      state.alloyKey = pr.alloy;
+      state.lengthMm = pr.lengthMm;
+      state.thickMm = pr.thickMm;
+      state.yokeGapMm = pr.gapMm;
+      state.collarMassPct = pr.collarPct;
+      state.strikeHeightNorm = pr.strikeNorm;
+      state.boxMount = pr.mount;
+
+      document.getElementById('selectForkAlloy').value = pr.alloy;
+      document.getElementById('sliderTineLength').value = pr.lengthMm;
+      document.getElementById('valTineLength').textContent = `${pr.lengthMm.toFixed(1)} mm`;
+      document.getElementById('sliderTineThick').value = pr.thickMm;
+      document.getElementById('valTineThick').textContent = `${pr.thickMm.toFixed(1)} mm`;
+      document.getElementById('sliderYokeGap').value = pr.gapMm;
+      document.getElementById('valYokeGap').textContent = `${pr.gapMm.toFixed(1)} mm`;
+      document.getElementById('sliderCollarMass').value = pr.collarPct;
+      document.getElementById('valCollarMass').textContent = `${pr.collarPct}%`;
+      document.getElementById('sliderStrikeHeight').value = Math.round(pr.strikeNorm * 100);
+      document.getElementById('lblStrikeHeight').textContent = `${pr.strikeNorm.toFixed(2)} L`;
+      document.getElementById('selectBoxMount').value = pr.mount;
+
+      computeForkEigenfrequencies();
+      buildThreeTuningForkAssembly();
+      renderEigenSpectrumBarsDOM();
+      renderPresetListUI();
+    }
+
+    function setShaderModeUI(mode) {
+      state.shaderMode = mode;
+      const bStr = document.getElementById('shaderBtnStress');
+      const bVel = document.getElementById('shaderBtnVelocity');
+      const bAll = document.getElementById('shaderBtnAlloy');
+      const bWir = document.getElementById('shaderBtnWireframe');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bStr.className = mode === 'stress' ? act : idl;
+      bVel.className = mode === 'velocity' ? act : idl;
+      bAll.className = mode === 'alloy' ? act : idl;
+      bWir.className = mode === 'wireframe' ? act : idl;
+
+      buildThreeTuningForkAssembly();
+    }
+
+    function setEigenModeSelection(modeKey) {
+      state.activeEigenSelection = modeKey;
+      document.querySelectorAll('.eigen-mode-btn').forEach(btn => {
+        const active = btn.getAttribute('data-mode') === modeKey;
+        btn.className = active
+          ? 'eigen-mode-btn px-2 py-0.5 rounded bg-amber-500/25 border border-amber-400 text-[10px] font-mono text-amber-200 font-bold'
+          : 'eigen-mode-btn px-2 py-0.5 rounded bg-forge-900/90 hover:bg-forge-800 border border-slate-700 text-[10px] font-mono text-slate-300';
+      });
+      updateHudModeBadge();
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('forkPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      FORK_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-amber-500/15 border-amber-400/60 text-white' : 'bg-forge-950/75 hover:bg-forge-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-amber-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-forge-900 text-sky-300 border border-slate-800">${pr.lengthMm}mm</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyForkPreset(pr);
+          const ctx = ensureAudio();
+          triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnStrikeMain').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime);
+      });
+
+      document.getElementById('btnStrikePureNode').addEventListener('click', () => {
+        state.strikeHeightNorm = 0.774;
+        document.getElementById('sliderStrikeHeight').value = 77;
+        document.getElementById('lblStrikeHeight').textContent = '0.774 L 🎯';
+        setEigenModeSelection('natural');
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { strikeNorm: 0.774, mallet: 'felt', modeOverride: 'f1' });
+        showToast('Struck at x/L = 0.774 Nodal Ring: 6.267·f₁ Clang Overtone Cancelled!');
+      });
+
+      document.getElementById('btnPinchFundamental').addEventListener('click', () => {
+        setEigenModeSelection('clang');
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { strikeNorm: 0.96, mallet: 'steel', modeOverride: 'clang' });
+        showToast('Pinched Fundamental Node: Isolated 6.267·f₁ Clang Bell Overtone!');
+      });
+
+      document.getElementById('selectCameraView').addEventListener('change', (e) => {
+        applyCameraPreset(e.target.value);
+      });
+
+      document.getElementById('btnStageCamCycle').addEventListener('click', () => {
+        const order = ['hero', 'profile', 'tips', 'yoke', 'drone'];
+        const next = order[(order.indexOf(state.cameraPreset) + 1) % order.length];
+        applyCameraPreset(next);
+        showToast(`3D Camera View: ${next.toUpperCase()}`);
+      });
+
+      document.getElementById('btnHeaderFullscreen').addEventListener('click', toggleDiapasonFullscreen);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleDiapasonFullscreen);
+
+      // 3D Shader Buttons
+      document.getElementById('shaderBtnStress').addEventListener('click', () => setShaderModeUI('stress'));
+      document.getElementById('shaderBtnVelocity').addEventListener('click', () => setShaderModeUI('velocity'));
+      document.getElementById('shaderBtnAlloy').addEventListener('click', () => setShaderModeUI('alloy'));
+      document.getElementById('shaderBtnWireframe').addEventListener('click', () => setShaderModeUI('wireframe'));
+
+      document.getElementById('chkQuadrupoleWaves').addEventListener('change', (e) => {
+        state.showQuadrupoleWaves = e.target.checked;
+      });
+      document.getElementById('chkNodalRings').addEventListener('change', (e) => {
+        state.showNodalRings = e.target.checked;
+      });
+
+      // 6 Eigenmode Buttons
+      document.querySelectorAll('.eigen-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const m = btn.getAttribute('data-mode');
+          setEigenModeSelection(m);
+          const ctx = ensureAudio();
+          triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime, { modeOverride: m });
+        });
+      });
+
+      // Stage Sliders
+      document.getElementById('sliderStrikeHeight').addEventListener('input', (e) => {
+        state.strikeHeightNorm = parseInt(e.target.value, 10) / 100;
+        const nearNode = Math.abs(state.strikeHeightNorm - 0.774) < 0.04;
+        document.getElementById('lblStrikeHeight').textContent =
+          `${state.strikeHeightNorm.toFixed(2)} L${nearNode ? ' 🎯' : ''}`;
+      });
+      document.getElementById('sliderFlexGain').addEventListener('input', (e) => {
+        state.flexGain = parseInt(e.target.value, 10) / 100;
+        document.getElementById('lblFlexGain').textContent = `${state.flexGain.toFixed(2)}×`;
+      });
+
+      // Left Column Sliders & Selectors
+      document.getElementById('selectForkAlloy').addEventListener('change', (e) => {
+        state.alloyKey = e.target.value;
+        computeForkEigenfrequencies();
+        buildThreeTuningForkAssembly();
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime);
+      });
+
+      document.getElementById('sliderTineLength').addEventListener('input', (e) => {
+        state.lengthMm = parseFloat(e.target.value);
+        document.getElementById('valTineLength').textContent = `${state.lengthMm.toFixed(1)} mm`;
+        computeForkEigenfrequencies();
+        buildThreeTuningForkAssembly();
+      });
+
+      document.getElementById('sliderTineThick').addEventListener('input', (e) => {
+        state.thickMm = parseFloat(e.target.value);
+        document.getElementById('valTineThick').textContent = `${state.thickMm.toFixed(1)} mm`;
+        computeForkEigenfrequencies();
+        buildThreeTuningForkAssembly();
+      });
+
+      document.getElementById('sliderYokeGap').addEventListener('input', (e) => {
+        state.yokeGapMm = parseFloat(e.target.value);
+        document.getElementById('valYokeGap').textContent = `${state.yokeGapMm.toFixed(1)} mm`;
+        buildThreeTuningForkAssembly();
+      });
+
+      document.getElementById('sliderCollarMass').addEventListener('input', (e) => {
+        state.collarMassPct = parseInt(e.target.value, 10);
+        document.getElementById('valCollarMass').textContent =
+          `${state.collarMassPct}% ${state.collarMassPct === 0 ? '(Unweighted)' : '(Loaded)'}`;
+        computeForkEigenfrequencies();
+      });
+
+      document.getElementById('sliderCollarPos').addEventListener('input', (e) => {
+        state.collarPosNorm = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valCollarPos').textContent = `${state.collarPosNorm.toFixed(2)} L`;
+        computeForkEigenfrequencies();
+      });
+
+      document.getElementById('sliderFilingTrim').addEventListener('input', (e) => {
+        state.filingTrimPct = parseInt(e.target.value, 10);
+        const pct = (state.filingTrimPct / 10).toFixed(1);
+        document.getElementById('valFilingTrim').textContent =
+          `${state.filingTrimPct >= 0 ? '+' : ''}${pct}% (${state.filingTrimPct >= 0 ? 'Tip Filed' : 'Base Filed'})`;
+        computeForkEigenfrequencies();
+      });
+
+      document.getElementById('selectBoxMount').addEventListener('change', (e) => {
+        state.boxMount = e.target.value;
+        if (resonatorBoxGroup) resonatorBoxGroup.visible = state.boxMount !== 'handheld';
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime);
+      });
+
+      document.getElementById('selectFluidMedium').addEventListener('change', (e) => {
+        state.fluidKey = e.target.value;
+        computeForkEigenfrequencies();
+        const ctx = ensureAudio();
+        triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime);
+      });
+
+      // Right Column Mallet & Sequencer Controls
+      document.querySelectorAll('.mallet-select-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.malletKey = btn.getAttribute('data-mallet');
+          document.querySelectorAll('.mallet-select-btn').forEach(b => {
+            const act = b.getAttribute('data-mallet') === state.malletKey;
+            b.className = act
+              ? 'mallet-select-btn py-1.5 rounded-lg border text-[11px] font-bold bg-amber-500/20 border-amber-400 text-amber-300'
+              : 'mallet-select-btn py-1.5 rounded-lg border text-[11px] bg-forge-900 border-slate-700 text-slate-300';
+          });
+          buildThreeTuningForkAssembly();
+          const ctx = ensureAudio();
+          triggerForkStrikeAudio(ctx, masterGain, ctx.currentTime);
+        });
+      });
+
+      document.getElementById('btnPlayRhythmToggle').addEventListener('click', toggleMalletSequencer);
+      document.getElementById('sliderSeqBpm').addEventListener('input', (e) => {
+        state.seqBpm = parseInt(e.target.value, 10);
+        document.getElementById('valSeqBpm').textContent = state.seqBpm;
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderDiapasonWav('fork_strike'));
+      document.getElementById('btnExportForkStrikeWav').addEventListener('click', () => renderDiapasonWav('fork_strike'));
+      document.getElementById('btnExportSequenceWav').addEventListener('click', () => renderDiapasonWav('sequence'));
+
+      document.querySelectorAll('.diapason-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderDiapasonWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportDiapasonJson').addEventListener('click', () => {
+        const payload = {
+          app: "DIAPASON_3D_EULER_BERNOULLI_TUNING_FORK_LAB",
+          alloy: state.alloyKey,
+          geometryMm: { lengthL: state.lengthMm, thicknessB: state.thickMm, yokeGap: state.yokeGapMm },
+          collarLoad: { massPct: state.collarMassPct, positionNorm: state.collarPosNorm },
+          eigenfrequenciesHz: {
+            f1Symmetric: state.f1Hz,
+            f2Clang: state.fClangHz,
+            f3Cantilever: state.fMode3Hz,
+            fStem2f1: state.fStem2Hz,
+            fDipoleRocking: state.fDipoleHz,
+            fOutPlaneTwist: state.fTwistHz
+          },
+          qualityFactorQ: state.qFactor
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `diapason3d_${Math.round(state.f1Hz)}Hz_telemetry.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded 3D Euler-Bernoulli Tuning Fork Telemetry JSON');
+      });
+
+      // Keyboard Shortcuts: F = Fullscreen, Esc = Exit Fullscreen, Space = Strike Fork
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnStrikeMain').click();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleDiapasonFullscreen();
+        } else if (e.key === 'Escape' && state.isFullscreen) {
+          toggleDiapasonFullscreen();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initThreeDiapasonEngine();
+      renderMalletStepGridDOM();
+      applyForkPreset(FORK_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(animateMainLoop);
+    });
+  </script>
+</body>
+</html>

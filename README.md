@@ -1,6 +1,6 @@
 # Percussion Labs
 
-Nine self-contained, browser-native percussion laboratories, plus a specialty
+Twelve self-contained, browser-native percussion laboratories, plus a specialty
 pendulum lab. Each one builds an instrument out of a different piece of physics
 or mathematics, and generates its sound from the model rather than playing
 samples over it.
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The nine
+## The twelve
 
 | # | Module | Built on |
 |---|---|---|
@@ -25,6 +25,9 @@ as well — technique first, then visible physics, then abstractions.
 | 07 | **CYMA-FORGE** | Percussive cymatics: Faraday hydro-tank, biharmonic Chladni plate, acoustic levitation |
 | 08 | **HYPER-SOLITON** | 4D polychoron percussion via Hopf fibration, nonlinear Toda soliton lattice |
 | 09 | **CAVITRON** | Rayleigh–Plesset sonoluminescence, Rijke thermoacoustic flame, shear-thickening impact |
+| 10 | **CHIMERA-SWARM** | 3D Kuramoto–Sakaguchi chimera manifold, swarmalator dynamics |
+| 11 | **DIAPASON-3D** | Full-screen 3D Euler–Bernoulli tuning fork, von Mises stress, six eigenmodes |
+| 12 | **KÁRMÁN-GONG 3D** | Föppl–von Kármán nonlinear shell, wave turbulence, pitch glissando |
 
 ## Specialty
 
@@ -66,7 +69,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          nine laboratory modules + the specialty pendulum lab
+*.html          twelve laboratory modules + the specialty pendulum lab
 ```
 
 ## Licence
