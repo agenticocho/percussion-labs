@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAVITRON — Rayleigh-Plesset Sonoluminescence, Rijke Thermoacoustic Flame & Shear-Thickening Impact Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            plasma: {
+              950: '#03060c',
+              900: '#070d19',
+              800: '#0e172a',
+              700: '#172542',
+              600: '#243a66'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #03060c;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070d19; }
+    ::-webkit-scrollbar-thumb { background: #243a66; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #365694; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #172542;
+      border: 1px solid #243a66;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #03060c;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6) !important;
+    }
+    .slider-rose::-webkit-slider-thumb {
+      background: #f43f5e !important;
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.6) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(14, 23, 42, 0.94) 0%, rgba(7, 13, 25, 0.98) 100%);
+      border: 1px solid rgba(48, 76, 128, 0.55);
+    }
+    @keyframes pulsePlasma {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(56, 189, 248, 0.25); }
+    }
+    .reactor-running {
+      animation: pulsePlasma 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- TOP STUDIO HEADER & CAVITATION / THERMOACOUSTIC TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-plasma-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/25 via-amber-500/20 to-rose-500/25 border border-sky-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9" stroke="#38bdf8" stroke-dasharray="2 2"></circle>
+            <circle cx="12" cy="12" r="4" stroke="#f59e0b"></circle>
+            <path d="M12 2V6M12 18V22M2 12H6M18 12H22" stroke="#f43f5e" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">CAVITRON // CAVITATION SHOCK, THERMOACOUSTIC &amp; RHEOLOGY LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30">Module 9 of 9</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Rayleigh-Plesset Sonoluminescent Bubble Collapse (RR̈ + 3/2 Ṙ²) • Rijke Thermoacoustic Flame Tube • Shear-Thickening Oobleck Impact</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-plasma-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition shadow-lg shadow-sky-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">ENGAGE REACTOR</span>
+        </button>
+
+        <button id="btnSnapShrimpClaw" type="button" class="px-2.5 py-2 rounded-lg bg-plasma-800 hover:bg-plasma-700 text-amber-300 border border-amber-500/40 text-xs font-mono font-semibold transition" title="Fire Alpheidae Pistol-Shrimp Cavitation Jet & Sonoluminescence Flash">
+          PISTOL SHRIMP SNAP 💥
+        </button>
+
+        <!-- Noble Gas Core Selector -->
+        <div class="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+          <span class="text-[10px] font-mono text-slate-400">Bubble Gas:</span>
+          <select id="selectBubbleGas" class="bg-plasma-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-sky-300 outline-none">
+            <option value="xenon" selected>Xenon (γ = 1.667 • 24,800 K)</option>
+            <option value="argon">Argon (γ = 1.667 • 18,400 K)</option>
+            <option value="helium">Helium (γ = 1.660 • 14,200 K)</option>
+            <option value="air">Diatomic Air (γ = 1.400 • 7,900 K)</option>
+          </select>
+        </div>
+
+        <!-- BPM & Peak Collapse Temperature Readout -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[78px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-sky-400">128</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="tempHeaderReadout" class="text-[10px] text-amber-400 font-mono">T_max = 24,800 K</div>
+          </div>
+          <input id="sliderBpm" type="range" min="45" max="220" value="128" class="w-24 sm:w-32" />
+        </div>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnIgniteRijke" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40 text-xs font-semibold transition" title="Toggle Rijke Thermoacoustic Singing Flame Instability">
+          <span>🔥 Rijke Flame: <strong id="lblRijkeState">PULSED</strong></span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): CONTINUUM PHYSICS PRESETS, RAYLEIGH-PLESSET & RIJKE PARAMETERS -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated Cavitation, Thermoacoustic & Non-Newtonian Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Continuum &amp; Plasma Patches</h2>
+            <p class="text-[11px] text-slate-400">Sonoluminescence, Rijke &amp; Oobleck</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">8 Regimes</span>
+        </div>
+
+        <div id="cavitronPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- RAYLEIGH-PLESSET ODE, RIJKE FLAME & DST RHEOLOGY ARCHITECT -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-sky-300">Continuum Mechanics Solver</h2>
+          <p class="text-[10px] text-slate-400">RR̈ + 1.5Ṙ² = ΔP/ρ • ∮ p'q' dt &gt; 0 • η(γ̇)</p>
+        </div>
+
+        <!-- Rayleigh-Plesset Acoustic Drive & Rijke Gauze Position -->
+        <div class="bg-plasma-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Rarefaction Tension (P_a / P_0)</span>
+              <span id="valDrivePressure" class="text-sky-400 font-bold">1.42 atm</span>
+            </div>
+            <input id="sliderDrivePressure" type="range" min="105" max="220" value="142" class="w-full" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">Blake Threshold P_B ≈ 1.15 atm → Mach Implosion</div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Rijke Heater Gauze (x_h / L)</span>
+              <span id="valGauzePos" class="text-rose-400 font-bold">0.25 L (Max Gain)</span>
+            </div>
+            <input id="sliderGauzePos" type="range" min="5" max="95" value="25" class="w-full slider-rose" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">x_h &lt; 0.5L Driving (+R) • x_h &gt; 0.5L Quenching (−R)</div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Oobleck Volume Fraction (ϕ)</span>
+              <span id="valVolumeFrac" class="text-amber-400 font-bold">58.5% (DST Jammed)</span>
+            </div>
+            <input id="sliderVolumeFrac" type="range" min="400" max="620" value="585" class="w-full slider-amber" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">Critical Jamming Fraction ϕ_J ≈ 56.0%</div>
+          </div>
+        </div>
+
+        <!-- Real-Time Continuum Physics Telemetry Table -->
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center justify-between bg-plasma-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Wall Implosion Mach:</span>
+            <span id="readoutMachWall" class="font-mono font-bold text-sky-400">Mach 3.84 (5,680 m/s)</span>
+          </div>
+          <div class="flex items-center justify-between bg-plasma-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Blackbody Flash T_max:</span>
+            <span id="readoutBlackbodyTemp" class="font-mono font-bold text-amber-400">24,800 K (UV-Blue)</span>
+          </div>
+          <div class="flex items-center justify-between bg-plasma-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Rayleigh Index ∮p'q'dt:</span>
+            <span id="readoutRayleighIdx" class="font-mono font-bold text-emerald-400">+1.000 (Amplifying)</span>
+          </div>
+          <div class="flex items-center justify-between bg-plasma-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Apparent Viscosity η(γ̇):</span>
+            <span id="readoutViscosity" class="font-mono font-bold text-rose-400">4,280 Pa·s (Solid!)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): 3-REGIME CONTINUUM PHYSICS CANVAS + 16-STEP SHOCKWAVE SEQUENCER -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE VISUALIZER STAGE -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3 Physical Regime Tabs -->
+          <div class="flex items-center gap-1 bg-plasma-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabCavitation" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition">
+              💥 1. Sonoluminescent Cavitation
+            </button>
+            <button id="tabRijkeTube" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🔥 2. Rijke Thermoacoustic Tube
+            </button>
+            <button id="tabOobleckDst" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🧱 3. Shear-Thickening Oobleck
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono text-slate-400">Liquid:</span>
+            <select id="selectHostLiquid" class="bg-plasma-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-sky-300 outline-none">
+              <option value="water" selected>Degassed H₂O (c = 1482 m/s)</option>
+              <option value="sulfuric">85% H₂SO₄ (Ultra-Bright SBSL)</option>
+              <option value="glycerin">Glycerol-Water (High Viscosity μ)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Primary Interactive Canvas -->
+        <div class="relative w-full h-80 sm:h-[360px] bg-plasma-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="cavitronCanvas" class="w-full h-full cursor-crosshair touch-none"></canvas>
+
+          <!-- Top HUD Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudTopLeft" class="px-2.5 py-1 rounded-lg bg-plasma-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Click Bubble to Trigger Rarefaction Expansion &amp; Mach Implosion
+            </div>
+            <div id="hudTopRight" class="px-2.5 py-1 rounded-lg bg-plasma-900/90 border border-sky-500/40 text-[10px] font-mono text-sky-300">
+              R_min = R₀ / 8.85 (van der Waals Core)
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Controls -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnImplodeBubble" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                💥 Collapse Bubble (SBSL)
+              </button>
+              <button id="btnHardDstStrike" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                🔨 High-Shear Impact (Jammed)
+              </button>
+              <button id="btnSoftSinkStrike" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[11px] font-mono font-semibold transition">
+                💧 Low-Shear Sink (Fluid)
+              </button>
+            </div>
+            <div id="collapseRadiusBadge" class="px-2.5 py-1 rounded-lg bg-plasma-900/90 border border-slate-800 text-[10px] font-mono text-amber-300">
+              R(t)/R₀ = 1.00 • P_shock = 218 dB
+            </div>
+          </div>
+        </div>
+
+        <!-- 16-STEP MULTI-REGIME SHOCKWAVE, THERMOACOUSTIC & RHEOLOGY SEQUENCER -->
+        <div class="bg-plasma-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-bold text-slate-200">16-Step Cavitation, Thermoacoustic &amp; DST Impact Sequencer</span>
+              <p class="text-[10px] text-slate-400">Click any step to cycle: [ · ] → [CAV Bubble] → [SHR Pistol Shrimp] → [RIJ Flame Pulse] → [DST Solid Impact]</p>
+            </div>
+            <button id="btnRandomizeReactorGrid" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-[10px] font-mono text-sky-300 font-semibold transition">
+              🎲 Randomize Sequence
+            </button>
+          </div>
+          <div id="reactorStepGrid" class="grid grid-cols-8 sm:grid-cols-16 gap-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): ACOUSTIC SHOCKWAVE SPECTRUM, PHYSICAL PARAMETERS & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- MONOPOLE SHOCKWAVE & RIJKE HARMONIC SPECTRUM -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Shockwave &amp; Thermoacoustic Tuner</h2>
+            <p class="text-[11px] text-slate-400">P_rad(t) = (ρ / 4πd) V̈_b(t) • Rijke Harmonics f_k = k(c / 2L)</p>
+          </div>
+          <button id="btnMantisStrike" type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-[11px] font-mono text-rose-300 font-semibold transition">
+            🦐 Mantis Double-Shock
+          </button>
+        </div>
+
+        <!-- 10 Shockwave & Rijke Tube Harmonic Bars -->
+        <div class="bg-plasma-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>SHOCKWAVE &amp; RIJKE TUBE OVERTONES (Click to audition)</span>
+            <span id="tubeLengthReadout" class="text-sky-400">Tube L = 0.95 m</span>
+          </div>
+          <div id="shockSpectrumBars" class="grid grid-cols-10 gap-1 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 4 Physical Acoustic & Thermodynamic Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-plasma-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Minnaert Bubble f₀</span>
+              <span id="valMinnaertHz" class="font-mono text-sky-400">165 Hz</span>
+            </div>
+            <input id="sliderMinnaertHz" type="range" min="55" max="380" value="165" class="w-full" />
+          </div>
+
+          <div class="bg-plasma-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Afterbounce Train</span>
+              <span id="valAfterbounces" class="font-mono text-amber-400">4 Rebounds</span>
+            </div>
+            <input id="sliderAfterbounces" type="range" min="1" max="8" value="4" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-plasma-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Rijke Heat Flux (Q̇)</span>
+              <span id="valHeatFlux" class="font-mono text-rose-400">78%</span>
+            </div>
+            <input id="sliderHeatFlux" type="range" min="0" max="100" value="78" class="w-full slider-rose" />
+          </div>
+
+          <div class="bg-plasma-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">DST Jamming Stiffness</span>
+              <span id="valDstStiffness" class="font-mono text-emerald-400">85%</span>
+            </div>
+            <input id="sliderDstStiffness" type="range" min="10" max="100" value="85" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & TELEMETRY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Cavitation &amp; Thermoacoustic WAV Lab</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportReactorLoopWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              💾 Export Reactor Loop (.WAV)
+            </button>
+            <button id="btnExportRijkeOrganWav" type="button" type="button" class="px-3 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs transition shadow-md shadow-rose-500/15">
+              🔥 Export Rijke Flame (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Physical One-Shots (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="shrimp_snap" class="cavitron-shot-btn px-2 py-1.5 rounded-lg bg-plasma-900 hover:bg-plasma-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                ShrimpSnap.wav
+              </button>
+              <button type="button" data-shot="sbsl_implosion" class="cavitron-shot-btn px-2 py-1.5 rounded-lg bg-plasma-900 hover:bg-plasma-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                SonolumShock.wav
+              </button>
+              <button type="button" data-shot="oobleck_crack" class="cavitron-shot-btn px-2 py-1.5 rounded-lg bg-plasma-900 hover:bg-plasma-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                OobleckDST.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Rayleigh-Plesset &amp; Rijke JSON</span>
+            <button id="btnExportCavitronJson" type="button" class="px-2.5 py-1 rounded-lg bg-plasma-800 hover:bg-plasma-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="cavitronVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="cavitronVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-plasma-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-plasma-800/95 border border-sky-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. NOBLE GAS & LIQUID CONTINUUM CONSTANTS + 8 CURATED REGIME PRESETS
+    // =========================================================================
+    const BUBBLE_GASES = {
+      xenon:  { name: "Xenon",        gamma: 1.667, peakTempBase: 24800, flashColor: "#60a5fa" },
+      argon:  { name: "Argon",        gamma: 1.667, peakTempBase: 18400, flashColor: "#38bdf8" },
+      helium: { name: "Helium",       gamma: 1.660, peakTempBase: 14200, flashColor: "#a855f7" },
+      air:    { name: "Diatomic Air", gamma: 1.400, peakTempBase: 7900,  flashColor: "#f59e0b" }
+    };
+
+    const HOST_LIQUIDS = {
+      water:    { name: "Degassed H₂O",   soundSpeed: 1482, viscosityScale: 1.0,  rebScale: 1.0 },
+      sulfuric: { name: "85% H₂SO₄",      soundSpeed: 1540, viscosityScale: 1.6,  rebScale: 1.35 },
+      glycerin: { name: "Glycerol-Water", soundSpeed: 1720, viscosityScale: 2.8,  rebScale: 0.65 }
+    };
+
+    const CAVITRON_PRESETS = [
+      {
+        id: "xenon_sbsl",
+        name: "Xenon Single-Bubble Sonoluminescence (24,800 K)",
+        desc: "Mach 3.8 adiabatic noble-gas implosion to van der Waals hard-core R₀/8.85 with UV flash",
+        tab: "cavitation", gas: "xenon", liquid: "sulfuric", driveAtm: 1.48, gauzePos: 0.25, phiVol: 58.5, bpm: 128,
+        steps: [1, 0, 1, 2,  1, 0, 3, 0,  1, 2, 1, 0,  4, 0, 2, 1]
+      },
+      {
+        id: "alpheidae_shrimp",
+        name: "Alpheidae Pistol-Shrimp Plasma Claw Snap (218 dB)",
+        desc: "High-velocity cavitating water jet collapsing into a double primary+implosion shockwave",
+        tab: "cavitation", gas: "argon", liquid: "water", driveAtm: 1.85, gauzePos: 0.25, phiVol: 59.0, bpm: 136,
+        steps: [2, 0, 0, 2,  1, 2, 0, 1,  2, 0, 2, 0,  4, 2, 1, 0]
+      },
+      {
+        id: "rijke_flame_organ",
+        name: "Rijke Thermoacoustic Flame Tube (x_h = L/4)",
+        desc: "Unsteady heat release q'(t) in phase with acoustic pressure p'(t) driving self-excited beats",
+        tab: "rijke", gas: "argon", liquid: "water", driveAtm: 1.35, gauzePos: 0.25, phiVol: 57.0, bpm: 120,
+        steps: [3, 0, 3, 1,  3, 0, 3, 2,  3, 3, 0, 3,  1, 3, 2, 0]
+      },
+      {
+        id: "oobleck_dst_hammer",
+        name: "Discontinuous Shear-Thickening (DST) Oobleck Anvil",
+        desc: "High-shear strikes jam cornstarch hydroclusters into a solid rock rebound; soft taps sink",
+        tab: "oobleck", gas: "xenon", liquid: "glycerin", driveAtm: 1.40, gauzePos: 0.30, phiVol: 60.5, bpm: 142,
+        steps: [4, 1, 4, 0,  4, 4, 1, 0,  4, 0, 4, 2,  4, 1, 4, 4]
+      },
+      {
+        id: "mantis_dactyl_double",
+        name: "Odontodactylus Mantis Shrimp Double-Cavitation",
+        desc: "Primary calcified club impact followed 0.45 ms later by secondary toroidal bubble collapse",
+        tab: "cavitation", gas: "xenon", liquid: "water", driveAtm: 1.95, gauzePos: 0.22, phiVol: 59.5, bpm: 148,
+        steps: [2, 2, 0, 1,  2, 0, 4, 2,  2, 1, 0, 2,  4, 2, 2, 1]
+      },
+      {
+        id: "rayleigh_quenching",
+        name: "Upper-Half Rijke Thermal Quenching (x_h = 0.75 L)",
+        desc: "Heater gauze placed in upper half of tube where ∮p'q'dt < 0 damps thermoacoustic ring",
+        tab: "rijke", gas: "helium", liquid: "water", driveAtm: 1.25, gauzePos: 0.75, phiVol: 55.0, bpm: 112,
+        steps: [3, 1, 0, 3,  1, 0, 3, 1,  3, 0, 1, 3,  2, 0, 3, 1]
+      },
+      {
+        id: "hartmann_shock_cell",
+        name: "Hartmann-Sprenger Supersonic Jet Whistle",
+        desc: "Underexpanded Mach diamond shock cells oscillating against a blunt cylindrical cavity",
+        tab: "rijke", gas: "argon", liquid: "sulfuric", driveAtm: 1.72, gauzePos: 0.18, phiVol: 58.0, bpm: 154,
+        steps: [3, 2, 3, 4,  3, 2, 1, 3,  3, 4, 3, 2,  3, 1, 4, 2]
+      },
+      {
+        id: "viscous_afterbounce",
+        name: "8-Rebound Rayleigh-Plesset Afterbounce Cascade",
+        desc: "Low-viscosity degassed water producing a decaying train of 8 bubble rebound shockwaves",
+        tab: "cavitation", gas: "xenon", liquid: "water", driveAtm: 1.62, gauzePos: 0.25, phiVol: 57.5, bpm: 118,
+        steps: [1, 0, 0, 1,  0, 0, 2, 0,  1, 0, 0, 1,  0, 2, 0, 1]
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "xenon_sbsl",
+      activeTab: "cavitation", // 'cavitation' | 'rijke' | 'oobleck'
+      isPlaying: false,
+      rijkeContinuous: false,
+      bpm: 128,
+      stepIdx: -1,
+
+      // 1. Rayleigh-Plesset Bubble Collapse State
+      gasKey: "xenon",
+      liquidKey: "water",
+      driveAtm: 1.42,
+      minnaertHz: 165,
+      afterbounces: 4,
+      bubbleR: 1.0,       // Normalized R(t) / R_0
+      bubbleVel: 0.0,     // Normalized dR/dt
+      flashIntensity: 0.0,
+      shockRings: [],     // Expanding Mach shockwaves { r, alpha, color }
+      rHistory: new Float64Array(140).fill(1.0),
+      vHistory: new Float64Array(140).fill(0.0),
+      histPtr: 0,
+
+      // 2. Rijke Thermoacoustic Flame Tube State
+      gauzePosNorm: 0.25, // x_h / L in [0.05, 0.95]
+      heatFluxPct: 78,
+      rayleighIndex: 1.0,
+      rijkePhase: 0,
+
+      // 3. Non-Newtonian Shear-Thickening (DST Oobleck) State
+      volumeFracPct: 58.5,
+      dstStiffnessPct: 85,
+      lastShearRate: 42.0, // > 15 = jammed solid, < 15 = viscous liquid sink
+      jammedFrontRadius: 0,
+      forceChains: [],
+
+      // 16-Step Reactor Sequencer (0=Rest, 1=CAV Bubble, 2=SHR Shrimp Snap, 3=RIJ Flame, 4=DST Impact)
+      steps: [1, 0, 1, 2,  1, 0, 3, 0,  1, 2, 1, 0,  4, 0, 2, 1],
+
+      // Vault
+      vault: []
+    };
+
+    function updateContinuumTelemetry() {
+      const gas = BUBBLE_GASES[state.gasKey] || BUBBLE_GASES.xenon;
+      const liq = HOST_LIQUIDS[state.liquidKey] || HOST_LIQUIDS.water;
+
+      // Compression ratio scales with Drive Pressure P_a / P_0
+      const compRatio = Math.min(8.85, 3.2 + state.driveAtm * 3.1 * liq.rebScale);
+      const machWall = (compRatio * 0.44 * (state.driveAtm / 1.4));
+      const speedMs = Math.round(machWall * liq.soundSpeed);
+
+      // Adiabatic temperature T_max = T_0 * (compRatio)^(3*(gamma - 1))
+      const tMax = Math.round(gas.peakTempBase * Math.pow(state.driveAtm / 1.42, 1.35) * liq.rebScale);
+
+      // Rayleigh Thermoacoustic Index: R = sin(2 * pi * x_h / L) * (heatFlux / 100)
+      const rayleigh = Math.sin(2 * Math.PI * state.gauzePosNorm) * (state.heatFluxPct / 100);
+      state.rayleighIndex = rayleigh;
+
+      // Wyart-Cates DST Apparent Viscosity
+      const isJammed = state.volumeFracPct >= 56.0 && state.lastShearRate > 15;
+      const etaVal = isJammed
+        ? Math.round(1800 + (state.volumeFracPct - 55) * 650 * (state.dstStiffnessPct / 80))
+        : Math.round(12 + state.volumeFracPct * 0.4);
+
+      document.getElementById('tempHeaderReadout').textContent = `T_max = ${tMax.toLocaleString()} K`;
+      document.getElementById('readoutMachWall').textContent = `Mach ${machWall.toFixed(2)} (${speedMs.toLocaleString()} m/s)`;
+      document.getElementById('readoutBlackbodyTemp').textContent = `${tMax.toLocaleString()} K (${tMax > 15000 ? 'UV-Blue' : 'White-Gold'})`;
+
+      const rEl = document.getElementById('readoutRayleighIdx');
+      rEl.textContent = `${rayleigh >= 0 ? '+' : ''}${rayleigh.toFixed(3)} (${rayleigh >= 0 ? 'Amplifying' : 'Quenching'})`;
+      rEl.className = `font-mono font-bold ${rayleigh >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      const vEl = document.getElementById('readoutViscosity');
+      vEl.textContent = `${etaVal.toLocaleString()} Pa·s (${isJammed ? 'Jammed Solid!' : 'Liquid Sink'})`;
+      vEl.className = `font-mono font-bold ${isJammed ? 'text-amber-400' : 'text-sky-400'}`;
+
+      const tubeL = (343 / (2 * state.minnaertHz)).toFixed(2);
+      document.getElementById('tubeLengthReadout').textContent = `Tube L = ${tubeL} m`;
+    }
+
+    // =========================================================================
+    // 3. WEB AUDIO RAYLEIGH-PLESSET SHOCKWAVE, RIJKE FLAME & DST SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let noiseBuffer = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.86;
+        masterGain.connect(audioCtx.destination);
+
+        const sr = audioCtx.sampleRate;
+        noiseBuffer = audioCtx.createBuffer(1, sr * 1.2, sr);
+        const d = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     * Synthesizes a Physical Continuum Strike on ctx -> destNode:
+     *   code 1 = Sonoluminescent Bubble Implosion + Afterbounce Train
+     *   code 2 = Alpheidae Pistol-Shrimp Claw Snap (Pre-jet + Primary Plasma Shock)
+     *   code 3 = Rijke Thermoacoustic Singing-Flame Tube Pulse (governed by Rayleigh Index)
+     *   code 4 = Non-Newtonian Shear-Thickening Oobleck Impact (Solid Crack vs Fluid Thud)
+     */
+    function triggerCavitronVoice(ctx, destNode, when, options = {}) {
+      const {
+        code = 1,
+        velocity = 0.90,
+        forceLowShear = false
+      } = options;
+
+      const f0 = state.minnaertHz;
+      const gas = BUBBLE_GASES[state.gasKey] || BUBBLE_GASES.xenon;
+      const liq = HOST_LIQUIDS[state.liquidKey] || HOST_LIQUIDS.water;
+
+      const nBuf = noiseBuffer || (() => {
+        const b = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
+        const d = b.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        return b;
+      })();
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.02, velocity * 0.55), when);
+      hitGain.connect(destNode);
+
+      if (code === 1 || code === 2) {
+        // RAYLEIGH-PLESSET CAVITATION COLLAPSE & PISTOL SHRIMP SHOCKWAVE
+        // Schedule primary implosion + decaying Minnaert afterbounces
+        const numRebounds = code === 2 ? Math.min(3, state.afterbounces) : state.afterbounces;
+        let tCursor = when;
+
+        if (code === 2) {
+          // Pistol Shrimp Mechanical Claw Closure Pre-Snap (18 ms before plasma bubble collapse!)
+          const preOsc = ctx.createOscillator();
+          const preG = ctx.createGain();
+          preOsc.type = 'triangle';
+          preOsc.frequency.setValueAtTime(f0 * 4.2, tCursor);
+          preOsc.frequency.exponentialRampToValueAtTime(f0 * 1.1, tCursor + 0.014);
+          preG.gain.setValueAtTime(0.48, tCursor);
+          preG.gain.exponentialRampToValueAtTime(0.001, tCursor + 0.016);
+          preOsc.connect(preG); preG.connect(hitGain);
+          preOsc.start(tCursor); preOsc.stop(tCursor + 0.018);
+          tCursor += 0.019;
+        }
+
+        for (let b = 0; b <= numRebounds; b++) {
+          const rebAmp = Math.pow(0.54 * liq.rebScale, b);
+          if (rebAmp < 0.03) break;
+          const rebDur = Math.max(0.022, (0.095 / Math.pow(b + 1, 0.55)));
+
+          // Hyperbolic Mach Shockwave Chirp (\ddot{V}_b monopole spike)
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = b === 0 ? 'sawtooth' : 'sine';
+          const peakFreq = Math.min(11000, f0 * (4.5 + state.driveAtm * 2.2) * Math.pow(gas.gamma, 1.2) / (b + 1));
+          osc.frequency.setValueAtTime(peakFreq, tCursor);
+          osc.frequency.exponentialRampToValueAtTime(f0 * (1 + b * 0.18), tCursor + rebDur);
+
+          g.gain.setValueAtTime(0.001, tCursor);
+          g.gain.linearRampToValueAtTime(rebAmp * 0.85, tCursor + 0.0015);
+          g.gain.exponentialRampToValueAtTime(0.0008, tCursor + rebDur);
+
+          osc.connect(g); g.connect(hitGain);
+          osc.start(tCursor); osc.stop(tCursor + rebDur + 0.01);
+
+          // Broadband Plasma Shock Transient on Primary Collapse (b === 0)
+          if (b === 0) {
+            const ns = ctx.createBufferSource();
+            ns.buffer = nBuf;
+            const bp = ctx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(3800 * (state.driveAtm / 1.4), tCursor);
+            bp.Q.setValueAtTime(1.8, tCursor);
+            const ng = ctx.createGain();
+            ng.gain.setValueAtTime(0.75, tCursor);
+            ng.gain.exponentialRampToValueAtTime(0.001, tCursor + 0.024);
+            ns.connect(bp); bp.connect(ng); ng.connect(hitGain);
+            ns.start(tCursor); ns.stop(tCursor + 0.028);
+          }
+
+          tCursor += rebDur * 0.92;
+        }
+      } else if (code === 3) {
+        // RIJKE THERMOACOUSTIC FLAME TUBE RESONATOR
+        // Sustain and harmonic richness depend directly on the Rayleigh Index \sin(2\pi x_h / L)!
+        const rayleigh = Math.sin(2 * Math.PI * state.gauzePosNorm) * (state.heatFluxPct / 100);
+        const tubeDecay = rayleigh >= 0 ? (0.45 + rayleigh * 0.75) : Math.max(0.08, 0.28 + rayleigh * 0.18);
+
+        for (let k = 1; k <= 5; k++) {
+          const modeWeight = Math.abs(Math.sin(k * Math.PI * state.gauzePosNorm)) / Math.pow(k, 0.75);
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = k % 2 === 1 ? 'triangle' : 'sine';
+          const freq = Math.min(12000, f0 * k * (1.0 + (state.heatFluxPct / 100) * 0.12));
+          osc.frequency.setValueAtTime(freq, when);
+
+          const kDecay = tubeDecay / Math.pow(k, 0.45);
+          g.gain.setValueAtTime(0.001, when);
+          g.gain.linearRampToValueAtTime(Math.max(0.05, modeWeight * 0.55), when + 0.008);
+          g.gain.exponentialRampToValueAtTime(0.0008, when + kDecay);
+
+          osc.connect(g); g.connect(hitGain);
+          osc.start(when); osc.stop(when + kDecay + 0.02);
+        }
+      } else if (code === 4) {
+        // NON-NEWTONIAN DISCONTINUOUS SHEAR-THICKENING (DST OOBLECK) IMPACT
+        const isJammed = !forceLowShear && state.volumeFracPct >= 56.0;
+        const stiff = state.dstStiffnessPct / 100;
+
+        if (isJammed) {
+          // Solidified Hydrocluster Rebound: High-Q ceramic/stone anvil crack + sub-thud
+          [1.0, 2.38, 3.92].forEach((ratio, idx) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = idx === 0 ? 'triangle' : 'sine';
+            const freq = f0 * (1.4 + stiff * 0.8) * ratio;
+            osc.frequency.setValueAtTime(freq * 1.35, when);
+            osc.frequency.exponentialRampToValueAtTime(freq, when + 0.015);
+
+            const dSec = 0.24 / (idx + 1);
+            g.gain.setValueAtTime(0.68 / (idx + 1), when);
+            g.gain.exponentialRampToValueAtTime(0.0008, when + dSec);
+            osc.connect(g); g.connect(hitGain);
+            osc.start(when); osc.stop(when + dSec + 0.02);
+          });
+        } else {
+          // Sub-Critical Low-Shear Impact: Dull viscous fluid sink
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f0 * 0.95, when);
+          osc.frequency.exponentialRampToValueAtTime(f0 * 0.42, when + 0.18);
+          g.gain.setValueAtTime(0.65, when);
+          g.gain.exponentialRampToValueAtTime(0.001, when + 0.20);
+          osc.connect(g); g.connect(hitGain);
+          osc.start(when); osc.stop(when + 0.22);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 4. REAL-TIME RAYLEIGH-PLESSET ODE INTEGRATOR & 3-MODE CANVAS RENDERER
+    // =========================================================================
+    const canvas = document.getElementById('cavitronCanvas');
+    const ctx2d = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    /**
+     * Triggers a physical Rayleigh-Plesset bubble expansion & violent collapse cycle
+     */
+    function exciteRayleighPlessetCollapse(intensity = 1.0) {
+      state.bubbleR = 2.45 * (0.85 + intensity * 0.35);
+      state.bubbleVel = 0.0;
+    }
+
+    function generateForceChainTree(cx, cy, maxR, isJammed) {
+      state.forceChains = [];
+      const branches = isJammed ? 14 : 4;
+      for (let b = 0; b < branches; b++) {
+        const angBase = (b / branches) * Math.PI + 0.15;
+        const pts = [[cx, cy]];
+        let curX = cx;
+        let curY = cy;
+        const segs = isJammed ? 6 : 2;
+        for (let s = 1; s <= segs; s++) {
+          const a = angBase + (Math.random() - 0.5) * 0.45;
+          const len = (maxR / segs) * (0.75 + Math.random() * 0.35);
+          curX += Math.cos(a) * len;
+          curY += Math.sin(a) * len;
+          pts.push([curX, curY]);
+        }
+        state.forceChains.push({ pts, alpha: 1.0 });
+      }
+      state.jammedFrontRadius = 12;
+    }
+
+    let lastTs = performance.now();
+    function animateMainLoop() {
+      const now = performance.now();
+      const dt = Math.min(0.04, (now - lastTs) / 1000);
+      lastTs = now;
+
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (!w || !h) {
+        requestAnimationFrame(animateMainLoop);
+        return;
+      }
+
+      ctx2d.fillStyle = '#03060c';
+      ctx2d.fillRect(0, 0, w, h);
+
+      // Step Rayleigh-Plesset ODE & Rijke Phase
+      stepRayleighPlessetPhysics(dt);
+
+      if (state.activeTab === 'cavitation') {
+        renderCavitationSonoluminescenceView(w, h);
+      } else if (state.activeTab === 'rijke') {
+        renderRijkeThermoacousticView(w, h);
+      } else {
+        renderOobleckRheologyView(w, h);
+      }
+
+      requestAnimationFrame(animateMainLoop);
+    }
+
+    function stepRayleighPlessetPhysics(dt) {
+      const gas = BUBBLE_GASES[state.gasKey] || BUBBLE_GASES.xenon;
+      const liq = HOST_LIQUIDS[state.liquidKey] || HOST_LIQUIDS.water;
+
+      // Sub-step nonlinear Rayleigh-Plesset equation with van der Waals hard core h = 0.18
+      const subSteps = 6;
+      const hCore = 0.18;
+      const dtSub = (dt * 14.0) / subSteps;
+
+      for (let s = 0; s < subSteps; s++) {
+        const R = Math.max(hCore + 0.02, state.bubbleR);
+        const V = state.bubbleVel;
+
+        // Polytropic van der Waals gas pressure vs external ambient + surface tension + viscosity
+        const pGas = Math.pow((1.0 - Math.pow(hCore, 3)) / Math.max(0.002, Math.pow(R, 3) - Math.pow(hCore, 3)), gas.gamma);
+        const pExt = 1.0 + 0.25 / R + (0.18 * liq.viscosityScale * V) / R;
+        const accel = (pGas - pExt - 1.5 * V * Math.abs(V) * 0.35) / R;
+
+        state.bubbleVel += accel * dtSub;
+        state.bubbleR += state.bubbleVel * dtSub;
+
+        // Detect minimum radius turnaround (Sonoluminescence Flash & Shockwave Emission!)
+        if (state.bubbleR <= 0.34 && state.bubbleVel < -0.8) {
+          state.bubbleR = 0.34;
+          state.bubbleVel = -state.bubbleVel * (0.68 * liq.rebScale);
+          state.flashIntensity = 1.0;
+          state.shockRings.push({
+            r: 10,
+            alpha: 0.95,
+            color: gas.flashColor
+          });
+        }
+      }
+
+      state.flashIntensity = Math.max(0, state.flashIntensity - dt * 5.5);
+      state.rHistory[state.histPtr] = state.bubbleR;
+      state.vHistory[state.histPtr] = state.bubbleVel;
+      state.histPtr = (state.histPtr + 1) % state.rHistory.length;
+
+      document.getElementById('collapseRadiusBadge').textContent =
+        `R(t)/R₀ = ${state.bubbleR.toFixed(2)} • P_shock = 218 dB`;
+
+      state.rijkePhase += dt * (state.bpm / 60) * Math.PI * 2;
+    }
+
+    function renderCavitationSonoluminescenceView(w, h) {
+      const cx = w * 0.30;
+      const cy = h * 0.50;
+      const baseR = Math.min(w * 0.12, h * 0.22);
+      const gas = BUBBLE_GASES[state.gasKey] || BUBBLE_GASES.xenon;
+
+      // 1. Update & Draw Expanding Spherical Mach Shockwave Rings
+      for (let i = state.shockRings.length - 1; i >= 0; i--) {
+        const sr = state.shockRings[i];
+        ctx2d.beginPath();
+        ctx2d.arc(cx, cy, sr.r, 0, Math.PI * 2);
+        ctx2d.strokeStyle = sr.color;
+        ctx2d.globalAlpha = Math.max(0, sr.alpha);
+        ctx2d.lineWidth = 2.8;
+        ctx2d.stroke();
+        ctx2d.globalAlpha = 1.0;
+
+        sr.r += 4.8;
+        sr.alpha -= 0.024;
+        if (sr.alpha <= 0) state.shockRings.splice(i, 1);
+      }
+
+      // 2. Draw Cavitation Bubble & Sonoluminescence Core Flash
+      const curRadiusPx = Math.max(5, state.bubbleR * baseR);
+      const grad = ctx2d.createRadialGradient(cx, cy, 2, cx, cy, curRadiusPx);
+      if (state.flashIntensity > 0.1) {
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.4, gas.flashColor);
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0.15)');
+      } else {
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.25)');
+        grad.addColorStop(0.8, 'rgba(14, 165, 233, 0.12)');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0.65)');
+      }
+
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, curRadiusPx, 0, Math.PI * 2);
+      ctx2d.fillStyle = grad;
+      ctx2d.fill();
+      ctx2d.lineWidth = 2.2;
+      ctx2d.strokeStyle = state.flashIntensity > 0.1 ? '#ffffff' : '#38bdf8';
+      ctx2d.stroke();
+
+      // 3. Right Side: Live R(t)/R_0 Collapse & Afterbounce Curve + Phase Portrait (R, dR/dt)
+      const x0 = w * 0.55;
+      const x1 = w - 20;
+      const plotW = x1 - x0;
+      const yMid = h * 0.55;
+
+      ctx2d.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+      ctx2d.beginPath();
+      ctx2d.moveTo(x0, yMid);
+      ctx2d.lineTo(x1, yMid);
+      ctx2d.stroke();
+
+      ctx2d.beginPath();
+      const L = state.rHistory.length;
+      for (let i = 0; i < L; i++) {
+        const idx = (state.histPtr + i) % L;
+        const rVal = state.rHistory[idx];
+        const px = x0 + (i / (L - 1)) * plotW;
+        const py = yMid - (rVal - 1.0) * (h * 0.22);
+        if (i === 0) ctx2d.moveTo(px, py);
+        else ctx2d.lineTo(px, py);
+      }
+      ctx2d.strokeStyle = '#38bdf8';
+      ctx2d.lineWidth = 2.2;
+      ctx2d.stroke();
+
+      ctx2d.fillStyle = '#94a3b8';
+      ctx2d.font = 'bold 10px JetBrains Mono';
+      ctx2d.fillText('Rayleigh-Plesset R(t)/R₀ & Afterbounces', x0 + 4, 46);
+    }
+
+    function renderRijkeThermoacousticView(w, h) {
+      // Draw Vertical Open-Ended Rijke Thermoacoustic Resonator Tube & Standing Pressure/Velocity Waves
+      const tubeX = w * 0.28;
+      const tubeW = 92;
+      const tubeTop = 44;
+      const tubeBot = h - 44;
+      const tubeH = tubeBot - tubeTop;
+
+      // Tube Walls
+      ctx2d.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx2d.fillRect(tubeX - tubeW / 2, tubeTop, tubeW, tubeH);
+      ctx2d.strokeStyle = '#38bdf8';
+      ctx2d.lineWidth = 3;
+      ctx2d.beginPath();
+      ctx2d.moveTo(tubeX - tubeW / 2, tubeTop); ctx2d.lineTo(tubeX - tubeW / 2, tubeBot);
+      ctx2d.moveTo(tubeX + tubeW / 2, tubeTop); ctx2d.lineTo(tubeX + tubeW / 2, tubeBot);
+      ctx2d.stroke();
+
+      // Standing Acoustic Pressure Field p'(x,t) = \sin(\pi y / L) \cos(\omega t)
+      const osc = Math.cos(state.rijkePhase) * (state.rayleighIndex >= 0 ? 1.0 : 0.25);
+      for (let py = tubeTop + 4; py < tubeBot - 4; py += 6) {
+        const normY = 1.0 - (py - tubeTop) / tubeH; // 0 at bottom entrance, 1 at top exit
+        const pAmp = Math.sin(Math.PI * normY) * osc;
+        ctx2d.fillStyle = pAmp >= 0
+          ? `rgba(244, 63, 94, ${Math.abs(pAmp) * 0.45})`
+          : `rgba(56, 189, 248, ${Math.abs(pAmp) * 0.45})`;
+        ctx2d.fillRect(tubeX - tubeW / 2 + 4, py, tubeW - 8, 5);
+      }
+
+      // Draw Draggable Heated Tungsten Gauze at y = x_h / L from bottom!
+      const gauzeY = tubeBot - state.gauzePosNorm * tubeH;
+      ctx2d.beginPath();
+      ctx2d.moveTo(tubeX - tubeW / 2, gauzeY);
+      ctx2d.lineTo(tubeX + tubeW / 2, gauzeY);
+      ctx2d.strokeStyle = state.rayleighIndex >= 0 ? '#f59e0b' : '#64748b';
+      ctx2d.lineWidth = 5;
+      ctx2d.stroke();
+
+      // Right Side: Rayleigh Thermoacoustic Gain Curve \mathcal{R}(x_h/L) = \sin(2\pi x_h/L)
+      const rx0 = w * 0.54;
+      const rx1 = w - 24;
+      const rMidY = h * 0.50;
+      const rPlotW = rx1 - rx0;
+
+      ctx2d.strokeStyle = '#334155';
+      ctx2d.lineWidth = 1.5;
+      ctx2d.beginPath();
+      ctx2d.moveTo(rx0, rMidY);
+      ctx2d.lineTo(rx1, rMidY);
+      ctx2d.stroke();
+
+      ctx2d.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const xNorm = i / 100;
+        const rVal = Math.sin(2 * Math.PI * xNorm);
+        const px = rx0 + xNorm * rPlotW;
+        const py = rMidY - rVal * (h * 0.24);
+        if (i === 0) ctx2d.moveTo(px, py);
+        else ctx2d.lineTo(px, py);
+      }
+      ctx2d.strokeStyle = '#10b981';
+      ctx2d.lineWidth = 2.5;
+      ctx2d.stroke();
+
+      // Active Gauze Marker on Rayleigh Curve
+      const curX = rx0 + state.gauzePosNorm * rPlotW;
+      const curY = rMidY - Math.sin(2 * Math.PI * state.gauzePosNorm) * (h * 0.24);
+      ctx2d.beginPath();
+      ctx2d.arc(curX, curY, 6.5, 0, Math.PI * 2);
+      ctx2d.fillStyle = state.rayleighIndex >= 0 ? '#f59e0b' : '#f43f5e';
+      ctx2d.fill();
+    }
+
+    function renderOobleckRheologyView(w, h) {
+      // Left Half: Non-Newtonian Cornstarch/Silica Vat & Propagating Jammed Hydrocluster Force Chains
+      const cx = w * 0.29;
+      const cy = h * 0.34;
+      const vatR = Math.min(w * 0.22, h * 0.44);
+
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy + vatR * 0.35, vatR, 0, Math.PI);
+      ctx2d.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx2d.fill();
+      ctx2d.lineWidth = 3;
+      ctx2d.strokeStyle = '#f59e0b';
+      ctx2d.stroke();
+
+      // Propagating Jammed Solidification Front & Percolating Force Chains
+      if (state.jammedFrontRadius > 0 && state.jammedFrontRadius < vatR) {
+        ctx2d.beginPath();
+        ctx2d.arc(cx, cy + vatR * 0.35, state.jammedFrontRadius, 0, Math.PI);
+        ctx2d.strokeStyle = 'rgba(245, 158, 11, 0.65)';
+        ctx2d.lineWidth = 2.5;
+        ctx2d.stroke();
+        state.jammedFrontRadius += 4.2;
+      }
+
+      state.forceChains.forEach(fc => {
+        if (fc.alpha <= 0.02) return;
+        ctx2d.beginPath();
+        fc.pts.forEach((pt, idx) => {
+          if (idx === 0) ctx2d.moveTo(pt[0], pt[1]);
+          else ctx2d.lineTo(pt[0], pt[1]);
+        });
+        ctx2d.strokeStyle = `rgba(56, 189, 248, ${fc.alpha.toFixed(2)})`;
+        ctx2d.lineWidth = 2.2;
+        ctx2d.stroke();
+        fc.alpha *= 0.94;
+      });
+
+      // Right Half: Wyart-Cates Discontinuous Shear-Thickening Viscosity S-Curve \log\eta(\dot{\gamma})
+      const x0 = w * 0.56;
+      const x1 = w - 22;
+      const yBot = h * 0.78;
+      const plotW = x1 - x0;
+      const plotH = h * 0.52;
+
+      ctx2d.strokeStyle = '#334155';
+      ctx2d.lineWidth = 1.5;
+      ctx2d.beginPath();
+      ctx2d.moveTo(x0, yBot);
+      ctx2d.lineTo(x1, yBot);
+      ctx2d.stroke();
+
+      ctx2d.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const sNorm = i / 100;
+        const steep = state.volumeFracPct >= 56.0 ? 18.0 : 3.5;
+        const jump = 1.0 / (1.0 + Math.exp(-steep * (sNorm - 0.45)));
+        const px = x0 + sNorm * plotW;
+        const py = yBot - (0.12 + jump * 0.78) * plotH;
+        if (i === 0) ctx2d.moveTo(px, py);
+        else ctx2d.lineTo(px, py);
+      }
+      ctx2d.strokeStyle = '#f59e0b';
+      ctx2d.lineWidth = 2.5;
+      ctx2d.stroke();
+
+      ctx2d.fillStyle = '#cbd5e1';
+      ctx2d.font = 'bold 10px JetBrains Mono';
+      ctx2d.fillText(`DST Viscosity Jump η(γ̇) (ϕ = ${state.volumeFracPct.toFixed(1)}%)`, x0 + 4, yBot - plotH - 6);
+    }
+
+    // =========================================================================
+    // 5. 16-STEP SEQUENCER & SHOCKWAVE SPECTRUM BARS UI
+    // =========================================================================
+    function renderReactorStepGrid() {
+      const grid = document.getElementById('reactorStepGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const labels = ['·', 'CAV', 'SHR', 'RIJ', 'DST'];
+      const styles = [
+        'bg-plasma-950 border-slate-800 text-slate-600 hover:border-slate-700',
+        'bg-sky-500/20 border-sky-500/60 text-sky-300 font-bold',
+        'bg-amber-500/20 border-amber-500/60 text-amber-300 font-bold',
+        'bg-rose-500/20 border-rose-500/60 text-rose-300 font-bold',
+        'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-bold'
+      ];
+
+      state.steps.forEach((code, idx) => {
+        const isCurrent = state.stepIdx === idx;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `h-9 rounded-lg border text-[10px] font-mono transition ${styles[code]} ${
+          isCurrent ? 'ring-2 ring-white scale-105' : ''
+        }`;
+        btn.textContent = labels[code];
+        btn.addEventListener('click', () => {
+          state.steps[idx] = (code + 1) % 5;
+          const nextCode = state.steps[idx];
+          if (nextCode > 0) {
+            executePhysicalStepAction(nextCode);
+          }
+          renderReactorStepGrid();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderShockSpectrumBars() {
+      const container = document.getElementById('shockSpectrumBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let k = 1; k <= 10; k++) {
+        const rWeight = Math.abs(Math.sin(k * Math.PI * state.gauzePosNorm));
+        const pct = Math.min(100, Math.max(16, Math.round((0.35 + rWeight * 0.65) * 100 / Math.pow(k, 0.35))));
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer group';
+        col.innerHTML = `
+          <div class="w-full rounded-t transition-all ${k === 1 ? 'bg-sky-400' : 'bg-amber-400/80 group-hover:bg-rose-400'}" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono text-slate-400">H${k}</span>
+        `;
+        col.addEventListener('click', () => {
+          exciteRayleighPlessetCollapse(1.0);
+          const ctx = ensureAudio();
+          triggerCavitronVoice(ctx, masterGain, ctx.currentTime, { code: (k % 4) + 1, velocity: 0.95 });
+        });
+        container.appendChild(col);
+      }
+    }
+
+    // =========================================================================
+    // 6. MASTER REACTOR TRANSPORT ENGINE
+    // =========================================================================
+    let timerId = null;
+
+    function executePhysicalStepAction(code) {
+      const ctx = ensureAudio();
+      if (code === 1 || code === 2) {
+        exciteRayleighPlessetCollapse(code === 2 ? 1.25 : 0.95);
+      } else if (code === 4) {
+        state.lastShearRate = 48.0;
+        const rect = canvas.getBoundingClientRect();
+        generateForceChainTree(rect.width * 0.29, rect.height * 0.48, Math.min(rect.width * 0.20, rect.height * 0.40), state.volumeFracPct >= 56.0);
+        updateContinuumTelemetry();
+      }
+      triggerCavitronVoice(ctx, masterGain, ctx.currentTime + 0.015, {
+        code, velocity: code === 2 ? 0.98 : 0.88
+      });
+    }
+
+    function startTransport() {
+      ensureAudio();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.stepIdx = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('reactor-running');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP REACTOR';
+
+      tickTransport();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      state.stepIdx = -1;
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('reactor-running');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'ENGAGE REACTOR';
+      renderReactorStepGrid();
+    }
+
+    function tickTransport() {
+      if (!state.isPlaying) return;
+      state.stepIdx = (state.stepIdx + 1) % 16;
+      const code = state.steps[state.stepIdx] || 0;
+
+      if (code > 0) {
+        executePhysicalStepAction(code);
+      }
+      renderReactorStepGrid();
+
+      const stepDurSec = (60 / state.bpm) * 0.25;
+      timerId = setTimeout(tickTransport, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 7. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderCavitronWav(mode = 'reactor_loop') {
+      const sr = 44100;
+      const stepSec = (60 / state.bpm) * 0.25;
+      const totalSec = (mode === 'reactor_loop' || mode === 'rijke_organ') ? (16 * stepSec + 1.0) : 1.8;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'shrimp_snap') {
+        triggerCavitronVoice(offCtx, offCtx.destination, 0.05, { code: 2, velocity: 0.98 });
+      } else if (mode === 'sbsl_implosion') {
+        triggerCavitronVoice(offCtx, offCtx.destination, 0.05, { code: 1, velocity: 0.98 });
+      } else if (mode === 'oobleck_crack') {
+        triggerCavitronVoice(offCtx, offCtx.destination, 0.05, { code: 4, velocity: 0.98 });
+      } else {
+        let cursor = 0.05;
+        for (let s = 0; s < 16; s++) {
+          const code = mode === 'rijke_organ' ? 3 : state.steps[s];
+          if (code > 0) {
+            triggerCavitronVoice(offCtx, offCtx.destination, cursor, {
+              code, velocity: s % 4 === 0 ? 0.95 : 0.72
+            });
+          }
+          cursor += stepSec;
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `cavitron_${mode}_${state.gasKey}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('cavitronVaultList');
+      const count = document.getElementById('cavitronVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-plasma-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-sky-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 8. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyCavitronPreset(pr) {
+      state.activePresetId = pr.id;
+      state.gasKey = pr.gas;
+      state.liquidKey = pr.liquid;
+      state.driveAtm = pr.driveAtm;
+      state.gauzePosNorm = pr.gauzePos;
+      state.volumeFracPct = pr.phiVol;
+      state.bpm = pr.bpm;
+      state.steps = [...pr.steps];
+
+      document.getElementById('selectBubbleGas').value = pr.gas;
+      document.getElementById('selectHostLiquid').value = pr.liquid;
+      document.getElementById('sliderDrivePressure').value = Math.round(pr.driveAtm * 100);
+      document.getElementById('valDrivePressure').textContent = `${pr.driveAtm.toFixed(2)} atm`;
+      document.getElementById('sliderGauzePos').value = Math.round(pr.gauzePos * 100);
+      document.getElementById('valGauzePos').textContent = `${pr.gauzePos.toFixed(2)} L`;
+      document.getElementById('sliderVolumeFrac').value = Math.round(pr.phiVol * 10);
+      document.getElementById('valVolumeFrac').textContent = `${pr.phiVol.toFixed(1)}%`;
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+
+      setTabView(pr.tab);
+      updateContinuumTelemetry();
+      renderReactorStepGrid();
+      renderShockSpectrumBars();
+      renderPresetListUI();
+    }
+
+    function setTabView(tab) {
+      state.activeTab = tab;
+      const bCav = document.getElementById('tabCavitation');
+      const bRij = document.getElementById('tabRijkeTube');
+      const bOob = document.getElementById('tabOobleckDst');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bCav.className = tab === 'cavitation' ? act : idl;
+      bRij.className = tab === 'rijke' ? act : idl;
+      bOob.className = tab === 'oobleck' ? act : idl;
+
+      const hudL = document.getElementById('hudTopLeft');
+      if (tab === 'cavitation') {
+        hudL.textContent = 'Click Bubble to Trigger Rarefaction Expansion & Mach Implosion';
+      } else if (tab === 'rijke') {
+        hudL.textContent = 'Click inside Rijke Tube to Reposition Heated Gauze x_h/L';
+      } else {
+        hudL.textContent = 'Click Oobleck Vat to Fire High-Shear Jammed Solid Impact';
+      }
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('cavitronPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      CAVITRON_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-sky-500/15 border-sky-400/60 text-white' : 'bg-plasma-950/75 hover:bg-plasma-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-sky-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-plasma-900 text-amber-300 border border-slate-800">${pr.gas.toUpperCase()}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyCavitronPreset(pr);
+          executePhysicalStepAction(1);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+
+      document.getElementById('btnSnapShrimpClaw').addEventListener('click', () => {
+        executePhysicalStepAction(2);
+        showToast('Alpheidae Pistol-Shrimp Snap: 218 dB Cavitation Jet + Plasma Flash!');
+      });
+
+      document.getElementById('btnIgniteRijke').addEventListener('click', () => {
+        setTabView('rijke');
+        executePhysicalStepAction(3);
+      });
+
+      document.getElementById('selectBubbleGas').addEventListener('change', (e) => {
+        state.gasKey = e.target.value;
+        updateContinuumTelemetry();
+        executePhysicalStepAction(1);
+      });
+
+      document.getElementById('selectHostLiquid').addEventListener('change', (e) => {
+        state.liquidKey = e.target.value;
+        updateContinuumTelemetry();
+        executePhysicalStepAction(1);
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('tabCavitation').addEventListener('click', () => setTabView('cavitation'));
+      document.getElementById('tabRijkeTube').addEventListener('click', () => setTabView('rijke'));
+      document.getElementById('tabOobleckDst').addEventListener('click', () => setTabView('oobleck'));
+
+      // Left Column Sliders
+      document.getElementById('sliderDrivePressure').addEventListener('input', (e) => {
+        state.driveAtm = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valDrivePressure').textContent = `${state.driveAtm.toFixed(2)} atm`;
+        updateContinuumTelemetry();
+      });
+      document.getElementById('sliderGauzePos').addEventListener('input', (e) => {
+        state.gauzePosNorm = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valGauzePos').textContent =
+          `${state.gauzePosNorm.toFixed(2)} L (${state.gauzePosNorm < 0.5 ? 'Driving' : 'Quenching'})`;
+        updateContinuumTelemetry();
+        renderShockSpectrumBars();
+      });
+      document.getElementById('sliderVolumeFrac').addEventListener('input', (e) => {
+        state.volumeFracPct = parseInt(e.target.value, 10) / 10;
+        document.getElementById('valVolumeFrac').textContent =
+          `${state.volumeFracPct.toFixed(1)}% (${state.volumeFracPct >= 56.0 ? 'DST Jammed' : 'Dilute'})`;
+        updateContinuumTelemetry();
+      });
+
+      // Canvas Direct Click Interaction
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (state.activeTab === 'rijke') {
+          const tubeTop = 44;
+          const tubeBot = rect.height - 44;
+          const normFromBot = Math.max(0.05, Math.min(0.95, 1.0 - (y - tubeTop) / (tubeBot - tubeTop)));
+          state.gauzePosNorm = normFromBot;
+          document.getElementById('sliderGauzePos').value = Math.round(normFromBot * 100);
+          document.getElementById('valGauzePos').textContent =
+            `${normFromBot.toFixed(2)} L (${normFromBot < 0.5 ? 'Driving' : 'Quenching'})`;
+          updateContinuumTelemetry();
+          renderShockSpectrumBars();
+          executePhysicalStepAction(3);
+        } else if (state.activeTab === 'oobleck') {
+          state.lastShearRate = 52.0;
+          generateForceChainTree(x, y, Math.min(rect.width * 0.22, rect.height * 0.42), state.volumeFracPct >= 56.0);
+          updateContinuumTelemetry();
+          const ctx = ensureAudio();
+          triggerCavitronVoice(ctx, masterGain, ctx.currentTime, { code: 4, velocity: 0.96 });
+        } else {
+          exciteRayleighPlessetCollapse(1.15);
+          const ctx = ensureAudio();
+          triggerCavitronVoice(ctx, masterGain, ctx.currentTime, { code: 1, velocity: 0.96 });
+        }
+      });
+
+      // Overlay Quick Buttons
+      document.getElementById('btnImplodeBubble').addEventListener('click', () => executePhysicalStepAction(1));
+
+      document.getElementById('btnHardDstStrike').addEventListener('click', () => {
+        setTabView('oobleck');
+        executePhysicalStepAction(4);
+      });
+
+      document.getElementById('btnSoftSinkStrike').addEventListener('click', () => {
+        setTabView('oobleck');
+        state.lastShearRate = 5.0;
+        const rect = canvas.getBoundingClientRect();
+        generateForceChainTree(rect.width * 0.29, rect.height * 0.48, 60, false);
+        updateContinuumTelemetry();
+        const ctx = ensureAudio();
+        triggerCavitronVoice(ctx, masterGain, ctx.currentTime, { code: 4, velocity: 0.78, forceLowShear: true });
+      });
+
+      document.getElementById('btnRandomizeReactorGrid').addEventListener('click', () => {
+        state.steps = Array.from({ length: 16 }, () => Math.random() < 0.35 ? 0 : Math.floor(Math.random() * 4) + 1);
+        renderReactorStepGrid();
+        executePhysicalStepAction(2);
+        showToast('Randomized 16-Step Cavitation, Rijke & DST Sequence!');
+      });
+
+      document.getElementById('btnMantisStrike').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        exciteRayleighPlessetCollapse(1.25);
+        triggerCavitronVoice(ctx, masterGain, ctx.currentTime, { code: 4, velocity: 0.95 });
+        triggerCavitronVoice(ctx, masterGain, ctx.currentTime + 0.032, { code: 2, velocity: 0.98 });
+        showToast('Mantis Shrimp Dactyl Strike: Primary Club Impact + Cavitation Bubble Collapse!');
+      });
+
+      // Right Column Sliders
+      document.getElementById('sliderMinnaertHz').addEventListener('input', (e) => {
+        state.minnaertHz = parseInt(e.target.value, 10);
+        document.getElementById('valMinnaertHz').textContent = `${state.minnaertHz} Hz`;
+        updateContinuumTelemetry();
+      });
+      document.getElementById('sliderAfterbounces').addEventListener('input', (e) => {
+        state.afterbounces = parseInt(e.target.value, 10);
+        document.getElementById('valAfterbounces').textContent = `${state.afterbounces} Rebounds`;
+      });
+      document.getElementById('sliderHeatFlux').addEventListener('input', (e) => {
+        state.heatFluxPct = parseInt(e.target.value, 10);
+        document.getElementById('valHeatFlux').textContent = `${state.heatFluxPct}%`;
+        updateContinuumTelemetry();
+      });
+      document.getElementById('sliderDstStiffness').addEventListener('input', (e) => {
+        state.dstStiffnessPct = parseInt(e.target.value, 10);
+        document.getElementById('valDstStiffness').textContent = `${state.dstStiffnessPct}%`;
+        updateContinuumTelemetry();
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderCavitronWav('reactor_loop'));
+      document.getElementById('btnExportReactorLoopWav').addEventListener('click', () => renderCavitronWav('reactor_loop'));
+      document.getElementById('btnExportRijkeOrganWav').addEventListener('click', () => renderCavitronWav('rijke_organ'));
+
+      document.querySelectorAll('.cavitron-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderCavitronWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportCavitronJson').addEventListener('click', () => {
+        const payload = {
+          app: "CAVITRON_RAYLEIGH_PLESSET_THERMOACOUSTIC_LAB",
+          bubbleGas: state.gasKey,
+          hostLiquid: state.liquidKey,
+          drivePressureAtm: state.driveAtm,
+          rijkeHeaterGauzeNorm: state.gauzePosNorm,
+          rayleighThermoacousticIndex: Number(state.rayleighIndex.toFixed(4)),
+          oobleckVolumeFractionPct: state.volumeFracPct,
+          sequencerSteps: state.steps
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cavitron_${state.gasKey}_telemetry.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded Rayleigh-Plesset & Rijke Telemetry JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      applyCavitronPreset(CAVITRON_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(animateMainLoop);
+    });
+  </script>
+</body>
+</html>

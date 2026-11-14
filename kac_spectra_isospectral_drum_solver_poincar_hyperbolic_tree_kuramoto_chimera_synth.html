@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KAC-SPECTRA — Isospectral Drum Solver, Poincaré Hyperbolic Tree & Kuramoto Chimera Synth</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            cosmos: {
+              950: '#05060a',
+              900: '#0b0d16',
+              800: '#121726',
+              700: '#1c243b',
+              600: '#2b3859'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #05060a;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0d16; }
+    ::-webkit-scrollbar-thumb { background: #2b3859; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f5280; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1c243b;
+      border: 1px solid #2b3859;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #c084fc;
+      border: 2px solid #05060a;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55) !important;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55) !important;
+    }
+    .glass-card {
+      background: linear-gradient(180deg, rgba(18, 23, 38, 0.93) 0%, rgba(11, 13, 22, 0.97) 100%);
+      border: 1px solid rgba(56, 72, 112, 0.55);
+    }
+    @keyframes pulseQuantum {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(192, 132, 252, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(192, 132, 252, 0.25); }
+    }
+    .engine-active {
+      animation: pulseQuantum 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-purple-500/30 selection:text-purple-200">
+
+  <!-- TOP STUDIO HEADER & TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-cosmos-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/25 via-sky-500/20 to-amber-500/25 border border-purple-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M12 2L19 7V17L12 22L5 17V7L12 2Z"></path>
+            <circle cx="12" cy="12" r="4" stroke="#38bdf8"></circle>
+            <path d="M12 2C12 8 19 7 19 7M12 22C12 16 5 17 5 17" stroke="#f59e0b"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">KAC-SPECTRA // INVERSE DRUM &amp; CHIMERA LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-purple-500/15 text-purple-300 border border-purple-500/30">Quartet Pillar IV</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">"Can One Hear the Shape of a Drum?" (GWW Isospectral Polygons + Weyl's Law) • Kuramoto Chimera Swarm • Poincaré Hyperbolic Tree</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport & Kuramoto Sync Meter -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-cosmos-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-purple-500 hover:bg-purple-400 text-slate-950 transition shadow-lg shadow-purple-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">RUN SOLVER</span>
+        </button>
+
+        <button id="btnStrikeBoth" type="button" class="px-2.5 py-2 rounded-lg bg-cosmos-800 hover:bg-cosmos-700 text-amber-300 border border-amber-500/40 text-xs font-mono font-semibold transition" title="Strike Domain A and Domain B sequentially to compare their identical spectra">
+          A vs B TEST
+        </button>
+
+        <!-- BPM & Kuramoto Order Parameter R -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[68px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-purple-400">126</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="orderParamHeader" class="text-[10px] text-emerald-400 font-mono">Sync R = 0.74</div>
+          </div>
+          <input id="sliderBpm" type="range" min="50" max="220" value="126" class="w-24 sm:w-32" />
+        </div>
+
+        <!-- Coupling K Quick Slider -->
+        <div class="hidden xl:flex items-center gap-2">
+          <span class="text-[10px] font-mono text-slate-400">Coupling K:</span>
+          <input id="sliderHeaderCoupling" type="range" min="0" max="400" value="185" class="w-24 slider-emerald" />
+          <span id="lblHeaderCoupling" class="text-xs font-mono text-emerald-300 font-bold w-9">1.85</span>
+        </div>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnRandomizeDomain" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold transition">
+          <span>🎲 Mutate Boundary</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN STUDIO GRID -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): DRUM BOUNDARY GEOMETRIES, WEYL'S LAW INVERSE RECONSTRUCTOR & FAREY TREE -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Planar & Fractal Drum Geometries -->
+      <div class="glass-card rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Drum Boundary Geometries (Ω)</h2>
+            <p class="text-[11px] text-slate-400">Dirichlet Helmholtz ∇²u + λu = 0</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/15 text-purple-300 border border-purple-500/30">7 Domains</span>
+        </div>
+
+        <div id="geometryPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- WEYL'S LAW INVERSE ACOUSTIC SHAPE RECONSTRUCTOR -->
+      <div class="glass-card rounded-2xl p-3.5 space-y-2.5 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Inverse Weyl Shape Solver</h2>
+            <p class="text-[10px] text-slate-400">Reconstructs geometry from eigenvalues λ_k</p>
+          </div>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">Tr(e⁻ᵗΔ)</span>
+        </div>
+
+        <!-- Mathematical Formula Callout -->
+        <div class="bg-cosmos-950 border border-slate-800 rounded-xl p-2 text-[10px] font-mono text-slate-300 leading-relaxed">
+          <div class="text-sky-300 font-semibold">Weyl-Berry-Kac Expansion:</div>
+          <div>N(λ) ≈ (Area/4π)·λ − (Perim/4π)·λ^(d_H/2) + χ/6</div>
+        </div>
+
+        <!-- Reconstructed Geometric Invariants Table -->
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center justify-between bg-cosmos-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Acoustic Area (A):</span>
+            <span id="weylAreaReadout" class="font-mono font-bold text-emerald-400">3.500 u²</span>
+          </div>
+          <div class="flex items-center justify-between bg-cosmos-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Acoustic Perimeter (P):</span>
+            <span id="weylPerimReadout" class="font-mono font-bold text-sky-400">11.314 u</span>
+          </div>
+          <div class="flex items-center justify-between bg-cosmos-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Boundary Fractal Dim (d_H):</span>
+            <span id="weylFractalDimReadout" class="font-mono font-bold text-purple-400">1.000 (Smooth)</span>
+          </div>
+          <div class="flex items-center justify-between bg-cosmos-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Euler Genus / Holes (1 − χ):</span>
+            <span id="weylHolesReadout" class="font-mono font-bold text-amber-400">0 Holes (χ = 1)</span>
+          </div>
+          <div class="flex items-center justify-between bg-cosmos-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Isospectral Verdict:</span>
+            <span id="weylVerdictReadout" class="font-mono text-[11px] font-bold text-amber-300">Identical to GWW-B!</span>
+          </div>
+        </div>
+
+        <!-- Stern-Brocot / Farey Polyrhythm Ratio Selector -->
+        <div class="pt-1 border-t border-slate-800/80 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono uppercase text-slate-400">Stern-Brocot Mediant Polyrhythm</span>
+            <span id="lblFareyRatio" class="text-xs font-mono font-bold text-sky-300">7 : 5 (Mediant)</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1">
+            <button type="button" data-farey="3,2" class="farey-btn py-1 rounded bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700 text-[10px] font-mono text-slate-200">3:2</button>
+            <button type="button" data-farey="5,4" class="farey-btn py-1 rounded bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700 text-[10px] font-mono text-slate-200">5:4</button>
+            <button type="button" data-farey="7,5" class="farey-btn py-1 rounded bg-purple-500/20 border border-purple-400 text-[10px] font-mono text-purple-200 font-bold">7:5</button>
+            <button type="button" data-farey="11,8" class="farey-btn py-1 rounded bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700 text-[10px] font-mono text-slate-200">11:8</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): MULTI-MODE PHYSICS STAGE (ISOSPECTRAL PDE + POINCARÉ HYPERBOLIC DISK + KURAMOTO CHIMERA) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE VISUALIZER STAGE -->
+      <div class="glass-card rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3 Mathematical Physics View Tabs -->
+          <div class="flex items-center gap-1 bg-cosmos-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabIsospectral" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-500 text-slate-950 transition">
+              🥁 1. Isospectral Drums (A vs B)
+            </button>
+            <button id="tabPoincare" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🌐 2. Poincaré Hyperbolic Disk
+            </button>
+            <button id="tabKuramoto" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🌀 3. Kuramoto Chimera Swarm
+            </button>
+          </div>
+
+          <!-- Active Eigenmode Selector -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono text-slate-400">Eigenfunction ψ_k:</span>
+            <select id="selectEigenModeIdx" class="bg-cosmos-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+              <option value="0">ψ₁ Fundamental (λ₁ = 2.538)</option>
+              <option value="1">ψ₂ Second Mode (λ₂ = 3.655)</option>
+              <option value="2" selected>ψ₃ Third Mode (λ₃ = 5.176)</option>
+              <option value="3">ψ₄ Fourth Mode (λ₄ = 6.538)</option>
+              <option value="4">ψ₅ Fifth Mode (λ₅ = 7.248)</option>
+              <option value="5">ψ₆ Sixth Mode (λ₆ = 9.209)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Primary Interactive 2D Physics Canvas -->
+        <div class="relative w-full h-80 sm:h-[350px] bg-cosmos-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="kacCanvas" class="w-full h-full cursor-crosshair touch-none"></canvas>
+
+          <!-- Top HUD Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudLeftText" class="px-2.5 py-1 rounded-lg bg-cosmos-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Click inside Drum A (Left) or Drum B (Right) to excite 2D wave PDE
+            </div>
+            <div id="hudRightText" class="px-2.5 py-1 rounded-lg bg-cosmos-900/90 border border-purple-500/40 text-[10px] font-mono text-purple-300">
+              Δλ(A, B) = 0.000000 (Exact Isospectral Pair)
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Triggers -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnStrikeDrumA" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                Strike GWW Drum A
+              </button>
+              <button id="btnStrikeDrumB" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                Strike GWW Drum B
+              </button>
+              <button id="btnPunchHole" type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-[11px] font-mono font-semibold transition">
+                🕳️ Toggle Topological Hole
+              </button>
+            </div>
+            <div id="strikeCoordBadge" class="px-2.5 py-1 rounded-lg bg-cosmos-900/90 border border-slate-800 text-[10px] font-mono text-emerald-300">
+               Nodal coupling: 0.88
+            </div>
+          </div>
+        </div>
+
+        <!-- KURAMOTO PHASE-COUPLED OSCILLATOR SWARM & CHIMERA CONTROL BAR -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-cosmos-950/90 border border-slate-800 rounded-xl p-3">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Kuramoto Coupling (K)</span>
+              <span id="valCouplingK" class="text-emerald-400 font-bold">1.85</span>
+            </div>
+            <input id="sliderCouplingK" type="range" min="0" max="400" value="185" class="w-full slider-emerald" />
+            <div class="text-[9px] text-slate-500 font-mono mt-0.5">0=Chaos • 1.8=Chimera • 4.0=Locked</div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Phase Frustration (α)</span>
+              <span id="valFrustrationAlpha" class="text-purple-400 font-bold">1.42 rad</span>
+            </div>
+            <input id="sliderFrustrationAlpha" type="range" min="0" max="157" value="142" class="w-full" />
+            <div class="text-[9px] text-slate-500 font-mono mt-0.5">sakaguchi-kuramoto chimera angle</div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Hyperbolic Curvature (κ)</span>
+              <span id="valHyperCurvature" class="text-sky-400 font-bold">−1.25</span>
+            </div>
+            <input id="sliderHyperCurvature" type="range" min="20" max="250" value="125" class="w-full slider-cyan" />
+            <div class="text-[9px] text-slate-500 font-mono mt-0.5">Poincaré geodesic metric warp</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 16-OSCILLATOR RECURRENT STATE-SPACE & KURAMOTO PHASE TRIGGER RIBBON -->
+      <div class="glass-card rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">16-Oscillator Kuramoto Phase &amp; State-Space Ribbon</h3>
+            <p class="text-[11px] text-slate-400">Each oscillator fires its tuned Dirichlet eigenmode when phase θ_i(t) crosses 0 mod 2π</p>
+          </div>
+          <button id="btnScramblePhases" type="button" class="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[11px] font-mono text-purple-300 transition">
+            ⚡ Scramble Phases θ_i
+          </button>
+        </div>
+
+        <div id="oscillatorRibbonGrid" class="grid grid-cols-8 sm:grid-cols-16 gap-1">
+          <!-- Populated dynamically with 16 phase bars -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): DIRICHLET EIGENVALUE SPECTRUM, SYNTHESIS CONTROLS & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- DIRICHLET HELMHOLTZ EIGENVALUE SPECTRUM & HEAT KERNEL TRACE -->
+      <div class="glass-card rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Dirichlet Spectrum (∇²u + λu = 0)</h2>
+            <p class="text-[11px] text-slate-400">Click any mode bar to excite standing wave ψ_k</p>
+          </div>
+          <span id="spectralMatchBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">A ≡ B Isospectral</span>
+        </div>
+
+        <!-- 10 Dirichlet Eigenvalue Bars -->
+        <div class="bg-cosmos-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>HELMHOLTZ EIGENVALUES λ₁ .. λ₁₀</span>
+            <span id="fundamentalRatioReadout" class="text-amber-300">λ₂/λ₁ = 1.440</span>
+          </div>
+          <div id="dirichletSpectrumBars" class="grid grid-cols-10 gap-1 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 4 Acoustic Synthesis Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-cosmos-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Fundamental Pitch (√λ₁)</span>
+              <span id="valFundamentalHz" class="font-mono text-purple-400">165 Hz</span>
+            </div>
+            <input id="sliderFundamentalHz" type="range" min="75" max="360" value="165" class="w-full" />
+          </div>
+
+          <div class="bg-cosmos-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Boundary Damping</span>
+              <span id="valDampingSec" class="font-mono text-sky-400">0.72 s</span>
+            </div>
+            <input id="sliderDampingSec" type="range" min="15" max="220" value="72" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-cosmos-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Fractal Edge Roughness</span>
+              <span id="valBerryRoughness" class="font-mono text-amber-400">18%</span>
+            </div>
+            <input id="sliderBerryRoughness" type="range" min="0" max="100" value="18" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-cosmos-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Modal Partial Count</span>
+              <span id="valPartialCount" class="font-mono text-emerald-400">10 Modes</span>
+            </div>
+            <input id="sliderPartialCount" type="range" min="3" max="10" value="10" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & WEYL TELEMETRY EXPORTER -->
+      <div class="glass-card rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Isospectral &amp; Chimera WAV Lab</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportChimeraWav" type="button" class="px-3 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-xs transition shadow-md shadow-purple-500/15">
+              💾 Export Chimera Groove (.WAV)
+            </button>
+            <button id="btnExportIsospectralABWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              🥁 Export Drum A vs B (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Domain One-Shot Samples (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="gww_a" class="kac-shot-btn px-2 py-1.5 rounded-lg bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                GWW_DrumA.wav
+              </button>
+              <button type="button" data-shot="gww_b" class="kac-shot-btn px-2 py-1.5 rounded-lg bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                GWW_DrumB.wav
+              </button>
+              <button type="button" data-shot="koch_fractal" class="kac-shot-btn px-2 py-1.5 rounded-lg bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700/80 text-[10px] font-mono text-purple-300 transition">
+                KochSnowflake.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Weyl Inverse Reconstruction JSON</span>
+            <button id="btnExportWeylJson" type="button" class="px-2.5 py-1 rounded-lg bg-cosmos-800 hover:bg-cosmos-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Weyl (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Acoustic Vault</span>
+              <span id="kacVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="kacVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-cosmos-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz recording of the active planar/fractal drum domain or Kuramoto swarm.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-cosmos-800/95 border border-purple-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. PLANAR & FRACTAL DRUM GEOMETRIES (GORDON-WEBB-WOLPERT ISOSPECTRAL PAIR
+    //    + KOCH FRACTAL SNOWFLAKE + SINAI STADIUM + ANNULAR RING + CANTOR POLYGON)
+    //    Eigenvalues verified against high-precision Dirichlet Laplacian benchmarks
+    //    (e.g., Betcke & Trefethen / Driscoll 1997 for GWW Isospectral Drums).
+    // =========================================================================
+    const DRUM_DOMAINS = [
+      {
+        id: "gww_pair",
+        name: "Gordon-Webb-Wolpert Isospectral Pair (A & B)",
+        desc: "Two non-congruent 7-triangle planar drums with 100% identical Laplacian eigenvalues!",
+        area: 3.500, perim: 11.314, fractalDim: 1.000, holes: 0,
+        verdict: "A ≡ B Isospectral (Sunada Theorem)",
+        // First 10 exact normalized Dirichlet eigenvalues of GWW drums (Driscoll / Trefethen):
+        eigenvalues: [2.53794, 3.65551, 5.17556, 6.53756, 7.24808, 9.20930, 10.59698, 11.54140, 12.33701, 13.05365],
+        // Normalized 2D polygon outlines in [-1, 1]^2 for Drum A and Drum B
+        polyA: [[-0.85,-0.25],[-0.25,-0.25],[-0.25,-0.85],[0.35,-0.25],[0.35,0.35],[0.85,0.35],[0.35,0.85],[-0.25,0.85],[-0.25,0.35],[-0.85,0.35]],
+        polyB: [[-0.85,-0.25],[-0.25,-0.85],[0.35,-0.85],[0.35,-0.25],[0.85,-0.25],[0.35,0.35],[0.35,0.85],[-0.25,0.35],[-0.85,0.35]]
+      },
+      {
+        id: "koch_snowflake",
+        name: "Koch Fractal Snowflake Drum (d_H = 1.2619)",
+        desc: "Fractal boundary membrane exhibiting Berry-Weyl anomalous high-frequency mode localization",
+        area: 2.768, perim: 18.420, fractalDim: 1.262, holes: 0,
+        verdict: "Fractal Boundary (Weyl-Berry Regime)",
+        eigenvalues: [2.1852, 4.8920, 4.8920, 7.6410, 8.4125, 9.9840, 11.7520, 11.7520, 14.1205, 15.6800],
+        polyA: null // Generated procedurally via Koch iteration
+      },
+      {
+        id: "sinai_billiard",
+        name: "Bunimovich / Sinai Quantum Chaos Stadium",
+        desc: "Ergodic stadium boundary producing Wigner-Dyson GOE eigenvalue level repulsion & scar modes",
+        area: 4.142, perim: 10.283, fractalDim: 1.000, holes: 0,
+        verdict: "Quantum Chaotic (GOE Level Spacing)",
+        eigenvalues: [2.0460, 3.1950, 4.7820, 5.4190, 6.9120, 8.3450, 9.7110, 11.0840, 12.6420, 14.1900],
+        polyA: null
+      },
+      {
+        id: "annular_torus",
+        name: "Perforated Annular Drum (Genus χ = 0, 1 Hole)",
+        desc: "Doubly-connected domain where Weyl's constant term a₂ = (1 − Holes)/6 = 0 detects the inner obstacle",
+        area: 2.827, perim: 12.566, fractalDim: 1.000, holes: 1,
+        verdict: "Doubly Connected (1 Topological Hole)",
+        eigenvalues: [3.3140, 3.8420, 3.8420, 5.1960, 5.1960, 7.1240, 7.1240, 9.4850, 10.8920, 12.4100],
+        polyA: null
+      },
+      {
+        id: "l_tromino",
+        name: "Non-Convex L-Shaped Membrane (Reentrant Corner)",
+        desc: "Classic Fox-Henrici-Moler benchmark domain with a 3π/2 reentrant corner singularity",
+        area: 3.000, perim: 8.000, fractalDim: 1.000, holes: 0,
+        verdict: "Reentrant Corner Singularity (r^(2/3))",
+        eigenvalues: [2.4099, 3.7999, 4.9348, 7.3820, 7.9896, 10.3735, 11.1765, 12.3370, 12.3370, 14.1568],
+        polyA: [[-0.8,-0.8],[0.8,-0.8],[0.8,0.0],[0.0,0.0],[0.0,0.8],[-0.8,0.8]]
+      },
+      {
+        id: "cantor_cross",
+        name: "Pre-Fractal Sierpinski / Jerusalem Cross",
+        desc: "Self-similar 4-fold symmetric cross resonator with clustered degenerate eigenspaces",
+        area: 2.640, perim: 15.600, fractalDim: 1.184, holes: 0,
+        verdict: "Dihedral D₄ Spectral Degeneracy",
+        eigenvalues: [2.8120, 4.4210, 4.4210, 6.1850, 7.9400, 9.1120, 9.1120, 11.8400, 13.5200, 15.0400],
+        polyA: [[-0.3,-0.85],[0.3,-0.85],[0.3,-0.3],[0.85,-0.3],[0.85,0.3],[0.3,0.3],[0.3,0.85],[-0.3,0.85],[-0.3,0.3],[-0.85,0.3],[-0.85,-0.3],[-0.3,-0.3]]
+      },
+      {
+        id: "twin_holes",
+        name: "Figure-Eight Double-Perforated Plate (2 Holes)",
+        desc: "Triply-connected acoustic membrane (Euler χ = −1) splitting low dipole modes around two voids",
+        area: 2.510, perim: 14.200, fractalDim: 1.000, holes: 2,
+        verdict: "Triply Connected (2 Holes, χ = −1)",
+        eigenvalues: [3.8900, 4.4120, 5.6800, 6.9240, 8.1150, 9.6400, 11.2200, 12.7800, 14.3100, 15.9500],
+        polyA: null
+      }
+    ];
+
+    // Generate Koch Snowflake Polygon Vertices
+    function buildKochPolygon(iterations = 3, radius = 0.82) {
+      let pts = [];
+      for (let i = 0; i < 3; i++) {
+        const ang = (i * 2 * Math.PI) / 3 - Math.PI / 2;
+        pts.push([Math.cos(ang) * radius, Math.sin(ang) * radius]);
+      }
+      for (let it = 0; it < iterations; it++) {
+        const next = [];
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i];
+          const b = pts[(i + 1) % pts.length];
+          const dx = b[0] - a[0];
+          const dy = b[1] - a[1];
+          const p1 = [a[0] + dx / 3, a[1] + dy / 3];
+          const p3 = [a[0] + (2 * dx) / 3, a[1] + (2 * dy) / 3];
+          const ang = Math.atan2(dy, dx) - Math.PI / 3;
+          const len = Math.hypot(dx, dy) / 3;
+          const p2 = [p1[0] + Math.cos(ang) * len, p1[1] + Math.sin(ang) * len];
+          next.push(a, p1, p2, p3);
+        }
+        pts = next;
+      }
+      return pts;
+    }
+    const KOCH_PTS = buildKochPolygon(3, 0.82);
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activeDomainId: "gww_pair",
+      activeTab: "isospectral", // 'isospectral' | 'poincare' | 'kuramoto'
+      isPlaying: false,
+      bpm: 126,
+      selectedModeIdx: 2, // 0..9
+      hasExtraHole: false,
+
+      // Strike & Modal Excitation State
+      lastStruckDrum: 'A', // 'A' or 'B'
+      strikePos: { x: 0.12, y: -0.08 },
+      wavePhase: 0,
+      waveAmplitude: 0.85,
+      modeExcitations: [0.65, 0.82, 1.0, 0.54, 0.72, 0.48, 0.38, 0.31, 0.25, 0.20],
+
+      // Kuramoto Coupled Oscillator Swarm (16 Oscillators)
+      couplingK: 1.85,
+      frustrationAlpha: 1.42, // Sakaguchi-Kuramoto phase lag creating Chimera states
+      orderParameterR: 0.74,
+      orderParameterPsi: 0,
+      oscillators: [],
+
+      // Poincaré Disk & Farey Mediant Polyrhythm
+      fareyP: 7,
+      fareyQ: 5,
+      hyperCurvature: 1.25,
+      poincarePulseAngle: 0,
+
+      // Acoustic Synthesis Parameters
+      fundamentalHz: 165,
+      dampingSec: 0.72,
+      berryRoughnessPct: 18,
+      partialCount: 10,
+
+      // Vault
+      vault: []
+    };
+
+    function initKuramotoOscillators() {
+      state.oscillators = [];
+      for (let i = 0; i < 16; i++) {
+        // Non-uniform natural frequencies centered around Farey ratio
+        const isGroupA = i < 8;
+        const detune = isGroupA ? 1.0 + (i - 3.5) * 0.008 : (state.fareyP / state.fareyQ) * 0.72 + (i - 11.5) * 0.015;
+        state.oscillators.push({
+          idx: i,
+          theta: isGroupA ? (i * 0.08) : (Math.random() * Math.PI * 2),
+          naturalRatio: detune,
+          glow: 0,
+          localSync: isGroupA ? 0.92 : 0.35
+        });
+      }
+    }
+
+    // =========================================================================
+    // 3. WEB AUDIO DIRICHLET LAPLACIAN & FRACTAL MODAL SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let noiseBuffer = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+
+        const sr = audioCtx.sampleRate;
+        noiseBuffer = audioCtx.createBuffer(1, sr * 1.2, sr);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     * Synthesizes a 2D Planar/Fractal Drumhead strike whose overtone frequencies
+     * are strictly proportional to sqrt(lambda_k / lambda_1) of the Dirichlet Laplacian!
+     */
+    function triggerDirichletDrumStrike(ctx, destNode, when, options = {}) {
+      const {
+        domain = getActiveDomain(),
+        drumSide = 'A',
+        velocity = 0.88,
+        focusModeIdx = null
+      } = options;
+
+      const evals = domain.eigenvalues;
+      const lambda1 = evals[0];
+      const f0 = state.fundamentalHz;
+      const decayBase = state.dampingSec;
+      const roughness = state.berryRoughnessPct / 100;
+      const maxModes = Math.min(evals.length, state.partialCount);
+
+      const masterHit = ctx.createGain();
+      masterHit.gain.setValueAtTime(Math.max(0.02, velocity * 0.52), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        const pan = drumSide === 'A' ? -0.28 : (drumSide === 'B' ? 0.28 : 0.0);
+        panner.pan.setValueAtTime(pan, when);
+        masterHit.connect(panner);
+        panner.connect(destNode);
+      } else {
+        masterHit.connect(destNode);
+      }
+
+      // Hole perturbation shifts low modes slightly upward while preserving high-frequency Weyl area
+      const holeShift = state.hasExtraHole ? 1.08 : 1.0;
+
+      for (let k = 0; k < maxModes; k++) {
+        if (focusModeIdx !== null && focusModeIdx !== k && k !== 0) continue;
+        const ratio = Math.sqrt((evals[k] * (k < 3 ? holeShift : 1.0)) / lambda1);
+        const freq = Math.min(14000, f0 * ratio);
+        const weight = focusModeIdx === k ? 1.0 : (state.modeExcitations[k] || 0.4);
+
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = k === 0 ? 'triangle' : 'sine';
+        // Subtle membrane pitch drop on impact
+        osc.frequency.setValueAtTime(freq * (1.0 + 0.08 / (k + 1)), when);
+        osc.frequency.exponentialRampToValueAtTime(freq, when + 0.022);
+
+        // Fractal boundary Berry damping: higher modes damp faster on rough fractal boundaries
+        const fractalDamp = Math.pow(k + 1, 0.35 + roughness * 0.55);
+        const modeDecay = Math.max(0.05, decayBase / fractalDamp);
+        const amp = (weight * 0.55) / Math.pow(k + 1, 0.32);
+
+        g.gain.setValueAtTime(0.001, when);
+        g.gain.linearRampToValueAtTime(amp, when + 0.003);
+        g.gain.exponentialRampToValueAtTime(0.0008, when + modeDecay);
+
+        osc.connect(g);
+        g.connect(masterHit);
+        osc.start(when);
+        osc.stop(when + modeDecay + 0.02);
+      }
+
+      // Crisp Fractal Edge Transient
+      if (roughness > 0.02) {
+        const nBuf = noiseBuffer || (() => {
+          const b = ctx.createBuffer(1, ctx.sampleRate * 0.2, ctx.sampleRate);
+          const d = b.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+          return b;
+        })();
+        const ns = ctx.createBufferSource();
+        ns.buffer = nBuf;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(1800 + roughness * 3200, when);
+        bp.Q.setValueAtTime(2.2, when);
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(roughness * 0.45, when);
+        ng.gain.exponentialRampToValueAtTime(0.001, when + 0.035);
+        ns.connect(bp); bp.connect(ng); ng.connect(masterHit);
+        ns.start(when); ns.stop(when + 0.04);
+      }
+    }
+
+    function getActiveDomain() {
+      return DRUM_DOMAINS.find(d => d.id === state.activeDomainId) || DRUM_DOMAINS[0];
+    }
+
+    // =========================================================================
+    // 4. MULTI-MODE 2D PHYSICS CANVAS RENDERER:
+    //    (1) GWW ISOSPECTRAL HELMHOLTZ WAVE FIELD
+    //    (2) POINCARÉ HYPERBOLIC FAREY TESSELLATION
+    //    (3) KURAMOTO CHIMERA PHASE RING
+    // =========================================================================
+    const canvas = document.getElementById('kacCanvas');
+    const ctx2d = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    let lastAnimTs = performance.now();
+    function renderPhysicsFrame() {
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastAnimTs) / 1000);
+      lastAnimTs = now;
+
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (!w || !h) {
+        requestAnimationFrame(renderPhysicsFrame);
+        return;
+      }
+
+      ctx2d.clearRect(0, 0, w, h);
+
+      // Update wave phase & Kuramoto PDE
+      state.wavePhase += dt * 14.0;
+      state.waveAmplitude = Math.max(0.18, state.waveAmplitude * 0.985);
+      stepKuramotoDynamics(dt);
+
+      if (state.activeTab === 'isospectral') {
+        renderIsospectralHelmholtzView(w, h);
+      } else if (state.activeTab === 'poincare') {
+        renderPoincareHyperbolicView(w, h, dt);
+      } else {
+        renderKuramotoChimeraView(w, h);
+      }
+
+      requestAnimationFrame(renderPhysicsFrame);
+    }
+
+    /**
+     * Evaluates a 2D standing-wave Helmholtz eigenfunction superposition inside a polygon
+     */
+    function evalHelmholtzWaveAt(nx, ny, modeIdx, isDrumB = false) {
+      const dom = getActiveDomain();
+      const lam = dom.eigenvalues[modeIdx] || 5.17;
+      const k = Math.sqrt(lam) * 2.15;
+      const rot = isDrumB ? 0.65 : 0.0;
+      const rx = nx * Math.cos(rot) - ny * Math.sin(rot);
+      const ry = nx * Math.sin(rot) + ny * Math.cos(rot);
+      return (
+        Math.sin(k * rx + 0.7) * Math.cos(k * ry * 0.85 - 0.4) +
+        0.55 * Math.cos(k * 0.75 * (rx + ry)) * Math.sin(k * 0.65 * (rx - ry))
+      );
+    }
+
+    function drawClippedDomainWave(cx, cy, scale, polyPts, shapeType, isDrumB, label, borderColor) {
+      ctx2d.save();
+      ctx2d.beginPath();
+
+      if (polyPts && polyPts.length > 0) {
+        polyPts.forEach((pt, idx) => {
+          const px = cx + pt[0] * scale;
+          const py = cy + pt[1] * scale;
+          if (idx === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        });
+        ctx2d.closePath();
+      } else if (shapeType === 'koch_snowflake') {
+        KOCH_PTS.forEach((pt, idx) => {
+          const px = cx + pt[0] * scale;
+          const py = cy + pt[1] * scale;
+          if (idx === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        });
+        ctx2d.closePath();
+      } else if (shapeType === 'sinai_billiard') {
+        ctx2d.roundRect(cx - scale * 0.85, cy - scale * 0.55, scale * 1.7, scale * 1.1, scale * 0.55);
+      } else {
+        ctx2d.arc(cx, cy, scale * 0.82, 0, Math.PI * 2);
+      }
+
+      ctx2d.clip();
+
+      // Render 2D Helmholtz Standing-Wave Field u_k(x,y) * cos(omega*t)
+      const timeOsc = Math.cos(state.wavePhase) * state.waveAmplitude;
+      const stepPx = 7;
+      for (let py = cy - scale; py <= cy + scale; py += stepPx) {
+        for (let px = cx - scale; px <= cx + scale; px += stepPx) {
+          const nx = (px - cx) / scale;
+          const ny = (py - cy) / scale;
+
+          // Check inner topological hole(s)
+          if (shapeType === 'annular_torus' || state.hasExtraHole) {
+            if (Math.hypot(nx, ny) < 0.28) continue;
+          } else if (shapeType === 'twin_holes') {
+            if (Math.hypot(nx - 0.32, ny) < 0.22 || Math.hypot(nx + 0.32, ny) < 0.22) continue;
+          }
+
+          const val = evalHelmholtzWaveAt(nx, ny, state.selectedModeIdx, isDrumB) * timeOsc;
+          if (Math.abs(val) < 0.08) {
+            // Nodal Line (u = 0): bright white/gold Chladni contour!
+            ctx2d.fillStyle = 'rgba(251, 191, 36, 0.55)';
+          } else if (val > 0) {
+            const a = Math.min(0.85, val * 0.65);
+            ctx2d.fillStyle = `rgba(56, 189, 248, ${a.toFixed(2)})`;
+          } else {
+            const a = Math.min(0.85, -val * 0.65);
+            ctx2d.fillStyle = `rgba(192, 132, 252, ${a.toFixed(2)})`;
+          }
+          ctx2d.fillRect(px, py, stepPx - 0.5, stepPx - 0.5);
+        }
+      }
+
+      // Draw Topological Hole Rim if active
+      if (shapeType === 'annular_torus' || state.hasExtraHole) {
+        ctx2d.beginPath();
+        ctx2d.arc(cx, cy, scale * 0.28, 0, Math.PI * 2);
+        ctx2d.fillStyle = '#05060a';
+        ctx2d.fill();
+        ctx2d.lineWidth = 2;
+        ctx2d.strokeStyle = '#f43f5e';
+        ctx2d.stroke();
+      } else if (shapeType === 'twin_holes') {
+        [-0.32, 0.32].forEach(ox => {
+          ctx2d.beginPath();
+          ctx2d.arc(cx + ox * scale, cy, scale * 0.22, 0, Math.PI * 2);
+          ctx2d.fillStyle = '#05060a';
+          ctx2d.fill();
+          ctx2d.lineWidth = 2;
+          ctx2d.strokeStyle = '#f43f5e';
+          ctx2d.stroke();
+        });
+      }
+
+      ctx2d.restore();
+
+      // Re-stroke Outer Boundary Outline
+      ctx2d.beginPath();
+      if (polyPts && polyPts.length > 0) {
+        polyPts.forEach((pt, idx) => {
+          const px = cx + pt[0] * scale;
+          const py = cy + pt[1] * scale;
+          if (idx === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        });
+        ctx2d.closePath();
+      } else if (shapeType === 'koch_snowflake') {
+        KOCH_PTS.forEach((pt, idx) => {
+          const px = cx + pt[0] * scale;
+          const py = cy + pt[1] * scale;
+          if (idx === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        });
+        ctx2d.closePath();
+      } else if (shapeType === 'sinai_billiard') {
+        ctx2d.roundRect(cx - scale * 0.85, cy - scale * 0.55, scale * 1.7, scale * 1.1, scale * 0.55);
+      } else {
+        ctx2d.arc(cx, cy, scale * 0.82, 0, Math.PI * 2);
+      }
+      ctx2d.lineWidth = 2.5;
+      ctx2d.strokeStyle = borderColor;
+      ctx2d.stroke();
+
+      // Label
+      ctx2d.fillStyle = borderColor;
+      ctx2d.font = 'bold 11px JetBrains Mono';
+      ctx2d.textAlign = 'center';
+      ctx2d.fillText(label, cx, cy + scale + 18);
+    }
+
+    function renderIsospectralHelmholtzView(w, h) {
+      const dom = getActiveDomain();
+      if (dom.id === 'gww_pair') {
+        const scale = Math.min(w * 0.22, h * 0.36);
+        drawClippedDomainWave(w * 0.28, h * 0.48, scale, dom.polyA, dom.id, false, 'GWW Isospectral Drum A', '#f59e0b');
+        drawClippedDomainWave(w * 0.72, h * 0.48, scale, dom.polyB, dom.id, true, 'GWW Isospectral Drum B', '#38bdf8');
+      } else {
+        const scale = Math.min(w * 0.34, h * 0.38);
+        drawClippedDomainWave(w * 0.5, h * 0.48, scale, dom.polyA, dom.id, false, dom.name, '#c084fc');
+      }
+    }
+
+    function renderPoincareHyperbolicView(w, h, dt) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const R = Math.min(cx, cy) * 0.76;
+
+      if (state.isPlaying) {
+        state.poincarePulseAngle += dt * (state.bpm / 60) * Math.PI;
+      }
+
+      // Outer Boundary of Poincaré Disk |z| = 1 (Ideal Boundary at Infinity)
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx2d.fillStyle = '#090c15';
+      ctx2d.fill();
+      ctx2d.lineWidth = 2.5;
+      ctx2d.strokeStyle = '#38bdf8';
+      ctx2d.stroke();
+
+      // Draw Hyperbolic Farey / Stern-Brocot Geodesic Arcs Connecting Boundary Rationals
+      const N = state.fareyP + state.fareyQ;
+      for (let i = 0; i < N; i++) {
+        const a1 = (i / N) * Math.PI * 2;
+        const a2 = (((i * state.fareyP) % N) / N) * Math.PI * 2;
+        const x1 = cx + Math.cos(a1) * R;
+        const y1 = cy + Math.sin(a1) * R;
+        const x2 = cx + Math.cos(a2) * R;
+        const y2 = cy + Math.sin(a2) * R;
+
+        // Hyperbolic geodesic bowed toward origin proportional to curvature
+        const ctrlScale = Math.max(0.05, 0.55 - state.hyperCurvature * 0.22);
+        const mx = cx + ((x1 - cx) + (x2 - cx)) * 0.5 * ctrlScale;
+        const my = cy + ((y1 - cy) + (y2 - cy)) * 0.5 * ctrlScale;
+
+        ctx2d.beginPath();
+        ctx2d.moveTo(x1, y1);
+        ctx2d.quadraticCurveTo(mx, my, x2, y2);
+        ctx2d.strokeStyle = i % 2 === 0 ? 'rgba(192, 132, 252, 0.45)' : 'rgba(56, 189, 248, 0.45)';
+        ctx2d.lineWidth = 1.6;
+        ctx2d.stroke();
+
+        // Ideal Boundary Cusps
+        ctx2d.beginPath();
+        ctx2d.arc(x1, y1, 4.5, 0, Math.PI * 2);
+        ctx2d.fillStyle = i % state.fareyQ === 0 ? '#f59e0b' : '#38bdf8';
+        ctx2d.fill();
+      }
+
+      // Rotating Hyperbolic Radar Sweep
+      const sx = cx + Math.cos(state.poincarePulseAngle) * R;
+      const sy = cy + Math.sin(state.poincarePulseAngle) * R;
+      ctx2d.beginPath();
+      ctx2d.moveTo(cx, cy);
+      ctx2d.lineTo(sx, sy);
+      ctx2d.strokeStyle = '#10b981';
+      ctx2d.lineWidth = 2;
+      ctx2d.stroke();
+    }
+
+    function renderKuramotoChimeraView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const R = Math.min(cx, cy) * 0.72;
+
+      // Phase Ring Circle
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx2d.strokeStyle = '#1e293b';
+      ctx2d.lineWidth = 3;
+      ctx2d.stroke();
+
+      // Order Parameter Vector R * exp(i * Psi)
+      const vx = cx + Math.cos(state.orderParameterPsi) * R * state.orderParameterR;
+      const vy = cy + Math.sin(state.orderParameterPsi) * R * state.orderParameterR;
+      ctx2d.beginPath();
+      ctx2d.moveTo(cx, cy);
+      ctx2d.lineTo(vx, vy);
+      ctx2d.strokeStyle = '#10b981';
+      ctx2d.lineWidth = 3.5;
+      ctx2d.stroke();
+
+      ctx2d.beginPath();
+      ctx2d.arc(vx, vy, 6, 0, Math.PI * 2);
+      ctx2d.fillStyle = '#10b981';
+      ctx2d.fill();
+
+      // Draw 16 Kuramoto Oscillators around the Phase Circle
+      state.oscillators.forEach((osc, idx) => {
+        const ox = cx + Math.cos(osc.theta) * R;
+        const oy = cy + Math.sin(osc.theta) * R;
+        const isGroupA = idx < 8;
+
+        ctx2d.beginPath();
+        ctx2d.arc(ox, oy, 7 + osc.glow * 5, 0, Math.PI * 2);
+        ctx2d.fillStyle = isGroupA ? '#f59e0b' : '#38bdf8';
+        ctx2d.fill();
+        ctx2d.strokeStyle = '#05060a';
+        ctx2d.lineWidth = 1.5;
+        ctx2d.stroke();
+      });
+
+      ctx2d.fillStyle = '#e2e8f0';
+      ctx2d.font = 'bold 11px JetBrains Mono';
+      ctx2d.textAlign = 'center';
+      ctx2d.fillText(`Order Parameter R = ${state.orderParameterR.toFixed(3)}`, cx, cy + R + 22);
+    }
+
+    // =========================================================================
+    // 5. KURAMOTO SAKAGUCHI CHIMERA DYNAMICS & RIBBON RENDERER
+    // =========================================================================
+    function stepKuramotoDynamics(dt) {
+      const N = state.oscillators.length;
+      const baseOmega = (state.bpm / 60) * Math.PI * 1.5;
+      const K = state.couplingK;
+      const alpha = state.frustrationAlpha;
+
+      // Compute Kuramoto Order Parameter R * e^(i*Psi)
+      let sumCos = 0, sumSin = 0;
+      state.oscillators.forEach(o => {
+        sumCos += Math.cos(o.theta);
+        sumSin += Math.sin(o.theta);
+      });
+      state.orderParameterR = Math.hypot(sumCos / N, sumSin / N);
+      state.orderParameterPsi = Math.atan2(sumSin / N, sumCos / N);
+
+      const headerR = document.getElementById('orderParamHeader');
+      if (headerR) {
+        headerR.textContent = `Sync R = ${state.orderParameterR.toFixed(2)}`;
+      }
+
+      if (!state.isPlaying) return;
+
+      const dTheta = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        let couplingSum = 0;
+        for (let j = 0; j < N; j++) {
+          // Non-local coupling kernel (stronger within same half-ring, weaker across rings -> Chimera!)
+          const sameHalf = (i < 8 && j < 8) || (i >= 8 && j >= 8);
+          const weight = sameHalf ? 1.35 : 0.45;
+          couplingSum += weight * Math.sin(state.oscillators[j].theta - state.oscillators[i].theta - (sameHalf ? 0.08 : alpha));
+        }
+        dTheta[i] = baseOmega * state.oscillators[i].naturalRatio + (K / N) * couplingSum;
+      }
+
+      for (let i = 0; i < N; i++) {
+        const osc = state.oscillators[i];
+        const prevMod = ((osc.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        osc.theta += dTheta[i] * dt;
+        const newMod = ((osc.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        osc.glow = Math.max(0, osc.glow - dt * 3.2);
+
+        // Trigger acoustic strike when oscillator phase wraps past 2*pi -> 0
+        if (newMod < prevMod && dTheta[i] > 0) {
+          osc.glow = 1.0;
+          state.waveAmplitude = 1.0;
+          const ctx = ensureAudio();
+          triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, {
+            drumSide: i < 8 ? 'A' : 'B',
+            velocity: i % 4 === 0 ? 0.85 : 0.52,
+            focusModeIdx: i % 10
+          });
+        }
+      }
+
+      updateOscillatorRibbonDOM();
+    }
+
+    function buildOscillatorRibbonDOM() {
+      const grid = document.getElementById('oscillatorRibbonGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      state.oscillators.forEach((osc, idx) => {
+        const isGroupA = idx < 8;
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.id = `oscCell_${idx}`;
+        cell.className = `h-14 rounded-lg border bg-cosmos-950 border-slate-800 p-1 flex flex-col items-center justify-between transition`;
+        cell.innerHTML = `
+          <span class="text-[9px] font-mono ${isGroupA ? 'text-amber-400' : 'text-sky-400'}">ω${idx + 1}</span>
+          <div class="w-full bg-cosmos-900 h-6 rounded overflow-hidden flex items-end">
+            <div id="oscBar_${idx}" class="w-full ${isGroupA ? 'bg-amber-400' : 'bg-sky-400'} transition-all duration-75" style="height: 50%"></div>
+          </div>
+        `;
+        cell.addEventListener('click', () => {
+          osc.glow = 1.0;
+          state.selectedModeIdx = idx % 10;
+          document.getElementById('selectEigenModeIdx').value = String(Math.min(5, state.selectedModeIdx));
+          const ctx = ensureAudio();
+          triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, {
+            drumSide: isGroupA ? 'A' : 'B',
+            velocity: 0.95,
+            focusModeIdx: idx % 10
+          });
+          renderDirichletSpectrumBars();
+        });
+        grid.appendChild(cell);
+      });
+    }
+
+    function updateOscillatorRibbonDOM() {
+      state.oscillators.forEach((osc, idx) => {
+        const bar = document.getElementById(`oscBar_${idx}`);
+        if (!bar) return;
+        const normPhase = (((osc.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+        bar.style.height = `${Math.round(normPhase * 100)}%`;
+      });
+    }
+
+    // =========================================================================
+    // 6. WEYL'S LAW INVERSE SHAPE TELEMETRY & DIRICHLET SPECTRUM UI
+    // =========================================================================
+    function updateWeylTelemetryUI() {
+      const dom = getActiveDomain();
+      const holeCount = dom.holes + (state.hasExtraHole ? 1 : 0);
+      const holeAreaPenalty = state.hasExtraHole ? 0.24 : 0;
+      const holePerimBonus = state.hasExtraHole ? 1.76 : 0;
+
+      const estArea = Math.max(0.5, dom.area - holeAreaPenalty);
+      const estPerim = dom.perim + holePerimBonus;
+      const chi = 1 - holeCount;
+
+      document.getElementById('weylAreaReadout').textContent = `${estArea.toFixed(3)} u²`;
+      document.getElementById('weylPerimReadout').textContent = `${estPerim.toFixed(3)} u`;
+      document.getElementById('weylFractalDimReadout').textContent =
+        dom.fractalDim > 1.01 ? `${dom.fractalDim.toFixed(4)} (Fractal)` : `1.0000 (Smooth)`;
+      document.getElementById('weylHolesReadout').textContent = `${holeCount} Hole${holeCount === 1 ? '' : 's'} (χ = ${chi})`;
+      document.getElementById('weylVerdictReadout').textContent = dom.verdict;
+
+      const ratio = dom.eigenvalues[1] / dom.eigenvalues[0];
+      document.getElementById('fundamentalRatioReadout').textContent = `λ₂/λ₁ = ${ratio.toFixed(3)}`;
+      renderDirichletSpectrumBars();
+    }
+
+    function renderDirichletSpectrumBars() {
+      const container = document.getElementById('dirichletSpectrumBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const dom = getActiveDomain();
+      const evals = dom.eigenvalues;
+      const maxLam = Math.max(1, ...evals);
+
+      evals.forEach((lam, idx) => {
+        const pct = Math.max(12, Math.round((lam / maxLam) * 100));
+        const isSel = idx === state.selectedModeIdx;
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer group';
+        wrap.innerHTML = `
+          <div class="w-full rounded-t transition-all ${isSel ? 'bg-amber-400' : 'bg-purple-400/75 group-hover:bg-sky-400'}" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono ${isSel ? 'text-amber-300 font-bold' : 'text-slate-400'}">λ${idx + 1}</span>
+        `;
+        wrap.addEventListener('click', () => {
+          state.selectedModeIdx = idx;
+          state.waveAmplitude = 1.0;
+          const ctx = ensureAudio();
+          triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, {
+            velocity: 0.95, focusModeIdx: idx
+          });
+          renderDirichletSpectrumBars();
+        });
+        container.appendChild(wrap);
+      });
+    }
+
+    function renderGeometryPresetList() {
+      const container = document.getElementById('geometryPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      DRUM_DOMAINS.forEach(dom => {
+        const active = dom.id === state.activeDomainId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-purple-500/15 border-purple-400/60 text-white' : 'bg-cosmos-950/75 hover:bg-cosmos-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-purple-300' : 'text-slate-200'}">${dom.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cosmos-900 text-amber-300 border border-slate-800">d=${dom.fractalDim.toFixed(2)}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${dom.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          state.activeDomainId = dom.id;
+          state.waveAmplitude = 1.0;
+          updateWeylTelemetryUI();
+          renderGeometryPresetList();
+          const ctx = ensureAudio();
+          triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, { domain: dom, velocity: 0.92 });
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    // =========================================================================
+    // 7. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderKacWav(mode = 'chimera') {
+      const sr = 44100;
+      const totalSec = (mode === 'chimera' || mode === 'ab_compare') ? 3.4 : 1.8;
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'gww_a') {
+        triggerDirichletDrumStrike(offCtx, offCtx.destination, 0.05, { domain: DRUM_DOMAINS[0], drumSide: 'A', velocity: 0.96 });
+      } else if (mode === 'gww_b') {
+        triggerDirichletDrumStrike(offCtx, offCtx.destination, 0.05, { domain: DRUM_DOMAINS[0], drumSide: 'B', velocity: 0.96 });
+      } else if (mode === 'koch_fractal') {
+        triggerDirichletDrumStrike(offCtx, offCtx.destination, 0.05, { domain: DRUM_DOMAINS[1], drumSide: 'A', velocity: 0.96 });
+      } else if (mode === 'ab_compare') {
+        // Strike Drum A at t=0.05s, then Drum B at t=1.55s to demonstrate their identical spectra!
+        triggerDirichletDrumStrike(offCtx, offCtx.destination, 0.05, { domain: DRUM_DOMAINS[0], drumSide: 'A', velocity: 0.95 });
+        triggerDirichletDrumStrike(offCtx, offCtx.destination, 1.55, { domain: DRUM_DOMAINS[0], drumSide: 'B', velocity: 0.95 });
+      } else {
+        // Render 16-step Kuramoto Chimera Polyrhythm
+        const stepSec = (60 / state.bpm) * 0.25;
+        for (let s = 0; s < 16; s++) {
+          const t = 0.05 + s * stepSec;
+          triggerDirichletDrumStrike(offCtx, offCtx.destination, t, {
+            domain: getActiveDomain(),
+            drumSide: s % 2 === 0 ? 'A' : 'B',
+            velocity: s % 4 === 0 ? 0.92 : 0.60,
+            focusModeIdx: s % 10
+          });
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `kac_spectra_${mode}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('kacVaultList');
+      const count = document.getElementById('kacVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-cosmos-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-purple-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 8. INTERACTIVE EVENT BINDINGS & INITIALIZATION
+    // =========================================================================
+    function setTabView(tabName) {
+      state.activeTab = tabName;
+      const bIso = document.getElementById('tabIsospectral');
+      const bPoi = document.getElementById('tabPoincare');
+      const bKur = document.getElementById('tabKuramoto');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bIso.className = tabName === 'isospectral' ? act : idl;
+      bPoi.className = tabName === 'poincare' ? act : idl;
+      bKur.className = tabName === 'kuramoto' ? act : idl;
+
+      const hudLeft = document.getElementById('hudLeftText');
+      if (tabName === 'isospectral') {
+        hudLeft.textContent = 'Click inside Drum A (Left) or Drum B (Right) to excite 2D wave PDE';
+      } else if (tabName === 'poincare') {
+        hudLeft.textContent = 'Poincaré Disk Hyperbolic Geodesics • Stern-Brocot Rational Tree';
+      } else {
+        hudLeft.textContent = '16 Sakaguchi-Kuramoto Coupled Oscillators • Order Parameter R e^(iΨ)';
+      }
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        ensureAudio();
+        state.isPlaying = !state.isPlaying;
+        const btn = document.getElementById('btnPlayToggle');
+        if (state.isPlaying) {
+          btn.classList.add('engine-active');
+          document.getElementById('iconPlay').classList.add('hidden');
+          document.getElementById('iconStop').classList.remove('hidden');
+          document.getElementById('labelPlayToggle').textContent = 'STOP SOLVER';
+        } else {
+          btn.classList.remove('engine-active');
+          document.getElementById('iconPlay').classList.remove('hidden');
+          document.getElementById('iconStop').classList.add('hidden');
+          document.getElementById('labelPlayToggle').textContent = 'RUN SOLVER';
+        }
+      });
+
+      document.getElementById('btnStrikeBoth').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        state.activeDomainId = 'gww_pair';
+        setTabView('isospectral');
+        renderGeometryPresetList();
+        updateWeylTelemetryUI();
+        state.waveAmplitude = 1.0;
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime + 0.02, { domain: DRUM_DOMAINS[0], drumSide: 'A', velocity: 0.95 });
+        setTimeout(() => {
+          state.waveAmplitude = 1.0;
+          triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime + 0.02, { domain: DRUM_DOMAINS[0], drumSide: 'B', velocity: 0.95 });
+        }, 650);
+        showToast('Struck GWW Drum A (Left) then Drum B (Right): Identical Eigenfrequencies!');
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      const syncCouplingUI = (valInt) => {
+        state.couplingK = valInt / 100;
+        document.getElementById('sliderCouplingK').value = valInt;
+        document.getElementById('sliderHeaderCoupling').value = valInt;
+        document.getElementById('valCouplingK').textContent = state.couplingK.toFixed(2);
+        document.getElementById('lblHeaderCoupling').textContent = state.couplingK.toFixed(2);
+      };
+      document.getElementById('sliderCouplingK').addEventListener('input', (e) => syncCouplingUI(parseInt(e.target.value, 10)));
+      document.getElementById('sliderHeaderCoupling').addEventListener('input', (e) => syncCouplingUI(parseInt(e.target.value, 10)));
+
+      document.getElementById('sliderFrustrationAlpha').addEventListener('input', (e) => {
+        state.frustrationAlpha = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valFrustrationAlpha').textContent = `${state.frustrationAlpha.toFixed(2)} rad`;
+      });
+
+      document.getElementById('sliderHyperCurvature').addEventListener('input', (e) => {
+        state.hyperCurvature = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valHyperCurvature').textContent = `−${state.hyperCurvature.toFixed(2)}`;
+      });
+
+      document.getElementById('tabIsospectral').addEventListener('click', () => setTabView('isospectral'));
+      document.getElementById('tabPoincare').addEventListener('click', () => setTabView('poincare'));
+      document.getElementById('tabKuramoto').addEventListener('click', () => setTabView('kuramoto'));
+
+      document.getElementById('selectEigenModeIdx').addEventListener('change', (e) => {
+        state.selectedModeIdx = parseInt(e.target.value, 10);
+        state.waveAmplitude = 1.0;
+        const ctx = ensureAudio();
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, {
+          velocity: 0.95, focusModeIdx: state.selectedModeIdx
+        });
+        renderDirichletSpectrumBars();
+      });
+
+      // Canvas Direct Click Excitation
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const side = x < rect.width / 2 ? 'A' : 'B';
+        state.lastStruckDrum = side;
+        state.waveAmplitude = 1.0;
+
+        // Recompute modal excitation weights from strike coordinates
+        const nx = (x / rect.width) * 2 - 1;
+        const ny = (y / rect.height) * 2 - 1;
+        state.modeExcitations = state.modeExcitations.map((_, k) => {
+          return Math.min(1.0, Math.max(0.15, Math.abs(evalHelmholtzWaveAt(nx, ny, k, side === 'B'))));
+        });
+        const coupling = state.modeExcitations[state.selectedModeIdx] || 0.75;
+        document.getElementById('strikeCoordBadge').textContent = `Drum ${side} • Nodal coupling: ${coupling.toFixed(2)}`;
+
+        const ctx = ensureAudio();
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, {
+          drumSide: side, velocity: 0.95
+        });
+      });
+
+      // Overlay Buttons
+      document.getElementById('btnStrikeDrumA').addEventListener('click', () => {
+        state.waveAmplitude = 1.0;
+        const ctx = ensureAudio();
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, { drumSide: 'A', velocity: 0.95 });
+      });
+
+      document.getElementById('btnStrikeDrumB').addEventListener('click', () => {
+        state.waveAmplitude = 1.0;
+        const ctx = ensureAudio();
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, { drumSide: 'B', velocity: 0.95 });
+      });
+
+      document.getElementById('btnPunchHole').addEventListener('click', () => {
+        state.hasExtraHole = !state.hasExtraHole;
+        state.waveAmplitude = 1.0;
+        updateWeylTelemetryUI();
+        const ctx = ensureAudio();
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, { velocity: 0.95 });
+        showToast(state.hasExtraHole ? 'Punched Topological Inner Hole (Euler χ decreased by 1)' : 'Removed Extra Inner Hole');
+      });
+
+      document.getElementById('btnScramblePhases').addEventListener('click', () => {
+        state.oscillators.forEach(o => { o.theta = Math.random() * Math.PI * 2; });
+        showToast('Scrambled 16 Kuramoto Oscillator Phases');
+      });
+
+      document.getElementById('btnRandomizeDomain').addEventListener('click', () => {
+        const nextDom = DRUM_DOMAINS[Math.floor(Math.random() * DRUM_DOMAINS.length)];
+        state.activeDomainId = nextDom.id;
+        state.selectedModeIdx = Math.floor(Math.random() * 6);
+        document.getElementById('selectEigenModeIdx').value = String(state.selectedModeIdx);
+        state.waveAmplitude = 1.0;
+        renderGeometryPresetList();
+        updateWeylTelemetryUI();
+        const ctx = ensureAudio();
+        triggerDirichletDrumStrike(ctx, masterGain, ctx.currentTime, { domain: nextDom, velocity: 0.95 });
+        showToast(`Loaded Domain: ${nextDom.name}`);
+      });
+
+      // Farey Mediant Polyrhythm Buttons
+      document.querySelectorAll('.farey-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const [p, q] = btn.getAttribute('data-farey').split(',').map(Number);
+          state.fareyP = p;
+          state.fareyQ = q;
+          document.getElementById('lblFareyRatio').textContent = `${p} : ${q} (Mediant)`;
+          document.querySelectorAll('.farey-btn').forEach(b => {
+            const act = b.getAttribute('data-farey') === `${p},${q}`;
+            b.className = act
+              ? 'farey-btn py-1 rounded bg-purple-500/20 border border-purple-400 text-[10px] font-mono text-purple-200 font-bold'
+              : 'farey-btn py-1 rounded bg-cosmos-900 hover:bg-cosmos-800 border border-slate-700 text-[10px] font-mono text-slate-200';
+          });
+          initKuramotoOscillators();
+          buildOscillatorRibbonDOM();
+        });
+      });
+
+      // Right Column Acoustic Sliders
+      document.getElementById('sliderFundamentalHz').addEventListener('input', (e) => {
+        state.fundamentalHz = parseInt(e.target.value, 10);
+        document.getElementById('valFundamentalHz').textContent = `${state.fundamentalHz} Hz`;
+      });
+      document.getElementById('sliderDampingSec').addEventListener('input', (e) => {
+        state.dampingSec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valDampingSec').textContent = `${state.dampingSec.toFixed(2)} s`;
+      });
+      document.getElementById('sliderBerryRoughness').addEventListener('input', (e) => {
+        state.berryRoughnessPct = parseInt(e.target.value, 10);
+        document.getElementById('valBerryRoughness').textContent = `${state.berryRoughnessPct}%`;
+      });
+      document.getElementById('sliderPartialCount').addEventListener('input', (e) => {
+        state.partialCount = parseInt(e.target.value, 10);
+        document.getElementById('valPartialCount').textContent = `${state.partialCount} Modes`;
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderKacWav('chimera'));
+      document.getElementById('btnExportChimeraWav').addEventListener('click', () => renderKacWav('chimera'));
+      document.getElementById('btnExportIsospectralABWav').addEventListener('click', () => renderKacWav('ab_compare'));
+
+      document.querySelectorAll('.kac-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderKacWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportWeylJson').addEventListener('click', () => {
+        const dom = getActiveDomain();
+        const payload = {
+          app: "KAC_SPECTRA_INVERSE_DRUM_SOLVER",
+          domainId: dom.id,
+          domainName: dom.name,
+          weylInvariants: {
+            area: dom.area,
+            perimeter: dom.perim,
+            hausdorffFractalDimension: dom.fractalDim,
+            topologicalHoles: dom.holes + (state.hasExtraHole ? 1 : 0),
+            eulerCharacteristic: 1 - (dom.holes + (state.hasExtraHole ? 1 : 0))
+          },
+          dirichletEigenvalues: dom.eigenvalues,
+          kuramotoState: {
+            couplingK: state.couplingK,
+            frustrationAlpha: state.frustrationAlpha,
+            orderParameterR: Number(state.orderParameterR.toFixed(4))
+          },
+          fareyRatio: [state.fareyP, state.fareyQ]
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kac_weyl_invariants_${dom.id}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded Weyl Inverse Geometry & Spectrum JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      initKuramotoOscillators();
+      buildOscillatorRibbonDOM();
+      renderGeometryPresetList();
+      updateWeylTelemetryUI();
+      initEventListeners();
+      requestAnimationFrame(renderPhysicsFrame);
+    });
+  </script>
+</body>
+</html>

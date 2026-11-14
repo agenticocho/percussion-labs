@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HYPER-SOLITON — 4D Polychoron Percussion, Hopf Fibration Torus & Nonlinear Toda Soliton Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            hyper: {
+              950: '#04060c',
+              900: '#080d18',
+              800: '#0f172a',
+              700: '#192540',
+              600: '#273a63'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #04060c;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080d18; }
+    ::-webkit-scrollbar-thumb { background: #273a63; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b5691; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #192540;
+      border: 1px solid #273a63;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060c;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.55) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.93) 0%, rgba(8, 13, 24, 0.97) 100%);
+      border: 1px solid rgba(51, 75, 122, 0.55);
+    }
+    @keyframes pulseHyper {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(245, 158, 11, 0.25); }
+    }
+    .soliton-running {
+      animation: pulseHyper 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP STUDIO HEADER & 4D / SOLITON TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-hyper-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 via-purple-500/20 to-sky-500/25 border border-amber-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="12" height="12" rx="1.5"></rect>
+            <rect x="9" y="9" width="12" height="12" rx="1.5" stroke="#38bdf8"></rect>
+            <line x1="3" y1="3" x2="9" y2="9" stroke="#10b981"></line>
+            <line x1="15" y1="3" x2="21" y2="9" stroke="#10b981"></line>
+            <line x1="3" y1="15" x2="9" y2="21" stroke="#10b981"></line>
+            <line x1="15" y1="15" x2="21" y2="21" stroke="#10b981"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">HYPER-SOLITON // 4D POLYCHORON &amp; TODA LATTICE LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Module 8 of 9</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">4D 24-Cell &amp; Tesseract Isoclinic SO(4) Rotations • Nonlinear Toda Soliton Collisions • Hopf Fibration S³ → S² Linked Torus</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-hyper-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg shadow-amber-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">ENGAGE 4D ENGINE</span>
+        </button>
+
+        <button id="btnFireSolitonPair" type="button" class="px-2.5 py-2 rounded-lg bg-hyper-800 hover:bg-hyper-700 text-sky-300 border border-sky-500/40 text-xs font-mono font-semibold transition" title="Launch counter-propagating R & L Toda solitons to observe nonlinear collision phase shift">
+          COLLIDE SOLITONS ⚡
+        </button>
+
+        <!-- Polychoron Selector -->
+        <div class="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+          <span class="text-[10px] font-mono text-slate-400">4D Shape:</span>
+          <select id="selectPolychoron" class="bg-hyper-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+            <option value="24cell" selected>24-Cell {3,4,3} (24 V, 96 E)</option>
+            <option value="tesseract">Tesseract {4,3,3} (16 V, 32 E)</option>
+            <option value="16cell">16-Cell {3,3,4} (8 V, 24 E)</option>
+          </select>
+        </div>
+
+        <!-- BPM & Hyperplane Crossing Readout -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[70px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-amber-400">128</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="hyperSliceCounter" class="text-[10px] text-emerald-400 font-mono">w=0 Hits: 0</div>
+          </div>
+          <input id="sliderBpm" type="range" min="50" max="220" value="128" class="w-24 sm:w-32" />
+        </div>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnCliffordFlip" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-xs font-semibold transition" title="Toggle Left vs Right Isoclinic Quaternion Spin">
+          <span>🌀 Isoclinic Spin</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): 4D & SOLITON PRESETS, SO(4) ISOCLINIC ROTATION & TODA NONLINEARITY -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated 4D Polychoron & Toda Soliton Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">4D &amp; Soliton Programs</h2>
+            <p class="text-[11px] text-slate-400">Polychora, Toda Chains &amp; Hopf Tori</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">8Patches</span>
+        </div>
+
+        <div id="hyperPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- SO(4) DOUBLE-ISOCLINIC ROTATION & TODA NONLINEARITY ARCHITECT -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">SO(4) &amp; Toda Soliton Physics</h2>
+          <p class="text-[10px] text-slate-400">SO(4) ≅ (SU(2)_L × SU(2)_R)/ℤ₂ • q̈_n = e^(−Δq_n) − e^(−Δq_{n+1})</p>
+        </div>
+
+        <!-- 4D Rotation Plane Velocities (XY/ZW Isoclinic Pair + XW/YZ) -->
+        <div class="bg-hyper-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">XY-Plane Spin (ω_XY)</span>
+              <span id="valSpinXY" class="text-amber-400 font-bold">1.00×</span>
+            </div>
+            <input id="sliderSpinXY" type="range" min="0" max="300" value="100" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">ZW-Hyper Spin (ω_ZW)</span>
+              <span id="valSpinZW" class="text-sky-400 font-bold">1.00× (Isoclinic)</span>
+            </div>
+            <input id="sliderSpinZW" type="range" min="0" max="300" value="100" class="w-full slider-cyan" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">XW-Depth Flip (ω_XW)</span>
+              <span id="valSpinXW" class="text-purple-400 font-bold">0.62× (φ⁻¹)</span>
+            </div>
+            <input id="sliderSpinXW" type="range" min="0" max="300" value="62" class="w-full slider-purple" />
+          </div>
+        </div>
+
+        <!-- Toda Exponential Nonlinearity Beta & Soliton Speed Ratio -->
+        <div class="bg-hyper-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Toda Nonlinearity (β)</span>
+              <span id="valTodaBeta" class="text-emerald-400 font-bold">2.40 (Solitonic)</span>
+            </div>
+            <input id="sliderTodaBeta" type="range" min="20" max="500" value="240" class="w-full slider-emerald" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">β→0 Linear Phonon • β&gt;1 Supersonic Soliton</div>
+          </div>
+        </div>
+
+        <!-- Lax Pair & Soliton Collision Telemetry Table -->
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center justify-between bg-hyper-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Lax Trace Tr(L²):</span>
+            <span id="laxTraceReadout" class="font-mono font-bold text-emerald-400">34.820 (Conserved)</span>
+          </div>
+          <div class="flex items-center justify-between bg-hyper-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Collision Phase Shift Δφ:</span>
+            <span id="solitonShiftReadout" class="font-mono font-bold text-amber-400">+0.418 rad</span>
+          </div>
+          <div class="flex items-center justify-between bg-hyper-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Hopf Linking Number:</span>
+            <span id="hopfLinkReadout" class="font-mono font-bold text-sky-400">Lk(C_i, C_j) = +1</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): 3-MODE INTERACTIVE CANVAS (4D POLYCHORON + TODA SOLITON RING + HOPF FIBRATION TORUS) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE VISUALIZER CARD -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3 Mathematical Physics View Tabs -->
+          <div class="flex items-center gap-1 bg-hyper-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabPolychoron4D" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition">
+              💠 1. 4D Polychoron (S³ Slice)
+            </button>
+            <button id="tabTodaSoliton" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🌊 2. Toda Soliton Collider
+            </button>
+            <button id="tabHopfFibration" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🍩 3. Hopf Fibration S³ → S²
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono text-slate-400">w-Projection:</span>
+            <select id="selectStereoDepth" class="bg-hyper-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-sky-300 outline-none">
+              <option value="2.2" selected>Stereographic (w₀ = 2.2)</option>
+              <option value="1.5">Wide-Angle Hypersphere (w₀ = 1.5)</option>
+              <option value="99">Orthographic 2D Hex Shadow</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Primary Interactive Canvas -->
+        <div class="relative w-full h-80 sm:h-[360px] bg-hyper-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="hyperCanvas" class="w-full h-full cursor-pointer touch-none"></canvas>
+
+          <!-- Top HUD Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudTopLeft" class="px-2.5 py-1 rounded-lg bg-hyper-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Vertices crossing w = 0 Equatorial Hyperplane fire 4D Doppler strikes
+            </div>
+            <div id="hudTopRight" class="px-2.5 py-1 rounded-lg bg-hyper-900/90 border border-amber-500/40 text-[10px] font-mono text-amber-300">
+              Hurwitz 24-Cell Roots (F₄ Symmetry)
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Controls -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnLaunchFastSoliton" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                ▶ Fast Accent Soliton (R)
+              </button>
+              <button id="btnLaunchSlowSoliton" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                ◀ Slow Grace Soliton (L)
+              </button>
+              <button id="btnOvertakeDemo" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[11px] font-mono font-semibold transition">
+                🚀 Supersonic Overtake
+              </button>
+            </div>
+            <div id="activeVertexBadge" class="px-2.5 py-1 rounded-lg bg-hyper-900/90 border border-slate-800 text-[10px] font-mono text-sky-300">
+              Vertex #0 • w = +0.00
+            </div>
+          </div>
+        </div>
+
+        <!-- 16-SITE NONLINEAR TODA SOLITON RING & PAS RUDIMENT INJECTOR -->
+        <div class="bg-hyper-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-bold text-slate-200">16-Site Toda Soliton Ring &amp; 4D Hyperplane Sequencer</span>
+              <p class="text-[10px] text-slate-400">Click any site n = 1..16 to inject a localized sech²(κn) soliton wave packet</p>
+            </div>
+            <span id="solitonSpeedBadge" class="text-[10px] font-mono text-emerald-400">v_soliton = sinh(κ)/κ = 1.38 c₀</span>
+          </div>
+          <div id="todaSiteGrid" class="grid grid-cols-8 sm:grid-cols-16 gap-1">
+            <!-- Populated dynamically with 16 Toda lattice mass sites -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): LAX PAIR ISOSPECTRAL SPECTRUM, 4D DOPPLER SYNTHESIS & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- LAX PAIR ISOSPECTRAL EIGENVALUES & 4D DOPPLER SYNTHESIZER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Lax Pair Spectrum (L̇ = [B, L])</h2>
+            <p class="text-[11px] text-slate-400">Conserved Toda Soliton Eigenvalues &amp; 4D w-Pitch Shift</p>
+          </div>
+          <button id="btnStrikeHyperChord" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-[11px] font-mono text-amber-300 font-semibold transition">
+            🔔 24-Cell Chord
+          </button>
+        </div>
+
+        <!-- 10 Lax Pair / Hurwitz Eigenmode Bars -->
+        <div class="bg-hyper-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>LAX EIGENVALUES λ_k (Click bar to excite soliton)</span>
+            <span class="text-emerald-400">dλ_k/dt = 0</span>
+          </div>
+          <div id="laxSpectrumBars" class="grid grid-cols-10 gap-1 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 4 Synthesis Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-hyper-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Hurwitz Root Pitch</span>
+              <span id="valRootFreqHz" class="font-mono text-amber-400">155 Hz</span>
+            </div>
+            <input id="sliderRootFreqHz" type="range" min="65" max="360" value="155" class="w-full" />
+          </div>
+
+          <div class="bg-hyper-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">4D w-Doppler Depth</span>
+              <span id="valDopplerW" class="font-mono text-sky-400">65%</span>
+            </div>
+            <input id="sliderDopplerW" type="range" min="0" max="100" value="65" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-hyper-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Soliton Steepness (κ)</span>
+              <span id="valKappaSteep" class="font-mono text-emerald-400">1.45</span>
+            </div>
+            <input id="sliderKappaSteep" type="range" min="40" max="300" value="145" class="w-full slider-emerald" />
+          </div>
+
+          <div class="bg-hyper-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Hopf Torus Shimmer</span>
+              <span id="valHopfShimmer" class="font-mono text-purple-400">52%</span>
+            </div>
+            <input id="sliderHopfShimmer" type="range" min="0" max="100" value="52" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & TELEMETRY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">4D &amp; Soliton WAV Exporter</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportPolychoronWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              💾 Export 4D Hyper-Loop (.WAV)
+            </button>
+            <button id="btnExportSolitonCollisionWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              🌊 Export Soliton Collision (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized 4D Stems (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="hurwitz_bell" class="hyper-shot-btn px-2 py-1.5 rounded-lg bg-hyper-900 hover:bg-hyper-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                24CellBell.wav
+              </button>
+              <button type="button" data-shot="toda_shock" class="hyper-shot-btn px-2 py-1.5 rounded-lg bg-hyper-900 hover:bg-hyper-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                TodaSoliton.wav
+              </button>
+              <button type="button" data-shot="hopf_torus" class="hyper-shot-btn px-2 py-1.5 rounded-lg bg-hyper-900 hover:bg-hyper-800 border border-slate-700/80 text-[10px] font-mono text-purple-300 transition">
+                HopfTorus.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export 4D Polychoron &amp; Lax JSON</span>
+            <button id="btnExportHyperJson" type="button" class="px-2.5 py-1 rounded-lg bg-hyper-800 hover:bg-hyper-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="hyperVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="hyperVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-hyper-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-hyper-800/95 border border-amber-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. EXACT 4D POLYCHORON VERTEX & EDGE GENERATORS:
+    //    - 24-Cell {3,4,3} (24 Hurwitz Quaternion Units / D_4 Root System, 96 Edges)
+    //    - Tesseract {4,3,3} (16 Vertices (±1,±1,±1,±1), 32 Edges)
+    //    - 16-Cell {3,3,4} (8 Orthoplex Vertices, 24 Edges)
+    // =========================================================================
+    function buildPolychoronGeometry(type = '24cell') {
+      const vertices = [];
+      const edges = [];
+
+      if (type === 'tesseract') {
+        // 16 vertices: (±0.65, ±0.65, ±0.65, ±0.65)
+        for (let i = 0; i < 16; i++) {
+          vertices.push([
+            (i & 1) ? 0.65 : -0.65,
+            (i & 2) ? 0.65 : -0.65,
+            (i & 4) ? 0.65 : -0.65,
+            (i & 8) ? 0.65 : -0.65
+          ]);
+        }
+        // Connect vertices at squared distance = (1.3)^2 = 1.69
+        for (let i = 0; i < 16; i++) {
+          for (let j = i + 1; j < 16; j++) {
+            const d2 = vertices[i].reduce((s, v, k) => s + Math.pow(v - vertices[j][k], 2), 0);
+            if (Math.abs(d2 - 1.69) < 0.05) edges.push([i, j]);
+          }
+        }
+      } else if (type === '16cell') {
+        // 8 vertices: permutations of (±1, 0, 0, 0)
+        for (let axis = 0; axis < 4; axis++) {
+          for (const sign of [-1, 1]) {
+            const v = [0, 0, 0, 0];
+            v[axis] = sign;
+            vertices.push(v);
+          }
+        }
+        for (let i = 0; i < 8; i++) {
+          for (let j = i + 1; j < 8; j++) {
+            const d2 = vertices[i].reduce((s, v, k) => s + Math.pow(v - vertices[j][k], 2), 0);
+            if (Math.abs(d2 - 2.0) < 0.05) edges.push([i, j]);
+          }
+        }
+      } else {
+        // 24-Cell {3,4,3}: 8 vertices (±1, 0, 0, 0) + 16 vertices (±0.5, ±0.5, ±0.5, ±0.5)
+        for (let axis = 0; axis < 4; axis++) {
+          for (const sign of [-1, 1]) {
+            const v = [0, 0, 0, 0];
+            v[axis] = sign;
+            vertices.push(v);
+          }
+        }
+        for (let i = 0; i < 16; i++) {
+          vertices.push([
+            (i & 1) ? 0.5 : -0.5,
+            (i & 2) ? 0.5 : -0.5,
+            (i & 4) ? 0.5 : -0.5,
+            (i & 8) ? 0.5 : -0.5
+          ]);
+        }
+        // Connect nearest neighbors at edge length 1.0 (d2 = 1.0) -> 96 edges!
+        for (let i = 0; i < 24; i++) {
+          for (let j = i + 1; j < 24; j++) {
+            const d2 = vertices[i].reduce((s, v, k) => s + Math.pow(v - vertices[j][k], 2), 0);
+            if (Math.abs(d2 - 1.0) < 0.05) edges.push([i, j]);
+          }
+        }
+      }
+
+      return { vertices, edges };
+    }
+
+    const HYPER_PRESETS = [
+      {
+        id: "hurwitz_24cell",
+        name: "Hurwitz 24-Cell Left-Isoclinic Clifford Spin",
+        desc: "Self-dual 4D {3,4,3} polychoron (24 vertices, 96 edges) with ω_XY = ω_ZW = 1.0",
+        tab: "polychoron", shape: "24cell", spinXY: 1.0, spinZW: 1.0, spinXW: 0.62, beta: 2.4, bpm: 128
+      },
+      {
+        id: "toda_headon",
+        name: "Toda Soliton Head-On Elastic Collision",
+        desc: "Counter-propagating sech²(κn) solitons passing through each other with Δφ phase shift",
+        tab: "toda", shape: "24cell", spinXY: 0.8, spinZW: 0.8, spinXW: 0.4, beta: 3.2, bpm: 136
+      },
+      {
+        id: "hopf_villarceau",
+        name: "Hopf Fibration S³ → S² Linked Clifford Tori",
+        desc: "Stereographic Villarceau circles where every pair of rhythmic fibers has Linking Number +1",
+        tab: "hopf", shape: "24cell", spinXY: 1.2, spinZW: 1.2, spinXW: 0.5, beta: 2.1, bpm: 120
+      },
+      {
+        id: "tesseract_hypercube",
+        name: "Tesseract {4,3,3} Inside-Out Hyper-Eversion",
+        desc: "16-vertex 8-cell hypercube rotating through the XW & ZW 4th-dimensional planes",
+        tab: "polychoron", shape: "tesseract", spinXY: 0.5, spinZW: 1.4, spinXW: 1.2, beta: 2.0, bpm: 124
+      },
+      {
+        id: "supersonic_overtake",
+        name: "Supersonic Accent Soliton Overtake Race",
+        desc: "Fast high-amplitude R-soliton (κ=2.2) overtakes slow L-soliton (κ=0.9) on the 16-ring",
+        tab: "toda", shape: "16cell", spinXY: 1.0, spinZW: 0.5, spinXW: 0.8, beta: 4.0, bpm: 144
+      },
+      {
+        id: "right_isoclinic",
+        name: "Right-Isoclinic Quaternion Anti-Spin (ω_XY = −ω_ZW)",
+        desc: "Chiral conjugate SU(2)_R rotation reversing the 4D Doppler hyperplane crossing order",
+        tab: "polychoron", shape: "24cell", spinXY: 1.35, spinZW: 1.35, spinXW: 0.0, beta: 2.6, bpm: 132
+      },
+      {
+        id: "orthoplex_16cell",
+        name: "16-Cell Cross-Polytope {3,3,4} Dual Octahedron",
+        desc: "8-vertex 4D dual of the Tesseract firing crisp 8-step polyrhythmic chords",
+        tab: "polychoron", shape: "16cell", spinXY: 1.1, spinZW: 1.6, spinXW: 0.9, beta: 2.2, bpm: 140
+      },
+      {
+        id: "cnoidal_breather",
+        name: "Toda Cnoidal Standing Wave & Breather Lattice",
+        desc: "High-nonlinearity exponential lattice oscillating between localized solitons & Lax modes",
+        tab: "toda", shape: "tesseract", spinXY: 0.9, spinZW: 1.1, spinXW: 0.7, beta: 4.6, bpm: 152
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "hurwitz_24cell",
+      activeTab: "polychoron", // 'polychoron' | 'toda' | 'hopf'
+      isPlaying: false,
+      bpm: 128,
+      polyType: "24cell",
+      stereoW0: 2.2, // 99 = orthographic hexagonal shadow
+
+      // 4D Rotation Angles & Velocities
+      angXY: 0.2,
+      angZW: 0.4,
+      angXW: 0.1,
+      spinXY: 1.0,
+      spinZW: 1.0,
+      spinXW: 0.62,
+      chiralSign: 1, // +1 Left-Isoclinic, -1 Right-Isoclinic
+
+      // Geometry Cache & Hyperplane Crossing Detector
+      baseVertices: [],
+      baseEdges: [],
+      rotatedVertices: [],
+      prevWCoords: [],
+      vertexGlows: [],
+      hyperCrossingCount: 0,
+
+      // 16-Site Nonlinear Toda Soliton Ring
+      todaBeta: 2.40,
+      kappaSteep: 1.45,
+      solitons: [], // Active traveling sech^2 soliton packets { pos, speed, amp, kappa, dir, hand, color }
+      siteAmplitudes: new Float64Array(16),
+      collisionShiftRad: 0.418,
+      laxEigenvalues: [2.84, 2.52, 2.21, 1.94, 1.68, 1.42, 1.18, 0.95, 0.74, 0.52],
+
+      // Synthesis Parameters
+      rootFreqHz: 155,
+      dopplerDepthPct: 65,
+      hopfShimmerPct: 52,
+
+      // Vault
+      vault: []
+    };
+
+    function initGeometryAndSolitons() {
+      const { vertices, edges } = buildPolychoronGeometry(state.polyType);
+      state.baseVertices = vertices;
+      state.baseEdges = edges;
+      state.rotatedVertices = vertices.map(v => [...v]);
+      state.prevWCoords = vertices.map(v => v[3]);
+      state.vertexGlows = new Float64Array(vertices.length);
+
+      // Seed 2 initial Toda solitons (Fast Right-Hand Amber + Slow Left-Hand Cyan)
+      state.solitons = [
+        { pos: 2.0, kappa: 1.65, dir: 1,  hand: 'R', color: '#f59e0b' },
+        { pos: 10.0, kappa: 1.05, dir: -1, hand: 'L', color: '#38bdf8' }
+      ];
+      updateSolitonTelemetry();
+    }
+
+    function updateSolitonTelemetry() {
+      const k = state.kappaSteep;
+      const vRatio = Math.sinh(k) / Math.max(0.1, k);
+      document.getElementById('solitonSpeedBadge').textContent = `v_soliton = sinh(κ)/κ = ${vRatio.toFixed(2)} c₀`;
+      const shift = (2 * Math.log((k + 0.8) / Math.max(0.2, Math.abs(k - 0.8) + 0.3))) * (state.todaBeta / 2.4);
+      state.collisionShiftRad = shift;
+      document.getElementById('solitonShiftReadout').textContent = `+${shift.toFixed(3)} rad`;
+    }
+
+    // =========================================================================
+    // 3. WEB AUDIO 4D DOPPLER & TODA SOLITON PERCUSSION SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     * Synthesizes a 4D Hyperplane Crossing / Toda Soliton Collision Strike
+     * Modulates pitch and stereo pan directly from 4D coordinates (x, y, z, w) and soliton steepness kappa!
+     */
+    function triggerHyperSolitonStrike(ctx, destNode, when, options = {}) {
+      const {
+        vertexIdx = 0,
+        coord4D = [0, 0, 0, 0],
+        kappa = state.kappaSteep,
+        hand = 'R',
+        velocity = 0.85
+      } = options;
+
+      const f0 = state.rootFreqHz;
+      const wCoord = coord4D[3] || 0;
+      const dopplerScale = 1.0 + (state.dopplerDepthPct / 100) * wCoord * 0.45;
+
+      // Map vertex index to Hurwitz quaternion harmonic ratios
+      const hurwitzRatios = [1.0, 1.125, 1.25, 1.333, 1.5, 1.667, 1.875, 2.0, 2.25, 2.5, 2.667, 3.0];
+      const baseFreq = Math.max(48, Math.min(4800, f0 * hurwitzRatios[vertexIdx % hurwitzRatios.length] * dopplerScale));
+      const decaySec = Math.max(0.12, 0.72 / Math.sqrt(Math.max(0.4, kappa)));
+      const shimmer = state.hopfShimmerPct / 100;
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.02, velocity * 0.45), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        const pan = Math.max(-0.92, Math.min(0.92, (coord4D[0] || (hand === 'R' ? 0.35 : -0.35)) * 0.85));
+        panner.pan.setValueAtTime(pan, when);
+        hitGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        hitGain.connect(destNode);
+      }
+
+      // 1. Primary Soliton sech^2 Carrier (Nonlinear pitch chirp proportional to Toda beta)
+      const osc1 = ctx.createOscillator();
+      const g1 = ctx.createGain();
+      osc1.type = hand === 'R' ? 'triangle' : 'sine';
+      const chirpMult = 1.0 + (state.todaBeta / 5.0) * 0.45;
+      osc1.frequency.setValueAtTime(baseFreq * chirpMult, when);
+      osc1.frequency.exponentialRampToValueAtTime(baseFreq, when + 0.028);
+
+      g1.gain.setValueAtTime(0.001, when);
+      g1.gain.linearRampToValueAtTime(0.82, when + 0.002);
+      g1.gain.exponentialRampToValueAtTime(0.0008, when + decaySec);
+
+      osc1.connect(g1);
+      g1.connect(hitGain);
+      osc1.start(when);
+      osc1.stop(when + decaySec + 0.02);
+
+      // 2. Hopf Villarceau Linked Torus Shimmer Partials (1.5x and 2.618x)
+      if (shimmer > 0.03) {
+        [1.5, 2.618].forEach((ratio, idx) => {
+          const oscH = ctx.createOscillator();
+          const gH = ctx.createGain();
+          oscH.type = 'sine';
+          oscH.frequency.setValueAtTime(Math.min(13000, baseFreq * ratio), when);
+          const hDecay = decaySec * (0.65 - idx * 0.15);
+          gH.gain.setValueAtTime(shimmer * (0.32 / (idx + 1)), when);
+          gH.gain.exponentialRampToValueAtTime(0.0008, when + hDecay);
+          oscH.connect(gH);
+          gH.connect(hitGain);
+          oscH.start(when);
+          oscH.stop(when + hDecay + 0.02);
+        });
+      }
+    }
+
+    // =========================================================================
+    // 4. 4D SO(4) ROTATION ENGINE, TODA SOLITON DYNAMICS & 3-MODE CANVAS
+    // =========================================================================
+    const canvas = document.getElementById('hyperCanvas');
+    const ctx2d = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    /**
+     * Rotates a 4D vector [x, y, z, w] by double-isoclinic planes (XY, ZW) plus XW depth plane
+     */
+    function rotate4DPoint(v, aXY, aZW, aXW) {
+      let [x, y, z, w] = v;
+
+      // 1. XY rotation
+      const c1 = Math.cos(aXY), s1 = Math.sin(aXY);
+      const x1 = x * c1 - y * s1;
+      const y1 = x * s1 + y * c1;
+      x = x1; y = y1;
+
+      // 2. ZW rotation (isoclinic partner)
+      const c2 = Math.cos(aZW), s2 = Math.sin(aZW);
+      const z1 = z * c2 - w * s2;
+      const w1 = z * s2 + w * c2;
+      z = z1; w = w1;
+
+      // 3. XW 4th-dimensional depth rotation
+      const c3 = Math.cos(aXW), s3 = Math.sin(aXW);
+      const x2 = x * c3 - w * s3;
+      const w2 = x * s3 + w * c3;
+      x = x2; w = w2;
+
+      return [x, y, z, w];
+    }
+
+    /**
+     * Projects a 4D point [x, y, z, w] onto 2D screen coordinates via Stereographic S^3 -> R^3 -> R^2
+     * or Orthographic Hexagonal Shadow Projection
+     */
+    function project4DTo2D(v4, cx, cy, scale) {
+      const [x, y, z, w] = v4;
+      if (state.stereoW0 > 50) {
+        // Orthographic Hexagonal Shadow Projection
+        const px = cx + (x * 0.866 - z * 0.5 + w * 0.35) * scale;
+        const py = cy + (y * 0.866 + z * 0.5 - w * 0.35) * scale;
+        return { px, py, depthScale: 1.0 };
+      }
+      const denom4 = Math.max(0.45, state.stereoW0 - w);
+      const x3 = x / denom4;
+      const y3 = y / denom4;
+      const z3 = z / denom4;
+
+      const persp3 = 2.6 / Math.max(0.8, 2.8 - z3);
+      return {
+        px: cx + x3 * persp3 * scale,
+        py: cy + y3 * persp3 * scale,
+        depthScale: persp3 * (1.2 / denom4)
+      };
+    }
+
+    let lastTs = performance.now();
+    function animateMainLoop() {
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastTs) / 1000);
+      lastTs = now;
+
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (!w || !h) {
+        requestAnimationFrame(animateMainLoop);
+        return;
+      }
+
+      ctx2d.fillStyle = '#04060c';
+      ctx2d.fillRect(0, 0, w, h);
+
+      const speedFactor = (state.isPlaying ? 1.0 : 0.22) * (state.bpm / 120);
+      state.angXY += dt * state.spinXY * 0.85 * speedFactor;
+      state.angZW += dt * state.spinZW * 0.85 * state.chiralSign * speedFactor;
+      state.angXW += dt * state.spinXW * 0.75 * speedFactor;
+
+      // Rotate all 4D vertices and detect w = 0 Equatorial Hyperplane crossings!
+      for (let i = 0; i < state.baseVertices.length; i++) {
+        const rotV = rotate4DPoint(state.baseVertices[i], state.angXY, state.angZW, state.angXW);
+        const prevW = state.prevWCoords[i];
+        const curW = rotV[3];
+        state.rotatedVertices[i] = rotV;
+        state.prevWCoords[i] = curW;
+        state.vertexGlows[i] = Math.max(0, state.vertexGlows[i] - dt * 2.8);
+
+        // If playing and vertex crosses w = 0 hyperplane, fire 4D Doppler Percussion Strike!
+        if (state.isPlaying && ((prevW < 0 && curW >= 0) || (prevW > 0 && curW <= 0))) {
+          state.vertexGlows[i] = 1.0;
+          state.hyperCrossingCount++;
+          document.getElementById('hyperSliceCounter').textContent = `w=0 Hits: ${state.hyperCrossingCount}`;
+          document.getElementById('activeVertexBadge').textContent = `Vertex #${i} • w = ${curW >= 0 ? '+' : ''}${curW.toFixed(2)}`;
+
+          if (state.activeTab !== 'toda') {
+            const ctx = ensureAudio();
+            triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, {
+              vertexIdx: i,
+              coord4D: rotV,
+              hand: i % 2 === 0 ? 'R' : 'L',
+              velocity: 0.78
+            });
+          }
+        }
+      }
+
+      // Advance Nonlinear Toda Solitons around the 16-site ring
+      stepTodaSolitonRing(dt);
+
+      if (state.activeTab === 'polychoron') {
+        renderPolychoron4DView(w, h);
+      } else if (state.activeTab === 'toda') {
+        renderTodaSolitonColliderView(w, h);
+      } else {
+        renderHopfFibrationView(w, h);
+      }
+
+      requestAnimationFrame(animateMainLoop);
+    }
+
+    function stepTodaSolitonRing(dt) {
+      const N = 16;
+      state.siteAmplitudes.fill(0);
+
+      const activeSpeed = state.isPlaying ? (state.bpm / 60) * 1.8 : 0.35;
+
+      // Update soliton positions and check for supersonic collisions
+      for (let i = 0; i < state.solitons.length; i++) {
+        const sol = state.solitons[i];
+        // Supersonic Toda dispersion relation: v = c_0 * sinh(kappa) / kappa
+        const cSpeed = (Math.sinh(sol.kappa) / Math.max(0.2, sol.kappa)) * (1 + state.todaBeta * 0.15);
+        const prevSite = Math.floor(sol.pos);
+        sol.pos = (sol.pos + sol.dir * cSpeed * activeSpeed * dt + N) % N;
+        const curSite = Math.floor(sol.pos);
+
+        if (state.isPlaying && curSite !== prevSite) {
+          const ctx = ensureAudio();
+          triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, {
+            vertexIdx: curSite,
+            coord4D: [(curSite - 7.5) / 8, 0, 0, (sol.kappa - 1.4) * 0.5],
+            kappa: sol.kappa,
+            hand: sol.hand,
+            velocity: Math.min(1.0, 0.45 + sol.kappa * 0.28)
+          });
+        }
+
+        // Accumulate sech^2(kappa * (n - pos)) profile onto the 16 lattice sites
+        for (let n = 0; n < N; n++) {
+          let dist = Math.abs(n - sol.pos);
+          if (dist > N / 2) dist = N - dist;
+          const sech = 1.0 / Math.cosh(sol.kappa * dist * 0.85);
+          state.siteAmplitudes[n] += (sol.kappa * 0.55) * sech * sech;
+        }
+      }
+
+      updateTodaSiteGridDOM();
+    }
+
+    function renderPolychoron4DView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(cx, cy) * 0.78;
+
+      // Draw w = 0 Equatorial Hyperplane Reference Ring
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, scale * 0.72, 0, Math.PI * 2);
+      ctx2d.setLineDash([4, 4]);
+      ctx2d.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+      ctx2d.lineWidth = 1.5;
+      ctx2d.stroke();
+      ctx2d.setLineDash([]);
+
+      const projPts = state.rotatedVertices.map(v => project4DTo2D(v, cx, cy, scale));
+
+      // Draw 4D Polychoron Edges (color-coded by 4th-dimensional w coordinate!)
+      state.baseEdges.forEach(([u, v]) => {
+        const p1 = projPts[u];
+        const p2 = projPts[v];
+        const wMean = (state.rotatedVertices[u][3] + state.rotatedVertices[v][3]) * 0.5;
+        const glow = Math.max(state.vertexGlows[u], state.vertexGlows[v]);
+
+        ctx2d.beginPath();
+        ctx2d.moveTo(p1.px, p1.py);
+        ctx2d.lineTo(p2.px, p2.py);
+
+        if (glow > 0.15) {
+          ctx2d.strokeStyle = `rgba(245, 158, 11, ${0.4 + glow * 0.6})`;
+          ctx2d.lineWidth = 2.4;
+        } else if (wMean >= 0) {
+          ctx2d.strokeStyle = 'rgba(56, 189, 248, 0.42)';
+          ctx2d.lineWidth = 1.3;
+        } else {
+          ctx2d.strokeStyle = 'rgba(192, 132, 252, 0.28)';
+          ctx2d.lineWidth = 1.0;
+        }
+        ctx2d.stroke();
+      });
+
+      // Draw 4D Vertices
+      projPts.forEach((pt, idx) => {
+        const wCoord = state.rotatedVertices[idx][3];
+        const glow = state.vertexGlows[idx];
+        const rad = Math.max(3, (4.5 + glow * 6) * Math.min(1.5, pt.depthScale));
+
+        ctx2d.beginPath();
+        ctx2d.arc(pt.px, pt.py, rad, 0, Math.PI * 2);
+        if (glow > 0.1) {
+          ctx2d.fillStyle = '#fbbf24';
+        } else {
+          ctx2d.fillStyle = wCoord >= 0 ? '#38bdf8' : '#c084fc';
+        }
+        ctx2d.fill();
+        ctx2d.strokeStyle = '#04060c';
+        ctx2d.lineWidth = 1.2;
+        ctx2d.stroke();
+      });
+    }
+
+    function renderTodaSolitonColliderView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const R = Math.min(cx, cy) * 0.64;
+      const N = 16;
+
+      // Draw Base Ring
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx2d.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+      ctx2d.lineWidth = 2;
+      ctx2d.stroke();
+
+      // Draw Continuous Toda Soliton Wave Profile around the Ring
+      ctx2d.beginPath();
+      for (let deg = 0; deg <= 360; deg += 3) {
+        const rad = (deg * Math.PI) / 180;
+        const pos = (deg / 360) * N;
+        let amp = 0;
+        state.solitons.forEach(sol => {
+          let d = Math.abs(pos - sol.pos);
+          if (d > N / 2) d = N - d;
+          const sech = 1.0 / Math.cosh(sol.kappa * d * 0.85);
+          amp += (sol.kappa * 28) * sech * sech;
+        });
+        const rCur = R + amp;
+        const px = cx + Math.cos(rad) * rCur;
+        const py = cy + Math.sin(rad) * rCur;
+        if (deg === 0) ctx2d.moveTo(px, py);
+        else ctx2d.lineTo(px, py);
+      }
+      ctx2d.closePath();
+      ctx2d.fillStyle = 'rgba(16, 185, 129, 0.14)';
+      ctx2d.fill();
+      ctx2d.strokeStyle = '#10b981';
+      ctx2d.lineWidth = 2.5;
+      ctx2d.stroke();
+
+      // Draw 16 Discrete Toda Mass Sites & Active Soliton Cores
+      for (let n = 0; n < N; n++) {
+        const ang = (n / N) * Math.PI * 2;
+        const ampPx = state.siteAmplitudes[n] * 32;
+        const px = cx + Math.cos(ang) * (R + ampPx);
+        const py = cy + Math.sin(ang) * (R + ampPx);
+
+        ctx2d.beginPath();
+        ctx2d.arc(px, py, 5 + Math.min(6, ampPx * 0.18), 0, Math.PI * 2);
+        ctx2d.fillStyle = ampPx > 12 ? '#f59e0b' : '#38bdf8';
+        ctx2d.fill();
+      }
+    }
+
+    function renderHopfFibrationView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(cx, cy) * 0.72;
+
+      // Render 16 Linked Villarceau Circles of the Hopf Fibration S^3 -> S^2
+      const numFibers = 16;
+      const tiltTheta = 0.85; // Clifford torus latitude
+      for (let k = 0; k < numFibers; k++) {
+        const phi = (k / numFibers) * Math.PI * 2 + state.angXY * 0.5;
+        ctx2d.beginPath();
+
+        for (let s = 0; s <= 64; s++) {
+          const xi = (s / 64) * Math.PI * 2;
+          // Point on S^3 under Hopf inverse image:
+          const x4 = Math.cos(tiltTheta / 2) * Math.cos(xi);
+          const y4 = Math.cos(tiltTheta / 2) * Math.sin(xi);
+          const z4 = Math.sin(tiltTheta / 2) * Math.cos(phi + xi);
+          const w4 = Math.sin(tiltTheta / 2) * Math.sin(phi + xi);
+
+          const rot4 = rotate4DPoint([x4, y4, z4, w4], 0.3, state.angZW * 0.3, 0.2);
+          const { px, py } = project4DTo2D(rot4, cx, cy, scale * 0.9);
+          if (s === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        }
+        ctx2d.closePath();
+        ctx2d.strokeStyle = k % 2 === 0 ? 'rgba(245, 158, 11, 0.55)' : 'rgba(56, 189, 248, 0.55)';
+        ctx2d.lineWidth = 1.8;
+        ctx2d.stroke();
+      }
+    }
+
+    // =========================================================================
+    // 5. 16-SITE TODA GRID & LAX SPECTRUM BARS UI
+    // =========================================================================
+    function buildTodaSiteGridDOM() {
+      const grid = document.getElementById('todaSiteGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      for (let n = 0; n < 16; n++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'h-12 rounded-lg border bg-hyper-950 border-slate-800 p-1 flex flex-col items-center justify-between transition hover:border-amber-400';
+        btn.innerHTML = `
+          <span class="text-[9px] font-mono text-slate-400">q${n + 1}</span>
+          <div class="w-full bg-hyper-900 h-5 rounded overflow-hidden flex items-end">
+            <div id="todaBar_${n}" class="w-full bg-emerald-400 transition-all duration-75" style="height: 20%"></div>
+          </div>
+        `;
+        btn.addEventListener('click', () => {
+          // Inject a new localized sech^2 soliton at site n!
+          if (state.solitons.length >= 5) state.solitons.shift();
+          state.solitons.push({
+            pos: n,
+            kappa: state.kappaSteep,
+            dir: n % 2 === 0 ? 1 : -1,
+            hand: n % 2 === 0 ? 'R' : 'L',
+            color: n % 2 === 0 ? '#f59e0b' : '#38bdf8'
+          });
+          const ctx = ensureAudio();
+          triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, {
+            vertexIdx: n, kappa: state.kappaSteep, hand: n % 2 === 0 ? 'R' : 'L', velocity: 0.95
+          });
+        });
+        grid.appendChild(btn);
+      }
+    }
+
+    function updateTodaSiteGridDOM() {
+      for (let n = 0; n < 16; n++) {
+        const bar = document.getElementById(`todaBar_${n}`);
+        if (!bar) continue;
+        const pct = Math.min(100, Math.max(12, Math.round(state.siteAmplitudes[n] * 68)));
+        bar.style.height = `${pct}%`;
+        bar.className = pct > 55 ? 'w-full bg-amber-400 transition-all duration-75' : 'w-full bg-sky-400 transition-all duration-75';
+      }
+    }
+
+    function renderLaxSpectrumBars() {
+      const container = document.getElementById('laxSpectrumBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      state.laxEigenvalues.forEach((lam, idx) => {
+        const scaledLam = lam * (0.7 + state.kappaSteep * 0.25);
+        const pct = Math.min(100, Math.max(15, Math.round((scaledLam / 3.5) * 100)));
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer group';
+        col.innerHTML = `
+          <div class="w-full rounded-t transition-all ${idx === 0 ? 'bg-amber-400' : 'bg-emerald-400/80 group-hover:bg-sky-400'}" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono text-slate-400">λ${idx + 1}</span>
+        `;
+        col.addEventListener('click', () => {
+          const ctx = ensureAudio();
+          triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, {
+            vertexIdx: idx, kappa: scaledLam, hand: idx % 2 === 0 ? 'R' : 'L', velocity: 0.95
+          });
+        });
+        container.appendChild(col);
+      });
+    }
+
+    // =========================================================================
+    // 6. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderHyperWav(mode = 'polychoron_loop') {
+      const sr = 44100;
+      const stepSec = (60 / state.bpm) * 0.25;
+      const totalSec = (mode === 'polychoron_loop' || mode === 'soliton_collision') ? (16 * stepSec + 1.0) : 2.0;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'hurwitz_bell') {
+        triggerHyperSolitonStrike(offCtx, offCtx.destination, 0.05, { vertexIdx: 0, coord4D: [0.3, 0, 0, 0.5], kappa: 1.5, velocity: 0.98 });
+      } else if (mode === 'toda_shock') {
+        triggerHyperSolitonStrike(offCtx, offCtx.destination, 0.05, { vertexIdx: 4, coord4D: [-0.3, 0, 0, 0.8], kappa: 2.4, velocity: 0.98 });
+      } else if (mode === 'hopf_torus') {
+        for (let k = 0; k < 6; k++) {
+          triggerHyperSolitonStrike(offCtx, offCtx.destination, 0.04 + k * 0.05, {
+            vertexIdx: k * 2, coord4D: [(k - 2.5) * 0.3, 0, 0, 0.2], kappa: 1.2, velocity: 0.84
+          });
+        }
+      } else {
+        let cursor = 0.05;
+        for (let s = 0; s < 16; s++) {
+          const v4 = state.rotatedVertices[s % state.rotatedVertices.length] || [0, 0, 0, 0];
+          triggerHyperSolitonStrike(offCtx, offCtx.destination, cursor, {
+            vertexIdx: s,
+            coord4D: v4,
+            kappa: state.kappaSteep * (s % 4 === 0 ? 1.25 : 0.85),
+            hand: s % 2 === 0 ? 'R' : 'L',
+            velocity: s % 4 === 0 ? 0.94 : 0.68
+          });
+          cursor += stepSec;
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `hypersoliton_${mode}_${state.polyType}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('hyperVaultList');
+      const count = document.getElementById('hyperVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-hyper-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 7. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyHyperPreset(pr) {
+      state.activePresetId = pr.id;
+      state.polyType = pr.shape;
+      state.spinXY = pr.spinXY;
+      state.spinZW = pr.spinZW;
+      state.spinXW = pr.spinXW;
+      state.todaBeta = pr.beta;
+      state.bpm = pr.bpm;
+
+      document.getElementById('selectPolychoron').value = pr.shape;
+      document.getElementById('sliderSpinXY').value = Math.round(pr.spinXY * 100);
+      document.getElementById('valSpinXY').textContent = `${pr.spinXY.toFixed(2)}×`;
+      document.getElementById('sliderSpinZW').value = Math.round(pr.spinZW * 100);
+      document.getElementById('valSpinZW').textContent = `${pr.spinZW.toFixed(2)}×`;
+      document.getElementById('sliderSpinXW').value = Math.round(pr.spinXW * 100);
+      document.getElementById('valSpinXW').textContent = `${pr.spinXW.toFixed(2)}×`;
+      document.getElementById('sliderTodaBeta').value = Math.round(pr.beta * 100);
+      document.getElementById('valTodaBeta').textContent = `${pr.beta.toFixed(2)}`;
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+
+      initGeometryAndSolitons();
+      setTabView(pr.tab);
+      renderLaxSpectrumBars();
+      renderPresetListUI();
+    }
+
+    function setTabView(tab) {
+      state.activeTab = tab;
+      const bPol = document.getElementById('tabPolychoron4D');
+      const bTod = document.getElementById('tabTodaSoliton');
+      const bHop = document.getElementById('tabHopfFibration');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bPol.className = tab === 'polychoron' ? act : idl;
+      bTod.className = tab === 'toda' ? act : idl;
+      bHop.className = tab === 'hopf' ? act : idl;
+
+      const hudL = document.getElementById('hudTopLeft');
+      if (tab === 'polychoron') {
+        hudL.textContent = 'Vertices crossing w = 0 Equatorial Hyperplane fire 4D Doppler strikes';
+      } else if (tab === 'toda') {
+        hudL.textContent = '16-Site Nonlinear Toda Lattice • Supersonic sech²(κn) Soliton Collisions';
+      } else {
+        hudL.textContent = 'Hopf Fibration S³ → S² • Linked Villarceau Circles on Clifford Tori';
+      }
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('hyperPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      HYPER_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-amber-500/15 border-amber-400/60 text-white' : 'bg-hyper-950/75 hover:bg-hyper-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-amber-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-hyper-900 text-sky-300 border border-slate-800">${pr.shape.toUpperCase()}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyHyperPreset(pr);
+          const ctx = ensureAudio();
+          triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, { vertexIdx: 0, velocity: 0.95 });
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        ensureAudio();
+        state.isPlaying = !state.isPlaying;
+        const btn = document.getElementById('btnPlayToggle');
+        if (state.isPlaying) {
+          btn.classList.add('soliton-running');
+          document.getElementById('iconPlay').classList.add('hidden');
+          document.getElementById('iconStop').classList.remove('hidden');
+          document.getElementById('labelPlayToggle').textContent = 'STOP 4D ENGINE';
+        } else {
+          btn.classList.remove('soliton-running');
+          document.getElementById('iconPlay').classList.remove('hidden');
+          document.getElementById('iconStop').classList.add('hidden');
+          document.getElementById('labelPlayToggle').textContent = 'ENGAGE 4D ENGINE';
+        }
+      });
+
+      document.getElementById('btnFireSolitonPair').addEventListener('click', () => {
+        state.solitons = [
+          { pos: 0.0, kappa: 2.1, dir: 1,  hand: 'R', color: '#f59e0b' },
+          { pos: 8.0, kappa: 1.4, dir: -1, hand: 'L', color: '#38bdf8' }
+        ];
+        if (!state.isPlaying) document.getElementById('btnPlayToggle').click();
+        const ctx = ensureAudio();
+        triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, { vertexIdx: 0, kappa: 2.1, hand: 'R', velocity: 0.96 });
+        showToast('Launched Counter-Propagating Toda Soliton Pair!');
+      });
+
+      document.getElementById('selectPolychoron').addEventListener('change', (e) => {
+        state.polyType = e.target.value;
+        initGeometryAndSolitons();
+        const ctx = ensureAudio();
+        triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, { vertexIdx: 1, velocity: 0.92 });
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('btnCliffordFlip').addEventListener('click', () => {
+        state.chiralSign *= -1;
+        showToast(state.chiralSign > 0
+          ? 'Switched to Left-Isoclinic Quaternion Spin (SU(2)_L)'
+          : 'Switched to Right-Isoclinic Quaternion Spin (SU(2)_R)');
+      });
+
+      document.getElementById('tabPolychoron4D').addEventListener('click', () => setTabView('polychoron'));
+      document.getElementById('tabTodaSoliton').addEventListener('click', () => setTabView('toda'));
+      document.getElementById('tabHopfFibration').addEventListener('click', () => setTabView('hopf'));
+
+      document.getElementById('selectStereoDepth').addEventListener('change', (e) => {
+        state.stereoW0 = parseFloat(e.target.value);
+      });
+
+      // Left Column Sliders
+      document.getElementById('sliderSpinXY').addEventListener('input', (e) => {
+        state.spinXY = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valSpinXY').textContent = `${state.spinXY.toFixed(2)}×`;
+      });
+      document.getElementById('sliderSpinZW').addEventListener('input', (e) => {
+        state.spinZW = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valSpinZW').textContent = `${state.spinZW.toFixed(2)}×`;
+      });
+      document.getElementById('sliderSpinXW').addEventListener('input', (e) => {
+        state.spinXW = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valSpinXW').textContent = `${state.spinXW.toFixed(2)}×`;
+      });
+      document.getElementById('sliderTodaBeta').addEventListener('input', (e) => {
+        state.todaBeta = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valTodaBeta').textContent = state.todaBeta.toFixed(2);
+        updateSolitonTelemetry();
+      });
+
+      // Canvas Direct Click
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const ang = Math.atan2(y - rect.height / 2, x - rect.width / 2);
+        const site = Math.floor((((ang + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2)) * 16);
+
+        const vIdx = site % state.rotatedVertices.length;
+        state.vertexGlows[vIdx] = 1.0;
+        const ctx = ensureAudio();
+        triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, {
+          vertexIdx: vIdx,
+          coord4D: state.rotatedVertices[vIdx],
+          kappa: state.kappaSteep,
+          hand: site % 2 === 0 ? 'R' : 'L',
+          velocity: 0.95
+        });
+      });
+
+      // Overlay Soliton Launchers
+      document.getElementById('btnLaunchFastSoliton').addEventListener('click', () => {
+        if (state.solitons.length >= 5) state.solitons.shift();
+        state.solitons.push({ pos: 0, kappa: 2.25, dir: 1, hand: 'R', color: '#f59e0b' });
+        const ctx = ensureAudio();
+        triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, { vertexIdx: 0, kappa: 2.25, hand: 'R', velocity: 0.98 });
+      });
+
+      document.getElementById('btnLaunchSlowSoliton').addEventListener('click', () => {
+        if (state.solitons.length >= 5) state.solitons.shift();
+        state.solitons.push({ pos: 8, kappa: 0.95, dir: -1, hand: 'L', color: '#38bdf8' });
+        const ctx = ensureAudio();
+        triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime, { vertexIdx: 8, kappa: 0.95, hand: 'L', velocity: 0.72 });
+      });
+
+      document.getElementById('btnOvertakeDemo').addEventListener('click', () => {
+        setTabView('toda');
+        state.solitons = [
+          { pos: 1.0, kappa: 2.4, dir: 1, hand: 'R', color: '#f59e0b' },
+          { pos: 4.5, kappa: 0.9, dir: 1, hand: 'L', color: '#38bdf8' }
+        ];
+        if (!state.isPlaying) document.getElementById('btnPlayToggle').click();
+        showToast('Supersonic Overtake: Fast κ=2.4 R-Soliton chasing Slow κ=0.9 L-Soliton!');
+      });
+
+      document.getElementById('btnStrikeHyperChord').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        for (let i = 0; i < 6; i++) {
+          state.vertexGlows[i] = 1.0;
+          triggerHyperSolitonStrike(ctx, masterGain, ctx.currentTime + i * 0.045, {
+            vertexIdx: i * 2, coord4D: state.rotatedVertices[i] || [0,0,0,0], velocity: 0.86
+          });
+        }
+      });
+
+      // Right Column Sliders
+      document.getElementById('sliderRootFreqHz').addEventListener('input', (e) => {
+        state.rootFreqHz = parseInt(e.target.value, 10);
+        document.getElementById('valRootFreqHz').textContent = `${state.rootFreqHz} Hz`;
+      });
+      document.getElementById('sliderDopplerW').addEventListener('input', (e) => {
+        state.dopplerDepthPct = parseInt(e.target.value, 10);
+        document.getElementById('valDopplerW').textContent = `${state.dopplerDepthPct}%`;
+      });
+      document.getElementById('sliderKappaSteep').addEventListener('input', (e) => {
+        state.kappaSteep = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valKappaSteep').textContent = state.kappaSteep.toFixed(2);
+        updateSolitonTelemetry();
+        renderLaxSpectrumBars();
+      });
+      document.getElementById('sliderHopfShimmer').addEventListener('input', (e) => {
+        state.hopfShimmerPct = parseInt(e.target.value, 10);
+        document.getElementById('valHopfShimmer').textContent = `${state.hopfShimmerPct}%`;
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderHyperWav('polychoron_loop'));
+      document.getElementById('btnExportPolychoronWav').addEventListener('click', () => renderHyperWav('polychoron_loop'));
+      document.getElementById('btnExportSolitonCollisionWav').addEventListener('click', () => renderHyperWav('soliton_collision'));
+
+      document.querySelectorAll('.hyper-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderHyperWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportHyperJson').addEventListener('click', () => {
+        const payload = {
+          app: "HYPER_SOLITON_4D_TODA_LAB",
+          polychoron: state.polyType,
+          vertexCount: state.baseVertices.length,
+          edgeCount: state.baseEdges.length,
+          so4SpinVelocities: { xy: state.spinXY, zw: state.spinZW, xw: state.spinXW },
+          todaSolitonParams: {
+            betaNonlinearity: state.todaBeta,
+            kappaSteepness: state.kappaSteep,
+            collisionPhaseShiftRad: Number(state.collisionShiftRad.toFixed(4)),
+            laxEigenvalues: state.laxEigenvalues
+          }
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `hypersoliton_${state.polyType}_telemetry.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded 4D Polychoron & Toda Lax Telemetry JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      buildTodaSiteGridDOM();
+      applyHyperPreset(HYPER_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(animateMainLoop);
+    });
+  </script>
+</body>
+</html>

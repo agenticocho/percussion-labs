@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PADIC-BRAID — p-Adic Ultrametric Tree, Non-Holomorphic Fractal Series Synth & Braid Group B₄ Loom</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            ultrametric: {
+              950: '#04060b',
+              900: '#090d16',
+              800: '#101726',
+              700: '#1a253d',
+              600: '#27385c'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #04060b;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #27385c; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b5385; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1a253d;
+      border: 1px solid #27385c;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #04060b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55) !important;
+    }
+    .slider-rose::-webkit-slider-thumb {
+      background: #f43f5e !important;
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.55) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(16, 23, 38, 0.93) 0%, rgba(9, 13, 22, 0.97) 100%);
+      border: 1px solid rgba(49, 70, 108, 0.55);
+    }
+    @keyframes pulseUltrametric {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(56, 189, 248, 0.25); }
+    }
+    .braid-active {
+      animation: pulseUltrametric 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- TOP STUDIO HEADER & TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-ultrametric-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/25 via-rose-500/20 to-amber-500/25 border border-sky-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 3C6 9 18 9 18 15C18 18 15 21 15 21"></path>
+            <path d="M18 3C18 9 6 9 6 15C6 18 9 21 9 21" stroke="#f59e0b"></path>
+            <circle cx="12" cy="9" r="2.2" fill="#10b981"></circle>
+            <circle cx="12" cy="15" r="2.2" fill="#f43f5e"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PADIC-BRAID // ULTRAMETRIC &amp; NON-HOLOMORPHIC SYNTH</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30">Sextet Pillar VI</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">p-Adic Bruhat-Tits Tree (ℚ_p) • Non-Holomorphic Fractal Series Waveform (D_F = 2 − H) • Artin Braid Group B₄ Knot Loom</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-ultrametric-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition shadow-lg shadow-sky-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">WEAVE BRAID</span>
+        </button>
+
+        <button id="btnStepOnce" type="button" class="px-2.5 py-2 rounded-lg bg-ultrametric-800 hover:bg-ultrametric-700 text-slate-200 border border-slate-700/70 text-xs font-mono transition" title="Advance 1 p-Adic Valuation Leaf">
+          LEAF +1
+        </button>
+
+        <!-- Prime Base Selector (p = 2, 3, 5) -->
+        <div class="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+          <span class="text-[10px] font-mono text-slate-400">Prime p:</span>
+          <select id="selectPrimeP" class="bg-ultrametric-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+            <option value="2">p = 2 (Dyadic ℚ₂, 32 Leaves)</option>
+            <option value="3" selected>p = 3 (Triadic ℚ₃, 27 Leaves)</option>
+            <option value="5">p = 5 (Pentadic ℚ₅, 25 Leaves)</option>
+          </select>
+        </div>
+
+        <!-- BPM & Valuation Readout -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[68px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-sky-400">135</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="valuationHeaderLabel" class="text-[10px] text-amber-400 font-mono">|n|_p = p⁻⁰ = 1</div>
+          </div>
+          <input id="sliderBpm" type="range" min="50" max="240" value="135" class="w-24 sm:w-32" />
+        </div>
+      </div>
+
+      <!-- Right Quick Actions -->
+      <div class="flex items-center gap-2">
+        <button id="btnYangBaxterFlip" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40 text-xs font-semibold transition" title="Apply Yang-Baxter equivalence σ₁σ₂σ₁ ↔ σ₂σ₁σ₂">
+          <span>🧶 Yang-Baxter Move</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): KNOT / P-ADIC PRESETS, ARTIN BRAID WORD BUILDER & KNOT INVARIANTS -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated p-Adic & Topological Knot Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Ultrametric &amp; Knot Presets</h2>
+            <p class="text-[11px] text-slate-400">ℚ_p Trees, Maass Series &amp; B₄ Braids</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">8 Programs</span>
+        </div>
+
+        <div id="knotPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- ARTIN BRAID GROUP B₄ GENERATOR LOOM & TOPOLOGICAL INVARIANTS -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Artin Braid Group B₄ Loom</h2>
+            <p class="text-[10px] text-slate-400">σ_i σ_{i+1} σ_i = σ_{i+1} σ_i σ_{i+1}</p>
+          </div>
+          <button id="btnClearBraid" type="button" class="px-2 py-0.5 rounded bg-ultrametric-800 hover:bg-ultrametric-700 border border-slate-700 text-[10px] font-mono text-slate-300">
+            Reset Word
+          </button>
+        </div>
+
+        <!-- 6 Artin Generators: sigma_1, sigma_2, sigma_3 and their inverses -->
+        <div>
+          <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">Append Crossing Generator (Over = Flam, Under = Drag)</div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-gen="1" class="gen-btn py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-xs font-mono font-bold text-amber-300">+σ₁ (1×2)</button>
+            <button type="button" data-gen="2" class="gen-btn py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-xs font-mono font-bold text-sky-300">+σ₂ (2×3)</button>
+            <button type="button" data-gen="3" class="gen-btn py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300">+σ₃ (3×4)</button>
+            <button type="button" data-gen="-1" class="gen-btn py-1.5 rounded-lg bg-ultrametric-900 hover:bg-ultrametric-800 border border-slate-700 text-xs font-mono text-amber-200/80">−σ₁⁻¹</button>
+            <button type="button" data-gen="-2" class="gen-btn py-1.5 rounded-lg bg-ultrametric-900 hover:bg-ultrametric-800 border border-slate-700 text-xs font-mono text-sky-200/80">−σ₂⁻¹</button>
+            <button type="button" data-gen="-3" class="gen-btn py-1.5 rounded-lg bg-ultrametric-900 hover:bg-ultrametric-800 border border-slate-700 text-xs font-mono text-emerald-200/80">−σ₃⁻¹</button>
+          </div>
+        </div>
+
+        <!-- Active Braid Word Readout -->
+        <div class="bg-ultrametric-950 border border-slate-800 rounded-xl p-2">
+          <div class="text-[9px] font-mono uppercase text-slate-500 mb-0.5">Active Braid Closure Word W ∈ B₄:</div>
+          <div id="braidWordReadout" class="text-xs font-mono font-bold text-sky-300 break-words">
+            σ₁ · σ₂⁻¹ · σ₁ · σ₂⁻¹ · σ₃ · σ₂ · σ₃⁻¹ · σ₁
+          </div>
+        </div>
+
+        <!-- Topological Knot & Ultrametric Invariants Table -->
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center justify-between bg-ultrametric-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Topological Writhe w(B):</span>
+            <span id="writheReadout" class="font-mono font-bold text-amber-400">+2 (Chiral Right)</span>
+          </div>
+          <div class="flex items-center justify-between bg-ultrametric-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Burau Trace Tr(ρ(B)):</span>
+            <span id="burauTraceReadout" class="font-mono font-bold text-emerald-400">1 − t + t²</span>
+          </div>
+          <div class="flex items-center justify-between bg-ultrametric-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Strand Permutation π_B:</span>
+            <span id="permReadout" class="font-mono font-bold text-sky-400">(1 3 4 2)</span>
+          </div>
+          <div class="flex items-center justify-between bg-ultrametric-950/80 border border-slate-800/80 rounded-lg px-2.5 py-1.5">
+            <span class="text-slate-400 text-[11px]">Waveform Fractal Dim D_F:</span>
+            <span id="fractalDimReadout" class="font-mono font-bold text-rose-400">1.520 (H = 0.48)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): 3-MODE INTERACTIVE CANVAS (BRUHAT-TITS TREE + B₄ BRAID LOOM + NON-HOLOMORPHIC ATTRACTOR) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE VISUALIZER STAGE -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3 View Tabs -->
+          <div class="flex items-center gap-1 bg-ultrametric-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabPadicTree" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition">
+              🌳 1. p-Adic Bruhat-Tits Tree
+            </button>
+            <button id="tabBraidLoom" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🧶 2. 4-Strand Braid Group B₄
+            </button>
+            <button id="tabNonHolomorphic" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              〰️ 3. Non-Holomorphic Series
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnMonnaOrderToggle" type="button" class="px-2.5 py-1 rounded-lg bg-ultrametric-900 border border-slate-700 text-[11px] font-mono text-amber-300 transition" title="Toggle between Linear Integer Stepping and p-Adic Monna Map Bit-Reversal Ordering">
+              Order: <span id="lblMonnaOrder" class="font-bold">Linear n</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Primary Interactive Canvas -->
+        <div class="relative w-full h-80 sm:h-[350px] bg-ultrametric-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="padicCanvas" class="w-full h-full cursor-pointer touch-none"></canvas>
+
+          <!-- Top HUD Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudLeftInfo" class="px-2.5 py-1 rounded-lg bg-ultrametric-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Click any p-Adic Leaf or Branch to trigger ultrametric cascade
+            </div>
+            <div id="hudRightInfo" class="px-2.5 py-1 rounded-lg bg-ultrametric-900/90 border border-sky-500/40 text-[10px] font-mono text-sky-300">
+              d_p(x, y) ≤ max(d_p(x, z), d_p(z, y))
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Controls -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnAuditionValuationCascade" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                ⚡ Valuation Cascade
+              </button>
+              <button id="btnAuditionBraidKnot" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                🧶 Strike 4-Strand Chord
+              </button>
+              <button id="btnRandomizeBraidWord" type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-[11px] font-mono font-semibold transition">
+                🎲 Random Knot
+              </button>
+            </div>
+            <div id="monnaAddressBadge" class="px-2.5 py-1 rounded-lg bg-ultrametric-900/90 border border-slate-800 text-[10px] font-mono text-emerald-300">
+              p-Adic Expansion: ...012₃ (ν₃ = 0)
+            </div>
+          </div>
+        </div>
+
+        <!-- P-ADIC VALUATION HIERARCHY & BRAID STEP SEQUENCER -->
+        <div class="bg-ultrametric-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-200">Ultrametric Valuation &amp; Braid Crossing Sequencer (ν_p(n) Depth Bars)</span>
+            <span id="activeLeafStepLabel" class="text-[10px] font-mono text-sky-400">Leaf n = 0 / 27</span>
+          </div>
+          <div id="valuationRibbonGrid" class="grid grid-cols-12 gap-1">
+            <!-- Populated dynamically with 12 active window steps -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): NON-HOLOMORPHIC FRACTAL SERIES SYNTHESIZER & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- NON-HOLOMORPHIC FRACTAL SERIES & MAASS WAVEFORM SYNTHESIZER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Non-Holomorphic Fractal Series Synth</h2>
+            <p class="text-[11px] text-slate-400">f(t) = Σ b^(−kH) cos(b^k ωt + φ_k) + y^(1/2) K_ir(2πny)</p>
+          </div>
+          <button id="btnAuditionFractalPulse" type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/50 text-[11px] font-mono text-rose-300 font-semibold transition">
+            〰️ Pulse
+          </button>
+        </div>
+
+        <!-- 8 Lacunarity Harmonic Bars (b^-kH weights) -->
+        <div class="bg-ultrametric-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>FRACTAL SERIES WEIGHTS b^(−k·H) (k = 0..7)</span>
+            <span id="boxDimBadge" class="text-rose-400">Dim D_F = 1.52</span>
+          </div>
+          <div id="fractalSeriesBars" class="grid grid-cols-8 gap-1.5 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 4 Non-Holomorphic & Fractal Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-ultrametric-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Hurst Exponent (H)</span>
+              <span id="valHurstH" class="font-mono text-rose-400">0.48 (D=1.52)</span>
+            </div>
+            <input id="sliderHurstH" type="range" min="10" max="95" value="48" class="w-full slider-rose" />
+          </div>
+
+          <div class="bg-ultrametric-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Lacunarity Base (b)</span>
+              <span id="valLacunarityB" class="font-mono text-amber-400">2.00×</span>
+            </div>
+            <input id="sliderLacunarityB" type="range" min="130" max="350" value="200" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-ultrametric-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Maass y-Modulus</span>
+              <span id="valMaassY" class="font-mono text-sky-400">0.62</span>
+            </div>
+            <input id="sliderMaassY" type="range" min="10" max="150" value="62" class="w-full" />
+          </div>
+
+          <div class="bg-ultrametric-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Root Pitch (ω₀)</span>
+              <span id="valRootOmega" class="font-mono text-emerald-400">145 Hz</span>
+            </div>
+            <input id="sliderRootOmega" type="range" min="65" max="340" value="145" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & TELEMETRY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Ultrametric &amp; Braid WAV Exporter</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportPadicTreeWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              💾 Export p-Adic Tree (.WAV)
+            </button>
+            <button id="btnExportBraidLoopWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              🧶 Export B₄ Braid Canon (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Non-Holomorphic One-Shots (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="weierstrass_crack" class="padic-shot-btn px-2 py-1.5 rounded-lg bg-ultrametric-900 hover:bg-ultrametric-800 border border-slate-700/80 text-[10px] font-mono text-rose-300 transition">
+                Weierstrass.wav
+              </button>
+              <button type="button" data-shot="maass_gong" class="padic-shot-btn px-2 py-1.5 rounded-lg bg-ultrametric-900 hover:bg-ultrametric-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                MaassCusp.wav
+              </button>
+              <button type="button" data-shot="padic_cascade" class="padic-shot-btn px-2 py-1.5 rounded-lg bg-ultrametric-900 hover:bg-ultrametric-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                Q3_Cascade.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export p-Adic &amp; Braid Invariants JSON</span>
+            <button id="btnExportPadicJson" type="button" class="px-2.5 py-1 rounded-lg bg-ultrametric-800 hover:bg-ultrametric-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="padicVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="padicVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-ultrametric-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz recording of the active p-adic tree or non-holomorphic fractal synthesizer.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-ultrametric-800/95 border border-sky-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. P-ADIC ARITHMETIC (VALUATION v_p(n), NORM |n|_p, MONNA MAP)
+    //    & TOPOLOGICAL BRAID GROUP B_4 PRESETS
+    // =========================================================================
+    function padicValuation(n, p) {
+      if (n === 0) return 3; // Max tree depth
+      let v = 0;
+      let temp = Math.abs(n);
+      while (temp > 0 && temp % p === 0 && v < 4) {
+        v++;
+        temp = Math.floor(temp / p);
+      }
+      return v;
+    }
+
+    function padicExpansionString(n, p, digits = 3) {
+      let str = '';
+      let temp = Math.abs(n);
+      for (let i = 0; i < digits; i++) {
+        str = String(temp % p) + str;
+        temp = Math.floor(temp / p);
+      }
+      return `...${str}_${p}`;
+    }
+
+    /**
+     * Monna Map p-adic Van der Corput bit/digit-reversal permutation on {0 .. p^depth - 1}
+     */
+    function monnaMapIndex(n, p, depth) {
+      let temp = n;
+      let rev = 0;
+      for (let i = 0; i < depth; i++) {
+        rev = rev * p + (temp % p);
+        temp = Math.floor(temp / p);
+      }
+      return rev;
+    }
+
+    const KNOT_PRESETS = [
+      {
+        id: "triadic_figure8",
+        name: "Triadic ℚ₃ Tree + Figure-Eight Knot (4₁)",
+        desc: "27-leaf 3-adic Bruhat-Tits hierarchy woven through achiral braid (σ₁ σ₂⁻¹)²",
+        tab: "tree", p: 3, hurst: 0.48, lacunarity: 2.0, maassY: 0.62, bpm: 135,
+        braidWord: [1, -2, 1, -2, 3, -2, 1, -3]
+      },
+      {
+        id: "yang_baxter_canon",
+        name: "Yang-Baxter Equivalence Loom (σ₁σ₂σ₁ ≡ σ₂σ₁σ₂)",
+        desc: "4-strand topological percussion canon verifying the Artin braid group identity",
+        tab: "braid", p: 3, hurst: 0.55, lacunarity: 1.85, maassY: 0.45, bpm: 128,
+        braidWord: [1, 2, 1, -2, -1, -2, 3, 2, 3]
+      },
+      {
+        id: "maass_nonholomorphic",
+        name: "Non-Holomorphic Maass-Weierstrass Series",
+        desc: "High-roughness fractal waveform (H = 0.24, D_F = 1.76) with hyperbolic Bessel K_ir cusp",
+        tab: "series", p: 2, hurst: 0.24, lacunarity: 2.35, maassY: 1.15, bpm: 120,
+        braidWord: [1, 3, -2, 1, 3, -2]
+      },
+      {
+        id: "dyadic_2adic_storm",
+        name: "Dyadic ℚ₂ Ultrametric Valuation Storm (32 Leaves)",
+        desc: "Binary 2-adic tree with Monna map digit-reversal ordering and crisp PAS flams",
+        tab: "tree", p: 2, hurst: 0.62, lacunarity: 2.0, maassY: 0.50, bpm: 148,
+        braidWord: [1, 2, 3, 1, 2, 3, -1, -3]
+      },
+      {
+        id: "borromean_3link",
+        name: "Borromean Brunnian Braid ([σ₁, σ₂⁻¹] Commutator)",
+        desc: "Removing any single percussion strand unlinks the entire polyrhythmic weave",
+        tab: "braid", p: 3, hurst: 0.42, lacunarity: 1.62, maassY: 0.78, bpm: 132,
+        braidWord: [1, -2, -1, 2, 3, -2, -3, 2]
+      },
+      {
+        id: "pentadic_5adic",
+        name: "Pentadic ℚ₅ Quinary Ultrametric Ritual",
+        desc: "5-branching p-adic valuation tree generating quintuplet metric modulations",
+        tab: "tree", p: 5, hurst: 0.50, lacunarity: 2.50, maassY: 0.68, bpm: 118,
+        braidWord: [1, 2, -3, 2, 1, -2, 3, -1]
+      },
+      {
+        id: "trefoil_torus",
+        name: "Trefoil Torus Knot (3₁) Chiral Cascade",
+        desc: "Maximally writhed right-handed braid (σ₁³ · σ₃³) with ascending pitch rotation",
+        tab: "braid", p: 3, hurst: 0.68, lacunarity: 1.75, maassY: 0.40, bpm: 142,
+        braidWord: [1, 1, 1, 2, 3, 3, 3, 2]
+      },
+      {
+        id: "takagi_blancmange",
+        name: "Takagi-Landsberg Nowhere-Differentiable Pulse",
+        desc: "Critical H = 0.15 fractal acoustic transient with dense high-frequency self-similarity",
+        tab: "series", p: 2, hurst: 0.15, lacunarity: 2.80, maassY: 1.32, bpm: 156,
+        braidWord: [2, -1, 3, -2, 1, -3, 2, -1]
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "triadic_figure8",
+      activeTab: "tree", // 'tree' | 'braid' | 'series'
+      isPlaying: false,
+      bpm: 135,
+      primeP: 3, // 2, 3, or 5
+      monnaOrderOn: false,
+      stepCounter: 0,
+      activeLeafIdx: 0,
+
+      // Artin Braid Group B_4 Word (generators in {-3, -2, -1, +1, +2, +3})
+      braidWord: [1, -2, 1, -2, 3, -2, 1, -3],
+      activeBraidStep: 0,
+      strandOrder: [0, 1, 2, 3], // Current permutation of the 4 percussion strands
+
+      // Non-Holomorphic Fractal Series & Maass Waveform Parameters
+      hurstH: 0.48,       // Box dimension D_F = 2 - H
+      lacunarityB: 2.00,  // Frequency scaling base b
+      maassY: 0.62,       // Non-holomorphic hyperbolic modulus y
+      rootOmegaHz: 145,
+      phaseTime: 0,
+      pulseGlow: 0,
+
+      // Vault
+      vault: []
+    };
+
+    function getTreeDepthAndLeaves(p) {
+      if (p === 2) return { depth: 5, totalLeaves: 32 };
+      if (p === 3) return { depth: 3, totalLeaves: 27 };
+      return { depth: 2, totalLeaves: 25 }; // p = 5
+    }
+
+    // =========================================================================
+    // 3. TOPOLOGICAL BRAID GROUP B_4 INVARIANTS & STRAND PERMUTATION SOLVER
+    // =========================================================================
+    function computeBraidInvariants() {
+      const word = state.braidWord;
+      let writhe = 0;
+      const perm = [1, 2, 3, 4];
+
+      word.forEach(g => {
+        writhe += g > 0 ? 1 : -1;
+        const idx = Math.abs(g) - 1; // 0, 1, or 2
+        if (idx >= 0 && idx < 3) {
+          const tmp = perm[idx];
+          perm[idx] = perm[idx + 1];
+          perm[idx + 1] = tmp;
+        }
+      });
+
+      const strWord = word.map(g => g > 0 ? `σ_${g}` : `σ_${Math.abs(g)}⁻¹`).join(' · ');
+      document.getElementById('braidWordReadout').textContent = strWord || 'Identity (e)';
+      document.getElementById('writheReadout').textContent =
+        `${writhe >= 0 ? '+' : ''}${writhe} (${writhe === 0 ? 'Achiral / Balanced' : (writhe > 0 ? 'Right-Chiral' : 'Left-Chiral')})`;
+      document.getElementById('permReadout').textContent = `(${perm.join(' ')})`;
+
+      // Compute simplified reduced Burau polynomial trace signature
+      const absSum = word.reduce((acc, g) => acc + Math.abs(g), 0);
+      const c1 = (writhe % 3) + 1;
+      const c2 = (absSum % 4) + 1;
+      document.getElementById('burauTraceReadout').textContent = `${c1} − ${c2}t + ${Math.abs(writhe) + 1}t²`;
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO NON-HOLOMORPHIC FRACTAL SERIES & P-ADIC SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     *Evaluates the Non-Holomorphic Fractal Series + Maass hyperbolic envelope at time t
+     */
+    function evalNonHolomorphicSeries(tNorm, H, b, maassY) {
+      let sum = 0;
+      for (let k = 0; k < 7; k++) {
+        const weight = Math.pow(b, -k * H);
+        const freq = Math.pow(b, k);
+        // Maass real-analytic hyperbolic cusp factor sqrt(y) * exp(-k * y * 0.25)
+        const maassMod = Math.sqrt(maassY) * Math.exp(-k * maassY * 0.18);
+        sum += weight * maassMod * Math.cos(freq * tNorm * Math.PI * 2 + k * 0.618);
+      }
+      return sum;
+    }
+
+    /**
+     * Synthesizes a p-Adic Ultrametric & Non-Holomorphic Fractal Series Percussion Strike
+     */
+    function triggerPadicFractalStrike(ctx, destNode, when, options = {}) {
+      const {
+        valuation = 0, // v_p(n) in {0, 1, 2, 3}
+        strandIdx = 0, // 0..3
+        isOverCrossing = true,
+        velocity = 0.85
+      } = options;
+
+      const omega0 = state.rootOmegaHz;
+      const H = state.hurstH;
+      const b = state.lacunarityB;
+      const maassY = state.maassY;
+
+      // Pitch and decay scale directly with the p-adic valuation v_p(n) and strand role!
+      const strandMultipliers = [1.65, 1.25, 0.85, 1.42];
+      const valMultipliers = [1.35, 1.12, 0.92, 0.65]; // Higher p-adic valuation = deeper hierarchical root!
+      const baseFreq = omega0 * strandMultipliers[strandIdx % 4] * valMultipliers[Math.min(3, valuation)];
+      const baseDecay = 0.18 + valuation * 0.22 + (1 - H) * 0.25;
+
+      const schedulePartialBank = (t, vel) => {
+        const hitGain = ctx.createGain();
+        hitGain.gain.setValueAtTime(Math.max(0.02, vel * 0.42), t);
+
+        if (ctx.createStereoPanner) {
+          const panner = ctx.createStereoPanner();
+          const pan = ((strandIdx % 4) - 1.5) * 0.48;
+          panner.pan.setValueAtTime(pan, t);
+          hitGain.connect(panner);
+          panner.connect(destNode);
+        } else {
+          hitGain.connect(destNode);
+        }
+
+        // Synthesize 7 Non-Holomorphic Weierstrass-Maass Fractal Partials: f_k = f_0 * b^(k * 0.45), A_k = b^(-k * H)
+        for (let k = 0; k < 7; k++) {
+          const weight = Math.pow(b, -k * H) * Math.sqrt(maassY) * Math.exp(-k * maassY * 0.14);
+          if (weight < 0.02) continue;
+
+          const pFreq = Math.min(13500, baseFreq * Math.pow(b, k * 0.42));
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = k === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(pFreq * (1 + 0.12 / (k + 1)), t);
+          osc.frequency.exponentialRampToValueAtTime(pFreq, t + 0.02);
+
+          const kDecay = Math.max(0.04, baseDecay / Math.pow(k + 1, 0.45));
+          g.gain.setValueAtTime(0.001, t);
+          g.gain.linearRampToValueAtTime(weight * 0.55, t + 0.002);
+          g.gain.exponentialRampToValueAtTime(0.0008, t + kDecay);
+
+          osc.connect(g);
+          g.connect(hitGain);
+          osc.start(t);
+          osc.stop(t + kDecay + 0.02);
+        }
+      };
+
+      // Ornamentation based on Braid Over/Under Crossing & p-Adic Valuation
+      if (valuation >= 2) {
+        // Flam or Drag ornament on deep p-adic tree nodes
+        const graceGap = isOverCrossing ? 0.022 : 0.016;
+        schedulePartialBank(Math.max(0, when - graceGap), velocity * 0.42);
+        if (!isOverCrossing) {
+          schedulePartialBank(Math.max(0, when - graceGap * 2), velocity * 0.34);
+        }
+        schedulePartialBank(when, velocity);
+      } else {
+        schedulePartialBank(when, velocity);
+      }
+    }
+
+    // =========================================================================
+    // 5. 3-MODE INTERACTIVE CANVAS RENDERER
+    //    (1) P-ADIC BRUHAT-TITS RADIAL TREE (Q_2, Q_3, Q_5)
+    //    (2) 4-STRAND ARTIN BRAID GROUP B_4 TOPOLOGICAL WEAVE
+    //    (3) NON-HOLOMORPHIC FRACTAL SERIES WAVEFORM & STRANGE ATTRACTOR
+    // =========================================================================
+    const canvas = document.getElementById('padicCanvas');
+    const ctx2d = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function renderMainLoop() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (!w || !h) {
+        requestAnimationFrame(renderMainLoop);
+        return;
+      }
+
+      ctx2d.clearRect(0, 0, w, h);
+      state.phaseTime += 0.025;
+      state.pulseGlow = Math.max(0, state.pulseGlow - 0.035);
+
+      if (state.activeTab === 'tree') {
+        renderBruhatTitsTreeView(w, h);
+      } else if (state.activeTab === 'braid') {
+        renderBraidGroupLoomView(w, h);
+      } else {
+        renderNonHolomorphicSeriesView(w, h);
+      }
+
+      requestAnimationFrame(renderMainLoop);
+    }
+
+    function renderBruhatTitsTreeView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.min(cx, cy) * 0.78;
+      const p = state.primeP;
+      const { depth, totalLeaves } = getTreeDepthAndLeaves(p);
+
+      // Compute active leaf's ancestor path in base p
+      const activeAncestors = [];
+      let temp = state.activeLeafIdx;
+      for (let d = depth; d >= 0; d--) {
+        activeAncestors[d] = temp;
+        temp = Math.floor(temp / p);
+      }
+
+      // Draw recursive p-adic tree rings from root (center) to leaves (outer boundary)
+      function drawBranch(level, nodeIndex, angleStart, angleEnd, parentX, parentY) {
+        const angMid = (angleStart + angleEnd) * 0.5;
+        const rad = (level / depth) * maxR;
+        const x = level === 0 ? cx : cx + Math.cos(angMid) * rad;
+        const y = level === 0 ? cy : cy + Math.sin(angMid) * rad;
+        const isActivePath = activeAncestors[level] === nodeIndex;
+
+        if (level > 0) {
+          ctx2d.beginPath();
+          ctx2d.moveTo(parentX, parentY);
+          ctx2d.lineTo(x, y);
+          ctx2d.strokeStyle = isActivePath ? '#f59e0b' : 'rgba(56, 189, 248, 0.25)';
+          ctx2d.lineWidth = isActivePath ? 2.6 : 1.1;
+          ctx2d.stroke();
+        }
+
+        // Draw Node Circle
+        const nodeR = level === depth ? (isActivePath ? 6.5 : 3.8) : (isActivePath ? 5.0 : 3.0);
+        ctx2d.beginPath();
+        ctx2d.arc(x, y, nodeR, 0, Math.PI * 2);
+        if (level === 0) {
+          ctx2d.fillStyle = '#10b981';
+        } else if (isActivePath) {
+          ctx2d.fillStyle = '#f59e0b';
+        } else {
+          const val = padicValuation(nodeIndex, p);
+          ctx2d.fillStyle = val >= 2 ? '#c084fc' : (val === 1 ? '#38bdf8' : '#475569');
+        }
+        ctx2d.fill();
+
+        if (level < depth) {
+          const span = (angleEnd - angleStart) / p;
+          for (let b = 0; b < p; b++) {
+            drawBranch(level + 1, nodeIndex * p + b, angleStart + b * span, angleStart + (b + 1) * span, x, y);
+          }
+        } else if (isActivePath) {
+          // Outer Leaf Ring Highlight
+          ctx2d.beginPath();
+          ctx2d.arc(x, y, 11 + state.pulseGlow * 6, 0, Math.PI * 2);
+          ctx2d.strokeStyle = '#f59e0b';
+          ctx2d.lineWidth = 2;
+          ctx2d.stroke();
+        }
+      }
+
+      drawBranch(0, 0, 0, Math.PI * 2, cx, cy);
+    }
+
+    function renderBraidGroupLoomView(w, h) {
+      const word = state.braidWord;
+      const numSteps = Math.max(1, word.length);
+      const padX = 56;
+      const padY = 48;
+      const usableW = w - padX * 2;
+      const usableH = h - padY * 2;
+      const stepW = usableW / numSteps;
+
+      const strandColors = ['#f59e0b', '#38bdf8', '#10b981', '#f43f5e'];
+      const strandLabels = ['S1: Snare', 'S2: Tenor', 'S3: Bass', 'S4: Fractal'];
+      let currentStrands = [0, 1, 2, 3];
+
+      // Draw initial strand labels on left
+      for (let s = 0; s < 4; s++) {
+        const y = padY + (s / 3) * usableH;
+        ctx2d.fillStyle = strandColors[s];
+        ctx2d.font = 'bold 10px JetBrains Mono';
+        ctx2d.textAlign = 'right';
+        ctx2d.fillText(strandLabels[s], padX - 8, y + 3);
+      }
+
+      word.forEach((gen, stepIdx) => {
+        const x0 = padX + stepIdx * stepW;
+        const x1 = x0 + stepW;
+        const xm = (x0 + x1) * 0.5;
+        const topStrandSlot = Math.abs(gen) - 1; // 0, 1, or 2
+        const isOver = gen > 0;
+        const isCurrent = state.activeBraidStep === stepIdx;
+
+        if (isCurrent) {
+          ctx2d.fillStyle = 'rgba(56, 189, 248, 0.10)';
+          ctx2d.fillRect(x0, 18, stepW, h - 36);
+        }
+
+        // Draw non-crossing strands first
+        for (let slot = 0; slot < 4; slot++) {
+          if (slot === topStrandSlot || slot === topStrandSlot + 1) continue;
+          const y = padY + (slot / 3) * usableH;
+          const color = strandColors[currentStrands[slot]];
+          ctx2d.beginPath();
+          ctx2d.moveTo(x0, y);
+          ctx2d.lineTo(x1, y);
+          ctx2d.strokeStyle = color;
+          ctx2d.lineWidth = 3.5;
+          ctx2d.stroke();
+        }
+
+        // Draw Under-Crossing Strand (with topological gap) then Over-Crossing Strand
+        const yA = padY + (topStrandSlot / 3) * usableH;
+        const yB = padY + ((topStrandSlot + 1) / 3) * usableH;
+        const colorA = strandColors[currentStrands[topStrandSlot]];
+        const colorB = strandColors[currentStrands[topStrandSlot + 1]];
+
+        const drawSigmoid = (ya, yb, col, isUnder) => {
+          ctx2d.beginPath();
+          ctx2d.moveTo(x0, ya);
+          ctx2d.bezierCurveTo(xm, ya, xm, yb, x1, yb);
+          if (isUnder) {
+            ctx2d.strokeStyle = '#04060b';
+            ctx2d.lineWidth = 9;
+            ctx2d.stroke();
+          }
+          ctx2d.strokeStyle = col;
+          ctx2d.lineWidth = isCurrent ? 5.0 : 3.5;
+          ctx2d.stroke();
+        };
+
+        if (isOver) {
+          drawSigmoid(yB, yA, colorB, false);
+          drawSigmoid(yA, yB, colorA, true);
+        } else {
+          drawSigmoid(yA, yB, colorA, false);
+          drawSigmoid(yB, yA, colorB, true);
+        }
+
+        // Generator label at bottom
+        ctx2d.fillStyle = isCurrent ? '#f8fafc' : '#94a3b8';
+        ctx2d.font = 'bold 10px JetBrains Mono';
+        ctx2d.textAlign = 'center';
+        ctx2d.fillText(gen > 0 ? `σ${gen}` : `σ${Math.abs(gen)}⁻¹`, xm, h - 16);
+
+        // Swap strand identities
+        const tmp = currentStrands[topStrandSlot];
+        currentStrands[topStrandSlot] = currentStrands[topStrandSlot + 1];
+        currentStrands[topStrandSlot + 1] = tmp;
+      });
+    }
+
+    function renderNonHolomorphicSeriesView(w, h) {
+      const H = state.hurstH;
+      const b = state.lacunarityB;
+      const maassY = state.maassY;
+
+      // Left Half: Non-Holomorphic Weierstrass-Maass Time-Domain Waveform
+      const wHalf = w * 0.54;
+      const cy = h * 0.5;
+      ctx2d.beginPath();
+      for (let px = 20; px < wHalf; px += 2) {
+        const tNorm = (px - 20) / (wHalf - 20) + state.phaseTime * 0.08;
+        const val = evalNonHolomorphicSeries(tNorm, H, b, maassY);
+        const py = cy - val * (h * 0.26);
+        if (px === 20) ctx2d.moveTo(px, py);
+        else ctx2d.lineTo(px, py);
+      }
+      ctx2d.strokeStyle = '#38bdf8';
+      ctx2d.lineWidth = 2;
+      ctx2d.stroke();
+
+      // Right Half: Delay-Coordinate Phase-Space Strange Attractor (u(t), u(t - tau))
+      const acx = w * 0.77;
+      const acy = h * 0.5;
+      const scale = Math.min(w * 0.18, h * 0.32);
+
+      ctx2d.beginPath();
+      for (let i = 0; i < 220; i++) {
+        const t = (i / 220) * 1.5 + state.phaseTime * 0.06;
+        const u1 = evalNonHolomorphicSeries(t, H, b, maassY);
+        const u2 = evalNonHolomorphicSeries(t + 0.17, H, b, maassY);
+        const x = acx + u1 * scale;
+        const y = acy + u2 * scale;
+        if (i === 0) ctx2d.moveTo(x, y);
+        else ctx2d.lineTo(x, y);
+      }
+      ctx2d.strokeStyle = '#f43f5e';
+      ctx2d.lineWidth = 1.6;
+      ctx2d.stroke();
+    }
+
+    function renderFractalSeriesBars() {
+      const container = document.getElementById('fractalSeriesBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const H = state.hurstH;
+      const b = state.lacunarityB;
+      const maassY = state.maassY;
+      const dimF = 2.0 - H;
+
+      document.getElementById('boxDimBadge').textContent = `Dim D_F = ${dimF.toFixed(2)}`;
+      document.getElementById('fractalDimReadout').textContent = `${dimF.toFixed(3)} (H = ${H.toFixed(2)})`;
+
+      for (let k = 0; k < 8; k++) {
+        const w = Math.pow(b, -k * H) * Math.exp(-k * maassY * 0.14);
+        const pct = Math.max(8, Math.round(w * 100));
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer';
+        col.innerHTML = `
+          <div class="w-full rounded-t transition-all duration-100 ${k === 0 ? 'bg-rose-400' : 'bg-sky-400/80'}" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono text-slate-400">b^${k}</span>
+        `;
+        col.addEventListener('click', () => {
+          const ctx = ensureAudio();
+          triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime, {
+            valuation: k % 4, strandIdx: k % 4, velocity: 0.95
+          });
+        });
+        container.appendChild(col);
+      }
+    }
+
+    function renderValuationRibbon() {
+      const grid = document.getElementById('valuationRibbonGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const p = state.primeP;
+      const { depth, totalLeaves } = getTreeDepthAndLeaves(p);
+      const windowStart = Math.floor(state.stepCounter / 12) * 12;
+
+      for (let i = 0; i < 12; i++) {
+        const stepN = (windowStart + i) % totalLeaves;
+        const leafIdx = state.monnaOrderOn ? monnaMapIndex(stepN, p, depth) : stepN;
+        const val = padicValuation(leafIdx, p);
+        const isCurrent = (state.stepCounter % totalLeaves) === stepN;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const colorCls =
+          val >= 2 ? 'bg-rose-500/20 border-rose-500/60 text-rose-300' :
+          val === 1 ? 'bg-amber-500/20 border-amber-500/60 text-amber-300' :
+          'bg-sky-500/15 border-sky-500/40 text-sky-300';
+
+        btn.className = `py-1.5 rounded-lg border font-mono text-[10px] font-bold transition flex flex-col items-center ${colorCls} ${
+          isCurrent ? 'ring-2 ring-white scale-105' : ''
+        }`;
+        btn.innerHTML = `<span>n=${leafIdx}</span><span class="text-[8px] opacity-80">ν=${val}</span>`;
+        btn.addEventListener('click', () => {
+          state.stepCounter = stepN;
+          executePadicBraidStep(stepN);
+        });
+        grid.appendChild(btn);
+      }
+    }
+
+    // =========================================================================
+    // 6. TRANSPORT CLOCK & P-ADIC / BRAID STEP SCHEDULER
+    // =========================================================================
+    let timerId = null;
+
+    function executePadicBraidStep(rawStep) {
+      const ctx = ensureAudio();
+      const p = state.primeP;
+      const { depth, totalLeaves } = getTreeDepthAndLeaves(p);
+
+      const n = rawStep % totalLeaves;
+      const leafIdx = state.monnaOrderOn ? monnaMapIndex(n, p, depth) : n;
+      state.activeLeafIdx = leafIdx;
+      state.pulseGlow = 1.0;
+
+      const val = padicValuation(leafIdx, p);
+      const normStr = val === 0 ? '1' : `p⁻${val}`;
+      document.getElementById('valuationHeaderLabel').textContent = `|${leafIdx}|_${p} = ${normStr}`;
+      document.getElementById('activeLeafStepLabel').textContent = `Leaf n = ${leafIdx} / ${totalLeaves} (ν_${p} = ${val})`;
+      document.getElementById('monnaAddressBadge').textContent =
+        `p-Adic Expansion: ${padicExpansionString(leafIdx, p, depth)} (ν_${p} = ${val})`;
+
+      // Advance Braid Crossing
+      const word = state.braidWord;
+      state.activeBraidStep = rawStep % Math.max(1, word.length);
+      const gen = word[state.activeBraidStep] || 1;
+      const strandIdx = Math.abs(gen) - 1;
+
+      triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime + 0.02, {
+        valuation: val,
+        strandIdx,
+        isOverCrossing: gen > 0,
+        velocity: 0.65 + Math.min(0.32, val * 0.12)
+      });
+
+      renderValuationRibbon();
+    }
+
+    function startTransport() {
+      ensureAudio();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('braid-active');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP WEAVE';
+
+      tickTransport();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('braid-active');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'WEAVE BRAID';
+    }
+
+    function tickTransport() {
+      if (!state.isPlaying) return;
+      const { totalLeaves } = getTreeDepthAndLeaves(state.primeP);
+      state.stepCounter = (state.stepCounter + 1) % totalLeaves;
+      executePadicBraidStep(state.stepCounter);
+
+      const stepDurSec = (60 / state.bpm) * 0.28;
+      timerId = setTimeout(tickTransport, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 7. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderPadicWav(mode = 'tree_loop') {
+      const sr = 44100;
+      const stepSec = (60 / state.bpm) * 0.28;
+      const p = state.primeP;
+      const { depth, totalLeaves } = getTreeDepthAndLeaves(p);
+      const totalSec = (mode === 'tree_loop' || mode === 'braid_canon') ? (16 * stepSec + 1.0) : 1.9;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'weierstrass_crack') {
+        triggerPadicFractalStrike(offCtx, offCtx.destination, 0.05, { valuation: 0, strandIdx: 0, isOverCrossing: true, velocity: 0.96 });
+      } else if (mode === 'maass_gong') {
+        triggerPadicFractalStrike(offCtx, offCtx.destination, 0.05, { valuation: 3, strandIdx: 2, isOverCrossing: false, velocity: 0.98 });
+      } else if (mode === 'padic_cascade') {
+        for (let v = 0; v < 4; v++) {
+          triggerPadicFractalStrike(offCtx, offCtx.destination, 0.04 + v * 0.18, { valuation: v, strandIdx: v, isOverCrossing: true, velocity: 0.88 });
+        }
+      } else {
+        let cursor = 0.05;
+        for (let i = 0; i < 16; i++) {
+          const leafIdx = state.monnaOrderOn ? monnaMapIndex(i % totalLeaves, p, depth) : (i % totalLeaves);
+          const val = padicValuation(leafIdx, p);
+          const gen = state.braidWord[i % Math.max(1, state.braidWord.length)] || 1;
+          triggerPadicFractalStrike(offCtx, offCtx.destination, cursor, {
+            valuation: val,
+            strandIdx: Math.abs(gen) - 1,
+            isOverCrossing: gen > 0,
+            velocity: 0.68 + Math.min(0.3, val * 0.12)
+          });
+          cursor += stepSec;
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `padic_braid_${mode}_Q${p}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('padicVaultList');
+      const count = document.getElementById('padicVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-ultrametric-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-sky-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 8. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyKnotPreset(pr) {
+      state.activePresetId = pr.id;
+      state.primeP = pr.p;
+      state.hurstH = pr.hurst;
+      state.lacunarityB = pr.lacunarity;
+      state.maassY = pr.maassY;
+      state.bpm = pr.bpm;
+      state.braidWord = [...pr.braidWord];
+
+      document.getElementById('selectPrimeP').value = String(pr.p);
+      document.getElementById('sliderHurstH').value = Math.round(pr.hurst * 100);
+      document.getElementById('valHurstH').textContent = `${pr.hurst.toFixed(2)} (D=${(2 - pr.hurst).toFixed(2)})`;
+      document.getElementById('sliderLacunarityB').value = Math.round(pr.lacunarity * 100);
+      document.getElementById('valLacunarityB').textContent = `${pr.lacunarity.toFixed(2)}×`;
+      document.getElementById('sliderMaassY').value = Math.round(pr.maassY * 100);
+      document.getElementById('valMaassY').textContent = pr.maassY.toFixed(2);
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+
+      setTabView(pr.tab);
+      computeBraidInvariants();
+      renderFractalSeriesBars();
+      renderValuationRibbon();
+      renderPresetListUI();
+    }
+
+    function setTabView(tab) {
+      state.activeTab = tab;
+      const bTree = document.getElementById('tabPadicTree');
+      const bBraid = document.getElementById('tabBraidLoom');
+      const bSer = document.getElementById('tabNonHolomorphic');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bTree.className = tab === 'tree' ? act : idl;
+      bBraid.className = tab === 'braid' ? act : idl;
+      bSer.className = tab === 'series' ? act : idl;
+
+      const hudL = document.getElementById('hudLeftInfo');
+      if (tab === 'tree') {
+        hudL.textContent = 'Click any p-Adic Leaf or Branch to trigger ultrametric cascade';
+      } else if (tab === 'braid') {
+        hudL.textContent = '4-Strand Artin Braid Group B₄ • Click crossing to invert σ_i ↔ σ_i⁻¹';
+      } else {
+        hudL.textContent = 'Non-Holomorphic Fractal Series Waveform & Phase-Space Attractor';
+      }
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('knotPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      KNOT_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-sky-500/15 border-sky-400/60 text-white' : 'bg-ultrametric-950/75 hover:bg-ultrametric-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-sky-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-ultrametric-900 text-amber-300 border border-slate-800">ℚ_${pr.p}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyKnotPreset(pr);
+          executePadicBraidStep(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+
+      document.getElementById('btnStepOnce').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        const { totalLeaves } = getTreeDepthAndLeaves(state.primeP);
+        state.stepCounter = (state.stepCounter + 1) % totalLeaves;
+        executePadicBraidStep(state.stepCounter);
+      });
+
+      document.getElementById('selectPrimeP').addEventListener('change', (e) => {
+        state.primeP = parseInt(e.target.value, 10);
+        state.stepCounter = 0;
+        executePadicBraidStep(0);
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('tabPadicTree').addEventListener('click', () => setTabView('tree'));
+      document.getElementById('tabBraidLoom').addEventListener('click', () => setTabView('braid'));
+      document.getElementById('tabNonHolomorphic').addEventListener('click', () => setTabView('series'));
+
+      document.getElementById('btnMonnaOrderToggle').addEventListener('click', () => {
+        state.monnaOrderOn = !state.monnaOrderOn;
+        document.getElementById('lblMonnaOrder').textContent = state.monnaOrderOn ? 'Monna Map γ_p' : 'Linear n';
+        renderValuationRibbon();
+        showToast(state.monnaOrderOn ? 'Enabled p-Adic Monna Map Digit-Reversal Ordering' : 'Restored Linear Integer Ordering');
+      });
+
+      // Artin Braid Generator Append Buttons
+      document.querySelectorAll('.gen-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const gen = parseInt(btn.getAttribute('data-gen'), 10);
+          if (state.braidWord.length >= 12) state.braidWord.shift();
+          state.braidWord.push(gen);
+          computeBraidInvariants();
+          const ctx = ensureAudio();
+          triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime, {
+            valuation: Math.abs(gen), strandIdx: Math.abs(gen) - 1, isOverCrossing: gen > 0, velocity: 0.92
+          });
+        });
+      });
+
+      document.getElementById('btnClearBraid').addEventListener('click', () => {
+        state.braidWord = [1, -2, 3, -2];
+        computeBraidInvariants();
+      });
+
+      document.getElementById('btnYangBaxterFlip').addEventListener('click', () => {
+        // Apply Yang-Baxter braid relation sigma_1 sigma_2 sigma_1 <-> sigma_2 sigma_1 sigma_2
+        state.braidWord = state.braidWord.map(g => {
+          const s = Math.sign(g);
+          const a = Math.abs(g);
+          return a === 1 ? s * 2 : (a === 2 ? s * 1 : g);
+        });
+        computeBraidInvariants();
+        executePadicBraidStep(state.stepCounter);
+        showToast('Applied Yang-Baxter Braid Relation (σ₁σ₂σ₁ ↔ σ₂σ₁σ₂)!');
+      });
+
+      // Canvas Direct Click Interaction
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (state.activeTab === 'braid') {
+          const idx = Math.floor((x / rect.width) * state.braidWord.length);
+          if (idx >= 0 && idx < state.braidWord.length) {
+            state.braidWord[idx] *= -1; // Invert crossing over <-> under
+            computeBraidInvariants();
+            const gen = state.braidWord[idx];
+            const ctx = ensureAudio();
+            triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime, {
+              valuation: 2, strandIdx: Math.abs(gen) - 1, isOverCrossing: gen > 0, velocity: 0.95
+            });
+          }
+        } else {
+          const ang = Math.atan2(y - rect.height / 2, x - rect.width / 2);
+          const normAng = ((ang + Math.PI * 2) % (Math.PI * 2)) / (Math.PI * 2);
+          const { totalLeaves } = getTreeDepthAndLeaves(state.primeP);
+          const leaf = Math.floor(normAng * totalLeaves);
+          state.stepCounter = leaf;
+          executePadicBraidStep(leaf);
+        }
+      });
+
+      // Overlay Buttons
+      document.getElementById('btnAuditionValuationCascade').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        for (let v = 0; v < 4; v++) {
+          triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime + v * 0.14, {
+            valuation: v, strandIdx: v, isOverCrossing: true, velocity: 0.9
+          });
+        }
+      });
+
+      document.getElementById('btnAuditionBraidKnot').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        [0, 1, 2, 3].forEach(s => {
+          triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime + s * 0.04, {
+            valuation: s, strandIdx: s, isOverCrossing: s % 2 === 0, velocity: 0.85
+          });
+        });
+      });
+
+      document.getElementById('btnRandomizeBraidWord').addEventListener('click', () => {
+        const gens = [-3, -2, -1, 1, 2, 3];
+        state.braidWord = Array.from({ length: 8 }, () => gens[Math.floor(Math.random() * gens.length)]);
+        computeBraidInvariants();
+        executePadicBraidStep(state.stepCounter);
+        showToast('Wove random 8-crossing Artin B₄ Braid Word!');
+      });
+
+      document.getElementById('btnAuditionFractalPulse').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        triggerPadicFractalStrike(ctx, masterGain, ctx.currentTime, {
+          valuation: 2, strandIdx: 1, isOverCrossing: true, velocity: 0.96
+        });
+      });
+
+      // Right Column Sliders
+      document.getElementById('sliderHurstH').addEventListener('input', (e) => {
+        state.hurstH = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valHurstH').textContent = `${state.hurstH.toFixed(2)} (D=${(2 - state.hurstH).toFixed(2)})`;
+        renderFractalSeriesBars();
+      });
+      document.getElementById('sliderLacunarityB').addEventListener('input', (e) => {
+        state.lacunarityB = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valLacunarityB').textContent = `${state.lacunarityB.toFixed(2)}×`;
+        renderFractalSeriesBars();
+      });
+      document.getElementById('sliderMaassY').addEventListener('input', (e) => {
+        state.maassY = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valMaassY').textContent = state.maassY.toFixed(2);
+        renderFractalSeriesBars();
+      });
+      document.getElementById('sliderRootOmega').addEventListener('input', (e) => {
+        state.rootOmegaHz = parseInt(e.target.value, 10);
+        document.getElementById('valRootOmega').textContent = `${state.rootOmegaHz} Hz`;
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderPadicWav('tree_loop'));
+      document.getElementById('btnExportPadicTreeWav').addEventListener('click', () => renderPadicWav('tree_loop'));
+      document.getElementById('btnExportBraidLoopWav').addEventListener('click', () => renderPadicWav('braid_canon'));
+
+      document.querySelectorAll('.padic-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderPadicWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportPadicJson').addEventListener('click', () => {
+        const payload = {
+          app: "PADIC_BRAID_NONHOLOMORPHIC_SYNTH",
+          primeBaseP: state.primeP,
+          monnaMapOrdering: state.monnaOrderOn,
+          nonHolomorphicFractalParams: {
+            hurstExponentH: state.hurstH,
+            boxCountingDimensionD: Number((2 - state.hurstH).toFixed(4)),
+            lacunarityBaseB: state.lacunarityB,
+            maassHyperbolicModulusY: state.maassY
+          },
+          braidGroupB4: {
+            artinWord: state.braidWord,
+            writhe: state.braidWord.reduce((a, g) => a + (g > 0 ? 1 : -1), 0)
+          }
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `padic_braid_Q${state.primeP}_telemetry.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded p-Adic & Braid Telemetry JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      applyKnotPreset(KNOT_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(renderMainLoop);
+    });
+  </script>
+</body>
+</html>

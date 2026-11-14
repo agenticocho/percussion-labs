@@ -1,0 +1,2135 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EIGENPULSE — Spatial Drumline Drill, Bessel Cymatics & Polyrhythmic Hocket Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            void: {
+              950: '#06080d',
+              900: '#0b0f19',
+              800: '#111827',
+              700: '#1e293b',
+              600: '#334155'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #06080d;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #28354d; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4d6e; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #06080d;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #a855f7 !important;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.55) !important;
+    }
+    .glass-card {
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.92) 0%, rgba(11, 15, 25, 0.96) 100%);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+    }
+    @keyframes pulseRing {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(56, 189, 248, 0.25); }
+    }
+    .transport-active {
+      animation: pulseRing 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- TOP STUDIO HEADER & GLOBAL ENSEMBLE TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-void-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/25 via-purple-500/20 to-amber-500/25 border border-sky-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="9"></circle>
+            <circle cx="12" cy="12" r="5" stroke-dasharray="2 2"></circle>
+            <line x1="3" y1="12" x2="21" y2="12" stroke="#f59e0b"></line>
+            <line x1="12" y1="3" x2="12" y2="21" stroke="#10b981"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">EIGENPULSE // CYMATIC DRUMLINE LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30">PAS-40 Counterpart</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">343 m/s Acoustic Time-of-Flight Drill • 5-Bass Split Hocket • Circular Bessel (m,n) Cymatics • Euclidean Phase Engine</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-void-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition shadow-lg shadow-sky-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">RUN ENSEMBLE</span>
+        </button>
+
+        <button id="btnStepOnce" type="button" class="px-2.5 py-2 rounded-lg bg-void-800 hover:bg-void-700 text-slate-200 border border-slate-700/70 text-xs font-mono transition" title="Step 1 Pulse Forward">
+          PULSE &rarr;
+        </button>
+
+        <!-- BPM Slider -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[60px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-sky-400">128</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="stepCountLabel" class="text-[10px] text-slate-400 font-mono">16-Step Grid</div>
+          </div>
+          <input id="sliderBpm" type="range" min="60" max="210" value="128" class="w-24 sm:w-32" />
+        </div>
+
+        <!-- Cycle Steps Selector (12 / 16 / 24) -->
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-mono text-slate-400 hidden sm:inline">Cycle:</span>
+          <select id="selectCycleSteps" class="bg-void-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-slate-200 outline-none">
+            <option value="12">12 Steps (3/4 or 12/8)</option>
+            <option value="16" selected>16 Steps (4/4 Corps)</option>
+            <option value="24">24 Steps (Polyrhythm)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Right Quick Actions -->
+      <div class="flex items-center gap-2">
+        <button id="btnRandomGroove" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold transition">
+          <span>🎲 Randomize Hocket</span>
+        </button>
+        <button id="btnWildcardSetup" type="button" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-xs font-semibold transition">
+          <span>🌀 Morph Drill + Mode</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export Mix WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN STUDIO GRID -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): CADENCE PRESETS, EUCLIDEAN GENERATOR & 4-SECTION CONTROLS -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated Ensemble Cadence & Polyrhythm Presets -->
+      <div class="glass-card rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Ensemble Cadence Library</h2>
+            <p class="text-[11px] text-slate-400">Polyrhythmic Hockets &amp; Phase Studies</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">8 Presets</span>
+        </div>
+
+        <div id="presetListContainer" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- 4-SECTION EUCLIDEAN & HOCKET ARCHITECT -->
+      <div class="glass-card rounded-2xl p-3.5 space-y-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Section Euclidean &amp; Hocket</h2>
+            <p class="text-[11px] text-slate-400">Configure pulses E(k,n) &amp; tonal routing</p>
+          </div>
+          <button id="btnClearGrid" type="button" class="px-2 py-0.5 rounded bg-void-800 hover:bg-void-700 border border-slate-700 text-[10px] font-mono text-slate-300">
+            Clear Grid
+          </button>
+        </div>
+
+        <!-- Section 1: Snare Line (3 Players) -->
+        <div class="bg-void-950/85 border border-amber-500/30 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>1. Snare Line (3× Kevlar)
+            </span>
+            <div class="flex items-center gap-1">
+              <button type="button" data-mute="snare" class="mute-btn px-2 py-0.5 rounded text-[10px] font-mono bg-void-800 text-slate-300 border border-slate-700">ON</button>
+              <select id="selSnareArtic" class="bg-void-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-mono text-amber-300">
+                <option value="clean">Clean Crack</option>
+                <option value="flam" selected>PAS Flams</option>
+                <option value="diddle">Diddle Roll</option>
+                <option value="rimshot">Rimshot Bite</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>Euclidean Pulses: <strong id="lblSnareEuclid" class="text-amber-300">7</strong></span>
+            <span>Vol: <strong id="lblSnareVol">90%</strong></span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="sliderSnareEuclid" type="range" min="0" max="16" value="7" class="w-full slider-amber" />
+            <input id="sliderSnareVol" type="range" min="0" max="100" value="90" class="w-full slider-amber" />
+          </div>
+        </div>
+
+        <!-- Section 2: Tenor Quads (2 Players) -->
+        <div class="bg-void-950/85 border border-sky-500/30 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>2. Tenor Quads (2× 4-Drum)
+            </span>
+            <div class="flex items-center gap-1">
+              <button type="button" data-mute="tenor" class="mute-btn px-2 py-0.5 rounded text-[10px] font-mono bg-void-800 text-slate-300 border border-slate-700">ON</button>
+              <select id="selTenorSweep" class="bg-void-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-mono text-sky-300">
+                <option value="around" selected>Sweep 1→4</option>
+                <option value="crossover">Cross-Over 1-3-2-4</option>
+                <option value="inward">Out-to-In 4→1</option>
+                <option value="random">Random Quad</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>Euclidean Pulses: <strong id="lblTenorEuclid" class="text-sky-300">9</strong></span>
+            <span>Vol: <strong id="lblTenorVol">85%</strong></span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="sliderTenorEuclid" type="range" min="0" max="16" value="9" class="w-full" />
+            <input id="sliderTenorVol" type="range" min="0" max="100" value="85" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Section 3: 5-Drum Tonal Bass Hocket (5 Players B1-B5) -->
+        <div class="bg-void-950/85 border border-emerald-500/30 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>3. Bass Line Hocket (B1–B5)
+            </span>
+            <div class="flex items-center gap-1">
+              <button type="button" data-mute="bass" class="mute-btn px-2 py-0.5 rounded text-[10px] font-mono bg-void-800 text-slate-300 border border-slate-700">ON</button>
+              <select id="selBassHocket" class="bg-void-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-mono text-emerald-300">
+                <option value="cascadeDown" selected>Cascade B1→B5</option>
+                <option value="cascadeUp">Ascend B5→B1</option>
+                <option value="pendulum">Pendulum B1↔B5</option>
+                <option value="doubles">Split Doubles</option>
+                <option value="unison">Unison Sub-Boom</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>Euclidean Pulses: <strong id="lblBassEuclid" class="text-emerald-300">11</strong></span>
+            <span>Vol: <strong id="lblBassVol">95%</strong></span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="sliderBassEuclid" type="range" min="0" max="16" value="11" class="w-full slider-emerald" />
+            <input id="sliderBassVol" type="range" min="0" max="100" value="95" class="w-full slider-emerald" />
+          </div>
+        </div>
+
+        <!-- Section 4: Cymbal Line / Metallic Eigen-Plate (2 Players) -->
+        <div class="bg-void-950/85 border border-purple-500/30 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>4. Cymbal / Eigen-Plate (2×)
+            </span>
+            <div class="flex items-center gap-1">
+              <button type="button" data-mute="cymbal" class="mute-btn px-2 py-0.5 rounded text-[10px] font-mono bg-void-800 text-slate-300 border border-slate-700">ON</button>
+              <select id="selCymbalType" class="bg-void-900 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] font-mono text-purple-300">
+                <option value="chick" selected>Crunch Hi-Hat</option>
+                <option value="sizzle">Sizzle Ride</option>
+                <option value="crash">Stadium Crash</option>
+                <option value="gong">Bessel Chime</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>Euclidean Pulses: <strong id="lblCymbalEuclid" class="text-purple-300">4</strong></span>
+            <span>Vol: <strong id="lblCymbalVol">75%</strong></span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="sliderCymbalEuclid" type="range" min="0" max="16" value="4" class="w-full slider-purple" />
+            <input id="sliderCymbalVol" type="range" min="0" max="100" value="75" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): DUAL INTERACTIVE PHYSICS CANVAS (DRILL FIELD + BESSEL CHLADNI CYMATICS) & HOCKET MATRIX -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE DUAL-MODE VISUALIZER CARD -->
+      <div class="glass-card rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- Mode Tabs: Spatial Drill Field vs Bessel Chladni Cymatics -->
+          <div class="flex items-center gap-1.5 bg-void-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabSpatialDrill" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition">
+              📡 1. Spatial Drill &amp; 343 m/s Field
+            </button>
+            <button id="tabBesselCymatics" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              ⚛️ 2. Bessel (m,n) Chladni Cymatics
+            </button>
+          </div>
+
+          <!-- Drill Formation / Eigenmode Quick Selector -->
+          <div id="drillFormationToolbar" class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono text-slate-400">Drill:</span>
+            <select id="selectDrillFormation" class="bg-void-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+              <option value="wedge" selected>Corps Phalanx Wedge</option>
+              <option value="arc">Concert Hocket Arc</option>
+              <option value="rings">Concentric Rings</option>
+              <option value="spiral">Fibonacci Spiral</option>
+              <option value="pods">Split Stereo Pods</option>
+            </select>
+          </div>
+
+          <div id="besselModeToolbar" class="hidden items-center gap-1.5">
+            <span class="text-[10px] font-mono text-slate-400">Eigenmode (m,n):</span>
+            <select id="selectBesselMode" class="bg-void-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-sky-300 outline-none">
+              <option value="0,1">(0,1) Fundamental — 1.000× f0</option>
+              <option value="1,1">(1,1) 1 Diameter — 1.593× f0</option>
+              <option value="2,1" selected>(2,1) Quadrupole — 2.136× f0</option>
+              <option value="0,2">(0,2) Bullseye Ring — 2.295× f0</option>
+              <option value="3,1">(3,1) Hexapole Star — 2.653× f0</option>
+              <option value="1,2">(1,2) Split Ring — 2.917× f0</option>
+              <option value="4,1">(4,1) Octupole Petal — 3.155× f0</option>
+              <option value="2,2">(2,2) Cross Lattice — 3.500× f0</option>
+              <option value="0,3">(0,3) Triple Ring — 3.598× f0</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Primary Interactive Canvas -->
+        <div class="relative w-full h-80 sm:h-[340px] bg-void-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="mainVisualizerCanvas" class="w-full h-full cursor-grab active:cursor-grabbing touch-none"></canvas>
+
+          <!-- Overlay Telemetry Bar (Top) -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="canvasOverlayLeft" class="px-2.5 py-1 rounded-lg bg-void-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Drag any Performer or Podium Mic • Wavefronts = 343 m/s
+            </div>
+            <div id="canvasOverlayRight" class="px-2.5 py-1 rounded-lg bg-void-900/90 border border-slate-800 text-[10px] font-mono text-emerald-400">
+              Max Δt Spread: 42.1 ms
+            </div>
+          </div>
+
+          <!-- Overlay Bottom Quick Controls -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnAuditionBassRun" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[11px] font-mono font-semibold transition">
+                ▶ Bass 1→5 Split Run
+              </button>
+              <button id="btnAuditionUnisonHit" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                ⚡ Full Corps Impact
+              </button>
+              <button id="btnShakeChladniSand" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                ✨ Scatter Sand
+              </button>
+            </div>
+            <div id="phaseAngleBadge" class="px-2.5 py-1 rounded-lg bg-void-900/90 border border-slate-800 text-[10px] font-mono text-purple-300">
+              Phase Offset: +0 Steps (0°)
+            </div>
+          </div>
+        </div>
+
+        <!-- Acoustic Time-of-Flight & Phase Compensation Strip -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-void-950/90 border border-slate-800 rounded-xl p-2.5">
+          <label class="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-void-900 border border-slate-800/80 cursor-pointer">
+            <div>
+              <div class="text-[11px] font-bold text-sky-300">343 m/s Acoustic Delay</div>
+              <div class="text-[9px] text-slate-400">Physical distance arrival lag</div>
+            </div>
+            <input id="chkAcousticDelay" type="checkbox" checked class="rounded bg-void-800 border-slate-600 text-sky-500 focus:ring-0" />
+          </label>
+
+          <label class="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-void-900 border border-slate-800/80 cursor-pointer">
+            <div>
+              <div class="text-[11px] font-bold text-emerald-300">Backfield Compensation</div>
+              <div class="text-[9px] text-slate-400">Auto-fire early for unison mic arrival</div>
+            </div>
+            <input id="chkPhaseCompensate" type="checkbox" class="rounded bg-void-800 border-slate-600 text-emerald-500 focus:ring-0" />
+          </label>
+
+          <label class="flex items-center justify-between gap-2 px-2 py-1 rounded-lg bg-void-900 border border-slate-800/80 cursor-pointer">
+            <div>
+              <div class="text-[11px] font-bold text-purple-300">Orbiting Drill Motion</div>
+              <div class="text-[9px] text-slate-400">Continuous spatial Doppler march</div>
+            </div>
+            <input id="chkOrbitDrill" type="checkbox" class="rounded bg-void-800 border-slate-600 text-purple-500 focus:ring-0" />
+          </label>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE 4-SECTION POLYRHYTHMIC & 5-BASS HOCKET MATRIX -->
+      <div class="glass-card rounded-2xl p-4 space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Polyrhythmic Ensemble &amp; 5-Bass Hocket Sequencer</h3>
+            <p class="text-[11px] text-slate-400">Click any step cell to toggle or cycle drum voice (B1–B5 on Bass row, D1–D4 on Tenor row)</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="btnShiftSnarePhase" type="button" class="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/40 text-[11px] font-mono text-purple-300 transition" title="Shift Snare pattern by +1 step (Reich Phase Shift)">
+              Phase Shift Snare +1 &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- Matrix Grid Container -->
+        <div id="hocketMatrixContainer" class="space-y-1.5 overflow-x-auto pb-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): BESSEL MODAL SPECTRUM, ACOUSTIC TUNING & WAV STEM EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- BESSEL EIGENMODE SPECTRUM & PHYSICAL MEMBRANE TUNER -->
+      <div class="glass-card rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Bessel J_m(k·r) Modal Synthesizer</h2>
+            <p class="text-[11px] text-slate-400">Circular Membrane Eigenfrequencies &amp; Stiffness</p>
+          </div>
+          <button id="btnStrikeBesselModal" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-[11px] font-mono text-sky-300 font-semibold transition">
+            🔔 Excite Mode
+          </button>
+        </div>
+
+        <!-- 9 Bessel Eigenmodes Live Excitation Bar Chart -->
+        <div class="bg-void-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>MODAL SPECTRUM: J_m(j_mn · r/a)</span>
+            <span id="activeStrikeRadiusLabel" class="text-sky-400">Strike r/a = 0.38</span>
+          </div>
+          <div id="besselSpectrumBars" class="grid grid-cols-9 gap-1 items-end h-20 pt-2">
+            <!-- Populated dynamically with 9 modal bars -->
+          </div>
+        </div>
+
+        <!-- 5 Physical & Spatial Tuning Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-void-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Bass 1–5 Root Pitch</span>
+              <span id="valRootPitch" class="font-mono text-emerald-400">110 Hz</span>
+            </div>
+            <input id="sliderRootPitch" type="range" min="65" max="190" value="110" class="w-full slider-emerald" />
+          </div>
+
+          <div class="bg-void-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Modal Inharmonicity</span>
+              <span id="valStiffness" class="font-mono text-sky-400">1.00× (Pure)</span>
+            </div>
+            <input id="sliderStiffness" type="range" min="85" max="145" value="100" class="w-full" />
+          </div>
+
+          <div class="bg-void-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Membrane Sustain</span>
+              <span id="valModalDecay" class="font-mono text-amber-400">0.55 s</span>
+            </div>
+            <input id="sliderModalDecay" type="range" min="15" max="180" value="55" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-void-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Stadium Depth Scale</span>
+              <span id="valFieldScale" class="font-mono text-purple-400">45 meters</span>
+            </div>
+            <input id="sliderFieldScale" type="range" min="15" max="85" value="45" class="w-full slider-purple" />
+          </div>
+        </div>
+
+        <!-- Auto Reich Phase Drift Selector -->
+        <div class="flex items-center justify-between bg-void-950/90 border border-slate-800 rounded-xl px-3 py-2">
+          <div>
+            <div class="text-xs font-bold text-slate-200">Reich Phase-Shift Automation</div>
+            <div class="text-[10px] text-slate-400">Auto-advance Snare phase every 2 bars</div>
+          </div>
+          <input id="chkAutoPhaseDrift" type="checkbox" class="rounded bg-void-800 border-slate-600 text-purple-500 focus:ring-0" />
+        </div>
+      </div>
+
+      <!-- BINAURAL ENSEMBLE & STEM WAV EXPORTER -->
+      <div class="glass-card rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Binaural Mix &amp; Stem WAV Exporter</h2>
+              <p class="text-[11px] text-slate-400">Renders 343 m/s spatial delays &amp; stereo panning to 44.1 kHz WAV</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">16-Bit Stereo</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportFullEnsembleWav" type="button" class="px-3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shadow-md shadow-emerald-500/15">
+              💾 Full Spatial Mix (.WAV)
+            </button>
+            <button id="btnExportBassHocketWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              🥁 5-Bass Hocket Stem (.WAV)
+            </button>
+          </div>
+
+          <!-- Section & Modal One-Shot Exports -->
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Audio Stems (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-stem="snare_tenor" class="stem-export-btn px-2 py-1.5 rounded-lg bg-void-900 hover:bg-void-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                UpperBattery.wav
+              </button>
+              <button type="button" data-stem="bessel_chime" class="stem-export-btn px-2 py-1.5 rounded-lg bg-void-900 hover:bg-void-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                BesselMode.wav
+              </button>
+              <button type="button" data-stem="corps_impact" class="stem-export-btn px-2 py-1.5 rounded-lg bg-void-900 hover:bg-void-800 border border-slate-700/80 text-[10px] font-mono text-purple-300 transition">
+                CorpsImpact.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Spatial Drill &amp; Hocket Patch</span>
+            <button id="btnExportDrillJson" type="button" class="px-2.5 py-1 rounded-lg bg-void-800 hover:bg-void-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Patch (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered WAV Stem Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Stem Vault</span>
+              <span id="stemVaultCount" class="text-[10px] font-mono text-slate-500">0 stems</span>
+            </div>
+            <div id="stemVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-void-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a binaural 44.1 kHz stereo file with live preview.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-void-800/95 border border-sky-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. EXACT CIRCULAR MEMBRANE BESSEL FUNCTION ZEROS j_{m,n} & EIGENMODES
+    // =========================================================================
+    const BESSEL_MODES = [
+      { m: 0, n: 1, zero: 2.404825, ratio: 1.000, label: "(0,1)" },
+      { m: 1, n: 1, zero: 3.831706, ratio: 1.593, label: "(1,1)" },
+      { m: 2, n: 1, zero: 5.135622, ratio: 2.136, label: "(2,1)" },
+      { m: 0, n: 2, zero: 5.520078, ratio: 2.295, label: "(0,2)" },
+      { m: 3, n: 1, zero: 6.380162, ratio: 2.653, label: "(3,1)" },
+      { m: 1, n: 2, zero: 7.015587, ratio: 2.917, label: "(1,2)" },
+      { m: 4, n: 1, zero: 7.588342, ratio: 3.155, label: "(4,1)" },
+      { m: 2, n: 2, zero: 8.417244, ratio: 3.500, label: "(2,2)" },
+      { m: 0, n: 3, zero: 8.653728, ratio: 3.598, label: "(0,3)" }
+    ];
+
+    /**
+     * Evaluates Bessel function of the first kind J_m(x) via power series expansion
+     */
+    function besselJ(m, x) {
+      let sum = 0;
+      let term = Math.pow(x / 2, m);
+      let factM = 1;
+      for (let i = 1; i <= m; i++) factM *= i;
+      term /= factM;
+      sum += term;
+      const x2 = (x * x) / 4;
+      for (let k = 1; k <= 14; k++) {
+        term *= -x2 / (k * (m + k));
+        sum += term;
+      }
+      return sum;
+    }
+
+    // =========================================================================
+    // 2. EUCLIDEAN BJORKLUND RHYTHM GENERATOR & CURATED PRESETS
+    // =========================================================================
+    function generateEuclideanPattern(pulses, steps, rotation = 0) {
+      const pattern = new Array(steps).fill(0);
+      if (pulses <= 0) return pattern;
+      if (pulses >= steps) return new Array(steps).fill(1);
+      for (let i = 0; i < steps; i++) {
+        if (((i * pulses) % steps) < pulses) {
+          pattern[(i + rotation) % steps] = 1;
+        }
+      }
+      return pattern;
+    }
+
+    const ENSEMBLE_PRESETS = [
+      {
+        id: "dci_split",
+        name: "DCI Split-Bass Showstopper",
+        desc: "Cascading 5-bass 16th hocket under snare flam-accents & tenor sweeps",
+        bpm: 132, steps: 16, formation: "wedge",
+        snareK: 7, tenorK: 9, bassK: 12, cymbalK: 4,
+        snareArtic: "flam", tenorSweep: "around", bassHocket: "cascadeDown", cymbalType: "chick"
+      },
+      {
+        id: "euclid_prime",
+        name: "Euclidean Prime Rings (5:7:11:4)",
+        desc: "Interlocking co-prime Euclidean rhythms across all 4 percussion sections",
+        bpm: 124, steps: 16, formation: "rings",
+        snareK: 5, tenorK: 7, bassK: 11, cymbalK: 4,
+        snareArtic: "clean", tenorSweep: "crossover", bassHocket: "pendulum", cymbalType: "sizzle"
+      },
+      {
+        id: "reich_phase",
+        name: "Reich 'Drumming' Phase Canon",
+        desc: "12-step rhythmic cell with automated phase-shifting between Snares & Tenors",
+        bpm: 138, steps: 12, formation: "pods",
+        snareK: 7, tenorK: 7, bassK: 5, cymbalK: 3,
+        snareArtic: "clean", tenorSweep: "around", bassHocket: "cascadeUp", cymbalType: "gong",
+        autoPhase: true
+      },
+      {
+        id: "bessel_ritual",
+        name: "Bessel (2,1) Cymatic Resonance",
+        desc: "Metallic modal chimes & deep tonal bass unison tuned to Bessel eigenmodes",
+        bpm: 96, steps: 16, formation: "spiral",
+        snareK: 4, tenorK: 6, bassK: 8, cymbalK: 6,
+        snareArtic: "rimshot", tenorSweep: "inward", bassHocket: "unison", cymbalType: "gong"
+      },
+      {
+        id: "cross_metric",
+        name: "4-on-3 Cross-Metric Grid",
+        desc: "24-step polyrhythmic grid pitting 16th snare diddles against triplet bass splits",
+        bpm: 145, steps: 24, formation: "arc",
+        snareK: 9, tenorK: 12, bassK: 16, cymbalK: 6,
+        snareArtic: "diddle", tenorSweep: "crossover", bassHocket: "doubles", cymbalType: "crash"
+      },
+      {
+        id: "fibonacci_cascade",
+        name: "Fibonacci Bass Hocket (3:5:8:13)",
+        desc: "Golden-ratio pulse densities spiraling from Bass 1 down to Sub-Bass 5",
+        bpm: 128, steps: 16, formation: "spiral",
+        snareK: 8, tenorK: 5, bassK: 13, cymbalK: 3,
+        snareArtic: "flam", tenorSweep: "around", bassHocket: "cascadeDown", cymbalType: "chick"
+      },
+      {
+        id: "taiko_thunder",
+        name: "Odaiko & Shime-Daiko Thunder",
+        desc: "Massive backfield unison bass impacts with crisp rim-click interlocks",
+        bpm: 112, steps: 16, formation: "arc",
+        snareK: 10, tenorK: 8, bassK: 6, cymbalK: 4,
+        snareArtic: "rimshot", tenorSweep: "inward", bassHocket: "unison", cymbalType: "crash"
+      },
+      {
+        id: "cyber_corps",
+        name: "Cybernetic Glitch Battery",
+        desc: "High-velocity diddle bursts and choked metallic transients across split pods",
+        bpm: 156, steps: 16, formation: "pods",
+        snareK: 11, tenorK: 10, bassK: 14, cymbalK: 7,
+        snareArtic: "diddle", tenorSweep: "random", bassHocket: "pendulum", cymbalType: "chick"
+      }
+    ];
+
+    // =========================================================================
+    // 3. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "dci_split",
+      visualTab: "drill", // 'drill' | 'bessel'
+      isPlaying: false,
+      bpm: 128,
+      cycleSteps: 16,
+      currentStep: -1,
+      barCount: 0,
+
+      // Section Config
+      sections: {
+        snare:  { mute: false, vol: 0.90, k: 7,  artic: "flam",      phaseOffset: 0, pattern: [] },
+        tenor:  { mute: false, vol: 0.85, k: 9,  sweep: "around",    phaseOffset: 0, pattern: [] },
+        bass:   { mute: false, vol: 0.95, k: 12, hocket: "cascadeDown", phaseOffset: 0, pattern: [] },
+        cymbal: { mute: false, vol: 0.75, k: 4,  type: "chick",      phaseOffset: 0, pattern: [] }
+      },
+
+      // Spatial Field & 343 m/s Time-of-Flight Physics
+      formation: "wedge",
+      fieldScaleMeters: 45, // Full height of field in meters
+      acousticDelayOn: true,
+      phaseCompensateOn: false,
+      orbitDrillOn: false,
+      autoPhaseDrift: false,
+      orbitAngle: 0,
+
+      // 12 Performers + 1 Listener Podium Mic (normalized coordinates x,y in [-1, 1])
+      performers: [],
+      listener: { x: 0, y: 0.78 }, // Front podium mic
+      wavefronts: [],
+
+      // Bessel (m,n) Cymatics & Chladni Particles
+      selectedModeM: 2,
+      selectedModeN: 1,
+      strikeRadiusNorm: 0.38,
+      strikeAngleRad: 0.5,
+      modalAmplitudes: [0.4, 0.65, 1.0, 0.35, 0.55, 0.4, 0.25, 0.3, 0.2],
+      chladniParticles: [],
+      membraneVibEnergy: 0,
+
+      // Acoustic Tuning
+      rootPitchHz: 110,
+      stiffnessMult: 1.00,
+      modalDecaySec: 0.55,
+
+      // Stem Vault
+      stemVault: []
+    };
+
+    // Initialize 12 Performers: 3 Snares (S1-S3), 2 Tenors (T1-T2), 5 Basses (B1-B5), 2 Cymbals (C1-C2)
+    function initPerformers() {
+      state.performers = [
+        { id: 'S1', role: 'snare',  subIdx: 0, label: 'S1', color: '#f59e0b', x: -0.25, y: 0.15, tx: -0.25, ty: 0.15, lastHit: 0 },
+        { id: 'S2', role: 'snare',  subIdx: 1, label: 'S2', color: '#f59e0b', x:  0.00, y: 0.22, tx:  0.00, ty: 0.22, lastHit: 0 },
+        { id: 'S3', role: 'snare',  subIdx: 2, label: 'S3', color: '#f59e0b', x:  0.25, y: 0.15, tx:  0.25, ty: 0.15, lastHit: 0 },
+        { id: 'T1', role: 'tenor',  subIdx: 0, label: 'Q1', color: '#38bdf8', x: -0.42, y: 0.02, tx: -0.42, ty: 0.02, lastHit: 0 },
+        { id: 'T2', role: 'tenor',  subIdx: 1, label: 'Q2', color: '#38bdf8', x:  0.42, y: 0.02, tx:  0.42, ty: 0.02, lastHit: 0 },
+        { id: 'B1', role: 'bass',   subIdx: 0, label: 'B1', color: '#10b981', x: -0.56, y: -0.35, tx: -0.56, ty: -0.35, lastHit: 0 },
+        { id: 'B2', role: 'bass',   subIdx: 1, label: 'B2', color: '#10b981', x: -0.28, y: -0.45, tx: -0.28, ty: -0.45, lastHit: 0 },
+        { id: 'B3', role: 'bass',   subIdx: 2, label: 'B3', color: '#10b981', x:  0.00, y: -0.52, tx:  0.00, ty: -0.52, lastHit: 0 },
+        { id: 'B4', role: 'bass',   subIdx: 3, label: 'B4', color: '#10b981', x:  0.28, y: -0.45, tx:  0.28, ty: -0.45, lastHit: 0 },
+        { id: 'B5', role: 'bass',   subIdx: 4, label: 'B5', color: '#10b981', x:  0.56, y: -0.35, tx:  0.56, ty: -0.35, lastHit: 0 },
+        { id: 'C1', role: 'cymbal', subIdx: 0, label: 'C1', color: '#c084fc', x: -0.68, y: 0.25, tx: -0.68, ty: 0.25, lastHit: 0 },
+        { id: 'C2', role: 'cymbal', subIdx: 1, label: 'C2', color: '#c084fc', x:  0.68, y: 0.25, tx:  0.68, ty: 0.25, lastHit: 0 }
+      ];
+      applyDrillFormation(state.formation);
+    }
+
+    function applyDrillFormation(formName) {
+      state.formation = formName;
+      const p = state.performers;
+      if (formName === 'wedge') {
+        // Classic DCI Phalanx Wedge: Snares front point, Tenors wings, Basses back V, Cymbals flanks
+        const coords = [
+          [-0.20, 0.22], [0.0, 0.34], [0.20, 0.22],
+          [-0.42, 0.06], [0.42, 0.06],
+          [-0.55, -0.42], [-0.28, -0.30], [0.0, -0.18], [0.28, -0.30], [0.55, -0.42],
+          [-0.68, 0.28], [0.68, 0.28]
+        ];
+        p.forEach((perf, i) => { perf.tx = coords[i][0]; perf.ty = coords[i][1]; });
+      } else if (formName === 'arc') {
+        p.forEach((perf, i) => {
+          const ang = Math.PI * 1.12 + (i / (p.length - 1)) * Math.PI * 0.76;
+          perf.tx = Math.cos(ang) * 0.75;
+          perf.ty = Math.sin(ang) * 0.55 + 0.15;
+        });
+      } else if (formName === 'rings') {
+        p.forEach((perf, i) => {
+          const isInner = i < 5;
+          const r = isInner ? 0.30 : 0.65;
+          const ang = isInner ? (i / 5) * Math.PI * 2 : ((i - 5) / 7) * Math.PI * 2;
+          perf.tx = Math.cos(ang) * r;
+          perf.ty = Math.sin(ang) * r - 0.08;
+        });
+      } else if (formName === 'spiral') {
+        const golden = 2.399963;
+        p.forEach((perf, i) => {
+          const r = 0.16 + Math.sqrt((i + 1) / p.length) * 0.62;
+          const ang = i * golden;
+          perf.tx = Math.cos(ang) * r;
+          perf.ty = Math.sin(ang) * r - 0.06;
+        });
+      } else if (formName === 'pods') {
+        const coords = [
+          [-0.55, 0.22], [-0.42, 0.35], [-0.68, 0.35],
+          [0.48, 0.24], [0.64, 0.34],
+          [-0.50, -0.35], [-0.25, -0.42], [0.0, -0.46], [0.25, -0.42], [0.50, -0.35],
+          [-0.22, 0.10], [0.22, 0.10]
+        ];
+        p.forEach((perf, i) => { perf.tx = coords[i][0]; perf.ty = coords[i][1]; });
+      }
+    }
+
+    // Initialize Chladni Sand Particles for Bessel Cymatics View
+    function initChladniParticles(count = 1600) {
+      state.chladniParticles = [];
+      for (let i = 0; i < count; i++) {
+        const r = Math.sqrt(Math.random()) * 0.96;
+        const theta = Math.random() * Math.PI * 2;
+        state.chladniParticles.push({
+          x: r * Math.cos(theta),
+          y: r * Math.sin(theta)
+        });
+      }
+    }
+
+    // Build section patterns from Euclidean parameters & Hocket rules
+    function rebuildSectionPatterns() {
+      const N = state.cycleSteps;
+      const s = state.sections;
+
+      // 1. Snare pattern: 0 = rest, 1 = normal, 2 = accent/flam
+      const rawSnare = generateEuclideanPattern(s.snare.k, N, s.snare.phaseOffset);
+      s.snare.pattern = rawSnare.map((v, idx) => v ? (idx % 4 === 0 ? 2 : 1) : 0);
+
+      // 2. Tenor pattern: 0 = rest, 1..4 = Drum 1..4
+      const rawTenor = generateEuclideanPattern(s.tenor.k, N, 1);
+      let tCounter = 0;
+      const crossoverSeq = [1, 3, 2, 4];
+      s.tenor.pattern = rawTenor.map(v => {
+        if (!v) return 0;
+        let drum = 1;
+        if (s.tenor.sweep === 'around') drum = (tCounter % 4) + 1;
+        else if (s.tenor.sweep === 'crossover') drum = crossoverSeq[tCounter % 4];
+        else if (s.tenor.sweep === 'inward') drum = 4 - (tCounter % 4);
+        else drum = Math.floor(Math.random() * 4) + 1;
+        tCounter++;
+        return drum;
+      });
+
+      // 3. 5-Drum Tonal Bass Hocket pattern: 0 = rest, 1..5 = Bass 1..5, 6 = Unison All 5
+      const rawBass = generateEuclideanPattern(s.bass.k, N, 0);
+      let bCounter = 0;
+      const pendulumSeq = [1, 2, 3, 4, 5, 4, 3, 2];
+      s.bass.pattern = rawBass.map(v => {
+        if (!v) return 0;
+        let bVoice = 1;
+        if (s.bass.hocket === 'cascadeDown') bVoice = (bCounter % 5) + 1;
+        else if (s.bass.hocket === 'cascadeUp') bVoice = 5 - (bCounter % 5);
+        else if (s.bass.hocket === 'pendulum') bVoice = pendulumSeq[bCounter % pendulumSeq.length];
+        else if (s.bass.hocket === 'doubles') bVoice = (Math.floor(bCounter / 2) % 5) + 1;
+        else if (s.bass.hocket === 'unison') bVoice = 6;
+        bCounter++;
+        return bVoice;
+      });
+
+      // 4. Cymbal pattern: 0 = rest, 1 = active
+      s.cymbal.pattern = generateEuclideanPattern(s.cymbal.k, N, 2);
+
+      renderHocketMatrixUI();
+    }
+
+    // =========================================================================
+    // 4. SPATIAL WEB AUDIO & BESSEL MODAL SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let sharedNoiseBuf = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.88;
+        masterGain.connect(audioCtx.destination);
+        sharedNoiseBuf = createWhiteNoise(audioCtx);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function createWhiteNoise(ctx) {
+      const sr = ctx.sampleRate;
+      const buf = ctx.createBuffer(1, sr * 1.5, sr);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+
+    /**
+     * Computes physical distance (meters), time-of-flight delay (sec), stereo pan [-1,1], and distance gain
+     * from a Performer to the Podium Listener Mic.
+     */
+    function getPerformerSpatialAcousticParams(perf) {
+      const dx = (perf.x - state.listener.x) * (state.fieldScaleMeters * 0.5);
+      const dy = (perf.y - state.listener.y) * (state.fieldScaleMeters * 0.5);
+      const distMeters = Math.max(1.5, Math.hypot(dx, dy));
+      const speedOfSound = 343.0; // m/s
+      const flightDelaySec = distMeters / speedOfSound;
+      const pan = Math.max(-0.95, Math.min(0.95, dx / (state.fieldScaleMeters * 0.38)));
+      // Inverse distance attenuation (softened for musical balance)
+      const distGain = 1.0 / (1.0 + distMeters * 0.014);
+      return { distMeters, flightDelaySec, pan, distGain };
+    }
+
+    /**
+     * Synthesizes a spatialized percussion voice or Bessel modal strike onto ctx -> destNode
+     */
+    function triggerSpatialVoice(ctx, destNode, baseWhen, perf, voiceParams, noiseBuf) {
+      const { distMeters, flightDelaySec, pan, distGain } = getPerformerSpatialAcousticParams(perf);
+
+      let actualWhen = baseWhen;
+      if (state.acousticDelayOn && !state.phaseCompensateOn) {
+        actualWhen += flightDelaySec;
+      }
+
+      const voiceGain = ctx.createGain();
+      const level = (voiceParams.vel || 0.85) * distGain;
+      voiceGain.gain.setValueAtTime(Math.max(0.02, level), actualWhen);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(pan, actualWhen);
+        voiceGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        voiceGain.connect(destNode);
+      }
+
+      const role = perf.role;
+      const nBuf = noiseBuf || sharedNoiseBuf || createWhiteNoise(ctx);
+
+      if (role === 'snare') {
+        // High-tension Kevlar Corps Snare with optional Flam / Diddle / Rimshot
+        const artic = state.sections.snare.artic;
+        const f0 = 250 * (1 + perf.subIdx * 0.012);
+        const scheduleSingleSnare = (t, v) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f0 * 1.5, t);
+          osc.frequency.exponentialRampToValueAtTime(f0, t + 0.022);
+          g.gain.setValueAtTime(v * 0.55, t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+          osc.connect(g); g.connect(voiceGain);
+          osc.start(t); osc.stop(t + 0.15);
+
+          const ns = ctx.createBufferSource();
+          ns.buffer = nBuf;
+          const bp = ctx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.setValueAtTime(artic === 'rimshot' ? 4200 : 3400, t);
+          bp.Q.setValueAtTime(artic === 'rimshot' ? 2.8 : 1.2, t);
+          const ng = ctx.createGain();
+          ng.gain.setValueAtTime(v * 0.75, t);
+          ng.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
+          ns.connect(bp); bp.connect(ng); ng.connect(voiceGain);
+          ns.start(t); ns.stop(t + 0.15);
+        };
+
+        if (artic === 'flam' && voiceParams.code === 2) {
+          scheduleSingleSnare(Math.max(0, actualWhen - 0.022), 0.38);
+          scheduleSingleSnare(actualWhen, 1.0);
+        } else if (artic === 'diddle') {
+          scheduleSingleSnare(actualWhen, 0.9);
+          scheduleSingleSnare(actualWhen + (voiceParams.stepDur || 0.12) * 0.5, 0.78);
+        } else {
+          scheduleSingleSnare(actualWhen, voiceParams.code === 2 ? 1.0 : 0.72);
+        }
+      } else if (role === 'tenor') {
+        // 4-Drum Melodic Tenor Quads (Drum 1 High -> Drum 4 Low)
+        const drumIdx = Math.max(0, Math.min(3, (voiceParams.code || 1) - 1));
+        const quadRatios = [1.58, 1.33, 1.12, 0.94];
+        const f0 = state.rootPitchHz * 1.45 * quadRatios[drumIdx];
+
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f0 * 1.42, actualWhen);
+        osc.frequency.exponentialRampToValueAtTime(f0, actualWhen + 0.028);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 0.94, actualWhen + 0.26);
+        g.gain.setValueAtTime(0.85, actualWhen);
+        g.gain.exponentialRampToValueAtTime(0.001, actualWhen + 0.26);
+        osc.connect(g); g.connect(voiceGain);
+        osc.start(actualWhen); osc.stop(actualWhen + 0.28);
+
+        // Stick attack click
+        const ns = ctx.createBufferSource();
+        ns.buffer = nBuf;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass'; bp.frequency.setValueAtTime(2600, actualWhen);
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(0.35, actualWhen);
+        ng.gain.exponentialRampToValueAtTime(0.001, actualWhen + 0.018);
+        ns.connect(bp); bp.connect(ng); ng.connect(voiceGain);
+        ns.start(actualWhen); ns.stop(actualWhen + 0.025);
+      } else if (role === 'bass') {
+        // 5-Drum Tonal Bass Line (B1 High Pentatonic/Quartal down to B5 Sub-Bass)
+        const bassRatios = [1.50, 1.26, 1.05, 0.84, 0.66]; // Tuned tonal intervals
+        const f0 = state.rootPitchHz * bassRatios[perf.subIdx % 5];
+        const decay = Math.max(0.22, state.modalDecaySec * 0.85);
+
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f0 * 1.38, actualWhen);
+        osc.frequency.exponentialRampToValueAtTime(f0, actualWhen + 0.035);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 0.92, actualWhen + decay);
+        g.gain.setValueAtTime(0.95, actualWhen);
+        g.gain.exponentialRampToValueAtTime(0.001, actualWhen + decay);
+        osc.connect(g); g.connect(voiceGain);
+        osc.start(actualWhen); osc.stop(actualWhen + decay + 0.02);
+
+        // Felt mallet thump
+        const subOsc = ctx.createOscillator();
+        const sg = ctx.createGain();
+        subOsc.type = 'triangle';
+        subOsc.frequency.setValueAtTime(f0 * 2.1, actualWhen);
+        sg.gain.setValueAtTime(0.28, actualWhen);
+        sg.gain.exponentialRampToValueAtTime(0.001, actualWhen + 0.04);
+        subOsc.connect(sg); sg.connect(voiceGain);
+        subOsc.start(actualWhen); subOsc.stop(actualWhen + 0.05);
+      } else if (role === 'cymbal') {
+        // Cymbal / Bessel Modal Eigen-Plate
+        const cType = state.sections.cymbal.type;
+        if (cType === 'gong') {
+          synthesizeBesselModalBank(ctx, voiceGain, actualWhen, state.rootPitchHz * 1.8, state.modalDecaySec * 1.3);
+        } else {
+          const ns = ctx.createBufferSource();
+          ns.buffer = nBuf;
+          const hp = ctx.createBiquadFilter();
+          hp.type = 'highpass';
+          hp.frequency.setValueAtTime(cType === 'chick' ? 5500 : 3200, actualWhen);
+          const cg = ctx.createGain();
+          const cDur = cType === 'chick' ? 0.08 : (cType === 'sizzle' ? 0.38 : 0.65);
+          cg.gain.setValueAtTime(0.55, actualWhen);
+          cg.gain.exponentialRampToValueAtTime(0.001, actualWhen + cDur);
+          ns.connect(hp); hp.connect(cg); cg.connect(voiceGain);
+          ns.start(actualWhen); ns.stop(actualWhen + cDur + 0.02);
+        }
+      }
+    }
+
+    /**
+     * Synthesizes a bank of 9 Circular Bessel Function Eigenmodes J_m(j_{mn} r/a)
+     */
+    function synthesizeBesselModalBank(ctx, destNode, when, baseFreq, decaySec) {
+      BESSEL_MODES.forEach((mode, idx) => {
+        const amp = state.modalAmplitudes[idx] || 0.25;
+        if (amp < 0.03) return;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        const freq = baseFreq * Math.pow(mode.ratio, state.stiffnessMult);
+        osc.frequency.setValueAtTime(freq, when);
+
+        const modeDecay = decaySec / (0.7 + idx * 0.18);
+        g.gain.setValueAtTime(amp * 0.22, when);
+        g.gain.exponentialRampToValueAtTime(0.0008, when + modeDecay);
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(when);
+        osc.stop(when + modeDecay + 0.02);
+      });
+    }
+
+    /**
+     * Updates the 9 Bessel modal excitation weights based on radial strike position r/a in [0, 0.95]
+     */
+    function updateBesselExcitationFromStrike(rNorm, thetaRad) {
+      state.strikeRadiusNorm = Math.max(0.02, Math.min(0.95, rNorm));
+      state.strikeAngleRad = thetaRad;
+      state.modalAmplitudes = BESSEL_MODES.map(mode => {
+        const radialVal = Math.abs(besselJ(mode.m, mode.zero * state.strikeRadiusNorm));
+        const angularVal = mode.m === 0 ? 1.0 : Math.abs(Math.cos(mode.m * thetaRad));
+        return Math.min(1.0, radialVal * (0.45 + 0.55 * angularVal) * 1.45);
+      });
+      state.membraneVibEnergy = 1.0;
+      renderBesselSpectrumBars();
+    }
+
+    // =========================================================================
+    // 5. DUAL-MODE CANVAS RENDERER: SPATIAL DRILL FIELD & BESSEL CYMATICS
+    // =========================================================================
+    const canvas = document.getElementById('mainVisualizerCanvas');
+    const cCtx = canvas.getContext('2d');
+
+    function resizeMainCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeMainCanvas);
+
+    function spawnWavefrontFromPerformer(perf) {
+      perf.lastHit = performance.now();
+      state.wavefronts.push({
+        x: perf.x,
+        y: perf.y,
+        rNorm: 0.02,
+        color: perf.color,
+        alpha: 0.85
+      });
+      state.membraneVibEnergy = Math.min(1.0, state.membraneVibEnergy + 0.45);
+    }
+
+    function renderMainVisualizerLoop() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (w === 0 || h === 0) {
+        requestAnimationFrame(renderMainVisualizerLoop);
+        return;
+      }
+
+      cCtx.clearRect(0, 0, w, h);
+
+      // Smoothly interpolate performers toward their target formation coordinates
+      if (state.orbitDrillOn) {
+        state.orbitAngle += 0.007;
+      }
+      state.performers.forEach((p, idx) => {
+        let targetX = p.tx;
+        let targetY = p.ty;
+        if (state.orbitDrillOn) {
+          const cosA = Math.cos(state.orbitAngle);
+          const sinA = Math.sin(state.orbitAngle);
+          targetX = p.tx * cosA - p.ty * sinA * 0.6;
+          targetY = p.tx * sinA * 0.6 + p.ty * cosA;
+        }
+        p.x += (targetX - p.x) * 0.08;
+        p.y += (targetY - p.y) * 0.08;
+      });
+
+      // Compute live Time-of-Flight telemetry spread across performers
+      let minDelayMs = 9999;
+      let maxDelayMs = 0;
+      state.performers.forEach(p => {
+        const { flightDelaySec } = getPerformerSpatialAcousticParams(p);
+        const ms = flightDelaySec * 1000;
+        if (ms < minDelayMs) minDelayMs = ms;
+        if (ms > maxDelayMs) maxDelayMs = ms;
+      });
+      const spreadMs = Math.max(0, maxDelayMs - minDelayMs);
+      const rightBadge = document.getElementById('canvasOverlayRight');
+      if (rightBadge) {
+        if (state.phaseCompensateOn) {
+          rightBadge.textContent = `Phase Compensated: 0.0 ms Spread (Coherent)`;
+          rightBadge.className = 'px-2.5 py-1 rounded-lg bg-void-900/90 border border-emerald-500/40 text-[10px] font-mono text-emerald-400';
+        } else if (state.acousticDelayOn) {
+          rightBadge.textContent = `343 m/s Arrival Spread Δt: ${spreadMs.toFixed(1)} ms`;
+          rightBadge.className = 'px-2.5 py-1 rounded-lg bg-void-900/90 border border-sky-500/40 text-[10px] font-mono text-sky-300';
+        } else {
+          rightBadge.textContent = `Acoustic Delay Bypassed (0.0 ms)`;
+          rightBadge.className = 'px-2.5 py-1 rounded-lg bg-void-900/90 border border-slate-800 text-[10px] font-mono text-slate-400';
+        }
+      }
+
+      if (state.visualTab === 'drill') {
+        renderSpatialDrillView(w, h);
+      } else {
+        renderBesselCymaticsView(w, h);
+      }
+
+      requestAnimationFrame(renderMainVisualizerLoop);
+    }
+
+    function renderSpatialDrillView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const scaleX = w * 0.44;
+      const scaleY = h * 0.42;
+
+      // Draw Stadium Yard Lines & Hash Marks
+      cCtx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+      cCtx.lineWidth = 1;
+      for (let gx = -1; gx <= 1; gx += 0.25) {
+        const px = cx + gx * scaleX;
+        cCtx.beginPath(); cCtx.moveTo(px, 0); cCtx.lineTo(px, h); cCtx.stroke();
+      }
+      for (let gy = -1; gy <= 1; gy += 0.25) {
+        const py = cy + gy * scaleY;
+        cCtx.beginPath(); cCtx.moveTo(0, py); cCtx.lineTo(w, py); cCtx.stroke();
+      }
+
+      // Draw Acoustic Distance Arcs radiating from the Podium Listener Mic
+      const lx = cx + state.listener.x * scaleX;
+      const ly = cy + state.listener.y * scaleY;
+      cCtx.setLineDash([4, 4]);
+      cCtx.strokeStyle = 'rgba(56, 189, 248, 0.18)';
+      [0.35, 0.7, 1.05, 1.4].forEach(r => {
+        cCtx.beginPath();
+        cCtx.arc(lx, ly, r * Math.min(scaleX, scaleY), 0, Math.PI * 2);
+        cCtx.stroke();
+      });
+      cCtx.setLineDash([]);
+
+      // Update & Draw Expanding 343 m/s Acoustic Wavefronts
+      for (let i = state.wavefronts.length - 1; i >= 0; i--) {
+        const wf = state.wavefronts[i];
+        const wx = cx + wf.x * scaleX;
+        const wy = cy + wf.y * scaleY;
+        const radPx = wf.rNorm * Math.min(scaleX, scaleY);
+
+        cCtx.beginPath();
+        cCtx.arc(wx, wy, radPx, 0, Math.PI * 2);
+        cCtx.strokeStyle = wf.color;
+        cCtx.globalAlpha = Math.max(0, wf.alpha);
+        cCtx.lineWidth = 2;
+        cCtx.stroke();
+        cCtx.globalAlpha = 1.0;
+
+        wf.rNorm += 0.028;
+        wf.alpha -= 0.022;
+        if (wf.alpha <= 0) state.wavefronts.splice(i, 1);
+      }
+
+      // Draw Performers (12 Nodes)
+      const now = performance.now();
+      state.performers.forEach(p => {
+        const px = cx + p.x * scaleX;
+        const py = cy + p.y * scaleY;
+        const hitAge = now - p.lastHit;
+        const isFiring = hitAge < 140;
+
+        // Subtle sightline to listener mic
+        cCtx.strokeStyle = isFiring ? p.color : 'rgba(71, 85, 105, 0.22)';
+        cCtx.lineWidth = isFiring ? 1.5 : 0.8;
+        cCtx.beginPath();
+        cCtx.moveTo(px, py);
+        cCtx.lineTo(lx, ly);
+        cCtx.stroke();
+
+        // Performer Node Circle
+        const nodeR = isFiring ? 15 : 11;
+        cCtx.beginPath();
+        cCtx.arc(px, py, nodeR, 0, Math.PI * 2);
+        cCtx.fillStyle = isFiring ? p.color : '#0f172a';
+        cCtx.fill();
+        cCtx.lineWidth = 2.2;
+        cCtx.strokeStyle = p.color;
+        cCtx.stroke();
+
+        // Performer ID Label
+        cCtx.fillStyle = isFiring ? '#06080d' : '#f8fafc';
+        cCtx.font = 'bold 9px JetBrains Mono';
+        cCtx.textAlign = 'center';
+        cCtx.textBaseline = 'middle';
+        cCtx.fillText(p.label, px, py);
+
+        // Distance / Flight Delay Tag under node
+        const { flightDelaySec } = getPerformerSpatialAcousticParams(p);
+        cCtx.fillStyle = 'rgba(148, 163, 184, 0.75)';
+        cCtx.font = '8px JetBrains Mono';
+        cCtx.fillText(`${(flightDelaySec * 1000).toFixed(0)}ms`, px, py + nodeR + 9);
+      });
+
+      // Draw Podium Listener / Binaural Mic Node
+      cCtx.beginPath();
+      cCtx.arc(lx, ly, 13, 0, Math.PI * 2);
+      cCtx.fillStyle = '#f43f5e';
+      cCtx.fill();
+      cCtx.lineWidth = 2.5;
+      cCtx.strokeStyle = '#ffffff';
+      cCtx.stroke();
+      cCtx.fillStyle = '#ffffff';
+      cCtx.font = 'bold 8px JetBrains Mono';
+      cCtx.textAlign = 'center';
+      cCtx.textBaseline = 'middle';
+      cCtx.fillText('MIC', lx, ly);
+    }
+
+    function renderBesselCymaticsView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = Math.min(cx, cy) * 0.78;
+      const m = state.selectedModeM;
+      const n = state.selectedModeN;
+      const modeObj = BESSEL_MODES.find(item => item.m === m && item.n === n) || BESSEL_MODES[2];
+      const kZero = modeObj.zero;
+
+      // Outer Circular Membrane Hoop
+      cCtx.beginPath();
+      cCtx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
+      cCtx.fillStyle = '#0f172a';
+      cCtx.fill();
+      cCtx.lineWidth = 2.5;
+      cCtx.strokeStyle = '#38bdf8';
+      cCtx.stroke();
+
+      // Draw Theoretical Nodal Lines (Dash overlay)
+      cCtx.save();
+      cCtx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+      cCtx.setLineDash([3, 3]);
+      for (let d = 0; d < m; d++) {
+        const ang = (d / m) * Math.PI + Math.PI / (2 * m);
+        cCtx.beginPath();
+        cCtx.moveTo(cx - Math.cos(ang) * radius, cy - Math.sin(ang) * radius);
+        cCtx.lineTo(cx + Math.cos(ang) * radius, cy + Math.sin(ang) * radius);
+        cCtx.stroke();
+      }
+      cCtx.restore();
+
+      // Update & Draw Chladni Silica Particles migrating toward Bessel Nodal Contours J_m(k*r)*cos(m*theta) = 0
+      const vib = Math.max(0.08, state.membraneVibEnergy);
+      state.membraneVibEnergy *= 0.96;
+
+      cCtx.fillStyle = '#fbbf24';
+      for (let i = 0; i < state.chladniParticles.length; i++) {
+        const pt = state.chladniParticles[i];
+        const r = Math.hypot(pt.x, pt.y);
+        const theta = Math.atan2(pt.y, pt.x);
+        const amp = Math.abs(besselJ(m, kZero * r) * Math.cos(m * theta));
+
+        // Particles jitter strongly where modal amplitude is high, settling smoothly on nodal lines (amp ~ 0)
+        const stepJump = amp * vib * 0.048;
+        pt.x += (Math.random() - 0.5) * stepJump;
+        pt.y += (Math.random() - 0.5) * stepJump;
+
+        const newR = Math.hypot(pt.x, pt.y);
+        if (newR > 0.97) {
+          pt.x *= 0.95 / newR;
+          pt.y *= 0.95 / newR;
+        }
+
+        const px = cx + pt.x * radius;
+        const py = cy + pt.y * radius;
+        cCtx.fillRect(px, py, 2, 2);
+      }
+
+      // Draw Active Strike Point Marker
+      const sx = cx + state.strikeRadiusNorm * Math.cos(state.strikeAngleRad) * radius;
+      const sy = cy + state.strikeRadiusNorm * Math.sin(state.strikeAngleRad) * radius;
+      cCtx.beginPath();
+      cCtx.arc(sx, sy, 6, 0, Math.PI * 2);
+      cCtx.fillStyle = '#f43f5e';
+      cCtx.fill();
+      cCtx.strokeStyle = '#ffffff';
+      cCtx.lineWidth = 1.5;
+      cCtx.stroke();
+    }
+
+    function renderBesselSpectrumBars() {
+      const container = document.getElementById('besselSpectrumBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      BESSEL_MODES.forEach((mode, idx) => {
+        const amp = state.modalAmplitudes[idx] || 0.2;
+        const pct = Math.max(8, Math.round(amp * 100));
+        const isSelected = mode.m === state.selectedModeM && mode.n === state.selectedModeN;
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center gap-1 h-full justify-end cursor-pointer';
+        col.innerHTML = `
+          <div class="w-full rounded-t transition-all duration-150 ${isSelected ? 'bg-amber-400' : 'bg-sky-400/75'}" style="height: ${pct}%"></div>
+          <span class="text-[9px] font-mono ${isSelected ? 'text-amber-300 font-bold' : 'text-slate-400'}">${mode.label}</span>
+        `;
+        col.addEventListener('click', () => {
+          state.selectedModeM = mode.m;
+          state.selectedModeN = mode.n;
+          document.getElementById('selectBesselMode').value = `${mode.m},${mode.n}`;
+          state.membraneVibEnergy = 1.0;
+          const ctx = ensureAudio();
+          synthesizeBesselModalBank(ctx, masterGain, ctx.currentTime, state.rootPitchHz * 1.6, state.modalDecaySec);
+          renderBesselSpectrumBars();
+        });
+        container.appendChild(col);
+      });
+    }
+
+    // =========================================================================
+    // 6. INTERACTIVE 4-SECTION HOCKET SEQUENCER MATRIX UI
+    // =========================================================================
+    function renderHocketMatrixUI() {
+      const container = document.getElementById('hocketMatrixContainer');
+      if (!container) return;
+      const N = state.cycleSteps;
+      container.innerHTML = '';
+
+      const rowsConfig = [
+        { key: 'snare',  label: 'Snares', color: 'amber',   pat: state.sections.snare.pattern },
+        { key: 'tenor',  label: 'Tenors', color: 'sky',     pat: state.sections.tenor.pattern },
+        { key: 'bass',   label: 'Basses', color: 'emerald', pat: state.sections.bass.pattern },
+        { key: 'cymbal', label: 'Cymbal', color: 'purple',  pat: state.sections.cymbal.pattern }
+      ];
+
+      rowsConfig.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'flex items-center gap-1.5 min-w-[540px]';
+
+        const labelEl = document.createElement('div');
+        labelEl.className = 'w-14 shrink-0 text-[10px] font-mono font-bold text-slate-300';
+        labelEl.textContent = row.label;
+        rowEl.appendChild(labelEl);
+
+        const cellsWrap = document.createElement('div');
+        cellsWrap.className = 'flex-1 grid gap-1';
+        cellsWrap.style.gridTemplateColumns = `repeat(${N}, minmax(0, 1fr))`;
+
+        for (let i = 0; i < N; i++) {
+          const val = row.pat[i] || 0;
+          const isCurrent = state.currentStep === i;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+
+          let cellText = '·';
+          let cellStyle = 'bg-void-950 border-slate-800 text-slate-600 hover:border-slate-700';
+
+          if (val > 0) {
+            if (row.key === 'snare') {
+              cellText = val === 2 ? 'F>' : 'S';
+              cellStyle = 'bg-amber-500/20 border-amber-500/60 text-amber-300 font-bold';
+            } else if (row.key === 'tenor') {
+              cellText = `Q${val}`;
+              cellStyle = 'bg-sky-500/20 border-sky-500/60 text-sky-300 font-bold';
+            } else if (row.key === 'bass') {
+              cellText = val === 6 ? 'ALL' : `B${val}`;
+              cellStyle = 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-bold';
+            } else if (row.key === 'cymbal') {
+              cellText = 'X';
+              cellStyle = 'bg-purple-500/20 border-purple-500/60 text-purple-300 font-bold';
+            }
+          }
+
+          btn.className = `h-7 rounded-md border text-[10px] font-mono transition flex items-center justify-center ${cellStyle} ${
+            isCurrent ? 'ring-2 ring-white scale-105' : ''
+          }`;
+          btn.textContent = cellText;
+
+          btn.addEventListener('click', () => {
+            if (row.key === 'snare') {
+              row.pat[i] = (val + 1) % 3;
+            } else if (row.key === 'tenor') {
+              row.pat[i] = (val + 1) % 5;
+            } else if (row.key === 'bass') {
+              row.pat[i] = (val + 1) % 7;
+            } else {
+              row.pat[i] = val ? 0 : 1;
+            }
+            auditionStepColumn(i);
+            renderHocketMatrixUI();
+          });
+
+          cellsWrap.appendChild(btn);
+        }
+
+        rowEl.appendChild(cellsWrap);
+        container.appendChild(rowEl);
+      });
+    }
+
+    // =========================================================================
+    // 7. MASTER ENSEMBLE TRANSPORT & STEP SCHEDULER
+    // =========================================================================
+    let timerId = null;
+
+    function executeEnsembleStep(ctx, destNode, stepIdx, when, stepDurSec, triggerVisuals = true, noiseBuf = null) {
+      const s = state.sections;
+
+      // 1. Snare Section (3 Players S1, S2, S3)
+      const snareCode = s.snare.pattern[stepIdx] || 0;
+      if (!s.snare.mute && snareCode > 0) {
+        state.performers.filter(p => p.role === 'snare').forEach(perf => {
+          triggerSpatialVoice(ctx, destNode, when, perf, {
+            code: snareCode, vel: s.snare.vol * 0.72, stepDur: stepDurSec
+          }, noiseBuf);
+          if (triggerVisuals) spawnWavefrontFromPerformer(perf);
+        });
+      }
+
+      // 2. Tenor Section (2 Players T1, T2)
+      const tenorCode = s.tenor.pattern[stepIdx] || 0;
+      if (!s.tenor.mute && tenorCode > 0) {
+        state.performers.filter(p => p.role === 'tenor').forEach(perf => {
+          triggerSpatialVoice(ctx, destNode, when, perf, {
+            code: tenorCode, vel: s.tenor.vol * 0.78, stepDur: stepDurSec
+          }, noiseBuf);
+          if (triggerVisuals) spawnWavefrontFromPerformer(perf);
+        });
+      }
+
+      // 3. 5-Drum Tonal Bass Hocket (B1..B5 or 6=Unison)
+      const bassCode = s.bass.pattern[stepIdx] || 0;
+      if (!s.bass.mute && bassCode > 0) {
+        state.performers.filter(p => p.role === 'bass').forEach(perf => {
+          if (bassCode === 6 || (perf.subIdx + 1) === bassCode) {
+            triggerSpatialVoice(ctx, destNode, when, perf, {
+              code: bassCode, vel: s.bass.vol * (bassCode === 6 ? 0.65 : 0.95), stepDur: stepDurSec
+            }, noiseBuf);
+            if (triggerVisuals) spawnWavefrontFromPerformer(perf);
+          }
+        });
+      }
+
+      // 4. Cymbal / Eigen-Plate Section (2 Players C1, C2)
+      const cymCode = s.cymbal.pattern[stepIdx] || 0;
+      if (!s.cymbal.mute && cymCode > 0) {
+        state.performers.filter(p => p.role === 'cymbal').forEach(perf => {
+          triggerSpatialVoice(ctx, destNode, when, perf, {
+            code: cymCode, vel: s.cymbal.vol * 0.72, stepDur: stepDurSec
+          }, noiseBuf);
+          if (triggerVisuals) spawnWavefrontFromPerformer(perf);
+        });
+      }
+    }
+
+    function auditionStepColumn(stepIdx) {
+      const ctx = ensureAudio();
+      state.currentStep = stepIdx;
+      const stepDurSec = (60 / state.bpm) * 0.25;
+      executeEnsembleStep(ctx, masterGain, stepIdx, ctx.currentTime + 0.02, stepDurSec, true);
+      renderHocketMatrixUI();
+    }
+
+    function startEnsemble() {
+      ensureAudio();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.currentStep = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('transport-active');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP ENSEMBLE';
+
+      tickEnsembleLoop();
+    }
+
+    function stopEnsemble() {
+      state.isPlaying = false;
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      state.currentStep = -1;
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('transport-active');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'RUN ENSEMBLE';
+      renderHocketMatrixUI();
+    }
+
+    function tickEnsembleLoop() {
+      if (!state.isPlaying) return;
+      const ctx = ensureAudio();
+      const N = state.cycleSteps;
+
+      state.currentStep = (state.currentStep + 1) % N;
+      if (state.currentStep === 0) {
+        state.barCount++;
+        if (state.autoPhaseDrift && state.barCount % 2 === 0) {
+          shiftSnarePhaseByOne();
+        }
+      }
+
+      const stepDurSec = (60 / state.bpm) * 0.25;
+      executeEnsembleStep(ctx, masterGain, state.currentStep, ctx.currentTime + 0.025, stepDurSec, true);
+      renderHocketMatrixUI();
+
+      timerId = setTimeout(tickEnsembleLoop, stepDurSec * 1000);
+    }
+
+    function shiftSnarePhaseByOne() {
+      const N = state.cycleSteps;
+      state.sections.snare.phaseOffset = (state.sections.snare.phaseOffset + 1) % N;
+      const pat = state.sections.snare.pattern;
+      if (pat.length > 1) {
+        pat.unshift(pat.pop());
+      }
+      const deg = Math.round((state.sections.snare.phaseOffset / N) * 360);
+      document.getElementById('phaseAngleBadge').textContent = `Phase Offset: +${state.sections.snare.phaseOffset} Steps (${deg}°)`;
+      renderHocketMatrixUI();
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function exportSpatialStemWav(mode = 'full_mix') {
+      const sr = 44100;
+      const stepDurSec = (60 / state.bpm) * 0.25;
+      const N = state.cycleSteps;
+      const bars = (mode === 'bessel_chime' || mode === 'corps_impact') ? 1 : 2;
+      const totalSec = (mode === 'bessel_chime' || mode === 'corps_impact') ? 2.2 : (N * stepDurSec * bars + 0.9);
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+      const offNoise = createWhiteNoise(offCtx);
+
+      // Save current mute states
+      const savedMutes = {
+        snare: state.sections.snare.mute,
+        tenor: state.sections.tenor.mute,
+        bass: state.sections.bass.mute,
+        cymbal: state.sections.cymbal.mute
+      };
+
+      if (mode === 'bass_only') {
+        state.sections.snare.mute = true;
+        state.sections.tenor.mute = true;
+        state.sections.bass.mute = false;
+        state.sections.cymbal.mute = true;
+      } else if (mode === 'snare_tenor') {
+        state.sections.snare.mute = false;
+        state.sections.tenor.mute = false;
+        state.sections.bass.mute = true;
+        state.sections.cymbal.mute = true;
+      }
+
+      if (mode === 'bessel_chime') {
+        synthesizeBesselModalBank(offCtx, offCtx.destination, 0.05, state.rootPitchHz * 1.6, Math.max(1.2, state.modalDecaySec * 2));
+      } else if (mode === 'corps_impact') {
+        state.performers.forEach(p => {
+          triggerSpatialVoice(offCtx, offCtx.destination, 0.05, p, { code: 6, vel: 0.95, stepDur: 0.2 }, offNoise);
+        });
+      } else {
+        let cursor = 0.05;
+        for (let b = 0; b < bars; b++) {
+          for (let st = 0; st < N; st++) {
+            executeEnsembleStep(offCtx, offCtx.destination, st, cursor, stepDurSec, false, offNoise);
+            cursor += stepDurSec;
+          }
+        }
+      }
+
+      // Restore mute states
+      Object.assign(state.sections.snare, { mute: savedMutes.snare });
+      Object.assign(state.sections.tenor, { mute: savedMutes.tenor });
+      Object.assign(state.sections.bass, { mute: savedMutes.bass });
+      Object.assign(state.sections.cymbal, { mute: savedMutes.cymbal });
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `eigenpulse_${mode}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.stemVault.unshift({ name: filename, url });
+      renderStemVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderStemVaultUI() {
+      const list = document.getElementById('stemVaultList');
+      const countLbl = document.getElementById('stemVaultCount');
+      countLbl.textContent = `${state.stemVault.length} stem${state.stemVault.length === 1 ? '' : 's'}`;
+      if (state.stemVault.length === 0) return;
+
+      list.innerHTML = '';
+      state.stemVault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-void-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-sky-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & INTERACTIVE EVENT WIRING
+    // =========================================================================
+    function loadEnsemblePreset(preset) {
+      state.activePresetId = preset.id;
+      state.bpm = preset.bpm;
+      state.cycleSteps = preset.steps;
+      state.autoPhaseDrift = Boolean(preset.autoPhase);
+
+      document.getElementById('bpmReadout').textContent = state.bpm;
+      document.getElementById('sliderBpm').value = state.bpm;
+      document.getElementById('selectCycleSteps').value = String(state.cycleSteps);
+      document.getElementById('stepCountLabel').textContent = `${state.cycleSteps}-Step Grid`;
+      document.getElementById('chkAutoPhaseDrift').checked = state.autoPhaseDrift;
+
+      // Update section Euclidean parameters
+      state.sections.snare.k = preset.snareK;
+      state.sections.snare.artic = preset.snareArtic;
+      state.sections.snare.phaseOffset = 0;
+      document.getElementById('sliderSnareEuclid').value = preset.snareK;
+      document.getElementById('lblSnareEuclid').textContent = preset.snareK;
+      document.getElementById('selSnareArtic').value = preset.snareArtic;
+
+      state.sections.tenor.k = preset.tenorK;
+      state.sections.tenor.sweep = preset.tenorSweep;
+      document.getElementById('sliderTenorEuclid').value = preset.tenorK;
+      document.getElementById('lblTenorEuclid').textContent = preset.tenorK;
+      document.getElementById('selTenorSweep').value = preset.tenorSweep;
+
+      state.sections.bass.k = preset.bassK;
+      state.sections.bass.hocket = preset.bassHocket;
+      document.getElementById('sliderBassEuclid').value = preset.bassK;
+      document.getElementById('lblBassEuclid').textContent = preset.bassK;
+      document.getElementById('selBassHocket').value = preset.bassHocket;
+
+      state.sections.cymbal.k = preset.cymbalK;
+      state.sections.cymbal.type = preset.cymbalType;
+      document.getElementById('sliderCymbalEuclid').value = preset.cymbalK;
+      document.getElementById('lblCymbalEuclid').textContent = preset.cymbalK;
+      document.getElementById('selCymbalType').value = preset.cymbalType;
+
+      document.getElementById('selectDrillFormation').value = preset.formation;
+      applyDrillFormation(preset.formation);
+      rebuildSectionPatterns();
+      renderPresetListUI();
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('presetListContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      ENSEMBLE_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-sky-500/15 border-sky-400/60 text-white' : 'bg-void-950/75 hover:bg-void-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-sky-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[10px] font-mono text-amber-400">${pr.bpm} BPM</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          loadEnsemblePreset(pr);
+          auditionStepColumn(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      // Play / Stop
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopEnsemble();
+        else startEnsemble();
+      });
+
+      document.getElementById('btnStepOnce').addEventListener('click', () => {
+        if (state.isPlaying) stopEnsemble();
+        const next = (state.currentStep + 1) % state.cycleSteps;
+        auditionStepColumn(next);
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('selectCycleSteps').addEventListener('change', (e) => {
+        state.cycleSteps = parseInt(e.target.value, 10);
+        document.getElementById('stepCountLabel').textContent = `${state.cycleSteps}-Step Grid`;
+        rebuildSectionPatterns();
+      });
+
+      // Tabs: Spatial Drill vs Bessel Cymatics
+      const tabDrill = document.getElementById('tabSpatialDrill');
+      const tabBessel = document.getElementById('tabBesselCymatics');
+      const drillBar = document.getElementById('drillFormationToolbar');
+      const besselBar = document.getElementById('besselModeToolbar');
+      const overlayLeft = document.getElementById('canvasOverlayLeft');
+
+      tabDrill.addEventListener('click', () => {
+        state.visualTab = 'drill';
+        tabDrill.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition';
+        tabBessel.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+        drillBar.classList.remove('hidden');
+        besselBar.classList.add('hidden');
+        overlayLeft.textContent = 'Drag any Performer or Podium Mic • Wavefronts = 343 m/s';
+      });
+
+      tabBessel.addEventListener('click', () => {
+        state.visualTab = 'bessel';
+        tabBessel.className = 'px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition';
+        tabDrill.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+        drillBar.classList.add('hidden');
+        besselBar.classList.remove('hidden');
+        besselBar.classList.add('flex');
+        overlayLeft.textContent = 'Click membrane (r, θ) to excite Bessel J_m(k·r) modes & Chladni sand';
+        state.membraneVibEnergy = 1.0;
+      });
+
+      document.getElementById('selectDrillFormation').addEventListener('change', (e) => {
+        applyDrillFormation(e.target.value);
+      });
+
+      document.getElementById('selectBesselMode').addEventListener('change', (e) => {
+        const [m, n] = e.target.value.split(',').map(Number);
+        state.selectedModeM = m;
+        state.selectedModeN = n;
+        state.membraneVibEnergy = 1.0;
+        const ctx = ensureAudio();
+        synthesizeBesselModalBank(ctx, masterGain, ctx.currentTime, state.rootPitchHz * 1.6, state.modalDecaySec);
+        renderBesselSpectrumBars();
+      });
+
+      // Canvas Dragging (Performers & Mic in Drill View; Radial Strike in Bessel View)
+      let draggedEntity = null;
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+
+        if (state.visualTab === 'bessel') {
+          const radius = Math.min(cx, cy) * 0.78;
+          const dx = (x - cx) / radius;
+          const dy = (y - cy) / radius;
+          const rNorm = Math.hypot(dx, dy);
+          const theta = Math.atan2(dy, dx);
+          updateBesselExcitationFromStrike(rNorm, theta);
+          document.getElementById('activeStrikeRadiusLabel').textContent = `Strike r/a = ${state.strikeRadiusNorm.toFixed(2)}`;
+          const ctx = ensureAudio();
+          synthesizeBesselModalBank(ctx, masterGain, ctx.currentTime, state.rootPitchHz * 1.6, state.modalDecaySec);
+          return;
+        }
+
+        // Spatial Drill View: check if user clicked Podium Mic or a Performer
+        const scaleX = rect.width * 0.44;
+        const scaleY = rect.height * 0.42;
+        const nx = (x - cx) / scaleX;
+        const ny = (y - cy) / scaleY;
+
+        if (Math.hypot(nx - state.listener.x, ny - state.listener.y) < 0.12) {
+          draggedEntity = state.listener;
+          return;
+        }
+
+        for (const p of state.performers) {
+          if (Math.hypot(nx - p.x, ny - p.y) < 0.11) {
+            draggedEntity = p;
+            const ctx = ensureAudio();
+            triggerSpatialVoice(ctx, masterGain, ctx.currentTime, p, { code: 2, vel: 0.9, stepDur: 0.15 });
+            spawnWavefrontFromPerformer(p);
+            break;
+          }
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!draggedEntity || state.visualTab !== 'drill') return;
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const nx = Math.max(-0.92, Math.min(0.92, (e.clientX - rect.left - cx) / (rect.width * 0.44)));
+        const ny = Math.max(-0.92, Math.min(0.92, (e.clientY - rect.top - cy) / (rect.height * 0.42)));
+        draggedEntity.x = nx;
+        draggedEntity.y = ny;
+        if ('tx' in draggedEntity) {
+          draggedEntity.tx = nx;
+          draggedEntity.ty = ny;
+        }
+      });
+
+      window.addEventListener('pointerup', () => { draggedEntity = null; });
+
+      // Quick Canvas Overlay Buttons
+      document.getElementById('btnAuditionBassRun').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        const basses = state.performers.filter(p => p.role === 'bass');
+        basses.forEach((b, idx) => {
+          const delay = idx * 0.095;
+          triggerSpatialVoice(ctx, masterGain, ctx.currentTime + delay, b, { code: idx + 1, vel: 0.95, stepDur: 0.1 });
+          setTimeout(() => spawnWavefrontFromPerformer(b), delay * 1000);
+        });
+      });
+
+      document.getElementById('btnAuditionUnisonHit').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        state.performers.forEach(p => {
+          triggerSpatialVoice(ctx, masterGain, ctx.currentTime + 0.02, p, { code: 6, vel: 0.9, stepDur: 0.2 });
+          spawnWavefrontFromPerformer(p);
+        });
+      });
+
+      document.getElementById('btnShakeChladniSand').addEventListener('click', () => {
+        initChladniParticles(1600);
+        state.membraneVibEnergy = 1.0;
+        showToast('Rescattered 1,600 Chladni silica particles');
+      });
+
+      document.getElementById('btnStrikeBesselModal').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        state.membraneVibEnergy = 1.0;
+        synthesizeBesselModalBank(ctx, masterGain, ctx.currentTime, state.rootPitchHz * 1.6, state.modalDecaySec);
+      });
+
+      // Acoustic Delay & Phase Checkboxes
+      document.getElementById('chkAcousticDelay').addEventListener('change', (e) => {
+        state.acousticDelayOn = e.target.checked;
+      });
+      document.getElementById('chkPhaseCompensate').addEventListener('change', (e) => {
+        state.phaseCompensateOn = e.target.checked;
+      });
+      document.getElementById('chkOrbitDrill').addEventListener('change', (e) => {
+        state.orbitDrillOn = e.target.checked;
+      });
+      document.getElementById('chkAutoPhaseDrift').addEventListener('change', (e) => {
+        state.autoPhaseDrift = e.target.checked;
+      });
+
+      document.getElementById('btnShiftSnarePhase').addEventListener('click', () => {
+        shiftSnarePhaseByOne();
+      });
+
+      // Section Euclidean & Volume Sliders
+      const bindSecSlider = (sliderId, lblId, secKey, prop, isPct = false) => {
+        document.getElementById(sliderId).addEventListener('input', (e) => {
+          const v = parseInt(e.target.value, 10);
+          document.getElementById(lblId).textContent = isPct ? `${v}%` : String(v);
+          if (isPct) {
+            state.sections[secKey][prop] = v / 100;
+          } else {
+            state.sections[secKey][prop] = v;
+            rebuildSectionPatterns();
+          }
+        });
+      };
+      bindSecSlider('sliderSnareEuclid', 'lblSnareEuclid', 'snare', 'k', false);
+      bindSecSlider('sliderSnareVol', 'lblSnareVol', 'snare', 'vol', true);
+      bindSecSlider('sliderTenorEuclid', 'lblTenorEuclid', 'tenor', 'k', false);
+      bindSecSlider('sliderTenorVol', 'lblTenorVol', 'tenor', 'vol', true);
+      bindSecSlider('sliderBassEuclid', 'lblBassEuclid', 'bass', 'k', false);
+      bindSecSlider('sliderBassVol', 'lblBassVol', 'bass', 'vol', true);
+      bindSecSlider('sliderCymbalEuclid', 'lblCymbalEuclid', 'cymbal', 'k', false);
+      bindSecSlider('sliderCymbalVol', 'lblCymbalVol', 'cymbal', 'vol', true);
+
+      document.getElementById('selSnareArtic').addEventListener('change', (e) => { state.sections.snare.artic = e.target.value; });
+      document.getElementById('selTenorSweep').addEventListener('change', (e) => { state.sections.tenor.sweep = e.target.value; rebuildSectionPatterns(); });
+      document.getElementById('selBassHocket').addEventListener('change', (e) => { state.sections.bass.hocket = e.target.value; rebuildSectionPatterns(); });
+      document.getElementById('selCymbalType').addEventListener('change', (e) => { state.sections.cymbal.type = e.target.value; });
+
+      // Mute Buttons
+      document.querySelectorAll('.mute-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-mute');
+          state.sections[key].mute = !state.sections[key].mute;
+          const muted = state.sections[key].mute;
+          btn.textContent = muted ? 'MUTE' : 'ON';
+          btn.className = muted
+            ? 'mute-btn px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40'
+            : 'mute-btn px-2 py-0.5 rounded text-[10px] font-mono bg-void-800 text-slate-300 border border-slate-700';
+        });
+      });
+
+      document.getElementById('btnClearGrid').addEventListener('click', () => {
+        ['snare', 'tenor', 'bass', 'cymbal'].forEach(k => {
+          state.sections[k].pattern = new Array(state.cycleSteps).fill(0);
+        });
+        renderHocketMatrixUI();
+      });
+
+      // Right Column Acoustic Sliders
+      document.getElementById('sliderRootPitch').addEventListener('input', (e) => {
+        state.rootPitchHz = parseInt(e.target.value, 10);
+        document.getElementById('valRootPitch').textContent = `${state.rootPitchHz} Hz`;
+      });
+      document.getElementById('sliderStiffness').addEventListener('input', (e) => {
+        state.stiffnessMult = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valStiffness').textContent = `${state.stiffnessMult.toFixed(2)}×`;
+      });
+      document.getElementById('sliderModalDecay').addEventListener('input', (e) => {
+        state.modalDecaySec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valModalDecay').textContent = `${state.modalDecaySec.toFixed(2)} s`;
+      });
+      document.getElementById('sliderFieldScale').addEventListener('input', (e) => {
+        state.fieldScaleMeters = parseInt(e.target.value, 10);
+        document.getElementById('valFieldScale').textContent = `${state.fieldScaleMeters} meters`;
+      });
+
+      // Randomizers
+      document.getElementById('btnRandomGroove').addEventListener('click', () => {
+        const N = state.cycleSteps;
+        state.sections.snare.k = 3 + Math.floor(Math.random() * (N - 4));
+        state.sections.tenor.k = 4 + Math.floor(Math.random() * (N - 5));
+        state.sections.bass.k = 5 + Math.floor(Math.random() * (N - 4));
+        state.sections.cymbal.k = 2 + Math.floor(Math.random() * 6);
+
+        document.getElementById('sliderSnareEuclid').value = state.sections.snare.k;
+        document.getElementById('lblSnareEuclid').textContent = state.sections.snare.k;
+        document.getElementById('sliderTenorEuclid').value = state.sections.tenor.k;
+        document.getElementById('lblTenorEuclid').textContent = state.sections.tenor.k;
+        document.getElementById('sliderBassEuclid').value = state.sections.bass.k;
+        document.getElementById('lblBassEuclid').textContent = state.sections.bass.k;
+        document.getElementById('sliderCymbalEuclid').value = state.sections.cymbal.k;
+        document.getElementById('lblCymbalEuclid').textContent = state.sections.cymbal.k;
+
+        rebuildSectionPatterns();
+        auditionStepColumn(0);
+        showToast('Generated new Euclidean Polyrhythmic Hocket!');
+      });
+
+      document.getElementById('btnWildcardSetup').addEventListener('click', () => {
+        const forms = ['wedge', 'arc', 'rings', 'spiral', 'pods'];
+        const nextForm = forms[Math.floor(Math.random() * forms.length)];
+        document.getElementById('selectDrillFormation').value = nextForm;
+        applyDrillFormation(nextForm);
+
+        const randomMode = BESSEL_MODES[Math.floor(Math.random() * BESSEL_MODES.length)];
+        state.selectedModeM = randomMode.m;
+        state.selectedModeN = randomMode.n;
+        document.getElementById('selectBesselMode').value = `${randomMode.m},${randomMode.n}`;
+        updateBesselExcitationFromStrike(0.15 + Math.random() * 0.7, Math.random() * Math.PI * 2);
+        document.getElementById('btnRandomGroove').click();
+      });
+
+      // WAV Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => exportSpatialStemWav('full_mix'));
+      document.getElementById('btnExportFullEnsembleWav').addEventListener('click', () => exportSpatialStemWav('full_mix'));
+      document.getElementById('btnExportBassHocketWav').addEventListener('click', () => exportSpatialStemWav('bass_only'));
+
+      document.querySelectorAll('.stem-export-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          exportSpatialStemWav(btn.getAttribute('data-stem'));
+        });
+      });
+
+      document.getElementById('btnExportDrillJson').addEventListener('click', () => {
+        const data = {
+          app: "EIGENPULSE_CYMATIC_DRUMLINE_LAB",
+          bpm: state.bpm,
+          cycleSteps: state.cycleSteps,
+          formation: state.formation,
+          fieldScaleMeters: state.fieldScaleMeters,
+          besselMode: [state.selectedModeM, state.selectedModeN],
+          performers: state.performers,
+          sections: state.sections
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eigenpulse_patch_${state.formation}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded JSON Spatial Drill & Hocket Patch');
+      });
+
+      // Spacebar shortcut
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          if (state.isPlaying) stopEnsemble();
+          else startEnsemble();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeMainCanvas();
+      initPerformers();
+      initChladniParticles(1600);
+      loadEnsemblePreset(ENSEMBLE_PRESETS[0]);
+      renderBesselSpectrumBars();
+      initEventListeners();
+      requestAnimationFrame(renderMainVisualizerLoop);
+    });
+  </script>
+</body>
+</html>

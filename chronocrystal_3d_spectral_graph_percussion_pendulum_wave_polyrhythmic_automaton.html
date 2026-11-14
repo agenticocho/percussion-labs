@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHRONOCRYSTAL — 3D Spectral Graph Percussion, Pendulum Wave & Polyrhythmic Automaton</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            abyss: {
+              950: '#05070b',
+              900: '#0a0e17',
+              800: '#111826',
+              700: '#1c263b',
+              600: '#2a3957'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #05070b;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0e17; }
+    ::-webkit-scrollbar-thumb { background: #2a3957; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3d527a; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1c263b;
+      border: 1px solid #2a3957;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 2px solid #05070b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55) !important;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #a855f7 !important;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.55) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(17, 24, 38, 0.92) 0%, rgba(10, 14, 23, 0.96) 100%);
+      border: 1px solid rgba(42, 57, 87, 0.6);
+    }
+    @keyframes pulseCrystal {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(16, 185, 129, 0.25); }
+    }
+    .crystal-running {
+      animation: pulseCrystal 1.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200">
+
+  <!-- TOP STUDIO HEADER & TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-abyss-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/25 via-sky-500/20 to-purple-500/25 border border-emerald-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"></polygon>
+            <line x1="12" y1="22" x2="12" y2="15.5"></line>
+            <polyline points="22 8.5 12 15.5 2 8.5"></polyline>
+            <polyline points="2 15.5 12 8.5 22 15.5" stroke="#38bdf8"></polyline>
+            <line x1="12" y1="2" x2="12" y2="8.5" stroke="#f59e0b"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">CHRONOCRYSTAL // 3D SPECTRAL PERCUSSION</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Trilogy Pillar III</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">26-Connected 3D Lattice Lithophone • Graph Laplacian Fiedler (λ₂) Eigen-Synth • 3D Pendulum Wave Loom • Rudiment Walkers</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-abyss-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">ENGAGE LATTICE</span>
+        </button>
+
+        <button id="btnPulseOnce" type="button" class="px-2.5 py-2 rounded-lg bg-abyss-800 hover:bg-abyss-700 text-slate-200 border border-slate-700/70 text-xs font-mono transition" title="Inject Single Rudiment Step into 3D Graph">
+          STEP &rarr;
+        </button>
+
+        <!-- BPM Slider -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[60px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-emerald-400">120</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="fiedlerHeaderReadout" class="text-[10px] text-sky-400 font-mono">λ₂ = 1.184</div>
+          </div>
+          <input id="sliderBpm" type="range" min="45" max="220" value="120" class="w-24 sm:w-32" />
+        </div>
+
+        <!-- Projection Camera Toggle -->
+        <button id="btnCameraProj" type="button" class="px-2.5 py-1.5 rounded-lg bg-abyss-800 hover:bg-abyss-700 border border-slate-700 text-xs font-mono text-sky-300 transition" title="Switch between Isometric Orthographic Projection and 3D Perspective">
+          Cam: <span id="lblCameraProj" class="font-bold">Isometric</span>
+        </button>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnRandomSubgraph" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold transition">
+          <span>🎲 Mutate Crystal</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition shadow-md shadow-sky-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): TOPOLOGY PRESETS, GRAPH CONNECTIVITY & PAS RUDIMENT INJECTOR -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- 3D Lattice & Kinetic Topology Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Crystal &amp; Kinetic Presets</h2>
+            <p class="text-[11px] text-slate-400">3D Graph Subgraphs &amp; Phase Looms</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">8 Geometries</span>
+        </div>
+
+        <div id="topologyPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- LATTICE CONNECTIVITY & PAS RUDIMENT EXCITATION BRIDGE -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Graph Topology &amp; Excitation</h2>
+          <p class="text-[11px] text-slate-400">Couple PAS rudiments into the 3D network</p>
+        </div>
+
+        <!-- Neighbor Connectivity Rule (6 / 18 / 26-Connected Moore Lattice) -->
+        <div class="bg-abyss-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">1. 3×3×3 Cubic Lattice Adjacency</label>
+          <select id="selectConnectivity" class="w-full bg-abyss-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 outline-none">
+            <option value="6">6-Connected Orthogonal (54 Edges)</option>
+            <option value="18">18-Connected Face-Diagonal (114 Edges)</option>
+            <option value="26" selected>26-Connected Moore Crystal (158 Edges)</option>
+            <option value="dagaz">Dagaz Hourglass Subgraph (16 Nodes)</option>
+            <option value="octa">Octahedral Core Shell (19 Nodes)</option>
+          </select>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 pt-1">
+            <span>Active Nodes: <strong id="lblActiveNodes" class="text-white">27 / 27</strong></span>
+            <span>Edges: <strong id="lblActiveEdges" class="text-sky-300">158</strong></span>
+          </div>
+        </div>
+
+        <!-- PAS Rudiment Impulse Driver -->
+        <div class="bg-abyss-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">2. PAS Rudiment Walker Driver</label>
+          <select id="selectRudimentDriver" class="w-full bg-abyss-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 outline-none">
+            <option value="paradiddle" selected>PAS #16 Single Paradiddle (R L R R L R L L)</option>
+            <option value="flam_accent">PAS #21 Flam Accent (lR L R rL R L)</option>
+            <option value="six_stroke">PAS #8 Six Stroke Roll (R ll rr L)</option>
+            <option value="swiss_triplet">PAS #28 Swiss Army Triplet (lR R L)</option>
+            <option value="ratamacue">PAS #38 Single Ratamacue (llR L R L)</option>
+            <option value="pataflafla">PAS #27 Pataflafla (lR L R lR rL R L rL)</option>
+            <option value="single_seven">PAS #3 Single Stroke Seven</option>
+          </select>
+          <p class="text-[10px] text-slate-400">Right-hand (<span class="text-amber-400">Amber</span>) and Left-hand (<span class="text-sky-400">Cyan</span>) walkers traverse the 3D graph along active edges on every stroke.</p>
+        </div>
+
+        <!-- Idiophone / Lithophone Material Timbre -->
+        <div class="bg-abyss-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">3. Resonator Material (Laplacian Synth)</label>
+          <div id="timbreGrid" class="grid grid-cols-2 gap-1.5">
+            <button type="button" data-timbre="quartz" class="timbre-btn px-2 py-1.5 rounded-lg border text-left transition bg-emerald-500/15 border-emerald-400/60 text-white">
+              <div class="text-xs font-bold">Quartz Crystal</div>
+              <div class="text-[9px] text-slate-400">Pure Laplacian Bell</div>
+            </button>
+            <button type="button" data-timbre="gamelan" class="timbre-btn px-2 py-1.5 rounded-lg border text-left transition bg-abyss-900 border-slate-800 text-slate-300">
+              <div class="text-xs font-bold">Bronze Gamelan</div>
+              <div class="text-[9px] text-slate-400">Shimmering Metallophone</div>
+            </button>
+            <button type="button" data-timbre="lithophone" class="timbre-btn px-2 py-1.5 rounded-lg border text-left transition bg-abyss-900 border-slate-800 text-slate-300">
+              <div class="text-xs font-bold">Hornfels Stone</div>
+              <div class="text-[9px] text-slate-400">Ancient Lithophone</div>
+            </button>
+            <button type="button" data-timbre="marimba" class="timbre-btn px-2 py-1.5 rounded-lg border text-left transition bg-abyss-900 border-slate-800 text-slate-300">
+              <div class="text-xs font-bold">Rosewood Bars</div>
+              <div class="text-[9px] text-slate-400">Warm Woody Harmonics</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scale / Pitch Quantizer -->
+        <div class="bg-abyss-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">4. Spectral Pitch Mapping</label>
+          <select id="selectScaleMapping" class="w-full bg-abyss-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-sky-300 outline-none">
+            <option value="laplacian" selected>Exact Graph Laplacian √λ_k (Unquantized)</option>
+            <option value="slendro">Javanese Slendro Pentatonic</option>
+            <option value="hirajoshi">Japanese Hirajoshi Minor</option>
+            <option value="just_harmonic">Just Intonation Harmonic Series (1..16)</option>
+          </select>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): INTERACTIVE 3D THREE.JS VIEWPORT + 2D HAGAL SHADOW & PENDULUM LOOM -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- 3D WEBGL VIEWPORT CARD -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3D Engine Mode Switcher -->
+          <div class="flex items-center gap-1 bg-abyss-950 p-1 rounded-xl border border-slate-800">
+            <button id="modeBtnLattice" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">
+              🧊 1. 3D World Crystal (27-Node)
+            </button>
+            <button id="modeBtnPendulum" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              ⏳ 2. 3D Pendulum Phase Loom
+            </button>
+            <button id="modeBtnGeodesic" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🔮 3. Geodesic Bounce Cage
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnAutoRotate3D" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-[11px] font-mono text-emerald-300">
+              Spin: ON
+            </button>
+          </div>
+        </div>
+
+        <!-- Three.js 3D Canvas Container -->
+        <div id="threeViewportContainer" class="relative w-full h-80 sm:h-[360px] bg-abyss-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <!-- Three.js injects <canvas> here -->
+
+          <!-- Top HUD Telemetry Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudTopLeft" class="px-2.5 py-1 rounded-lg bg-abyss-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Click any 3D Node to Strike / Toggle • Drag to Orbit
+            </div>
+            <div id="hudTopRight" class="px-2.5 py-1 rounded-lg bg-abyss-900/90 border border-emerald-500/40 text-[10px] font-mono text-emerald-300">
+              Fiedler λ₂ = 1.184 • Spectral Gap Δλ = 0.82
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Triggers -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnChordBurst" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[11px] font-mono font-semibold transition">
+                ⚡ Excite Eigen-Chord
+              </button>
+              <button id="btnResetWalkers" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                🔄 Reset Walkers / Phase
+              </button>
+              <button id="btnRestoreAllNodes" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                🧊 Full 27-Cube
+              </button>
+            </div>
+            <div id="walkerTelemetryBadge" class="px-2.5 py-1 rounded-lg bg-abyss-900/90 border border-slate-800 text-[10px] font-mono text-amber-300">
+              R-Walker: Node #13 • L-Walker: Node #0
+            </div>
+          </div>
+        </div>
+
+        <!-- 2D ISOMETRIC SHADOW PROJECTION & RUDIMENT STEP RIBBON -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-abyss-950/90 border border-slate-800 rounded-xl p-3">
+          <!-- Hexagonal Isometric Shadow Plane (4 cols) -->
+          <div class="sm:col-span-4 flex flex-col items-center justify-center border-b sm:border-b-0 sm:border-r border-slate-800 pb-2 sm:pb-0 sm:pr-2">
+            <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">2D Isometric Shadow Plane</div>
+            <svg id="shadowProjectionSvg" viewBox="-100 -100 200 200" class="w-28 h-28 bg-abyss-900 rounded-xl border border-slate-800/80"></svg>
+          </div>
+
+          <!-- Active PAS Rudiment Walker Step Ribbon (8 cols) -->
+          <div class="sm:col-span-8 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-slate-200">Rudiment Impulse Sequence &amp; Node Shift</span>
+              <span id="activeRudimentStepLabel" class="text-[10px] font-mono text-amber-400">Step 1 / 8</span>
+            </div>
+            <div id="walkerStepRibbon" class="grid grid-cols-8 gap-1 my-1.5">
+              <!-- Populated by JS -->
+            </div>
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span>Click any step to inject impulse</span>
+              <label class="flex items-center gap-1.5 text-sky-300 cursor-pointer">
+                <input id="chkPruneOnClick" type="checkbox" class="rounded bg-abyss-800 border-slate-600 text-sky-500 focus:ring-0" />
+                <span>3D Click Prunes Node</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): LAPLACIAN EIGENVALUE SPECTRUM, ACOUSTIC CONTROLS & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- GRAPH LAPLACIAN L = D - A SPECTRUM & FIEDLER TELEMETRY -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Laplacian Spectrum (L = D − A)</h2>
+            <p class="text-[11px] text-slate-400">Real-Time Eigenvalues 0 = λ₁ ≤ λ₂ ≤ ... ≤ λ_N</p>
+          </div>
+          <span id="connectivityStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Connected Graph</span>
+        </div>
+
+        <!-- Eigenvalue Bar Chart (Click any Eigenmode to hear its frequency!) -->
+        <div class="bg-abyss-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>LAPLACIAN EIGENMODES (Click bar to audition)</span>
+            <span id="maxEigenReadout" class="text-emerald-400">λ_max = 18.42</span>
+          </div>
+          <div id="laplacianSpectrumContainer" class="grid grid-cols-12 gap-1 items-end h-20 pt-2">
+            <!-- Populated dynamically by Jacobi/Degree Spectrum solver -->
+          </div>
+        </div>
+
+        <!-- 4 Physical & Spectral Parameter Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-abyss-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Fiedler Root Pitch</span>
+              <span id="valBaseFreq" class="font-mono text-emerald-400">220 Hz</span>
+            </div>
+            <input id="sliderBaseFreq" type="range" min="110" max="440" value="220" class="w-full" />
+          </div>
+
+          <div class="bg-abyss-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Crystal Decay / Ring</span>
+              <span id="valDecaySec" class="font-mono text-sky-400">0.68 s</span>
+            </div>
+            <input id="sliderDecaySec" type="range" min="15" max="200" value="68" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-abyss-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Spectral Spread (γ)</span>
+              <span id="valSpectralSpread" class="font-mono text-amber-400">0.55</span>
+            </div>
+            <input id="sliderSpectralSpread" type="range" min="20" max="100" value="55" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-abyss-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Harmonic Shimmer</span>
+              <span id="valShimmer" class="font-mono text-purple-400">45%</span>
+            </div>
+            <input id="sliderShimmer" type="range" min="0" max="100" value="45" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & TELEMETRY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Spectral WAV &amp; Telemetry Lab</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportSequenceWav" type="button" class="px-3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shadow-md shadow-emerald-500/15">
+              💾 Export Crystal Sequence (.WAV)
+            </button>
+            <button id="btnExportPendulumWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              ⏳ Export Pendulum Wave (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Spectral One-Shots (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-oneshot="fiedler_bell" class="crystal-shot-btn px-2 py-1.5 rounded-lg bg-abyss-900 hover:bg-abyss-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                FiedlerBell.wav
+              </button>
+              <button type="button" data-oneshot="eigen_chord" class="crystal-shot-btn px-2 py-1.5 rounded-lg bg-abyss-900 hover:bg-abyss-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                EigenChord.wav
+              </button>
+              <button type="button" data-oneshot="cascade_arpeggio" class="crystal-shot-btn px-2 py-1.5 rounded-lg bg-abyss-900 hover:bg-abyss-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                GraphRun.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export 3D Graph &amp; Laplacian JSON</span>
+            <button id="btnExportGraphJson" type="button" class="px-2.5 py-1 rounded-lg bg-abyss-800 hover:bg-abyss-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered WAV Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Crystal Vault</span>
+              <span id="crystalVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="crystalVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-abyss-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to synthesize a 44.1 kHz spectral recording for instant download and playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-abyss-800/95 border border-emerald-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. CURATED 3D CRYSTAL SUBGRAPHS, RUDIMENT DRIVERS & SCALES
+    // =========================================================================
+    const TOPOLOGY_PRESETS = [
+      {
+        id: "moore_full",
+        name: "26-Connected Moore World Crystal",
+        desc: "Complete 3×3×3 lattice (27 nodes, 158 edges) with isometric Hagal shadow",
+        engineMode: "lattice", conn: "26", rudiment: "paradiddle", timbre: "quartz", bpm: 120,
+        activeMask: Array(27).fill(1)
+      },
+      {
+        id: "dagaz_hourglass",
+        name: "Dagaz Bowtie Eigen-Resonator",
+        desc: "Dihedral hourglass subgraph (16 nodes) tuned to Fiedler λ₂ = 220 Hz",
+        engineMode: "lattice", conn: "26", rudiment: "flam_accent", timbre: "gamelan", bpm: 112,
+        activeMask: [1,0,1, 0,1,0, 1,0,1,  1,0,1, 0,1,0, 1,0,1,  1,0,1, 0,1,0, 1,0,1]
+      },
+      {
+        id: "pendulum_loom",
+        name: "16-Pendulum Harmonic Phase Loom",
+        desc: "Coupled 3D pendulums (51..66 cycles/min) morphing through double helices",
+        engineMode: "pendulum", conn: "18", rudiment: "six_stroke", timbre: "quartz", bpm: 128,
+        activeMask: Array(27).fill(1)
+      },
+      {
+        id: "geodesic_cage",
+        name: "Isochronous Geodesic Bounce Chamber",
+        desc: "Gravity-driven kinetic orbs ricocheting inside a 3D polyhedral resonator",
+        engineMode: "geodesic", conn: "26", rudiment: "swiss_triplet", timbre: "lithophone", bpm: 136,
+        activeMask: Array(27).fill(1)
+      },
+      {
+        id: "orthogonal_cube",
+        name: "6-Connected Cartesian Marimba Cube",
+        desc: "Pure nearest-neighbor 54-edge cubic lattice with woody harmonic bars",
+        engineMode: "lattice", conn: "6", rudiment: "ratamacue", timbre: "marimba", bpm: 124,
+        activeMask: Array(27).fill(1)
+      },
+      {
+        id: "octahedral_core",
+        name: "Octahedral Coordination Shell (19 Nodes)",
+        desc: "Corner-pruned cuboctahedral crystal with high algebraic connectivity",
+        engineMode: "lattice", conn: "18", rudiment: "pataflafla", timbre: "gamelan", bpm: 118,
+        activeMask: [0,1,0, 1,1,1, 0,1,0,  1,1,1, 1,1,1, 1,1,1,  0,1,0, 1,1,1, 0,1,0]
+      },
+      {
+        id: "chiral_helix",
+        name: "Chiral Spiral Staircase (15 Nodes)",
+        desc: "Helical 3D path across the 3×3×3 cube producing ascending modal arpeggios",
+        engineMode: "lattice", conn: "26", rudiment: "single_seven", timbre: "quartz", bpm: 140,
+        activeMask: [1,1,1, 0,1,0, 0,0,1,  0,0,1, 0,1,0, 1,0,0,  1,1,1, 0,1,0, 1,0,1]
+      },
+      {
+        id: "hollow_void",
+        name: "Hollow Void Resonator (20 Perimeter Nodes)",
+        desc: "Outer skeletal frame with central core removed for wide spectral gap",
+        engineMode: "lattice", conn: "6", rudiment: "paradiddle", timbre: "lithophone", bpm: 104,
+        activeMask: [1,1,1, 1,0,1, 1,1,1,  1,0,1, 0,0,0, 1,0,1,  1,1,1, 1,0,1, 1,1,1]
+      }
+    ];
+
+    const RUDIMENT_DRIVERS = {
+      paradiddle: [
+        { h: 'R', a: 1, o: 'none' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 0, o: 'none' }, { h: 'R', a: 0, o: 'none' },
+        { h: 'L', a: 1, o: 'none' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' }
+      ],
+      flam_accent: [
+        { h: 'R', a: 1, o: 'flam' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 0, o: 'none' },
+        { h: 'L', a: 1, o: 'flam' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' },
+        { h: 'R', a: 1, o: 'flam' }, { h: 'L', a: 0, o: 'none' }
+      ],
+      six_stroke: [
+        { h: 'R', a: 1, o: 'none' }, { h: 'L', a: 0, o: 'diddle' }, { h: 'R', a: 0, o: 'diddle' }, { h: 'L', a: 1, o: 'none' },
+        { h: 'R', a: 1, o: 'none' }, { h: 'L', a: 0, o: 'diddle' }, { h: 'R', a: 0, o: 'diddle' }, { h: 'L', a: 1, o: 'none' }
+      ],
+      swiss_triplet: [
+        { h: 'R', a: 1, o: 'flam' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' },
+        { h: 'R', a: 1, o: 'flam' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' },
+        { h: 'L', a: 1, o: 'flam' }, { h: 'R', a: 0, o: 'none' }
+      ],
+      ratamacue: [
+        { h: 'R', a: 0, o: 'drag' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 1, o: 'none' },
+        { h: 'L', a: 0, o: 'drag' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 1, o: 'none' }
+      ],
+      pataflafla: [
+        { h: 'R', a: 1, o: 'flam' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 0, o: 'none' }, { h: 'R', a: 1, o: 'flam' },
+        { h: 'L', a: 1, o: 'flam' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' }, { h: 'L', a: 1, o: 'flam' }
+      ],
+      single_seven: [
+        { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' },
+        { h: 'R', a: 0, o: 'none' }, { h: 'L', a: 0, o: 'none' }, { h: 'R', a: 1, o: 'flam' }, { h: 'L', a: 1, o: 'none' }
+      ]
+    };
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "moore_full",
+      engineMode: "lattice", // 'lattice' | 'pendulum' | 'geodesic'
+      isPlaying: false,
+      bpm: 120,
+      isometricCam: true,
+      autoRotate3D: true,
+      pruneOnClick: false,
+
+      // 3x3x3 Lattice Graph State
+      connectivityMode: "26", // '6' | '18' | '26' | 'dagaz' | 'octa'
+      nodes: [], // 27 nodes with { id, gx, gy, gz, x, y, z, active, degree, glow, lastHand }
+      edges: [], // { u, v }
+      adjacency: [],
+      eigenvalues: [], // Sorted Graph Laplacian eigenvalues 0 = lambda_1 <= lambda_2 ...
+      fiedlerValue: 1.184,
+      spectralGap: 0.82,
+
+      // Walkers & Rudiment Driver
+      rudimentKey: "paradiddle",
+      stepIdx: -1,
+      rightWalkerNode: 13, // Center of 3x3x3 cube
+      leftWalkerNode: 0,   // Corner node
+
+      // Pendulum Wave Loom (16 Pendulums)
+      pendulums: [],
+      pendulumTimeSec: 0,
+
+      // Geodesic Bounce Chamber Orbs
+      bounceOrbs: [],
+
+      // Acoustic Synthesis Parameters
+      timbre: "quartz", // 'quartz' | 'gamelan' | 'lithophone' | 'marimba'
+      scaleMapping: "laplacian",
+      baseFreqHz: 220,
+      decaySec: 0.68,
+      spectralSpread: 0.55,
+      shimmerPct: 45,
+
+      // Vault
+      vault: []
+    };
+
+    // =========================================================================
+    // 3. 3×3×3 GRAPH TOPOLOGY & EXACT JACOBI LAPLACIAN EIGENVALUE SOLVER
+    // =========================================================================
+    function initLatticeNodes() {
+      state.nodes = [];
+      let id = 0;
+      for (let gz = -1; gz <= 1; gz++) {
+        for (let gy = -1; gy <= 1; gy++) {
+          for (let gx = -1; gx <= 1; gx++) {
+            state.nodes.push({
+              id,
+              gx, gy, gz,
+              x: gx * 2.2,
+              y: gy * 2.2,
+              z: gz * 2.2,
+              active: true,
+              degree: 0,
+              glow: 0,
+              lastHand: 'R'
+            });
+            id++;
+          }
+        }
+      }
+
+      // Initialize 16 Harmonic Pendulums
+      state.pendulums = [];
+      for (let i = 0; i < 16; i++) {
+        const cyclesPerMin = 50 + i; // 50 to 65 oscillations per 60s
+        state.pendulums.push({
+          idx: i,
+          freqHz: cyclesPerMin / 60,
+          angle: 0.65,
+          prevSign: 1,
+          glow: 0,
+          zPos: (i - 7.5) * 0.42
+        });
+      }
+
+      // Initialize 3 Geodesic Kinetic Orbs
+      state.bounceOrbs = [
+        { id: 0, hand: 'R', color: 0xf59e0b, x: 0.5, y: 1.2, z: 0.3, vx: 3.4, vy: 4.1, vz: -2.8 },
+        { id: 1, hand: 'L', color: 0x38bdf8, x: -0.8, y: 0.4, z: -0.6, vx: -3.1, vy: 3.8, vz: 3.2 },
+        { id: 2, hand: 'R', color: 0x10b981, x: 0.1, y: -1.1, z: 0.9, vx: 2.6, vy: -4.4, vz: -2.9 }
+      ];
+    }
+
+    /**
+     * Builds edges for the active nodes in the 3x3x3 lattice and solves the Graph Laplacian L = D - A
+     */
+    function rebuildGraphAndSolveLaplacian() {
+      const maxDistSq =
+        state.connectivityMode === '6' ? 1.01 :
+        state.connectivityMode === '18' ? 2.01 : 3.01;
+
+      state.edges = [];
+      state.adjacency = Array.from({ length: 27 }, () => []);
+      state.nodes.forEach(n => { n.degree = 0; });
+
+      for (let i = 0; i < 27; i++) {
+        if (!state.nodes[i].active) continue;
+        for (let j = i + 1; j < 27; j++) {
+          if (!state.nodes[j].active) continue;
+          const dx = state.nodes[i].gx - state.nodes[j].gx;
+          const dy = state.nodes[i].gy - state.nodes[j].gy;
+          const dz = state.nodes[i].gz - state.nodes[j].gz;
+          const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 <= maxDistSq) {
+            state.edges.push({ u: i, v: j, d2 });
+            state.adjacency[i].push(j);
+            state.adjacency[j].push(i);
+            state.nodes[i].degree++;
+            state.nodes[j].degree++;
+          }
+        }
+      }
+
+      // Extract active subgraph indices and compute exact eigenvalues of L = D - A via Jacobi rotations
+      const activeIndices = state.nodes.filter(n => n.active).map(n => n.id);
+      const M = activeIndices.length;
+
+      if (M < 2) {
+        state.eigenvalues = [0, 1];
+        state.fiedlerValue = 0;
+        state.spectralGap = 0;
+      } else {
+        const L = Array.from({ length: M }, () => new Float64Array(M));
+        const mapIdx = {};
+        activeIndices.forEach((origId, k) => { mapIdx[origId] = k; });
+
+        state.edges.forEach(e => {
+          const u = mapIdx[e.u];
+          const v = mapIdx[e.v];
+          if (u !== undefined && v !== undefined) {
+            L[u][v] = -1;
+            L[v][u] = -1;
+            L[u][u] += 1;
+            L[v][v] += 1;
+          }
+        });
+
+        // Fast Jacobi symmetric eigenvalue solver (45 sweeps is plenty for M <= 27)
+        for (let sweep = 0; sweep < 35; sweep++) {
+          let maxOff = 0;
+          let p = 0, q = 1;
+          for (let i = 0; i < M; i++) {
+            for (let j = i + 1; j < M; j++) {
+              const a = Math.abs(L[i][j]);
+              if (a > maxOff) { maxOff = a; p = i; q = j; }
+            }
+          }
+          if (maxOff < 1e-7) break;
+          const app = L[p][p];
+          const aqq = L[q][q];
+          const apq = L[p][q];
+          const phi = 0.5 * Math.atan2(2 * apq, aqq - app);
+          const c = Math.cos(phi);
+          const s = Math.sin(phi);
+
+          for (let k = 0; k < M; k++) {
+            if (k !== p && k !== q) {
+              const lkp = L[k][p];
+              const lkq = L[k][q];
+              L[k][p] = L[p][k] = c * lkp - s * lkq;
+              L[k][q] = L[q][k] = s * lkp + c * lkq;
+            }
+          }
+          L[p][p] = c * c * app - 2 * s * c * apq + s * s * aqq;
+          L[q][q] = s * s * app + 2 * s * c * apq + c * c * aqq;
+          L[p][q] = L[q][p] = 0;
+        }
+
+        const evals = [];
+        for (let i = 0; i < M; i++) evals.push(Math.max(0, L[i][i]));
+        evals.sort((a, b) => a - b);
+        state.eigenvalues = evals;
+        state.fiedlerValue = evals.length > 1 ? evals[1] : 0;
+        state.spectralGap = evals.length > 2 ? (evals[2] - evals[1]) : state.fiedlerValue;
+      }
+
+      // Update UI Telemetry
+      document.getElementById('lblActiveNodes').textContent = `${M} / 27`;
+      document.getElementById('lblActiveEdges').textContent = String(state.edges.length);
+      document.getElementById('fiedlerHeaderReadout').textContent = `λ₂ = ${state.fiedlerValue.toFixed(3)}`;
+      document.getElementById('hudTopRight').textContent = `Fiedler λ₂ = ${state.fiedlerValue.toFixed(3)} • Edges: ${state.edges.length}`;
+
+      const connBadge = document.getElementById('connectivityStatusBadge');
+      if (state.fiedlerValue > 0.001) {
+        connBadge.textContent = `Connected (λ₂ = ${state.fiedlerValue.toFixed(2)})`;
+        connBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+      } else {
+        connBadge.textContent = `Disconnected (λ₂ = 0.00)`;
+        connBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40';
+      }
+
+      renderLaplacianSpectrumBars();
+      render2DShadowProjection();
+      rebuildThreeLatticeMeshes();
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO SPECTRAL LAPLACIAN SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     * Maps a node index (0..26) or eigenmode index to a physical frequency (Hz)
+     * governed by the Graph Laplacian eigenvalues or quantized musical scale.
+     */
+    function computeNodeFrequencyHz(nodeId) {
+      const f0 = state.baseFreqHz;
+      const spread = state.spectralSpread;
+      const evals = state.eigenvalues;
+
+      if (state.scaleMapping === 'laplacian' && evals.length > 1) {
+        const idx = Math.max(1, nodeId % evals.length);
+        const lambda = Math.max(0.15, evals[idx]);
+        const refLambda = Math.max(0.25, state.fiedlerValue || 1.0);
+        return f0 * Math.pow(lambda / refLambda, spread);
+      } else if (state.scaleMapping === 'slendro') {
+        const slendroRatios = [1.0, 1.149, 1.319, 1.516, 1.741, 2.0, 2.297, 2.639, 3.031];
+        return f0 * slendroRatios[nodeId % slendroRatios.length];
+      } else if (state.scaleMapping === 'hirajoshi') {
+        const hiraRatios = [1.0, 1.122, 1.189, 1.498, 1.587, 2.0, 2.245, 2.378, 2.996];
+        return f0 * hiraRatios[nodeId % hiraRatios.length];
+      } else {
+        // Just Intonation Harmonic Series
+        const harm = 1 + (nodeId % 12) * 0.25;
+        return f0 * harm;
+      }
+    }
+
+    /**
+     * Synthesizes a spectral crystal/metallophone/lithophone/marimba strike on ctx -> destNode
+     */
+    function synthesizeSpectralStrike(ctx, destNode, when, options = {}) {
+      const {
+        nodeId = 13,
+        hand = 'R',
+        velocity = 0.85,
+        ornament = 'none',
+        stepDurSec = 0.14
+      } = options;
+
+      const node = state.nodes[nodeId] || state.nodes[0];
+      const baseFreq = computeNodeFrequencyHz(nodeId);
+      const decay = state.decaySec;
+      const shimmer = state.shimmerPct / 100;
+
+      const scheduleSingleVoice = (t, vel, pitchMult = 1.0) => {
+        const voiceGain = ctx.createGain();
+        voiceGain.gain.setValueAtTime(Math.max(0.02, vel * 0.48), t);
+
+        if (ctx.createStereoPanner) {
+          const panner = ctx.createStereoPanner();
+          const pan = Math.max(-0.9, Math.min(0.9, (node.gx * 0.35) + (hand === 'R' ? 0.15 : -0.15)));
+          panner.pan.setValueAtTime(pan, t);
+          voiceGain.connect(panner);
+          panner.connect(destNode);
+        } else {
+          voiceGain.connect(destNode);
+        }
+
+        // Timbre harmonic partials (governed by material + Laplacian degree)
+        let partials = [1.0, 2.756, 5.404];
+        let oscType = 'sine';
+        if (state.timbre === 'gamelan') {
+          partials = [1.0, 1.008, 2.42, 3.88]; // Paired ombak beat + bronze overtones
+          oscType = 'triangle';
+        } else if (state.timbre === 'lithophone') {
+          partials = [1.0, 2.14, 3.65, 6.12];
+          oscType = 'sine';
+        } else if (state.timbre === 'marimba') {
+          partials = [1.0, 4.0, 9.8]; // Classic arch-carved marimba 1 : 4 : 10 tuning
+          oscType = 'sine';
+        }
+
+        partials.forEach((ratio, pIdx) => {
+          const osc = ctx.createOscillator();
+          const pGain = ctx.createGain();
+          osc.type = pIdx === 0 ? oscType : 'sine';
+          const freq = Math.min(14000, baseFreq * pitchMult * ratio);
+          osc.frequency.setValueAtTime(freq, t);
+
+          const amp = pIdx === 0 ? 0.75 : (0.28 * shimmer) / pIdx;
+          const pDecay = pIdx === 0 ? decay : decay * (0.45 / pIdx);
+          pGain.gain.setValueAtTime(0.001, t);
+          pGain.gain.linearRampToValueAtTime(amp, t + 0.003);
+          pGain.gain.exponentialRampToValueAtTime(0.0008, t + pDecay);
+
+          osc.connect(pGain);
+          pGain.connect(voiceGain);
+          osc.start(t);
+          osc.stop(t + pDecay + 0.02);
+        });
+      };
+
+      if (ornament === 'flam') {
+        scheduleSingleVoice(Math.max(0, when - 0.022), velocity * 0.42, 0.99);
+        scheduleSingleVoice(when, velocity, 1.0);
+      } else if (ornament === 'drag') {
+        scheduleSingleVoice(Math.max(0, when - 0.038), velocity * 0.35, 0.98);
+        scheduleSingleVoice(Math.max(0, when - 0.019), velocity * 0.42, 0.99);
+        scheduleSingleVoice(when, velocity, 1.0);
+      } else if (ornament === 'diddle') {
+        scheduleSingleVoice(when, velocity, 1.0);
+        scheduleSingleVoice(when + stepDurSec * 0.5, velocity * 0.85, 1.0);
+      } else {
+        scheduleSingleVoice(when, velocity, 1.0);
+      }
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D WEBGL SCENE (WORLD CRYSTAL, PENDULUM LOOM & GEODESIC CAGE)
+    // =========================================================================
+    let scene, perspCam, orthoCam, activeCam, renderer, raycaster, mouseVec;
+    let crystalGroup, pendulumGroup, geodesicGroup;
+    let nodeMeshes = [];
+    let edgeLines = null;
+    let pendulumMeshes = [];
+    let orbMeshes = [];
+    let isDraggingOrbit = false;
+    let prevPointer = { x: 0, y: 0 };
+    let sphericalCam = { theta: 0.78, phi: 1.05, radius: 13.5 };
+
+    function initThreeScene() {
+      const container = document.getElementById('threeViewportContainer');
+      const w = container.clientWidth || 600;
+      const h = container.clientHeight || 360;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x05070b);
+
+      const aspect = w / h;
+      perspCam = new THREE.PerspectiveCamera(42, aspect, 0.1, 100);
+      const frustum = 6.2;
+      orthoCam = new THREE.OrthographicCamera(-frustum * aspect, frustum * aspect, frustum, -frustum, 0.1, 100);
+      activeCam = state.isometricCam ? orthoCam : perspCam;
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      container.insertBefore(renderer.domElement, container.firstChild);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      // Lighting
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.65);
+      scene.add(ambLight);
+      const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 0.9);
+      dirLight1.position.set(8, 12, 10);
+      scene.add(dirLight1);
+      const dirLight2 = new THREE.DirectionalLight(0xf59e0b, 0.75);
+      dirLight2.position.set(-10, -8, -6);
+      scene.add(dirLight2);
+
+      crystalGroup = new THREE.Group();
+      pendulumGroup = new THREE.Group();
+      geodesicGroup = new THREE.Group();
+      scene.add(crystalGroup);
+      scene.add(pendulumGroup);
+      scene.add(geodesicGroup);
+
+      buildThreePendulumLoom();
+      buildThreeGeodesicCage();
+      rebuildThreeLatticeMeshes();
+      updateCameraTransform();
+
+      window.addEventListener('resize', () => {
+        const nw = container.clientWidth;
+        const nh = container.clientHeight;
+        if (!nw || !nh) return;
+        const nasp = nw / nh;
+        perspCam.aspect = nasp;
+        perspCam.updateProjectionMatrix();
+        orthoCam.left = -frustum * nasp;
+        orthoCam.right = frustum * nasp;
+        orthoCam.top = frustum;
+        orthoCam.bottom = -frustum;
+        orthoCam.updateProjectionMatrix();
+        renderer.setSize(nw, nh);
+      });
+
+      // Pointer Orbit & 3D Node Raycasting
+      let downPos = { x: 0, y: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDraggingOrbit = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        downPos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingOrbit) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        sphericalCam.theta -= dx * 0.008;
+        sphericalCam.phi = Math.max(0.25, Math.min(Math.PI - 0.25, sphericalCam.phi - dy * 0.008));
+        updateCameraTransform();
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!isDraggingOrbit) return;
+        isDraggingOrbit = false;
+        const moveDist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+        if (moveDist < 6 && state.engineMode === 'lattice') {
+          handleThreeCanvasClick(e);
+        }
+      });
+    }
+
+    function updateCameraTransform() {
+      const r = sphericalCam.radius;
+      const x = r * Math.sin(sphericalCam.phi) * Math.sin(sphericalCam.theta);
+      const y = r * Math.cos(sphericalCam.phi);
+      const z = r * Math.sin(sphericalCam.phi) * Math.cos(sphericalCam.theta);
+      perspCam.position.set(x, y, z);
+      perspCam.lookAt(0, 0, 0);
+      orthoCam.position.set(x, y, z);
+      orthoCam.lookAt(0, 0, 0);
+      activeCam = state.isometricCam ? orthoCam : perspCam;
+    }
+
+    function rebuildThreeLatticeMeshes() {
+      if (!crystalGroup) return;
+      while (crystalGroup.children.length > 0) {
+        crystalGroup.remove(crystalGroup.children[0]);
+      }
+      nodeMeshes = [];
+
+      // Create 27 Node Spheres
+      const sphereGeo = new THREE.SphereGeometry(0.32, 20, 20);
+      state.nodes.forEach(n => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: n.active ? 0x10b981 : 0x1e293b,
+          emissive: n.active ? 0x052e16 : 0x000000,
+          roughness: 0.25,
+          metalness: 0.6,
+          transparent: true,
+          opacity: n.active ? 0.95 : 0.22
+        });
+        const mesh = new THREE.Mesh(sphereGeo, mat);
+        mesh.position.set(n.x, n.y, n.z);
+        mesh.userData = { nodeId: n.id };
+        crystalGroup.add(mesh);
+        nodeMeshes.push(mesh);
+      });
+
+      // Build Active Edges LineSegments
+      const linePositions = [];
+      state.edges.forEach(e => {
+        const u = state.nodes[e.u];
+        const v = state.nodes[e.v];
+        linePositions.push(u.x, u.y, u.z, v.x, v.y, v.z);
+      });
+      if (linePositions.length > 0) {
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+        const lineMat = new THREE.LineBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.34
+        });
+        edgeLines = new THREE.LineSegments(lineGeo, lineMat);
+        crystalGroup.add(edgeLines);
+      }
+    }
+
+    function buildThreePendulumLoom() {
+      while (pendulumGroup.children.length > 0) pendulumGroup.remove(pendulumGroup.children[0]);
+      pendulumMeshes = [];
+
+      // Top Support Beam & Zero-Phase Strike Plane
+      const beamGeo = new THREE.BoxGeometry(0.25, 0.25, 7.5);
+      const beamMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+      const beam = new THREE.Mesh(beamGeo, beamMat);
+      beam.position.set(0, 3.2, 0);
+      pendulumGroup.add(beam);
+
+      const planeGeo = new THREE.PlaneGeometry(0.12, 7.5);
+      const planeMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.45 });
+      const strikePlane = new THREE.Mesh(planeGeo, planeMat);
+      strikePlane.rotation.x = Math.PI / 2;
+      strikePlane.position.set(0, -1.8, 0);
+      pendulumGroup.add(strikePlane);
+
+      const bobGeo = new THREE.SphereGeometry(0.22, 16, 16);
+      state.pendulums.forEach((p, idx) => {
+        const pivot = new THREE.Group();
+        pivot.position.set(0, 3.2, p.zPos);
+
+        const len = 2.6 + idx * 0.14;
+        const rodGeo = new THREE.CylinderGeometry(0.02, 0.02, len, 8);
+        const rodMat = new THREE.MeshBasicMaterial({ color: 0x64748b });
+        const rod = new THREE.Mesh(rodGeo, rodMat);
+        rod.position.set(0, -len / 2, 0);
+        pivot.add(rod);
+
+        const bobMat = new THREE.MeshStandardMaterial({
+          color: idx % 2 === 0 ? 0xf59e0b : 0x38bdf8,
+          emissive: 0x000000,
+          roughness: 0.2,
+          metalness: 0.7
+        });
+        const bob = new THREE.Mesh(bobGeo, bobMat);
+        bob.position.set(0, -len, 0);
+        pivot.add(bob);
+
+        pendulumGroup.add(pivot);
+        pendulumMeshes.push({ pivot, bob, len });
+      });
+    }
+
+    function buildThreeGeodesicCage() {
+      while (geodesicGroup.children.length > 0) geodesicGroup.remove(geodesicGroup.children[0]);
+      orbMeshes = [];
+
+      const cageGeo = new THREE.IcosahedronGeometry(3.6, 0);
+      const wireGeo = new THREE.WireframeGeometry(cageGeo);
+      const wireMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 });
+      const wireMesh = new THREE.LineSegments(wireGeo, wireMat);
+      geodesicGroup.add(wireMesh);
+
+      const orbGeo = new THREE.SphereGeometry(0.32, 20, 20);
+      state.bounceOrbs.forEach(orb => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: orb.color,
+          emissive: orb.color,
+          emissiveIntensity: 0.35,
+          roughness: 0.15
+        });
+        const mesh = new THREE.Mesh(orbGeo, mat);
+        geodesicGroup.add(mesh);
+        orbMeshes.push(mesh);
+      });
+    }
+
+    function handleThreeCanvasClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouseVec, activeCam);
+      const hits = raycaster.intersectObjects(nodeMeshes);
+      if (hits.length > 0) {
+        const hitNodeId = hits[0].object.userData.nodeId;
+        const node = state.nodes[hitNodeId];
+        if (state.pruneOnClick) {
+          node.active = !node.active;
+          rebuildGraphAndSolveLaplacian();
+        } else {
+          if (!node.active) {
+            node.active = true;
+            rebuildGraphAndSolveLaplacian();
+          }
+          node.glow = 1.0;
+          node.lastHand = 'R';
+          const ctx = ensureAudio();
+          synthesizeSpectralStrike(ctx, masterGain, ctx.currentTime, {
+            nodeId: hitNodeId, hand: 'R', velocity: 0.95, ornament: 'flam'
+          });
+          render2DShadowProjection();
+        }
+      }
+    }
+
+    // Main 60 FPS Animation Loop
+    let lastFrameTime = performance.now();
+    function animateThreeLoop() {
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+
+      crystalGroup.visible = state.engineMode === 'lattice';
+      pendulumGroup.visible = state.engineMode === 'pendulum';
+      geodesicGroup.visible = state.engineMode === 'geodesic';
+
+      if (state.autoRotate3D && !isDraggingOrbit) {
+        sphericalCam.theta += 0.0035;
+        updateCameraTransform();
+      }
+
+      // 1. Update 3D World Crystal Node Glows
+      if (state.engineMode === 'lattice') {
+        state.nodes.forEach((n, idx) => {
+          const mesh = nodeMeshes[idx];
+          if (!mesh) return;
+          if (n.glow > 0.01) {
+            n.glow = Math.max(0, n.glow - dt * 2.8);
+            const isR = n.lastHand === 'R';
+            mesh.material.color.setHex(isR ? 0xf59e0b : 0x38bdf8);
+            mesh.material.emissive.setHex(isR ? 0xb45309 : 0x0284c7);
+            const s = 1.0 + n.glow * 0.65;
+            mesh.scale.set(s, s, s);
+          } else {
+            mesh.scale.set(1, 1, 1);
+            if (idx === state.rightWalkerNode) {
+              mesh.material.color.setHex(0xf59e0b);
+              mesh.material.emissive.setHex(0x78350f);
+            } else if (idx === state.leftWalkerNode) {
+              mesh.material.color.setHex(0x38bdf8);
+              mesh.material.emissive.setHex(0x0c4a6e);
+            } else {
+              mesh.material.color.setHex(n.active ? 0x10b981 : 0x1e293b);
+              mesh.material.emissive.setHex(n.active ? 0x052e16 : 0x000000);
+            }
+          }
+        });
+      }
+
+      // 2. Update 3D Harmonic Pendulum Wave Loom
+      if (state.engineMode === 'pendulum') {
+        if (state.isPlaying) {
+          state.pendulumTimeSec += dt * (state.bpm / 120);
+        }
+        state.pendulums.forEach((p, idx) => {
+          const meshObj = pendulumMeshes[idx];
+          if (!meshObj) return;
+          const newAngle = 0.62 * Math.cos(2 * Math.PI * p.freqHz * state.pendulumTimeSec);
+          const curSign = Math.sign(Math.sin(2 * Math.PI * p.freqHz * state.pendulumTimeSec));
+          if (state.isPlaying && curSign !== 0 && curSign !== p.prevSign && Math.abs(newAngle) < 0.18) {
+            p.prevSign = curSign;
+            p.glow = 1.0;
+            const ctx = ensureAudio();
+            synthesizeSpectralStrike(ctx, masterGain, ctx.currentTime, {
+              nodeId: idx % 27, hand: idx % 2 === 0 ? 'R' : 'L', velocity: 0.72
+            });
+          }
+          p.angle = newAngle;
+          p.glow = Math.max(0, p.glow - dt * 3.0);
+          meshObj.pivot.rotation.z = p.angle;
+          const s = 1.0 + p.glow * 0.55;
+          meshObj.bob.scale.set(s, s, s);
+        });
+      }
+
+      // 3. Update 3D Geodesic Bounce Chamber
+      if (state.engineMode === 'geodesic') {
+        geodesicGroup.rotation.y += dt * 0.35;
+        const speedScale = state.isPlaying ? (state.bpm / 120) : 0.25;
+        const maxR = 3.15;
+        state.bounceOrbs.forEach((orb, idx) => {
+          orb.x += orb.vx * dt * speedScale;
+          orb.y += orb.vy * dt * speedScale;
+          orb.z += orb.vz * dt * speedScale;
+          const r = Math.hypot(orb.x, orb.y, orb.z);
+          if (r > maxR) {
+            // Reflect velocity across spherical/icosahedral normal and trigger spectral strike!
+            const nx = orb.x / r, ny = orb.y / r, nz = orb.z / r;
+            const dot = orb.vx * nx + orb.vy * ny + orb.vz * nz;
+            orb.vx -= 2 * dot * nx;
+            orb.vy -= 2 * dot * ny;
+            orb.vz -= 2 * dot * nz;
+            orb.x = nx * (maxR - 0.04);
+            orb.y = ny * (maxR - 0.04);
+            orb.z = nz * (maxR - 0.04);
+            if (state.isPlaying) {
+              const ctx = ensureAudio();
+              const mappedNode = Math.abs(Math.round((nx + ny + nz + 3) * 4.2)) % 27;
+              synthesizeSpectralStrike(ctx, masterGain, ctx.currentTime, {
+                nodeId: mappedNode, hand: orb.hand, velocity: 0.85
+              });
+            }
+          }
+          if (orbMeshes[idx]) {
+            orbMeshes[idx].position.set(orb.x, orb.y, orb.z);
+          }
+        });
+      }
+
+      renderer.render(scene, activeCam);
+      requestAnimationFrame(animateThreeLoop);
+    }
+
+    // =========================================================================
+    // 6. 2D ISOMETRIC SHADOW PROJECTION & LAPLACIAN SPECTRUM BARS
+    // =========================================================================
+    function render2DShadowProjection() {
+      const svg = document.getElementById('shadowProjectionSvg');
+      if (!svg) return;
+
+      // Isometric projection basis vectors onto 2D hexagonal Hagal plane
+      const projectIso = (gx, gy, gz) => {
+        const px = (gx - gz) * 34;
+        const py = (gx + gz) * 19.5 - gy * 38;
+        return { px, py };
+      };
+
+      let html = '';
+      // Draw projected edges
+      state.edges.forEach(e => {
+        const u = state.nodes[e.u];
+        const v = state.nodes[e.v];
+        const p1 = projectIso(u.gx, u.gy, u.gz);
+        const p2 = projectIso(v.gx, v.gy, v.gz);
+        html += `<line x1="${p1.px.toFixed(1)}" y1="${p1.py.toFixed(1)}" x2="${p2.px.toFixed(1)}" y2="${p2.py.toFixed(1)}" stroke="rgba(56, 189, 248, 0.28)" stroke-width="1.2" />`;
+      });
+
+      // Draw projected nodes
+      state.nodes.forEach(n => {
+        if (!n.active) return;
+        const { px, py } = projectIso(n.gx, n.gy, n.gz);
+        const isR = n.id === state.rightWalkerNode;
+        const isL = n.id === state.leftWalkerNode;
+        const fill = isR ? '#f59e0b' : (isL ? '#38bdf8' : '#10b981');
+        const r = (isR || isL) ? 5.5 : 3.5;
+        html += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r}" fill="${fill}" />`;
+      });
+
+      svg.innerHTML = html;
+    }
+
+    function renderLaplacianSpectrumBars() {
+      const container = document.getElementById('laplacianSpectrumContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const evals = state.eigenvalues;
+      const maxVal = Math.max(1, ...evals);
+      document.getElementById('maxEigenReadout').textContent = `λ_max = ${maxVal.toFixed(2)}`;
+
+      // Show 12 representative eigenmodes across the spectrum
+      for (let i = 0; i < 12; i++) {
+        const eIdx = Math.min(evals.length - 1, Math.floor((i / 11) * (evals.length - 1)));
+        const val = evals[eIdx] || 0;
+        const pct = Math.max(10, Math.round((val / maxVal) * 100));
+        const isFiedler = eIdx === 1;
+
+        const barWrap = document.createElement('div');
+        barWrap.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer group';
+        barWrap.innerHTML = `
+          <div class="w-full rounded-t transition-all ${isFiedler ? 'bg-amber-400' : 'bg-emerald-400/80 group-hover:bg-sky-400'}" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono ${isFiedler ? 'text-amber-300 font-bold' : 'text-slate-400'}">${isFiedler ? 'λ₂' : `λ${eIdx + 1}`}</span>
+        `;
+        barWrap.addEventListener('click', () => {
+          const ctx = ensureAudio();
+          synthesizeSpectralStrike(ctx, masterGain, ctx.currentTime, {
+            nodeId: eIdx, hand: 'R', velocity: 0.95
+          });
+        });
+        container.appendChild(barWrap);
+      }
+    }
+
+    // =========================================================================
+    // 7. RUDIMENT GRAPH WALKER SEQUENCER & TRANSPORT ENGINE
+    // =========================================================================
+    let stepTimerId = null;
+
+    function renderWalkerStepRibbon() {
+      const ribbon = document.getElementById('walkerStepRibbon');
+      if (!ribbon) return;
+      const steps = RUDIMENT_DRIVERS[state.rudimentKey] || RUDIMENT_DRIVERS.paradiddle;
+      ribbon.innerHTML = '';
+
+      steps.forEach((st, idx) => {
+        const isCurrent = state.stepIdx === idx;
+        const isR = st.h === 'R';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `py-1.5 rounded-lg border font-mono text-xs font-bold transition ${
+          isR
+            ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
+            : 'bg-sky-500/15 border-sky-500/50 text-sky-300'
+        } ${isCurrent ? 'ring-2 ring-white scale-105' : ''}`;
+        const prefix = st.o === 'flam' ? (isR ? 'l' : 'r') : (st.o === 'drag' ? (isR ? 'll' : 'rr') : '');
+        btn.textContent = `${prefix}${st.h}${st.a ? '>' : ''}`;
+        btn.addEventListener('click', () => {
+          state.stepIdx = idx;
+          fireSingleWalkerStep(idx);
+        });
+        ribbon.appendChild(btn);
+      });
+    }
+
+    function advanceWalkerOnGraph(currentNodeId) {
+      const neighbors = state.adjacency[currentNodeId] || [];
+      if (neighbors.length > 0) {
+        return neighbors[Math.floor(Math.random() * neighbors.length)];
+      }
+      const activeList = state.nodes.filter(n => n.active);
+      return activeList.length > 0 ? activeList[Math.floor(Math.random() * activeList.length)].id : 13;
+    }
+
+    function fireSingleWalkerStep(idx) {
+      const ctx = ensureAudio();
+      const steps = RUDIMENT_DRIVERS[state.rudimentKey] || RUDIMENT_DRIVERS.paradiddle;
+      const st = steps[idx % steps.length];
+      const stepDurSec = (60 / state.bpm) * 0.5;
+
+      let targetNode = 13;
+      if (st.h === 'R') {
+        state.rightWalkerNode = advanceWalkerOnGraph(state.rightWalkerNode);
+        targetNode = state.rightWalkerNode;
+      } else {
+        state.leftWalkerNode = advanceWalkerOnGraph(state.leftWalkerNode);
+        targetNode = state.leftWalkerNode;
+      }
+
+      const nodeObj = state.nodes[targetNode];
+      if (nodeObj) {
+        nodeObj.glow = 1.0;
+        nodeObj.lastHand = st.h;
+      }
+
+      synthesizeSpectralStrike(ctx, masterGain, ctx.currentTime + 0.02, {
+        nodeId: targetNode,
+        hand: st.h,
+        velocity: st.a ? 0.96 : 0.68,
+        ornament: st.o,
+        stepDurSec
+      });
+
+      document.getElementById('activeRudimentStepLabel').textContent = `Step ${idx + 1} / ${steps.length}`;
+      document.getElementById('walkerTelemetryBadge').textContent = `R-Walker: Node #${state.rightWalkerNode} • L-Walker: Node #${state.leftWalkerNode}`;
+      renderWalkerStepRibbon();
+      render2DShadowProjection();
+    }
+
+    function startTransport() {
+      ensureAudio();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.stepIdx = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('crystal-running');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP LATTICE';
+
+      tickTransport();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (stepTimerId) {
+        clearTimeout(stepTimerId);
+        stepTimerId = null;
+      }
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('crystal-running');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'ENGAGE LATTICE';
+      renderWalkerStepRibbon();
+    }
+
+    function tickTransport() {
+      if (!state.isPlaying) return;
+      const steps = RUDIMENT_DRIVERS[state.rudimentKey] || RUDIMENT_DRIVERS.paradiddle;
+      state.stepIdx = (state.stepIdx + 1) % steps.length;
+
+      if (state.engineMode === 'lattice') {
+        fireSingleWalkerStep(state.stepIdx);
+      } else {
+        renderWalkerStepRibbon();
+      }
+
+      const stepDurSec = (60 / state.bpm) * 0.5;
+      stepTimerId = setTimeout(tickTransport, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderAndDownloadCrystalWav(exportType = 'sequence') {
+      const sr = 44100;
+      const stepDurSec = (60 / state.bpm) * 0.5;
+      const steps = RUDIMENT_DRIVERS[state.rudimentKey] || RUDIMENT_DRIVERS.paradiddle;
+      const totalSec = exportType === 'sequence' ? (steps.length * 2 * stepDurSec + 1.2) : 2.6;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (exportType === 'fiedler_bell') {
+        synthesizeSpectralStrike(offCtx, offCtx.destination, 0.05, { nodeId: 1, hand: 'R', velocity: 0.98 });
+      } else if (exportType === 'eigen_chord') {
+        [1, 3, 6, 10, 15, 21].forEach((nId, idx) => {
+          synthesizeSpectralStrike(offCtx, offCtx.destination, 0.05 + idx * 0.035, { nodeId: nId, hand: idx % 2 ? 'L' : 'R', velocity: 0.78 });
+        });
+      } else if (exportType === 'cascade_arpeggio' || exportType === 'pendulum') {
+        for (let i = 0; i < 16; i++) {
+          synthesizeSpectralStrike(offCtx, offCtx.destination, 0.04 + i * 0.12, { nodeId: i, hand: i % 2 ? 'L' : 'R', velocity: 0.82 });
+        }
+      } else {
+        let cursor = 0.05;
+        let simNodeR = 13, simNodeL = 0;
+        for (let bar = 0; bar < 2; bar++) {
+          steps.forEach(st => {
+            if (st.h === 'R') {
+              simNodeR = advanceWalkerOnGraph(simNodeR);
+            } else {
+              simNodeL = advanceWalkerOnGraph(simNodeL);
+            }
+            synthesizeSpectralStrike(offCtx, offCtx.destination, cursor, {
+              nodeId: st.h === 'R' ? simNodeR : simNodeL,
+              hand: st.h,
+              velocity: st.a ? 0.95 : 0.68,
+              ornament: st.o,
+              stepDurSec
+            });
+            cursor += stepDurSec;
+          });
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `chronocrystal_${exportType}_${state.timbre}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultList();
+      showToast(`Exported Spectral WAV: ${filename}`);
+    }
+
+    function renderVaultList() {
+      const container = document.getElementById('crystalVaultList');
+      const countLbl = document.getElementById('crystalVaultCount');
+      countLbl.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      container.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-abyss-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-emerald-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & UI EVENT BINDINGS
+    // =========================================================================
+    function applyTopologyPreset(pr) {
+      state.activePresetId = pr.id;
+      state.connectivityMode = pr.conn;
+      state.rudimentKey = pr.rudiment;
+      state.timbre = pr.timbre;
+      state.bpm = pr.bpm;
+
+      state.nodes.forEach((n, idx) => {
+        n.active = Boolean(pr.activeMask[idx]);
+      });
+
+      document.getElementById('selectConnectivity').value = pr.conn;
+      document.getElementById('selectRudimentDriver').value = pr.rudiment;
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+
+      setEngineModeTab(pr.engineMode);
+      updateTimbreButtonsUI();
+      rebuildGraphAndSolveLaplacian();
+      renderWalkerStepRibbon();
+      renderPresetListUI();
+    }
+
+    function setEngineModeTab(mode) {
+      state.engineMode = mode;
+      const bLat = document.getElementById('modeBtnLattice');
+      const bPen = document.getElementById('modeBtnPendulum');
+      const bGeo = document.getElementById('modeBtnGeodesic');
+
+      const activeCls = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition';
+      const idleCls = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bLat.className = mode === 'lattice' ? activeCls : idleCls;
+      bPen.className = mode === 'pendulum' ? activeCls : idleCls;
+      bGeo.className = mode === 'geodesic' ? activeCls : idleCls;
+
+      const hudLeft = document.getElementById('hudTopLeft');
+      if (mode === 'lattice') {
+        hudLeft.textContent = 'Click any 3D Node to Strike / Toggle • Drag to Orbit';
+      } else if (mode === 'pendulum') {
+        hudLeft.textContent = '16 Harmonic Pendulums (50..65 cpm) • Zero-Phase Strike Plane';
+      } else {
+        hudLeft.textContent = '3D Isochronous Icosahedral Bounce Cage • Drag to Orbit';
+      }
+    }
+
+    function updateTimbreButtonsUI() {
+      document.querySelectorAll('.timbre-btn').forEach(btn => {
+        const active = btn.getAttribute('data-timbre') === state.timbre;
+        btn.className = `timbre-btn px-2 py-1.5 rounded-lg border text-left transition ${
+          active ? 'bg-emerald-500/15 border-emerald-400/60 text-white' : 'bg-abyss-900 border-slate-800 text-slate-300'
+        }`;
+      });
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('topologyPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      TOPOLOGY_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-emerald-500/15 border-emerald-400/60 text-white' : 'bg-abyss-950/75 hover:bg-abyss-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-emerald-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-abyss-900 text-sky-300 border border-slate-800">${pr.engineMode.toUpperCase()}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyTopologyPreset(pr);
+          fireSingleWalkerStep(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+
+      document.getElementById('btnPulseOnce').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        const steps = RUDIMENT_DRIVERS[state.rudimentKey] || RUDIMENT_DRIVERS.paradiddle;
+        state.stepIdx = (state.stepIdx + 1) % steps.length;
+        fireSingleWalkerStep(state.stepIdx);
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('btnCameraProj').addEventListener('click', () => {
+        state.isometricCam = !state.isometricCam;
+        document.getElementById('lblCameraProj').textContent = state.isometricCam ? 'Isometric' : 'Perspective';
+        updateCameraTransform();
+      });
+
+      document.getElementById('btnAutoRotate3D').addEventListener('click', (e) => {
+        state.autoRotate3D = !state.autoRotate3D;
+        e.currentTarget.textContent = `Spin: ${state.autoRotate3D ? 'ON' : 'OFF'}`;
+      });
+
+      document.getElementById('modeBtnLattice').addEventListener('click', () => setEngineModeTab('lattice'));
+      document.getElementById('modeBtnPendulum').addEventListener('click', () => {
+        setEngineModeTab('pendulum');
+        if (!state.isPlaying) startTransport();
+      });
+      document.getElementById('modeBtnGeodesic').addEventListener('click', () => {
+        setEngineModeTab('geodesic');
+        if (!state.isPlaying) startTransport();
+      });
+
+      document.getElementById('selectConnectivity').addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'dagaz') {
+          applyTopologyPreset(TOPOLOGY_PRESETS[1]);
+          return;
+        } else if (val === 'octa') {
+          applyTopologyPreset(TOPOLOGY_PRESETS[5]);
+          return;
+        }
+        state.connectivityMode = val;
+        rebuildGraphAndSolveLaplacian();
+      });
+
+      document.getElementById('selectRudimentDriver').addEventListener('change', (e) => {
+        state.rudimentKey = e.target.value;
+        state.stepIdx = 0;
+        renderWalkerStepRibbon();
+        fireSingleWalkerStep(0);
+      });
+
+      document.querySelectorAll('.timbre-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.timbre = btn.getAttribute('data-timbre');
+          updateTimbreButtonsUI();
+          fireSingleWalkerStep(0);
+        });
+      });
+
+      document.getElementById('selectScaleMapping').addEventListener('change', (e) => {
+        state.scaleMapping = e.target.value;
+        fireSingleWalkerStep(0);
+      });
+
+      document.getElementById('chkPruneOnClick').addEventListener('change', (e) => {
+        state.pruneOnClick = e.target.checked;
+      });
+
+      // Overlay Quick Action Buttons
+      document.getElementById('btnChordBurst').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        const activeNodes = state.nodes.filter(n => n.active);
+        activeNodes.slice(0, 6).forEach((n, idx) => {
+          n.glow = 1.0;
+          synthesizeSpectralStrike(ctx, masterGain, ctx.currentTime + idx * 0.04, {
+            nodeId: n.id, hand: idx % 2 === 0 ? 'R' : 'L', velocity: 0.85
+          });
+        });
+      });
+
+      document.getElementById('btnResetWalkers').addEventListener('click', () => {
+        state.rightWalkerNode = 13;
+        state.leftWalkerNode = 0;
+        state.pendulumTimeSec = 0;
+        fireSingleWalkerStep(0);
+        showToast('Reset 3D Graph Walkers & Pendulum Phase to t = 0');
+      });
+
+      document.getElementById('btnRestoreAllNodes').addEventListener('click', () => {
+        state.nodes.forEach(n => { n.active = true; });
+        rebuildGraphAndSolveLaplacian();
+        showToast('Restored all 27 nodes in 3×3×3 World Crystal');
+      });
+
+      document.getElementById('btnRandomSubgraph').addEventListener('click', () => {
+        // Generate a symmetric dihedral subgraph with at least 12 active nodes
+        state.nodes.forEach(n => {
+          const keep = Math.random() > 0.32 || (n.gx === 0 && n.gy === 0 && n.gz === 0);
+          n.active = keep;
+        });
+        rebuildGraphAndSolveLaplacian();
+        fireSingleWalkerStep(0);
+        showToast(`Mutated Crystal Subgraph: λ₂ = ${state.fiedlerValue.toFixed(3)}`);
+      });
+
+      // Right Column Sliders
+      document.getElementById('sliderBaseFreq').addEventListener('input', (e) => {
+        state.baseFreqHz = parseInt(e.target.value, 10);
+        document.getElementById('valBaseFreq').textContent = `${state.baseFreqHz} Hz`;
+      });
+      document.getElementById('sliderDecaySec').addEventListener('input', (e) => {
+        state.decaySec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valDecaySec').textContent = `${state.decaySec.toFixed(2)} s`;
+      });
+      document.getElementById('sliderSpectralSpread').addEventListener('input', (e) => {
+        state.spectralSpread = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valSpectralSpread').textContent = state.spectralSpread.toFixed(2);
+      });
+      document.getElementById('sliderShimmer').addEventListener('input', (e) => {
+        state.shimmerPct = parseInt(e.target.value, 10);
+        document.getElementById('valShimmer').textContent = `${state.shimmerPct}%`;
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderAndDownloadCrystalWav('sequence'));
+      document.getElementById('btnExportSequenceWav').addEventListener('click', () => renderAndDownloadCrystalWav('sequence'));
+      document.getElementById('btnExportPendulumWav').addEventListener('click', () => renderAndDownloadCrystalWav('pendulum'));
+
+      document.querySelectorAll('.crystal-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderAndDownloadCrystalWav(btn.getAttribute('data-oneshot'));
+        });
+      });
+
+      document.getElementById('btnExportGraphJson').addEventListener('click', () => {
+        const payload = {
+          app: "CHRONOCRYSTAL_3D_SPECTRAL_PERCUSSION",
+          connectivityMode: state.connectivityMode,
+          activeNodes: state.nodes.filter(n => n.active).length,
+          activeEdges: state.edges.length,
+          fiedlerAlgebraicConnectivity: Number(state.fiedlerValue.toFixed(5)),
+          spectralGap: Number(state.spectralGap.toFixed(5)),
+          laplacianEigenvalues: state.eigenvalues.map(v => Number(v.toFixed(4))),
+          activeNodeMask: state.nodes.map(n => n.active ? 1 : 0),
+          rudimentDriver: state.rudimentKey,
+          timbre: state.timbre
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chronocrystal_telemetry_lambda2_${state.fiedlerValue.toFixed(2)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Exported 3D Graph Laplacian Telemetry JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          if (state.isPlaying) stopTransport();
+          else startTransport();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initLatticeNodes();
+      initThreeScene();
+      applyTopologyPreset(TOPOLOGY_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(animateThreeLoop);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYMA-FORGE — Percussive Cymatics, Faraday Hydro-Tank, Biharmonic Chladni Plate & Acoustic Levitation Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            cymatic: {
+              950: '#04070b',
+              900: '#090e17',
+              800: '#101929',
+              700: '#192740',
+              600: '#263b61'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #04070b;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090e17; }
+    ::-webkit-scrollbar-thumb { background: #263b61; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38558a; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #192740;
+      border: 1px solid #263b61;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #04070b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.55) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(16, 25, 41, 0.93) 0%, rgba(9, 14, 23, 0.97) 100%);
+      border: 1px solid rgba(49, 74, 118, 0.55);
+    }
+    @keyframes pulseCymatic {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(56, 189, 248, 0.25); }
+    }
+    .cymatic-running {
+      animation: pulseCymatic 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- TOP STUDIO HEADER & EXCITATION TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-cymatic-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500/25 via-amber-500/20 to-emerald-500/25 border border-sky-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+            <path d="M3 12C8 12 12 8 12 3M21 12C16 12 12 16 12 21M3 12C8 12 12 16 12 21M21 12C16 12 12 8 12 3" stroke="#f59e0b"></path>
+            <circle cx="12" cy="12" r="2.5" fill="#10b981"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">CYMA-FORGE // PERCUSSIVE CYMATICS LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-500/30">Heptad Pillar VII</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Biharmonic Chladni Plate (∇⁴w = k⁴w) • Dual Sand/Lycopodium Physics • Faraday Hydro-Caustics • Gor'kov Acoustic Levitation</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-cymatic-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-sky-500 hover:bg-sky-400 text-slate-950 transition shadow-lg shadow-sky-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">DRIVE TRANSDUCER</span>
+        </button>
+
+        <button id="btnPulseImpact" type="button" class="px-2.5 py-2 rounded-lg bg-cymatic-800 hover:bg-cymatic-700 text-amber-300 border border-amber-500/40 text-xs font-mono font-semibold transition" title="Fire Single Sub-Bass & Plate Impact">
+          STRIKE ⚡
+        </button>
+
+        <!-- Continuous Bow / Sub-Sweep Toggle -->
+        <button id="btnBowDroneToggle" type="button" class="px-2.5 py-2 rounded-lg bg-cymatic-800 hover:bg-cymatic-700 text-slate-300 border border-slate-700 text-xs font-mono transition" title="Sustain continuous Chladni plate bowing / subwoofer excitation">
+          Bow: <span id="lblBowState" class="text-slate-400 font-bold">OFF</span>
+        </button>
+
+        <!-- BPM & Chladni Eigenfrequency Readout -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[74px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-sky-400">118</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="chladniFreqHeader" class="text-[10px] text-amber-400 font-mono">f_mn = 432 Hz</div>
+          </div>
+          <input id="sliderBpm" type="range" min="45" max="220" value="118" class="w-24 sm:w-32" />
+        </div>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnSnapshotPng" type="button" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-xs font-semibold transition" title="Save high-resolution PNG snapshot of the current Cymatic pattern">
+          <span>📸 Save Mandala PNG</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): CYMATIC RECIPES, GRANULAR MEDIUM & BIHARMONIC MODE (m,n) ARCHITECT -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated Cymatic Modal & Hydro Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Cymatic Modal Recipes</h2>
+            <p class="text-[11px] text-slate-400">Chladni Plates, Faraday &amp; Levitation</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">8 Figures</span>
+        </div>
+
+        <div id="cymaticPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- BIHARMONIC MODE (m, n) & GRANULAR MEDIUM ARCHITECT -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Ritz-Chladni Plate Solver</h2>
+          <p class="text-[10px] text-slate-400">w(x,y) = cos(mπx)cos(nπy) + α·cos(nπx)cos(mπy)</p>
+        </div>
+
+        <!-- Granular Medium Selector (Sand vs Lycopodium vs Dual Mixture!) -->
+        <div class="bg-cymatic-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">1. Granular Acoustic Medium (3,200 Particles)</label>
+          <select id="selectGranularMedium" class="w-full bg-cymatic-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-amber-300 outline-none">
+            <option value="dual" selected>Dual Mixture: Quartz (Nodes) + Lycopodium (Antinodes)</option>
+            <option value="quartz">Heavy Gold Quartz Sand → Settles on Nodes (w = 0)</option>
+            <option value="lycopodium">Fine Cyan Lycopodium Spores → Traps at Antinodes (|w|_max)</option>
+          </select>
+        </div>
+
+        <!-- Mode Numbers m, n & Degenerate Mixing Angle alpha -->
+        <div class="bg-cymatic-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Horizontal Mode (m)</span>
+              <span id="valModeM" class="text-amber-400 font-bold">m = 5</span>
+            </div>
+            <input id="sliderModeM" type="range" min="1" max="11" value="5" class="w-full slider-amber" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Vertical Mode (n)</span>
+              <span id="valModeN" class="text-sky-400 font-bold">n = 2</span>
+            </div>
+            <input id="sliderModeN" type="range" min="1" max="11" value="2" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Symmetry Coupling (α)</span>
+              <span id="valMixAlpha" class="text-emerald-400 font-bold">+1.00 (Symmetric)</span>
+            </div>
+            <input id="sliderMixAlpha" type="range" min="-100" max="100" value="100" class="w-full slider-emerald" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">−1=Antisymmetric Cross • +1=Symmetric Star</div>
+          </div>
+        </div>
+
+        <!-- Plate Geometry & Clamp Pin Controls -->
+        <div class="bg-cymatic-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono uppercase text-slate-400">2. Plate Boundary &amp; Clamp Pins</span>
+            <button id="btnClearClampPins" type="button" class="text-[10px] font-mono text-sky-400 hover:underline">Clear Pins (0)</button>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-plate="square" class="plate-shape-btn py-1.5 rounded-lg border text-xs font-mono font-bold bg-sky-500/20 border-sky-400 text-sky-200">Square</button>
+            <button type="button" data-plate="circle" class="plate-shape-btn py-1.5 rounded-lg border text-xs font-mono bg-cymatic-900 border-slate-700 text-slate-300">Circular</button>
+            <button type="button" data-plate="hex" class="plate-shape-btn py-1.5 rounded-lg border text-xs font-mono bg-cymatic-900 border-slate-700 text-slate-300">Hexagon</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): 3-REGIME CYMATICS STAGE (CHLADNI PLATE + FARADAY LIQUID TANK + GOR'KOV LEVITATION) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE CYMATICS WORKBENCH CARD -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3 Physical Regime Tabs -->
+          <div class="flex items-center gap-1 bg-cymatic-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabChladniPlate" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition">
+              ⏳ 1. Biharmonic Chladni Plate
+            </button>
+            <button id="tabFaradayTank" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              💧 2. Faraday Hydro-Tank
+            </button>
+            <button id="tabGorkovTrap" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🔮 3. 3D Acoustic Levitation
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <label class="flex items-center gap-1.5 text-[11px] font-mono text-slate-300 cursor-pointer bg-cymatic-950 px-2.5 py-1 rounded-lg border border-slate-800">
+              <input id="chkShowFieldHeatmap" type="checkbox" checked class="rounded bg-cymatic-800 border-slate-600 text-sky-500 focus:ring-0" />
+              <span>Eigenfield Glow</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Primary Interactive Canvas -->
+        <div class="relative w-full h-80 sm:h-[360px] bg-cymatic-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="cymaticCanvas" class="w-full h-full cursor-crosshair touch-none"></canvas>
+
+          <!-- Top HUD Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudTopLeft" class="px-2.5 py-1 rounded-lg bg-cymatic-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Click Plate to Strike &amp; Add Nodal Clamp Pin • Gold=Nodes, Cyan=Antinodes
+            </div>
+            <div id="hudTopRight" class="px-2.5 py-1 rounded-lg bg-cymatic-900/90 border border-amber-500/40 text-[10px] font-mono text-amber-300">
+              Chladni Law: f_5,2 = 432.0 Hz
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Controls -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnRescatterParticles" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                ✨ Scatter 3,200 Grains
+              </button>
+              <button id="btnRandomizeChladniMode" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                🎲 Random Eigenfigure
+              </button>
+              <button id="btnSubBassDrop" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[11px] font-mono font-semibold transition">
+                🔊 808 Faraday Drop
+              </button>
+            </div>
+            <div id="settlingConvergenceBadge" class="px-2.5 py-1 rounded-lg bg-cymatic-900/90 border border-slate-800 text-[10px] font-mono text-emerald-300">
+              Nodal Convergence: 91.4%
+            </div>
+          </div>
+        </div>
+
+        <!-- PERCUSSIVE CYMATICS 16-STEP EXCITATION SEQUENCER -->
+        <div class="bg-cymatic-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-xs font-bold text-slate-200">Percussive Cymatics Transducer Sequencer (16 Steps)</span>
+              <p class="text-[10px] text-slate-400">Each step fires a sub-bass piston pulse &amp; optionally morphs the plate eigenmode (m,n)</p>
+            </div>
+            <label class="flex items-center gap-1.5 text-[11px] font-mono text-amber-300 cursor-pointer">
+              <input id="chkMorphModeOnBeat" type="checkbox" class="rounded bg-cymatic-800 border-slate-600 text-amber-500 focus:ring-0" />
+              <span>Morph (m,n) on Accents</span>
+            </label>
+          </div>
+          <div id="transducerStepGrid" class="grid grid-cols-8 sm:grid-cols-16 gap-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): REAL-TIME FFT SPECTRUM, LIQUID / PLATE PHYSICS TUNING & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- REAL-TIME CYMATIC AUDIO SPECTRUM & PHYSICAL MEDIUM TUNER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Biharmonic &amp; Faraday Acoustic Tuner</h2>
+            <p class="text-[11px] text-slate-400">f_mn = C · (m + 2n)² • Capillary Dispersion ω²(k)</p>
+          </div>
+          <span id="liquidSymmetryBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">12-Fold Faraday</span>
+        </div>
+
+        <!-- Live 12-Band Modal Excitation & FFT Analyzer -->
+        <div class="bg-cymatic-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>BIHARMONIC OVERTONE BANK (Click bar to excite)</span>
+            <span id="plateMaterialReadout" class="text-amber-300">2mm Naval Brass</span>
+          </div>
+          <div id="biharmonicBarsContainer" class="grid grid-cols-10 gap-1 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 4 Physical Acoustic & Hydro Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-cymatic-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Plate Stiffness (f₀)</span>
+              <span id="valPlateRootHz" class="font-mono text-amber-400">110 Hz</span>
+            </div>
+            <input id="sliderPlateRootHz" type="range" min="45" max="260" value="110" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-cymatic-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Sub-Bass Piston Drive</span>
+              <span id="valSubBassGain" class="font-mono text-emerald-400">85%</span>
+            </div>
+            <input id="sliderSubBassGain" type="range" min="0" max="100" value="85" class="w-full slider-emerald" />
+          </div>
+
+          <div class="bg-cymatic-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Faraday Fold Symmetry</span>
+              <span id="valFaradayFolds" class="font-mono text-sky-400">12-Fold</span>
+            </div>
+            <input id="sliderFaradayFolds" type="range" min="2" max="16" step="2" value="12" class="w-full" />
+          </div>
+
+          <div class="bg-cymatic-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Fluid Viscosity / Ring</span>
+              <span id="valFluidDecay" class="font-mono text-purple-400">0.82 s</span>
+            </div>
+            <input id="sliderFluidDecay" type="range" min="15" max="220" value="82" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & MANDALA EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Cymatic Audio &amp; Mandala Exporter</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo WAV + PNG Snapshot + JSON</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportCymaticLoopWav" type="button" class="px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+              💾 Export Cymatic Loop (.WAV)
+            </button>
+            <button id="btnExportBowedDroneWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              🎻 Export Bowed Plate (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Cymatic One-Shots (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="chladni_strike" class="cyma-shot-btn px-2 py-1.5 rounded-lg bg-cymatic-900 hover:bg-cymatic-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                ChladniPlate.wav
+              </button>
+              <button type="button" data-shot="faraday_sub" class="cyma-shot-btn px-2 py-1.5 rounded-lg bg-cymatic-900 hover:bg-cymatic-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                FaradayDrop.wav
+              </button>
+              <button type="button" data-shot="singing_bowl" class="cyma-shot-btn px-2 py-1.5 rounded-lg bg-cymatic-900 hover:bg-cymatic-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                SingingBowl.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Modal Recipe &amp; Clamp Pins</span>
+            <button id="btnExportCymaticJson" type="button" class="px-2.5 py-1 rounded-lg bg-cymatic-800 hover:bg-cymatic-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Recipe (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Cymatic Vault</span>
+              <span id="cymaVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="cymaVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-cymatic-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-cymatic-800/95 border border-sky-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. CURATED CYMATIC MODAL RECIPES (CHLADNI BIHARMONIC FIGURES,
+    //    FARADAY HYDRO-ROSETTES & GOR'KOV ACOUSTIC LEVITATION CAGES)
+    // =========================================================================
+    const CYMATIC_PRESETS = [
+      {
+        id: "chladni_star_5_2",
+        name: "Chladni 8-Pointed Star Mandala (m=5, n=2, +1)",
+        desc: "Classic symmetric Ritz-Chladni brass plate figure separating quartz & lycopodium",
+        tab: "chladni", m: 5, n: 2, alpha: 1.0, plate: "square", medium: "dual", folds: 12, bpm: 118
+      },
+      {
+        id: "faraday_dodecagon",
+        name: "12-Fold Quasicrystalline Faraday Water Rosette",
+        desc: "Parametric subharmonic standing wave (f/2) driven by 808 sub-bass percussion pulses",
+        tab: "faraday", m: 6, n: 3, alpha: 0.85, plate: "circle", medium: "dual", folds: 12, bpm: 124
+      },
+      {
+        id: "gorkov_levitation",
+        name: "3D Gor'kov Ultrasonic Acoustic Levitation Cage",
+        desc: "40 kHz phased-array standing-wave pressure nodes trapping 48 levitated beads in 3D",
+        tab: "gorkov", m: 4, n: 3, alpha: -1.0, plate: "circle", medium: "dual", folds: 8, bpm: 128
+      },
+      {
+        id: "antisymmetric_hyperbola",
+        name: "Antisymmetric Diagonal Cross Lattice (m=6, n=1, −1)",
+        desc: "Opposite-phase superposition cos(6πx)cos(πy) − cos(πx)cos(6πy) with zero diagonal line",
+        tab: "chladni", m: 6, n: 1, alpha: -1.0, plate: "square", medium: "quartz", folds: 8, bpm: 112
+      },
+      {
+        id: "tibetan_hydro_bowl",
+        name: "Tibetan Singing Bowl Hydro-Spout Caustics (m=4, n=2)",
+        desc: "Rim-bowed bronze vessel exciting 8-fold capillary Faraday droplets along the rim",
+        tab: "faraday", m: 4, n: 2, alpha: 1.0, plate: "circle", medium: "lycopodium", folds: 8, bpm: 96
+      },
+      {
+        id: "hexagonal_honeycomb",
+        name: "Hexagonal Faraday Capillary Lattice (6-Fold)",
+        desc: "High-viscosity glycerol-water parametric standing wave with 6-fold honeycomb caustics",
+        tab: "faraday", m: 3, n: 5, alpha: 0.5, plate: "hex", medium: "dual", folds: 6, bpm: 132
+      },
+      {
+        id: "cathedral_rose_9_4",
+        name: "High-Order Gothic Rose Window (m=9, n=4, +0.72)",
+        desc: "Dense 4th-order biharmonic nodal filigree with 18 concentric petal compartments",
+        tab: "chladni", m: 9, n: 4, alpha: 0.72, plate: "circle", medium: "dual", folds: 14, bpm: 108
+      },
+      {
+        id: "lycopodium_vortex",
+        name: "Faraday Acoustic Micro-Streaming Spore Clouds (m=7, n=3)",
+        desc: "Pure fine lycopodium powder migrating toward vibrational antinodes instead of nodes",
+        tab: "chladni", m: 7, n: 3, alpha: -0.65, plate: "hex", medium: "lycopodium", folds: 10, bpm: 140
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "chladni_star_5_2",
+      activeTab: "chladni", // 'chladni' | 'faraday' | 'gorkov'
+      isPlaying: false,
+      bowSustained: false,
+      bpm: 118,
+      stepIdx: -1,
+      morphOnAccent: false,
+      showFieldGlow: true,
+
+      // Biharmonic Chladni Plate Parameters: w(x,y) = cos(m*pi*x/2)*cos(n*pi*y/2) + alpha*cos(n*pi*x/2)*cos(m*pi*y/2)
+      modeM: 5,
+      modeN: 2,
+      mixAlpha: 1.00,
+      plateShape: "square", // 'square' | 'circle' | 'hex'
+      granularMedium: "dual", // 'dual' | 'quartz' | 'lycopodium'
+      clampPins: [], // User-placed nodal constraint pins { x, y } in [-1, 1]^2
+      particles: [], // 3,200 simulated grains { x, y, type: 0=quartz(node), 1=lycopodium(antinode) }
+      vibrationEnergy: 0.85,
+      phaseTime: 0,
+
+      // Faraday Hydro-Tank Parameters
+      faradayFolds: 12,
+      subBassGainPct: 85,
+      fluidDecaySec: 0.82,
+      plateRootHz: 110,
+
+      // 3D Gor'kov Acoustic Levitation Beads
+      levitatedBeads: [],
+
+      // 16-Step Percussive Transducer Pattern (0=off, 1=Sub-Pulse, 2=Accent+Plate Strike, 3=Flam Drop)
+      transducerSteps: [2, 0, 1, 0,  3, 0, 1, 1,  2, 0, 1, 0,  3, 1, 2, 0],
+
+      // Vault
+      vault: []
+    };
+
+    // =========================================================================
+    // 3. BIHARMONIC RITZ-CHLADNI WAVE FIELD & 3,200-PARTICLE PHYSICS ENGINE
+    // =========================================================================
+    function isInsidePlate(x, y, shape) {
+      if (shape === 'circle') {
+        return (x * x + y * y) <= 0.94;
+      } else if (shape === 'hex') {
+        const ax = Math.abs(x);
+        const ay = Math.abs(y);
+        return ay <= 0.86 && (ax * 0.866 + ay * 0.5) <= 0.86;
+      }
+      return Math.abs(x) <= 0.94 && Math.abs(y) <= 0.94;
+    }
+
+    /**
+     * Evaluates the Biharmonic Ritz-Chladni displacement amplitude w(x,y) in [-2, 2]
+     * with optional user-placed nodal clamp pins!
+     */
+    function evalChladniAmplitude(x, y) {
+      const m = state.modeM;
+      const n = state.modeN;
+      const alpha = state.mixAlpha;
+      const k1 = m * Math.PI * 0.5;
+      const k2 = n * Math.PI * 0.5;
+
+      let w = Math.cos(k1 * x) * Math.cos(k2 * y) + alpha * Math.cos(k2 * x) * Math.cos(k1 * y);
+
+      // Apply local nodal suppression around user-placed clamp pins
+      for (let i = 0; i < state.clampPins.length; i++) {
+        const pin = state.clampPins[i];
+        const d2 = (x - pin.x) * (x - pin.x) + (y - pin.y) * (y - pin.y);
+        w *= (1.0 - Math.exp(-d2 * 18.0));
+      }
+      return w;
+    }
+
+    function computeChladniFrequencyHz(m, n) {
+      // Chladni's Biharmonic Law: f_mn = f_0 * ((m + 2n) / 5)^1.65
+      const eff = Math.pow((m + 1.8 * n) / 4.5, 1.55);
+      return Math.min(3200, Math.max(45, state.plateRootHz * eff));
+    }
+
+    function initGranularParticles(count = 3200) {
+      state.particles = [];
+      for (let i = 0; i < count; i++) {
+        let x = (Math.random() * 2 - 1) * 0.9;
+        let y = (Math.random() * 2 - 1) * 0.9;
+        if (!isInsidePlate(x, y, state.plateShape)) {
+          x *= 0.5;
+          y *= 0.5;
+        }
+        // type 0 = Heavy Gold Quartz Sand (seeks Nodes w = 0)
+        // type 1 = Fine Cyan Lycopodium Spores (seeks Antinodes |w| = max)
+        let type = 0;
+        if (state.granularMedium === 'lycopodium') type = 1;
+        else if (state.granularMedium === 'dual') type = (i % 4 === 0) ? 1 : 0;
+
+        state.particles.push({ x, y, type });
+      }
+
+      // Initialize 48 3D Gor'kov Levitated Beads
+      state.levitatedBeads = [];
+      for (let k = 0; k < 48; k++) {
+        const ring = k % 3;
+        const ang = (k / 16) * Math.PI * 2;
+        const r = 0.22 + ring * 0.28;
+        state.levitatedBeads.push({
+          x: r * Math.cos(ang),
+          y: ((k % 6) - 2.5) * 0.28,
+          z: r * Math.sin(ang),
+          phase: k * 0.4
+        });
+      }
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO BIHARMONIC PLATE, FARADAY SUB-PISTON & BOWED DRONE ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let bowOsc1 = null;
+    let bowOsc2 = null;
+    let bowGainNode = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function updateContinuousBowDrone() {
+      const ctx = ensureAudio();
+      const fMode = computeChladniFrequencyHz(state.modeM, state.modeN);
+      document.getElementById('chladniFreqHeader').textContent = `f_${state.modeM},${state.modeN} = ${fMode.toFixed(0)} Hz`;
+      document.getElementById('hudTopRight').textContent =
+        `Chladni Law: f_${state.modeM},${state.modeN} = ${fMode.toFixed(1)} Hz`;
+
+      if (state.bowSustained) {
+        if (!bowOsc1) {
+          bowOsc1 = ctx.createOscillator();
+          bowOsc2 = ctx.createOscillator();
+          bowGainNode = ctx.createGain();
+          bowOsc1.type = 'sawtooth';
+          bowOsc2.type = 'triangle';
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = fMode;
+          filter.Q.value = 6.5;
+
+          bowGainNode.gain.setValueAtTime(0.001, ctx.currentTime);
+          bowGainNode.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.15);
+
+          bowOsc1.connect(filter);
+          bowOsc2.connect(filter);
+          filter.connect(bowGainNode);
+          bowGainNode.connect(masterGain);
+          bowOsc1._filter = filter;
+
+          bowOsc1.start();
+          bowOsc2.start();
+        }
+        bowOsc1.frequency.setTargetAtTime(fMode, ctx.currentTime, 0.04);
+        bowOsc2.frequency.setTargetAtTime(fMode * 1.003, ctx.currentTime, 0.04);
+        if (bowOsc1._filter) {
+          bowOsc1._filter.frequency.setTargetAtTime(fMode * 1.2, ctx.currentTime, 0.04);
+        }
+      } else if (bowOsc1) {
+        try {
+          bowGainNode.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+          const o1 = bowOsc1, o2 = bowOsc2;
+          setTimeout(() => { try { o1.stop(); o2.stop(); } catch (e) {} }, 100);
+        } catch (e) {}
+        bowOsc1 = null;
+        bowOsc2 = null;
+        bowGainNode = null;
+      }
+    }
+
+    /**
+     * Synthesizes a coupled Sub-Bass Faraday Piston Impact + Biharmonic Chladni Plate Ring
+     */
+    function triggerCymaticImpact(ctx, destNode, when, options = {}) {
+      const {
+        code = 2, // 1=Sub-Pulse, 2=Plate+Sub Accent, 3=Flam Drop
+        velocity = 0.88,
+        modeM = state.modeM,
+        modeN = state.modeN
+      } = options;
+
+      const fModal = computeChladniFrequencyHz(modeM, modeN);
+      const subMix = state.subBassGainPct / 100;
+      const decay = state.fluidDecaySec;
+
+      const fireVoice = (t, vel) => {
+        const hitGain = ctx.createGain();
+        hitGain.gain.setValueAtTime(Math.max(0.02, vel * 0.55), t);
+        hitGain.connect(destNode);
+
+        // 1. Sub-Bass Faraday Hydro-Piston (f_sub = 55 Hz .. 110 Hz pitch drop)
+        if (subMix > 0.02) {
+          const subOsc = ctx.createOscillator();
+          const subG = ctx.createGain();
+          subOsc.type = 'sine';
+          const fSub = Math.max(42, Math.min(110, state.plateRootHz * 0.65));
+          subOsc.frequency.setValueAtTime(fSub * 2.2, t);
+          subOsc.frequency.exponentialRampToValueAtTime(fSub, t + 0.045);
+          subOsc.frequency.exponentialRampToValueAtTime(fSub * 0.78, t + decay * 0.85);
+
+          subG.gain.setValueAtTime(0.001, t);
+          subG.gain.linearRampToValueAtTime(subMix * 0.85, t + 0.004);
+          subG.gain.exponentialRampToValueAtTime(0.0008, t + decay * 0.85);
+
+          subOsc.connect(subG);
+          subG.connect(hitGain);
+          subOsc.start(t);
+          subOsc.stop(t + decay * 0.88);
+        }
+
+        // 2. Biharmonic Chladni Plate Overtones: (m,n), (m+1,n), (m,n+1), (m+2,n+1)
+        const modePairs = [
+          [modeM, modeN, 0.65],
+          [modeM + 1, modeN, 0.35],
+          [modeM, modeN + 1, 0.28],
+          [modeM + 2, modeN + 1, 0.18]
+        ];
+
+        modePairs.forEach(([pm, pn, weight], idx) => {
+          if (code === 1 && idx > 1) return; // Lighter tap excites fewer upper modes
+          const freq = Math.min(12000, computeChladniFrequencyHz(pm, pn));
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = idx === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+
+          const pDecay = decay / (0.8 + idx * 0.35);
+          g.gain.setValueAtTime(0.001, t);
+          g.gain.linearRampToValueAtTime(weight * (code === 1 ? 0.45 : 0.75), t + 0.002);
+          g.gain.exponentialRampToValueAtTime(0.0008, t + pDecay);
+
+          osc.connect(g);
+          g.connect(hitGain);
+          osc.start(t);
+          osc.stop(t + pDecay + 0.02);
+        });
+      };
+
+      if (code === 3) {
+        // PAS Flam Drop
+        fireVoice(Math.max(0, when - 0.024), velocity * 0.42);
+        fireVoice(when, velocity);
+      } else {
+        fireVoice(when, velocity * (code === 2 ? 1.0 : 0.68));
+      }
+    }
+
+    // =========================================================================
+    // 5. 3-REGIME CYMATICS CANVAS RENDERER:
+    //    (1) BIHARMONIC CHLADNI PLATE + DUAL SAND/LYCOPODIUM GRANULAR DYNAMICS
+    //    (2) FARADAY SUBHARMONIC HYDRO-CAUSTIC WAVE TANK
+    //    (3) 3D GOR'KOV ULTRASONIC STANDING-WAVE ACOUSTIC LEVITATION
+    // =========================================================================
+    const canvas = document.getElementById('cymaticCanvas');
+    const ctx2d = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function renderMainLoop() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (!w || !h) {
+        requestAnimationFrame(renderMainLoop);
+        return;
+      }
+
+      ctx2d.fillStyle = '#04070b';
+      ctx2d.fillRect(0, 0, w, h);
+
+      state.phaseTime += 0.045 * (state.bpm / 120);
+      if (state.bowSustained) {
+        state.vibrationEnergy = 0.95;
+      } else {
+        state.vibrationEnergy = Math.max(0.06, state.vibrationEnergy * 0.965);
+      }
+
+      if (state.activeTab === 'chladni') {
+        renderChladniPlateView(w, h);
+      } else if (state.activeTab === 'faraday') {
+        renderFaradayHydroTankView(w, h);
+      } else {
+        renderGorkovLevitationView(w, h);
+      }
+
+      requestAnimationFrame(renderMainLoop);
+    }
+
+    function renderChladniPlateView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(cx, cy) * 0.82;
+
+      // 1. Draw Plate Outline & Optional Eigenfield Glow Heatmap
+      ctx2d.save();
+      ctx2d.beginPath();
+      if (state.plateShape === 'circle') {
+        ctx2d.arc(cx, cy, scale * 0.96, 0, Math.PI * 2);
+      } else if (state.plateShape === 'hex') {
+        for (let i = 0; i < 6; i++) {
+          const ang = (i * Math.PI) / 3;
+          const px = cx + Math.cos(ang) * scale * 0.96;
+          const py = cy + Math.sin(ang) * scale * 0.96;
+          if (i === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        }
+        ctx2d.closePath();
+      } else {
+        ctx2d.roundRect(cx - scale * 0.94, cy - scale * 0.94, scale * 1.88, scale * 1.88, 10);
+      }
+      ctx2d.fillStyle = '#090e18';
+      ctx2d.fill();
+      ctx2d.clip();
+
+      if (state.showFieldGlow) {
+        const stepPx = 9;
+        const osc = Math.cos(state.phaseTime * 2.5);
+        for (let py = cy - scale; py <= cy + scale; py += stepPx) {
+          for (let px = cx - scale; px <= cx + scale; px += stepPx) {
+            const nx = (px - cx) / scale;
+            const ny = (py - cy) / scale;
+            const amp = evalChladniAmplitude(nx, ny);
+            const absAmp = Math.abs(amp);
+            if (absAmp < 0.11) {
+              ctx2d.fillStyle = 'rgba(245, 158, 11, 0.14)';
+              ctx2d.fillRect(px, py, stepPx, stepPx);
+            } else if (amp * osc > 0.4) {
+              ctx2d.fillStyle = 'rgba(56, 189, 248, 0.08)';
+              ctx2d.fillRect(px, py, stepPx, stepPx);
+            }
+          }
+        }
+      }
+
+      // 2. Update & Render 3,200 Granular Particles (Gold Quartz on Nodes, Cyan Lycopodium on Antinodes)
+      const vib = state.vibrationEnergy;
+      let settledCount = 0;
+      const eps = 0.015;
+
+      for (let i = 0; i < state.particles.length; i++) {
+        const pt = state.particles[i];
+        const w0 = evalChladniAmplitude(pt.x, pt.y);
+        const absW = Math.abs(w0);
+
+        if (pt.type === 0) {
+          // Heavy Gold Quartz Sand: Ejected from vibrating zones, settles where |w(x,y)| -> 0
+          if (absW < 0.14) settledCount++;
+          const wx = Math.abs(evalChladniAmplitude(pt.x + eps, pt.y)) - absW;
+          const wy = Math.abs(evalChladniAmplitude(pt.x, pt.y + eps)) - absW;
+          pt.x -= wx * vib * 0.85 + (Math.random() - 0.5) * absW * vib * 0.055;
+          pt.y -= wy * vib * 0.85 + (Math.random() - 0.5) * absW * vib * 0.055;
+        } else {
+          // Fine Cyan Lycopodium Spores: Driven by Faraday acoustic streaming toward Antinodes |w|_max!
+          if (absW > 0.85) settledCount++;
+          const wx = Math.abs(evalChladniAmplitude(pt.x + eps, pt.y)) - absW;
+          const wy = Math.abs(evalChladniAmplitude(pt.x, pt.y + eps)) - absW;
+          pt.x += wx * vib * 0.75 + (Math.random() - 0.5) * (1.5 - absW) * vib * 0.035;
+          pt.y += wy * vib * 0.75 + (Math.random() - 0.5) * (1.5 - absW) * vib * 0.035;
+        }
+
+        if (!isInsidePlate(pt.x, pt.y, state.plateShape)) {
+          pt.x *= 0.92;
+          pt.y *= 0.92;
+        }
+
+        const sx = cx + pt.x * scale;
+        const sy = cy + pt.y * scale;
+        ctx2d.fillStyle = pt.type === 0 ? '#fbbf24' : '#38bdf8';
+        ctx2d.fillRect(sx, sy, 2.1, 2.1);
+      }
+
+      // Draw Central Brass Bolt & User Nodal Clamp Pins
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, 5.5, 0, Math.PI * 2);
+      ctx2d.fillStyle = '#f59e0b';
+      ctx2d.fill();
+
+      state.clampPins.forEach(pin => {
+        const px = cx + pin.x * scale;
+        const py = cy + pin.y * scale;
+        ctx2d.beginPath();
+        ctx2d.arc(px, py, 6, 0, Math.PI * 2);
+        ctx2d.fillStyle = '#f43f5e';
+        ctx2d.fill();
+        ctx2d.strokeStyle = '#ffffff';
+        ctx2d.lineWidth = 1.5;
+        ctx2d.stroke();
+      });
+
+      ctx2d.restore();
+
+      // Re-stroke Plate Rim
+      ctx2d.beginPath();
+      if (state.plateShape === 'circle') {
+        ctx2d.arc(cx, cy, scale * 0.96, 0, Math.PI * 2);
+      } else if (state.plateShape === 'hex') {
+        for (let i = 0; i < 6; i++) {
+          const ang = (i * Math.PI) / 3;
+          const px = cx + Math.cos(ang) * scale * 0.96;
+          const py = cy + Math.sin(ang) * scale * 0.96;
+          if (i === 0) ctx2d.moveTo(px, py);
+          else ctx2d.lineTo(px, py);
+        }
+        ctx2d.closePath();
+      } else {
+        ctx2d.roundRect(cx - scale * 0.94, cy - scale * 0.94, scale * 1.88, scale * 1.88, 10);
+      }
+      ctx2d.lineWidth = 2.5;
+      ctx2d.strokeStyle = '#38bdf8';
+      ctx2d.stroke();
+
+      const convPct = Math.min(99.8, (settledCount / state.particles.length) * 100 + 25);
+      document.getElementById('settlingConvergenceBadge').textContent = `Nodal Convergence: ${convPct.toFixed(1)}%`;
+    }
+
+    function renderFaradayHydroTankView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const R = Math.min(cx, cy) * 0.80;
+      const N = state.faradayFolds;
+      const kWave = (state.modeM + state.modeN) * 2.2;
+      const timeOsc = Math.cos(state.phaseTime * 1.5) * (0.45 + state.vibrationEnergy * 0.55);
+
+      // Render N-Fold Parametric Standing Wave Caustic Field: \zeta(r, \theta) = \sum_{j=0}^{N-1} \cos(k (x \cos\theta_j + y \sin\theta_j))
+      const stepPx = 6;
+      for (let py = cy - R; py <= cy + R; py += stepPx) {
+        for (let px = cx - R; px <= cx + R; px += stepPx) {
+          const dx = (px - cx) / R;
+          const dy = (py - cy) / R;
+          const r2 = dx * dx + dy * dy;
+          if (r2 > 0.96) continue;
+
+          let sum = 0;
+          for (let j = 0; j < N / 2; j++) {
+            const ang = (j * Math.PI) / (N / 2);
+            const proj = dx * Math.cos(ang) + dy * Math.sin(ang);
+            sum += Math.cos(kWave * proj);
+          }
+          const normZeta = (sum / (N / 2)) * timeOsc * (1 - r2 * 0.35);
+
+          // Specular caustic highlight coloring
+          if (normZeta > 0.15) {
+            const b = Math.min(1, normZeta);
+            ctx2d.fillStyle = `rgba(56, 189, 248, ${(b * 0.85).toFixed(2)})`;
+            ctx2d.fillRect(px, py, stepPx - 0.5, stepPx - 0.5);
+          } else if (normZeta < -0.15) {
+            const b = Math.min(1, -normZeta);
+            ctx2d.fillStyle = `rgba(16, 185, 129, ${(b * 0.65).toFixed(2)})`;
+            ctx2d.fillRect(px, py, stepPx - 0.5, stepPx - 0.5);
+          }
+        }
+      }
+
+      // Cylindrical Tank Rim
+      ctx2d.beginPath();
+      ctx2d.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx2d.lineWidth = 3.5;
+      ctx2d.strokeStyle = '#38bdf8';
+      ctx2d.stroke();
+    }
+
+    function renderGorkovLevitationView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(cx, cy) * 0.76;
+
+      // Draw Top & Bottom Phased-Array Ultrasonic Transducer Plates
+      [-0.85, 0.85].forEach(yPlate => {
+        ctx2d.beginPath();
+        ctx2d.ellipse(cx, cy + yPlate * scale, scale * 0.72, scale * 0.16, 0, 0, Math.PI * 2);
+        ctx2d.fillStyle = 'rgba(30, 41, 59, 0.75)';
+        ctx2d.fill();
+        ctx2d.lineWidth = 2;
+        ctx2d.strokeStyle = '#38bdf8';
+        ctx2d.stroke();
+      });
+
+      // Draw Standing-Wave Acoustic Pressure Nodes (Horizontal Acoustic Potential Wells)
+      for (let layer = -2; layer <= 2; layer++) {
+        const yWell = cy + layer * 0.28 * scale;
+        ctx2d.beginPath();
+        ctx2d.ellipse(cx, yWell, scale * 0.58, scale * 0.10, 0, 0, Math.PI * 2);
+        ctx2d.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+        ctx2d.lineWidth = 1.2;
+        ctx2d.stroke();
+      }
+
+      // Render 48 Levitated Polystyrene / Droplet Beads Orbiting in Gor'kov Potential Minima
+      const rot = state.phaseTime * 0.35;
+      state.levitatedBeads.forEach((bead, idx) => {
+        const rx = bead.x * Math.cos(rot) - bead.z * Math.sin(rot);
+        const rz = bead.x * Math.sin(rot) + bead.z * Math.cos(rot);
+        const bounce = Math.sin(state.phaseTime * 3 + bead.phase) * state.vibrationEnergy * 0.06;
+
+        const sx = cx + rx * scale;
+        const sy = cy + (bead.y + bounce) * scale + rz * scale * 0.18;
+        const depthScale = 0.75 + (rz + 0.8) * 0.35;
+
+        ctx2d.beginPath();
+        ctx2d.arc(sx, sy, 5.5 * depthScale, 0, Math.PI * 2);
+        ctx2d.fillStyle = idx % 2 === 0 ? '#fbbf24' : '#38bdf8';
+        ctx2d.fill();
+        ctx2d.strokeStyle = '#ffffff';
+        ctx2d.lineWidth = 1;
+        ctx2d.stroke();
+      });
+    }
+
+    // =========================================================================
+    // 6. TRANSDUCER SEQUENCER & BIHARMONIC SPECTRUM BARS UI
+    // =========================================================================
+    function renderTransducerGrid() {
+      const grid = document.getElementById('transducerStepGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      state.transducerSteps.forEach((code, idx) => {
+        const isCurrent = state.stepIdx === idx;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+
+        let label = '·';
+        let cls = 'bg-cymatic-950 border-slate-800 text-slate-600 hover:border-slate-700';
+        if (code === 1) {
+          label = 'SUB';
+          cls = 'bg-sky-500/20 border-sky-500/60 text-sky-300 font-bold';
+        } else if (code === 2) {
+          label = 'PLT>';
+          cls = 'bg-amber-500/20 border-amber-500/60 text-amber-300 font-bold';
+        } else if (code === 3) {
+          label = 'FLM';
+          cls = 'bg-emerald-500/20 border-emerald-500/60 text-emerald-300 font-bold';
+        }
+
+        btn.className = `h-8 rounded-lg border text-[10px] font-mono transition ${cls} ${
+          isCurrent ? 'ring-2 ring-white scale-105' : ''
+        }`;
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          state.transducerSteps[idx] = (code + 1) % 4;
+          if (state.transducerSteps[idx] > 0) {
+            state.vibrationEnergy = 1.0;
+            const ctx = ensureAudio();
+            triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: state.transducerSteps[idx], velocity: 0.92 });
+          }
+          renderTransducerGrid();
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderBiharmonicSpectrumBars() {
+      const container = document.getElementById('biharmonicBarsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      for (let i = 0; i < 10; i++) {
+        const pm = ((state.modeM + i) % 9) + 1;
+        const pn = ((state.modeN + Math.floor(i / 2)) % 7) + 1;
+        const freq = computeChladniFrequencyHz(pm, pn);
+        const pct = Math.min(100, Math.max(14, Math.round((freq / 1600) * 100)));
+
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer group';
+        col.innerHTML = `
+          <div class="w-full rounded-t transition-all ${i === 0 ? 'bg-amber-400' : 'bg-sky-400/75 group-hover:bg-emerald-400'}" style="height: ${pct}%"></div>
+          <span class="text-[8px] font-mono ${i === 0 ? 'text-amber-300 font-bold' : 'text-slate-400'}">${pm},${pn}</span>
+        `;
+        col.addEventListener('click', () => {
+          setChladniMode(pm, pn, state.mixAlpha);
+          state.vibrationEnergy = 1.0;
+          const ctx = ensureAudio();
+          triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: 2, velocity: 0.95 });
+        });
+        container.appendChild(col);
+      }
+    }
+
+    function setChladniMode(m, n, alpha) {
+      state.modeM = m;
+      state.modeN = n;
+      state.mixAlpha = alpha;
+      document.getElementById('sliderModeM').value = m;
+      document.getElementById('valModeM').textContent = `m = ${m}`;
+      document.getElementById('sliderModeN').value = n;
+      document.getElementById('valModeN').textContent = `n = ${n}`;
+      document.getElementById('sliderMixAlpha').value = Math.round(alpha * 100);
+      document.getElementById('valMixAlpha').textContent =
+        `${alpha >= 0 ? '+' : ''}${alpha.toFixed(2)} (${alpha > 0.2 ? 'Symmetric' : (alpha < -0.2 ? 'Antisym' : 'Pure')})`;
+
+      updateContinuousBowDrone();
+      renderBiharmonicSpectrumBars();
+    }
+
+    // =========================================================================
+    // 7. MASTER TRANSDUCER TRANSPORT ENGINE
+    // =========================================================================
+    let timerId = null;
+
+    function startTransport() {
+      ensureAudio();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.stepIdx = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('cymatic-running');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP TRANSDUCER';
+
+      tickTransport();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (timerId) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+      state.stepIdx = -1;
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('cymatic-running');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'DRIVE TRANSDUCER';
+      renderTransducerGrid();
+    }
+
+    function tickTransport() {
+      if (!state.isPlaying) return;
+      const ctx = ensureAudio();
+      state.stepIdx = (state.stepIdx + 1) % 16;
+      const code = state.transducerSteps[state.stepIdx] || 0;
+
+      if (code > 0) {
+        state.vibrationEnergy = code >= 2 ? 1.0 : 0.72;
+        if (state.morphOnAccent && code >= 2) {
+          const nextM = ((state.modeM + 1) % 9) + 2;
+          const nextN = ((state.modeN + 2) % 7) + 1;
+          setChladniMode(nextM, nextN, -state.mixAlpha);
+        }
+        triggerCymaticImpact(ctx, masterGain, ctx.currentTime + 0.02, {
+          code, velocity: code >= 2 ? 0.94 : 0.68
+        });
+      }
+
+      renderTransducerGrid();
+      const stepDurSec = (60 / state.bpm) * 0.25;
+      timerId = setTimeout(tickTransport, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV & PNG EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderCymaticWav(mode = 'loop') {
+      const sr = 44100;
+      const stepSec = (60 / state.bpm) * 0.25;
+      const totalSec = mode === 'loop' ? (16 * stepSec + 1.1) : 2.4;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'chladni_strike') {
+        triggerCymaticImpact(offCtx, offCtx.destination, 0.05, { code: 2, velocity: 0.96 });
+      } else if (mode === 'faraday_sub') {
+        triggerCymaticImpact(offCtx, offCtx.destination, 0.05, { code: 3, velocity: 1.0, modeM: 2, modeN: 1 });
+      } else if (mode === 'singing_bowl' || mode === 'bowed') {
+        [0, 0.25, 0.55].forEach((t, idx) => {
+          triggerCymaticImpact(offCtx, offCtx.destination, 0.05 + t, {
+            code: 2, velocity: 0.85, modeM: state.modeM + idx, modeN: state.modeN
+          });
+        });
+      } else {
+        let cursor = 0.05;
+        for (let s = 0; s < 16; s++) {
+          const code = state.transducerSteps[s];
+          if (code > 0) {
+            triggerCymaticImpact(offCtx, offCtx.destination, cursor, {
+              code, velocity: code >= 2 ? 0.94 : 0.68
+            });
+          }
+          cursor += stepSec;
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `cymaforge_${mode}_m${state.modeM}_n${state.modeN}.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('cymaVaultList');
+      const count = document.getElementById('cymaVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-cymatic-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-sky-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyCymaticPreset(pr) {
+      state.activePresetId = pr.id;
+      state.plateShape = pr.plate;
+      state.granularMedium = pr.medium;
+      state.faradayFolds = pr.folds;
+      state.bpm = pr.bpm;
+      state.clampPins = [];
+
+      document.getElementById('selectGranularMedium').value = pr.medium;
+      document.getElementById('sliderFaradayFolds').value = pr.folds;
+      document.getElementById('valFaradayFolds').textContent = `${pr.folds}-Fold`;
+      document.getElementById('liquidSymmetryBadge').textContent = `${pr.folds}-Fold Faraday`;
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+      document.getElementById('btnClearClampPins').textContent = 'Clear Pins (0)';
+
+      updatePlateShapeButtonsUI();
+      initGranularParticles(3200);
+      setChladniMode(pr.m, pr.n, pr.alpha);
+      setTabView(pr.tab);
+      renderPresetListUI();
+    }
+
+    function updatePlateShapeButtonsUI() {
+      document.querySelectorAll('.plate-shape-btn').forEach(btn => {
+        const active = btn.getAttribute('data-plate') === state.plateShape;
+        btn.className = active
+          ? 'plate-shape-btn py-1.5 rounded-lg border text-xs font-mono font-bold bg-sky-500/20 border-sky-400 text-sky-200'
+          : 'plate-shape-btn py-1.5 rounded-lg border text-xs font-mono bg-cymatic-900 border-slate-700 text-slate-300';
+      });
+    }
+
+    function setTabView(tab) {
+      state.activeTab = tab;
+      const bChl = document.getElementById('tabChladniPlate');
+      const bFar = document.getElementById('tabFaradayTank');
+      const bGor = document.getElementById('tabGorkovTrap');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-sky-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bChl.className = tab === 'chladni' ? act : idl;
+      bFar.className = tab === 'faraday' ? act : idl;
+      bGor.className = tab === 'gorkov' ? act : idl;
+
+      const hudL = document.getElementById('hudTopLeft');
+      if (tab === 'chladni') {
+        hudL.textContent = 'Click Plate to Strike & Add Nodal Clamp Pin • Gold=Nodes, Cyan=Antinodes';
+      } else if (tab === 'faraday') {
+        hudL.textContent = 'Faraday Subharmonic Liquid Tank (ω/2) • Click to Inject Capillary Pulse';
+      } else {
+        hudL.textContent = '3D Gor’kov Ultrasonic Phased-Array Levitator • 48 Trapped Droplets';
+      }
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('cymaticPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      CYMATIC_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-sky-500/15 border-sky-400/60 text-white' : 'bg-cymatic-950/75 hover:bg-cymatic-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-sky-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cymatic-900 text-amber-300 border border-slate-800">(${pr.m},${pr.n})</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyCymaticPreset(pr);
+          state.vibrationEnergy = 1.0;
+          const ctx = ensureAudio();
+          triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: 2, velocity: 0.95 });
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+
+      document.getElementById('btnPulseImpact').addEventListener('click', () => {
+        state.vibrationEnergy = 1.0;
+        const ctx = ensureAudio();
+        triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: 3, velocity: 0.98 });
+      });
+
+      document.getElementById('btnBowDroneToggle').addEventListener('click', () => {
+        state.bowSustained = !state.bowSustained;
+        const lbl = document.getElementById('lblBowState');
+        lbl.textContent = state.bowSustained ? 'ON' : 'OFF';
+        lbl.className = state.bowSustained ? 'text-emerald-400 font-bold' : 'text-slate-400 font-bold';
+        updateContinuousBowDrone();
+      });
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('tabChladniPlate').addEventListener('click', () => setTabView('chladni'));
+      document.getElementById('tabFaradayTank').addEventListener('click', () => setTabView('faraday'));
+      document.getElementById('tabGorkovTrap').addEventListener('click', () => setTabView('gorkov'));
+
+      document.getElementById('chkShowFieldHeatmap').addEventListener('change', (e) => {
+        state.showFieldGlow = e.target.checked;
+      });
+
+      document.getElementById('chkMorphModeOnBeat').addEventListener('change', (e) => {
+        state.morphOnAccent = e.target.checked;
+      });
+
+      document.getElementById('selectGranularMedium').addEventListener('change', (e) => {
+        state.granularMedium = e.target.value;
+        initGranularParticles(3200);
+        state.vibrationEnergy = 1.0;
+      });
+
+      document.getElementById('sliderModeM').addEventListener('input', (e) => {
+        setChladniMode(parseInt(e.target.value, 10), state.modeN, state.mixAlpha);
+        state.vibrationEnergy = 0.95;
+      });
+      document.getElementById('sliderModeN').addEventListener('input', (e) => {
+        setChladniMode(state.modeM, parseInt(e.target.value, 10), state.mixAlpha);
+        state.vibrationEnergy = 0.95;
+      });
+      document.getElementById('sliderMixAlpha').addEventListener('input', (e) => {
+        setChladniMode(state.modeM, state.modeN, parseInt(e.target.value, 10) / 100);
+        state.vibrationEnergy = 0.95;
+      });
+
+      document.querySelectorAll('.plate-shape-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.plateShape = btn.getAttribute('data-plate');
+          updatePlateShapeButtonsUI();
+          initGranularParticles(3200);
+          state.vibrationEnergy = 1.0;
+        });
+      });
+
+      document.getElementById('btnClearClampPins').addEventListener('click', () => {
+        state.clampPins = [];
+        document.getElementById('btnClearClampPins').textContent = 'Clear Pins (0)';
+        state.vibrationEnergy = 0.95;
+      });
+
+      // Canvas Direct Click: Add Clamp Pin & Excite Plate
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const scale = Math.min(cx, cy) * 0.82;
+        const nx = (e.clientX - rect.left - cx) / scale;
+        const ny = (e.clientY - rect.top - cy) / scale;
+
+        if (state.activeTab === 'chladni' && isInsidePlate(nx, ny, state.plateShape)) {
+          if (state.clampPins.length >= 6) state.clampPins.shift();
+          state.clampPins.push({ x: nx, y: ny });
+          document.getElementById('btnClearClampPins').textContent = `Clear Pins (${state.clampPins.length})`;
+        }
+
+        state.vibrationEnergy = 1.0;
+        const ctx = ensureAudio();
+        triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: 2, velocity: 0.96 });
+      });
+
+      // Overlay Buttons
+      document.getElementById('btnRescatterParticles').addEventListener('click', () => {
+        initGranularParticles(3200);
+        state.vibrationEnergy = 1.0;
+        showToast('Rescattered 3,200 Quartz & Lycopodium grains across plate!');
+      });
+
+      document.getElementById('btnRandomizeChladniMode').addEventListener('click', () => {
+        const rm = Math.floor(Math.random() * 9) + 2;
+        let rn = Math.floor(Math.random() * 8) + 1;
+        if (rm === rn) rn = (rn % 8) + 1;
+        const rAlpha = (Math.floor(Math.random() * 5) - 2) * 0.5;
+        setChladniMode(rm, rn, rAlpha === 0 ? 1.0 : rAlpha);
+        state.vibrationEnergy = 1.0;
+        const ctx = ensureAudio();
+        triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: 2, velocity: 0.95 });
+        showToast(`Random Biharmonic Mode: m=${rm}, n=${rn}, α=${state.mixAlpha.toFixed(1)}`);
+      });
+
+      document.getElementById('btnSubBassDrop').addEventListener('click', () => {
+        state.vibrationEnergy = 1.0;
+        const ctx = ensureAudio();
+        triggerCymaticImpact(ctx, masterGain, ctx.currentTime, { code: 3, velocity: 1.0 });
+      });
+
+      // Right Column Sliders
+      document.getElementById('sliderPlateRootHz').addEventListener('input', (e) => {
+        state.plateRootHz = parseInt(e.target.value, 10);
+        document.getElementById('valPlateRootHz').textContent = `${state.plateRootHz} Hz`;
+        updateContinuousBowDrone();
+        renderBiharmonicSpectrumBars();
+      });
+      document.getElementById('sliderSubBassGain').addEventListener('input', (e) => {
+        state.subBassGainPct = parseInt(e.target.value, 10);
+        document.getElementById('valSubBassGain').textContent = `${state.subBassGainPct}%`;
+      });
+      document.getElementById('sliderFaradayFolds').addEventListener('input', (e) => {
+        state.faradayFolds = parseInt(e.target.value, 10);
+        document.getElementById('valFaradayFolds').textContent = `${state.faradayFolds}-Fold`;
+        document.getElementById('liquidSymmetryBadge').textContent = `${state.faradayFolds}-Fold Faraday`;
+      });
+      document.getElementById('sliderFluidDecay').addEventListener('input', (e) => {
+        state.fluidDecaySec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valFluidDecay').textContent = `${state.fluidDecaySec.toFixed(2)} s`;
+      });
+
+      // PNG Mandala Snapshot Exporter
+      document.getElementById('btnSnapshotPng').addEventListener('click', () => {
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `cymaforge_mandala_m${state.modeM}_n${state.modeN}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Saved Cymatic Mandala PNG Snapshot!');
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderCymaticWav('loop'));
+      document.getElementById('btnExportCymaticLoopWav').addEventListener('click', () => renderCymaticWav('loop'));
+      document.getElementById('btnExportBowedDroneWav').addEventListener('click', () => renderCymaticWav('bowed'));
+
+      document.querySelectorAll('.cyma-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderCymaticWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportCymaticJson').addEventListener('click', () => {
+        const payload = {
+          app: "CYMA_FORGE_PERCUSSIVE_CYMATICS_LAB",
+          regime: state.activeTab,
+          biharmonicMode: { m: state.modeM, n: state.modeN, alpha: state.mixAlpha },
+          plateShape: state.plateShape,
+          granularMedium: state.granularMedium,
+          clampPins: state.clampPins,
+          faradayFolds: state.faradayFolds,
+          chladniEigenfrequencyHz: Number(computeChladniFrequencyHz(state.modeM, state.modeN).toFixed(2)),
+          transducerSteps: state.transducerSteps
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cymaforge_recipe_m${state.modeM}_n${state.modeN}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded Cymatic Modal Recipe JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      applyCymaticPreset(CYMATIC_PRESETS[0]);
+      renderTransducerGrid();
+      initEventListeners();
+      requestAnimationFrame(renderMainLoop);
+    });
+  </script>
+</body>
+</html>

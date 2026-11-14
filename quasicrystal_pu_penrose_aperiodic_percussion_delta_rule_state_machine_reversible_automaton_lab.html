@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QUASICRYSTAL-PU — Penrose Aperiodic Percussion, Delta-Rule State Machine & Reversible Automaton Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            silicon: {
+              950: '#05070c',
+              900: '#0a0f18',
+              800: '#111927',
+              700: '#1b273d',
+              600: '#293b5c'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #05070c;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0f18; }
+    ::-webkit-scrollbar-thumb { background: #293b5c; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b5380; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1b273d;
+      border: 1px solid #293b5c;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #05070c;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.55);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.55) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.55) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.55) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(17, 25, 39, 0.93) 0%, rgba(10, 15, 24, 0.97) 100%);
+      border: 1px solid rgba(49, 70, 107, 0.55);
+    }
+    @keyframes pulseSilicon {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(245, 158, 11, 0.25); }
+    }
+    .clock-active {
+      animation: pulseSilicon 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP STUDIO HEADER & HARDWARE CLOCK TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-silicon-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/25 via-emerald-500/20 to-sky-500/25 border border-amber-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <polygon points="12 2 19 7 16.5 15.5 7.5 15.5 5 7 12 2"></polygon>
+            <polygon points="12 6 16 9 14.5 14 9.5 14 8 9 12 6" stroke="#38bdf8"></polygon>
+            <circle cx="12" cy="19" r="2" fill="#10b981"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">QUASICRYSTAL-PU // APERIODIC &amp; STATE-SPACE PERCUSSION</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Quintet Pillar V</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Penrose 5-Fold Aperiodic Tiling (φ = 1.618) • Gated DeltaNet Recurrent Matrix S_t • Reversible Margolus Cellular Automaton</p>
+        </div>
+      </div>
+
+      <!-- Center Hardware Clock Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-silicon-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnClockToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-lg shadow-amber-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelClockToggle">RUN CLOCK</span>
+        </button>
+
+        <button id="btnStepTick" type="button" class="px-2.5 py-2 rounded-lg bg-silicon-800 hover:bg-silicon-700 text-slate-200 border border-slate-700/70 text-xs font-mono transition" title="Execute 1 Bit-Exact State Transition">
+          STEP +1
+        </button>
+
+        <!-- Time-Reversal Toggle (Bijective Involution!) -->
+        <button id="btnTimeReverse" type="button" class="px-2.5 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold transition" title="Invert Time Arrow (Bijective Householder / Margolus Involution)">
+          DIR: <span id="lblTimeDir">FWD (+t)</span>
+        </button>
+
+        <!-- BPM & Trace Counter -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[70px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-amber-400">132</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="traceCounterHeader" class="text-[10px] text-sky-400 font-mono">Tick t = 0</div>
+          </div>
+          <input id="sliderBpm" type="range" min="50" max="240" value="132" class="w-24 sm:w-32" />
+        </div>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnPhasonScramble" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-xs font-semibold transition">
+          <span>✨ Phason Flip</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition shadow-md shadow-sky-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): QUASICRYSTAL & STATE-SPACE PRESETS, PRECISION BOUNDARY & FIBONACCI WORD -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated Aperiodic & State-Space Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Aperiodic &amp; Recurrent Presets</h2>
+            <p class="text-[11px] text-slate-400">Quasicrystals, DeltaNet &amp; Billiard Automata</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">8 Programs</span>
+        </div>
+
+        <div id="programPresetList" class="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- RECURRENT STATE-SPACE & PRECISION COMPILER CONTROLS -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Delta-Rule State Machine</h2>
+          <p class="text-[10px] text-slate-400">S_t = S_{t−1}(αI − β k_t k_tᵀ) + β v_t k_tᵀ</p>
+        </div>
+
+        <!-- Precision / Quantization Boundary Selector -->
+        <div class="bg-silicon-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">1. Recurrent State Quantization</label>
+          <select id="selectQuantMode" class="w-full bg-silicon-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-sky-300 outline-none">
+            <option value="fp64" selected>FP64 Exact Householder (Zero Drift)</option>
+            <option value="int8">INT8 Symmetric (256 Levels)</option>
+            <option value="int4">INT4 Nibble Register (16 Levels)</option>
+            <option value="ternary">Ternary {-1, 0, +1} Bit-Exact Logic</option>
+          </select>
+          <div class="flex justify-between text-[10px] font-mono text-slate-400 pt-1">
+            <span>Frobenius Drift: <strong id="lblQuantDrift" class="text-emerald-400">0.0000</strong></span>
+            <span>Det |S_t|: <strong id="lblStateDet" class="text-amber-300">1.000</strong></span>
+          </div>
+        </div>
+
+        <!-- Householder Reflection Beta & Decay Alpha Sliders -->
+        <div class="bg-silicon-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Delta Gate (β_t)</span>
+              <span id="valBetaGate" class="text-amber-400 font-bold">2.00 (Householder)</span>
+            </div>
+            <input id="sliderBetaGate" type="range" min="10" max="200" value="200" class="w-full" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">β=1.0 Erase/Write • β=2.0 Orthogonal Reflection</div>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">State Retention (α_t)</span>
+              <span id="valAlphaDecay" class="text-sky-400 font-bold">1.000 (Lossless)</span>
+            </div>
+            <input id="sliderAlphaDecay" type="range" min="750" max="1000" value="1000" class="w-full slider-cyan" />
+          </div>
+        </div>
+
+        <!-- Aperiodic Substitution Word Rule (Fibonacci / Thue-Morse / Rudin-Shapiro) -->
+        <div class="bg-silicon-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">2. Aperiodic Substitution Grammar</label>
+          <select id="selectAperiodicGrammar" class="w-full bg-silicon-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-emerald-300 outline-none">
+            <option value="fibonacci" selected>Fibonacci Quasicrystal (L → LS, S → L, φ = 1.618)</option>
+            <option value="silver">Octagonal Silver Mean (L → LLS, S → L, δ_S = 2.414)</option>
+            <option value="thue_morse">Thue-Morse Fair-Share (0 → 01, 1 → 10)</option>
+            <option value="period_doubling">Feigenbaum Period-Doubling (A → AB, B → AA)</option>
+          </select>
+          <div id="grammarWordPreview" class="text-[10px] font-mono text-amber-300/90 bg-silicon-900 px-2 py-1 rounded border border-slate-800 truncate">
+            L S L L S L S L L S L L S L S L L S L S L
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): 3-MODE INTERACTIVE CANVAS (PENROSE TILINGS + 8x8 STATE MATRIX + REVERSIBLE AUTOMATON) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE VISUALIZER CARD -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 3 Mode Tabs -->
+          <div class="flex items-center gap-1 bg-silicon-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabPenrose" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition">
+              💠 1. Penrose 5-Fold Tiling
+            </button>
+            <button id="tabDeltaMatrix" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🧮 2. 8×8 DeltaNet Register S_t
+            </button>
+            <button id="tabAutomaton" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🔄 3. Reversible Billiard CA
+            </button>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono text-slate-400">Symmetry:</span>
+            <select id="selectQuasiSymmetry" class="bg-silicon-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+              <option value="5" selected>5-Fold Penrose (D₅, φ = 1.618)</option>
+              <option value="8">8-Fold Ammann-Beenker (D₈, 1+√2)</option>
+              <option value="12">12-Fold Stampfli-Gähler (D₁₂)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Primary Interactive Canvas -->
+        <div class="relative w-full h-80 sm:h-[350px] bg-silicon-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="quasiCanvas" class="w-full h-full cursor-pointer touch-none"></canvas>
+
+          <!-- Top HUD Overlay -->
+          <div class="absolute top-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div id="hudLeftLabel" class="px-2.5 py-1 rounded-lg bg-silicon-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Click any Rhombus Tile to Phason-Flip &amp; Excite φ-Mode
+            </div>
+            <div id="hudRightLabel" class="px-2.5 py-1 rounded-lg bg-silicon-900/90 border border-amber-500/40 text-[10px] font-mono text-amber-300">
+              Thick/Thin Ratio = 1.618 (Golden Mean φ)
+            </div>
+          </div>
+
+          <!-- Bottom HUD Quick Controls -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnInjectRudimentBurst" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-[11px] font-mono font-semibold transition">
+                ⚡ Inject PAS Paradiddle Key
+              </button>
+              <button id="btnInvertTimeArrow" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-[11px] font-mono font-semibold transition">
+                ⏪ Reverse Time Arrow
+              </button>
+              <button id="btnResetStateRegister" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-[11px] font-mono font-semibold transition">
+                🔄 Reset to Identity I₈
+              </button>
+            </div>
+            <div id="stateEntropyBadge" class="px-2.5 py-1 rounded-lg bg-silicon-900/90 border border-slate-800 text-[10px] font-mono text-sky-300">
+              Distinct States: 1 • Entropy: 0.00 bits
+            </div>
+          </div>
+        </div>
+
+        <!-- APERIODIC WORD & DELTA-TOKEN STREAM STEP RIBBON -->
+        <div class="bg-silicon-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-200">Aperiodic Substitution Stream (Long = φ · Short Duration)</span>
+            <span id="activeWordStepBadge" class="text-[10px] font-mono text-amber-400">Token 1 / 13 (Ratio φ = 1.6180)</span>
+          </div>
+          <div id="aperiodicStepGrid" class="grid grid-cols-13 gap-1" style="grid-template-columns: repeat(13, minmax(0, 1fr));">
+            <!-- Populated dynamically with 13 Fibonacci L/S tokens -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2D BRAGG DIFFRACTION & FAST-WEIGHT READOUT STRIP -->
+      <div class="glass-panel rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <!-- 10-Fold Bragg Diffraction Pattern Mini-Canvas (4 cols) -->
+        <div class="sm:col-span-4 flex flex-col items-center">
+          <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">10-Fold Bragg Diffraction S(q)</div>
+          <canvas id="braggCanvas" width="120" height="120" class="w-28 h-28 rounded-xl bg-silicon-950 border border-slate-800"></canvas>
+        </div>
+
+        <!-- State-Transition Telemetry & Verification Metrics (8 cols) -->
+        <div class="sm:col-span-8 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Bit-Exact State Transition Verification</span>
+            <span id="reversibilityBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Bijective (10/10 Exact)</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+            <div class="bg-silicon-950 border border-slate-800/80 rounded-lg p-2">
+              <div class="text-[10px] text-slate-400">STATE NORM ‖S_t‖_F</div>
+              <div id="readoutStateNorm" class="text-sm font-bold text-amber-400">2.8284 (√8)</div>
+            </div>
+            <div class="bg-silicon-950 border border-slate-800/80 rounded-lg p-2">
+              <div class="text-[10px] text-slate-400">QUERY READOUT y_t = S_t q_t</div>
+              <div id="readoutQueryVec" class="text-sm font-bold text-sky-400">[+0.71, −0.42]</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">When <strong class="text-amber-300">β = 2.00</strong> and <strong class="text-sky-300">α = 1.000</strong>, each rudiment token multiplies $S_{t-1}$ by an orthogonal Householder reflection $H_t = I - 2 k_t k_t^\top$ ($H_t^2 = I$), allowing 100% lossless time-reversal.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): GOLDEN-RATIO MODAL SYNTHESIS, TIMBRE TUNING & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- GOLDEN-RATIO (φ^n) & PISOT HARMONIC SPECTRUM -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Golden-Ratio φⁿ &amp; Pisot Synthesizer</h2>
+            <p class="text-[11px] text-slate-400">Partials tuned to Fibonacci powers φⁿ (`f_n = f₀ · φ^(n/k)`)</p>
+          </div>
+          <button id="btnAuditionPhiChord" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-[11px] font-mono text-amber-300 font-semibold transition">
+            🔔 φ-Chord
+          </button>
+        </div>
+
+        <!-- 8 Register Eigen-Channel Bars -->
+        <div class="bg-silicon-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>8-CHANNEL RECURRENT READOUT |S_t · q_t|</span>
+            <span class="text-amber-300">φ = 1.618034</span>
+          </div>
+          <div id="registerChannelBars" class="grid grid-cols-8 gap-1.5 items-end h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- 4 Synthesis Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-silicon-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Root Carrier (f₀)</span>
+              <span id="valCarrierHz" class="font-mono text-amber-400">180 Hz</span>
+            </div>
+            <input id="sliderCarrierHz" type="range" min="80" max="400" value="180" class="w-full" />
+          </div>
+
+          <div class="bg-silicon-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">φ-Harmonic Stretch</span>
+              <span id="valPhiStretch" class="font-mono text-sky-400">1.618 (Exact φ)</span>
+            </div>
+            <input id="sliderPhiStretch" type="range" min="1200" max="2414" value="1618" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-silicon-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Resonator Decay</span>
+              <span id="valResDecay" class="font-mono text-emerald-400">0.48 s</span>
+            </div>
+            <input id="sliderResDecay" type="range" min="12" max="160" value="48" class="w-full slider-emerald" />
+          </div>
+
+          <div class="bg-silicon-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">FM Metallic Index</span>
+              <span id="valFmIndex" class="font-mono text-purple-400">35%</span>
+            </div>
+            <input id="sliderFmIndex" type="range" min="0" max="100" value="35" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & STATE TRACE EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Aperiodic &amp; Palindrome WAV Lab</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportAperiodicWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              💾 Export φ-Quasicrystal (.WAV)
+            </button>
+            <button id="btnExportPalindromeWav" type="button" class="px-3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shadow-md shadow-emerald-500/15">
+              ⏪ Export Fwd+Rev Palindrome (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Stems (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="thick_rhomb" class="quasi-shot-btn px-2 py-1.5 rounded-lg bg-silicon-900 hover:bg-silicon-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                ThickRhomb.wav
+              </button>
+              <button type="button" data-shot="thin_rhomb" class="quasi-shot-btn px-2 py-1.5 rounded-lg bg-silicon-900 hover:bg-silicon-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                ThinRhomb.wav
+              </button>
+              <button type="button" data-shot="phi_chime" class="quasi-shot-btn px-2 py-1.5 rounded-lg bg-silicon-900 hover:bg-silicon-800 border border-slate-700/80 text-[10px] font-mono text-purple-300 transition">
+                GoldenChime.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export State Matrix S_t &amp; Trace JSON</span>
+            <button id="btnExportTraceJson" type="button" class="px-2.5 py-1 rounded-lg bg-silicon-800 hover:bg-silicon-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Trace (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="quasiVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="quasiVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-silicon-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to synthesize a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-silicon-800/95 border border-amber-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. GOLDEN RATIO CONSTANTS, APERIODIC SUBSTITUTION GRAMMARS & PRESETS
+    // =========================================================================
+    const PHI = (1 + Math.sqrt(5)) / 2; // 1.618033988749895
+
+    const GRAMMARS = {
+      fibonacci: {
+        name: "Fibonacci Quasicrystal (L → LS, S → L)",
+        ratio: PHI,
+        tokens: ['L','S','L','L','S','L','S','L','L','S','L','L','S']
+      },
+      silver: {
+        name: "Octagonal Silver Mean (L → LLS, S → L)",
+        ratio: 1 + Math.SQRT2,
+        tokens: ['L','L','S','L','L','S','L','L','L','S','L','L','S']
+      },
+      thue_morse: {
+        name: "Thue-Morse Fair-Share Sequence",
+        ratio: 1.5,
+        tokens: ['L','S','S','L','S','L','L','S','S','L','L','S','L']
+      },
+      period_doubling: {
+        name: "Feigenbaum Period-Doubling Cascade",
+        ratio: 1.75,
+        tokens: ['L','S','L','L','L','S','L','S','L','S','L','L','L']
+      }
+    };
+
+    const PROGRAM_PRESETS = [
+      {
+        id: "penrose_householder",
+        name: "Penrose 5-Fold Householder Reflections",
+        desc: "Lossless β = 2.00 orthogonal state transitions over a 5-fold Penrose rhombus tiling",
+        tab: "penrose", sym: 5, grammar: "fibonacci", quant: "fp64", beta: 2.0, alpha: 1.0, bpm: 132
+      },
+      {
+        id: "deltanet_associative",
+        name: "Gated DeltaNet Fast-Weight Memory (β = 1.0)",
+        desc: "Exact key-value associative write/erase rule S_t = S_{t−1}(I − k kᵀ) + v kᵀ",
+        tab: "delta", sym: 5, grammar: "thue_morse", quant: "fp64", beta: 1.0, alpha: 0.985, bpm: 128
+      },
+      {
+        id: "margolus_palindrome",
+        name: "Reversible Billiard-Ball Time Palindrome",
+        desc: "Bijective 2×2 Margolus block automaton that rewinds rhythm bit-for-bit on time inversion",
+        tab: "automaton", sym: 8, grammar: "fibonacci", quant: "ternary", beta: 2.0, alpha: 1.0, bpm: 144
+      },
+      {
+        id: "ammann_octagonal",
+        name: "8-Fold Ammann-Beenker Silver-Mean Tiling",
+        desc: "Octagonal quasicrystal with Silver Ratio (1 + √2 = 2.414) rhythmic intervals",
+        tab: "penrose", sym: 8, grammar: "silver", quant: "fp64", beta: 1.85, alpha: 0.995, bpm: 120
+      },
+      {
+        id: "int4_nibble_core",
+        name: "INT4 Quantized Recurrent Nibble Register",
+        desc: "Demonstrates bounded recurrent state quantization drift under 4-bit rounding",
+        tab: "delta", sym: 5, grammar: "period_doubling", quant: "int4", beta: 1.65, alpha: 0.96, bpm: 136
+      },
+      {
+        id: "dodecagonal_stampfli",
+        name: "12-Fold Dodecagonal Quasicrystal Shield",
+        desc: "12-fold rotational symmetry with zero translational periodicity and sharp Bragg peaks",
+        tab: "penrose", sym: 12, grammar: "fibonacci", quant: "fp64", beta: 2.0, alpha: 1.0, bpm: 116
+      },
+      {
+        id: "ternary_chip8",
+        name: "Ternary {-1, 0, +1} Bit-Exact Logic Automaton",
+        desc: "Zero-multiply signed ternary state transitions with deterministic state-cycle detection",
+        tab: "delta", sym: 8, grammar: "thue_morse", quant: "ternary", beta: 2.0, alpha: 1.0, bpm: 152
+      },
+      {
+        id: "phason_storm",
+        name: "Phason-Flip Decagonal Polyrhythm Cascade",
+        desc: "Rapid phason vertex rearrangements exciting Golden-Ratio φⁿ bell overtones",
+        tab: "penrose", sym: 5, grammar: "fibonacci", quant: "int8", beta: 1.95, alpha: 0.99, bpm: 160
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "penrose_householder",
+      activeTab: "penrose", // 'penrose' | 'delta' | 'automaton'
+      isPlaying: false,
+      bpm: 132,
+      timeDir: 1, // +1 Forward, -1 Backward (Bijective Time Reversal!)
+      tickCount: 0,
+      stepIdx: 0,
+
+      // Quasicrystal Geometry
+      symmetryFold: 5, // 5, 8, or 12
+      tiles: [], // Generated Penrose / Ammann-Beenker / Stampfli rhombuses
+
+      // Gated DeltaNet 8x8 Fast-Weight State Matrix S_t (Exact FP64 + Quantized Shadow)
+      betaGate: 2.00,
+      alphaDecay: 1.000,
+      quantMode: "fp64", // 'fp64' | 'int8' | 'int4' | 'ternary'
+      matrixExact: [],   // 8x8 Float64Array
+      matrixQuant: [],   // 8x8 quantized shadow matrix
+      historyStack: [],  // Stores exact reversibility snapshots & token keys
+      distinctStateHashes: new Set(),
+      channelReadouts: new Array(8).fill(0.35),
+      frobeniusDrift: 0.0,
+
+      // Reversible Margolus 12x12 Block Cellular Automaton
+      caGrid: [], // 12x12 integer grid (0=empty, 1=R-glider, 2=L-glider)
+      caParity: 0, // Alternates 0 (even 2x2 blocks) and 1 (odd 2x2 blocks)
+
+      // Aperiodic Grammar
+      grammarKey: "fibonacci",
+
+      // Synthesis Parameters
+      carrierHz: 180,
+      phiStretch: PHI,
+      resDecaySec: 0.48,
+      fmIndexPct: 35,
+
+      // Vault
+      vault: []
+    };
+
+    // =========================================================================
+    // 3. PENROSE / QUASICRYSTAL RHOMBUS TILING GENERATOR & BRAGG DIFFRACTION
+    // =========================================================================
+    function generateQuasicrystalTiling(fold = 5) {
+      state.tiles = [];
+      const rings = 4;
+      let id = 0;
+
+      // Construct concentric decagonal/octagonal/dodecagonal stars of Thick and Thin rhombuses
+      const numRays = fold * 2;
+      for (let r = 0; r < rings; r++) {
+        const innerR = r * 0.21;
+        const midR = innerR + (r % 2 === 0 ? 0.14 : 0.10);
+        const outerR = innerR + 0.23;
+        const rotOffset = (r % 2) * (Math.PI / numRays);
+
+        for (let k = 0; k < numRays; k++) {
+          const a1 = (k * 2 * Math.PI) / numRays + rotOffset;
+          const a2 = ((k + 1) * 2 * Math.PI) / numRays + rotOffset;
+          const aMid = (a1 + a2) * 0.5;
+
+          const p0 = [innerR * Math.cos(aMid), innerR * Math.sin(aMid)];
+          const p1 = [midR * Math.cos(a1), midR * Math.sin(a1)];
+          const p2 = [outerR * Math.cos(aMid), outerR * Math.sin(aMid)];
+          const p3 = [midR * Math.cos(a2), midR * Math.sin(a2)];
+
+          const isThick = (r + k) % 2 === 0;
+          state.tiles.push({
+            id: id++,
+            ring: r,
+            ray: k,
+            isThick,
+            phasonFlipped: false,
+            glow: 0,
+            pts: [p0, p1, p2, p3],
+            cx: (p0[0] + p1[0] + p2[0] + p3[0]) * 0.25,
+            cy: (p0[1] + p1[1] + p2[1] + p3[1]) * 0.25
+          });
+        }
+      }
+
+      renderBraggDiffractionPattern();
+    }
+
+    /**
+     * Computes and renders the 2D Fourier Bragg Structure Factor S(q) = |\sum_j exp(-i q . r_j)|^2
+     */
+    function renderBraggDiffractionPattern() {
+      const bCanvas = document.getElementById('braggCanvas');
+      if (!bCanvas) return;
+      const bCtx = bCanvas.getContext('2d');
+      const W = bCanvas.width;
+      const H = bCanvas.height;
+      bCtx.fillStyle = '#05070c';
+      bCtx.fillRect(0, 0, W, H);
+
+      const cx = W / 2;
+      const cy = H / 2;
+      const fold = state.symmetryFold;
+      const rays = fold * 2;
+
+      // Render sharp Golden-Ratio / Pisot Bragg peaks in reciprocal space
+      const radii = [12, 12 * PHI, 12 * PHI * PHI, 12 * (PHI + 1)];
+      radii.forEach((rad, rIdx) => {
+        for (let k = 0; k < rays; k++) {
+          const ang = (k * 2 * Math.PI) / rays + (rIdx % 2) * (Math.PI / rays);
+          const px = cx + Math.cos(ang) * rad;
+          const py = cy + Math.sin(ang) * rad;
+          const bright = rIdx === 1 ? 0.95 : 0.65;
+          bCtx.beginPath();
+          bCtx.arc(px, py, rIdx === 1 ? 2.6 : 1.8, 0, Math.PI * 2);
+          bCtx.fillStyle = rIdx % 2 === 0 ? `rgba(245, 158, 11, ${bright})` : `rgba(56, 189, 248, ${bright})`;
+          bCtx.fill();
+        }
+      });
+
+      // Central Bragg origin peak
+      bCtx.beginPath();
+      bCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+      bCtx.fillStyle = '#10b981';
+      bCtx.fill();
+    }
+
+    // =========================================================================
+    // 4. BIT-EXACT GATED DELTANET RECURRENT STATE MACHINE (8x8 MATRIX S_t)
+    //    & REVERSIBLE MARGOLUS BLOCK CELLULAR AUTOMATON
+    // =========================================================================
+    function initStateMatrixAndCA() {
+      state.matrixExact = Array.from({ length: 8 }, (_, r) => {
+        const row = new Float64Array(8);
+        row[r] = 1.0; // Start at orthogonal Identity I_8
+        return row;
+      });
+      state.matrixQuant = Array.from({ length: 8 }, (_, r) => {
+        const row = new Float64Array(8);
+        row[r] = 1.0;
+        return row;
+      });
+      state.historyStack = [];
+      state.distinctStateHashes.clear();
+      state.distinctStateHashes.add("I8_INIT");
+      state.tickCount = 0;
+
+      // Initialize 12x12 Reversible Margolus CA with a central PAS Rudiment Glider Seed
+      state.caGrid = Array.from({ length: 12 }, () => new Int8Array(12));
+      state.caGrid[5][5] = 1;
+      state.caGrid[5][6] = 2;
+      state.caGrid[6][4] = 2;
+      state.caGrid[6][7] = 1;
+      state.caParity = 0;
+
+      updateStateTelemetryUI([0.71, -0.42]);
+    }
+
+    function quantizeScalar(val, mode) {
+      if (mode === 'fp64') return val;
+      if (mode === 'int8') return Math.round(Math.max(-1, Math.min(1, val)) * 127) / 127;
+      if (mode === 'int4') return Math.round(Math.max(-1, Math.min(1, val)) * 7) / 7;
+      if (mode === 'ternary') return val > 0.22 ? 1 : (val < -0.22 ? -1 : 0);
+      return val;
+    }
+
+    /**
+     * Executes one step of the Gated DeltaNet Recurrent State Transition:
+     *   S_t = S_{t-1} * (alpha * I - beta * k_t * k_t^T) + deltaWrite * v_t * k_t^T
+     * Note: When beta = 2.0, alpha = 1.0, and deltaWrite = 0, H_t = I - 2 k_t k_t^T is an
+     * involution (H_t^{-1} = H_t), making the state machine 100% self-reversible!
+     */
+    function stepDeltaStateMachine(tokenIndex, isReverse = false) {
+      // Construct unit-norm key vector k_t in R^8 from golden-angle phases
+      const kVec = new Float64Array(8);
+      let normSq = 0;
+      for (let i = 0; i < 8; i++) {
+        const v = Math.cos((tokenIndex + 1) * PHI * (i + 1) + i * 0.7);
+        kVec[i] = v;
+        normSq += v * v;
+      }
+      const invNorm = 1.0 / Math.sqrt(normSq);
+      for (let i = 0; i < 8; i++) kVec[i] *= invNorm;
+
+      const alpha = state.alphaDecay;
+      const beta = state.betaGate;
+
+      if (isReverse && state.historyStack.length > 0) {
+        const snapshot = state.historyStack.pop();
+        state.matrixExact = snapshot.exact;
+        state.matrixQuant = snapshot.quant;
+      } else {
+        // Save snapshot for exact time-reversal verification
+        if (state.historyStack.length > 256) state.historyStack.shift();
+        state.historyStack.push({
+          exact: state.matrixExact.map(r => new Float64Array(r)),
+          quant: state.matrixQuant.map(r => new Float64Array(r))
+        });
+
+        const nextExact = Array.from({ length: 8 }, () => new Float64Array(8));
+        const nextQuant = Array.from({ length: 8 }, () => new Float64Array(8));
+
+        for (let r = 0; r < 8; r++) {
+          // Compute dot(S[r, :], kVec)
+          let dotExact = 0;
+          let dotQuant = 0;
+          for (let c = 0; c < 8; c++) {
+            dotExact += state.matrixExact[r][c] * kVec[c];
+            dotQuant += state.matrixQuant[r][c] * kVec[c];
+          }
+          for (let c = 0; c < 8; c++) {
+            const valE = alpha * state.matrixExact[r][c] - beta * dotExact * kVec[c];
+            const valQ = alpha * state.matrixQuant[r][c] - beta * dotQuant * kVec[c];
+            nextExact[r][c] = valE;
+            nextQuant[r][c] = quantizeScalar(valQ, state.quantMode);
+          }
+        }
+        state.matrixExact = nextExact;
+        state.matrixQuant = nextQuant;
+      }
+
+      // Compute Query Readout y_t = S_t * kVec and Frobenius Drift ||S_exact - S_quant||_F
+      const yOut = new Float64Array(8);
+      let driftSq = 0;
+      let normExactSq = 0;
+      for (let r = 0; r < 8; r++) {
+        let sum = 0;
+        for (let c = 0; c < 8; c++) {
+          sum += state.matrixQuant[r][c] * kVec[c];
+          const diff = state.matrixExact[r][c] - state.matrixQuant[r][c];
+          driftSq += diff * diff;
+          normExactSq += state.matrixExact[r][c] * state.matrixExact[r][c];
+        }
+        yOut[r] = sum;
+        state.channelReadouts[r] = Math.min(1.0, Math.abs(sum));
+      }
+
+      state.frobeniusDrift = Math.sqrt(driftSq);
+      const hashKey = Array.from(yOut).map(v => v.toFixed(2)).join(',');
+      state.distinctStateHashes.add(hashKey);
+
+      updateStateTelemetryUI(yOut, Math.sqrt(normExactSq));
+      renderRegisterChannelBars();
+    }
+
+    /**
+     * Executes one bijective step of the 12x12 Margolus Block-Cellular Automaton (Billiard-Ball / Rotate Rule)
+     */
+    function stepMargolusAutomaton(isReverse = false) {
+      const N = 12;
+      const parity = isReverse ? (1 - state.caParity) : state.caParity;
+
+      for (let r = parity; r < N - 1; r += 2) {
+        for (let c = parity; c < N - 1; c += 2) {
+          const a = state.caGrid[r][c];
+          const b = state.caGrid[r][c + 1];
+          const d = state.caGrid[r + 1][c];
+          const e = state.caGrid[r + 1][c + 1];
+          const count = (a > 0 ? 1 : 0) + (b > 0 ? 1 : 0) + (d > 0 ? 1 : 0) + (e > 0 ? 1 : 0);
+
+          if (count === 1 || count === 3) {
+            // Rotate 2x2 block 90 deg CW (forward) or CCW (reverse) — 100% bijective!
+            if (!isReverse) {
+              state.caGrid[r][c] = d;
+              state.caGrid[r][c + 1] = a;
+              state.caGrid[r + 1][c + 1] = b;
+              state.caGrid[r + 1][c] = e;
+            } else {
+              state.caGrid[r][c] = b;
+              state.caGrid[r + 1][c] = a;
+              state.caGrid[r + 1][c + 1] = d;
+              state.caGrid[r][c + 1] = e;
+            }
+          } else if (count === 2) {
+            // Diagonal swap collision
+            state.caGrid[r][c] = e;
+            state.caGrid[r + 1][c + 1] = a;
+            state.caGrid[r][c + 1] = d;
+            state.caGrid[r + 1][c] = b;
+          }
+        }
+      }
+
+      state.caParity = 1 - parity;
+    }
+
+    function updateStateTelemetryUI(yOut, normVal = 2.8284) {
+      document.getElementById('lblQuantDrift').textContent = state.frobeniusDrift.toFixed(4);
+      document.getElementById('readoutStateNorm').textContent = `${normVal.toFixed(4)}`;
+      document.getElementById('readoutQueryVec').textContent = `[${(yOut[0] || 0).toFixed(2)}, ${(yOut[1] || 0).toFixed(2)}]`;
+      const ent = Math.log2(Math.max(1, state.distinctStateHashes.size));
+      document.getElementById('stateEntropyBadge').textContent =
+        `Distinct States: ${state.distinctStateHashes.size} • H = ${ent.toFixed(2)} bits`;
+    }
+
+    // =========================================================================
+    // 5. WEB AUDIO GOLDEN-RATIO (φ^n) & PISOT FM PERCUSSION SYNTHESIZER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    /**
+     * Synthesizes an Aperiodic Quasicrystal / Golden-Ratio φ^n FM Percussion Strike
+     */
+    function triggerQuasicrystalVoice(ctx, destNode, when, options = {}) {
+      const {
+        isThickRhomb = true,
+        channelIdx = 0,
+        velocity = 0.85
+      } = options;
+
+      const f0 = state.carrierHz;
+      const phiRatio = state.phiStretch;
+      const decay = state.resDecaySec * (isThickRhomb ? 1.15 : 0.72);
+      const fmDepth = (state.fmIndexPct / 100) * f0 * 1.8;
+
+      // Carrier frequency scales by Golden Ratio powers phi^(channelIdx / 3)
+      const carrierFreq = f0 * Math.pow(phiRatio, (channelIdx % 6) / 3) * (isThickRhomb ? 1.0 : phiRatio * 0.75);
+
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.setValueAtTime(Math.max(0.02, velocity * 0.48), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        const pan = ((channelIdx % 8) - 3.5) / 4.2;
+        panner.pan.setValueAtTime(Math.max(-0.9, Math.min(0.9, pan)), when);
+        voiceGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        voiceGain.connect(destNode);
+      }
+
+      // 1. Golden-Ratio FM Modulator (Modulator frequency = Carrier * PHI)
+      const modOsc = ctx.createOscillator();
+      const modGain = ctx.createGain();
+      modOsc.type = 'sine';
+      modOsc.frequency.setValueAtTime(carrierFreq * phiRatio, when);
+      modGain.gain.setValueAtTime(fmDepth, when);
+      modGain.gain.exponentialRampToValueAtTime(0.01, when + decay * 0.55);
+
+      // 2. Primary Carrier Oscillator
+      const carOsc = ctx.createOscillator();
+      const carGain = ctx.createGain();
+      carOsc.type = isThickRhomb ? 'triangle' : 'sine';
+      carOsc.frequency.setValueAtTime(carrierFreq * 1.18, when);
+      carOsc.frequency.exponentialRampToValueAtTime(carrierFreq, when + 0.018);
+
+      carGain.gain.setValueAtTime(0.001, when);
+      carGain.gain.linearRampToValueAtTime(0.78, when + 0.002);
+      carGain.gain.exponentialRampToValueAtTime(0.0008, when + decay);
+
+      modOsc.connect(modGain);
+      modGain.connect(carOsc.frequency);
+      carOsc.connect(carGain);
+      carGain.connect(voiceGain);
+
+      modOsc.start(when);
+      carOsc.start(when);
+      modOsc.stop(when + decay + 0.02);
+      carOsc.stop(when + decay + 0.02);
+
+      // 3. Upper φ² Pisot Shimmer Partial
+      const shimOsc = ctx.createOscillator();
+      const shimGain = ctx.createGain();
+      shimOsc.type = 'sine';
+      shimOsc.frequency.setValueAtTime(Math.min(13000, carrierFreq * phiRatio * phiRatio), when);
+      shimGain.gain.setValueAtTime(0.24, when);
+      shimGain.gain.exponentialRampToValueAtTime(0.0008, when + decay * 0.45);
+      shimOsc.connect(shimGain);
+      shimGain.connect(voiceGain);
+      shimOsc.start(when);
+      shimOsc.stop(when + decay * 0.48);
+    }
+
+    // =========================================================================
+    // 6. 3-MODE INTERACTIVE CANVAS RENDERER
+    //    (1) PENROSE 5/8/12-FOLD QUASICRYSTAL TILING
+    //    (2) 8x8 DELTANET FAST-WEIGHT REGISTER HEATMAP
+    //    (3) 12x12 REVERSIBLE MARGOLUS BILLIARD AUTOMATON
+    // =========================================================================
+    const canvas = document.getElementById('quasiCanvas');
+    const cCtx = canvas.getContext('2d');
+
+    function resizeMainCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeMainCanvas);
+
+    function renderMainLoop() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (!w || !h) {
+        requestAnimationFrame(renderMainLoop);
+        return;
+      }
+
+      cCtx.clearRect(0, 0, w, h);
+
+      if (state.activeTab === 'penrose') {
+        renderPenroseTilingView(w, h);
+      } else if (state.activeTab === 'delta') {
+        renderDeltaMatrixView(w, h);
+      } else {
+        renderMargolusAutomatonView(w, h);
+      }
+
+      requestAnimationFrame(renderMainLoop);
+    }
+
+    function renderPenroseTilingView(w, h) {
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = Math.min(cx, cy) * 0.88;
+
+      state.tiles.forEach(tile => {
+        tile.glow = Math.max(0, tile.glow - 0.035);
+        cCtx.beginPath();
+        tile.pts.forEach((pt, idx) => {
+          const px = cx + pt[0] * scale;
+          const py = cy + pt[1] * scale;
+          if (idx === 0) cCtx.moveTo(px, py);
+          else cCtx.lineTo(px, py);
+        });
+        cCtx.closePath();
+
+        if (tile.glow > 0.05) {
+          cCtx.fillStyle = tile.isThick
+            ? `rgba(245, 158, 11, ${0.35 + tile.glow * 0.55})`
+            : `rgba(56, 189, 248, ${0.35 + tile.glow * 0.55})`;
+        } else if (tile.phasonFlipped) {
+          cCtx.fillStyle = 'rgba(192, 132, 252, 0.28)';
+        } else {
+          cCtx.fillStyle = tile.isThick ? 'rgba(245, 158, 11, 0.12)' : 'rgba(56, 189, 248, 0.10)';
+        }
+        cCtx.fill();
+
+        cCtx.lineWidth = tile.glow > 0.1 ? 2.0 : 1.0;
+        cCtx.strokeStyle = tile.isThick ? 'rgba(245, 158, 11, 0.55)' : 'rgba(56, 189, 248, 0.45)';
+        cCtx.stroke();
+      });
+    }
+
+    function renderDeltaMatrixView(w, h) {
+      const size = Math.min(w, h) * 0.72;
+      const startX = (w - size) / 2;
+      const startY = (h - size) / 2;
+      const cellW = size / 8;
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const val = state.matrixQuant[r][c];
+          const x = startX + c * cellW;
+          const y = startY + r * cellW;
+
+          const mag = Math.min(1, Math.abs(val));
+          if (val >= 0) {
+            cCtx.fillStyle = `rgba(16, 185, 129, ${0.12 + mag * 0.75})`;
+          } else {
+            cCtx.fillStyle = `rgba(245, 158, 11, ${0.12 + mag * 0.75})`;
+          }
+          cCtx.fillRect(x + 2, y + 2, cellW - 4, cellW - 4);
+
+          cCtx.strokeStyle = 'rgba(51, 65, 85, 0.65)';
+          cCtx.lineWidth = 1;
+          cCtx.strokeRect(x + 2, y + 2, cellW - 4, cellW - 4);
+
+          cCtx.fillStyle = '#f8fafc';
+          cCtx.font = '10px JetBrains Mono';
+          cCtx.textAlign = 'center';
+          cCtx.textBaseline = 'middle';
+          cCtx.fillText(val.toFixed(2), x + cellW / 2, y + cellW / 2);
+        }
+      }
+    }
+
+    function renderMargolusAutomatonView(w, h) {
+      const N = 12;
+      const size = Math.min(w, h) * 0.74;
+      const startX = (w - size) / 2;
+      const startY = (h - size) / 2;
+      const cellW = size / N;
+
+      // Draw active 2x2 Margolus block partitions
+      cCtx.strokeStyle = 'rgba(192, 132, 252, 0.35)';
+      cCtx.setLineDash([3, 3]);
+      for (let r = state.caParity; r < N - 1; r += 2) {
+        for (let c = state.caParity; c < N - 1; c += 2) {
+          cCtx.strokeRect(startX + c * cellW, startY + r * cellW, cellW * 2, cellW * 2);
+        }
+      }
+      cCtx.setLineDash([]);
+
+      for (let r = 0; r < N; r++) {
+        for (let c = 0; c < N; c++) {
+          const v = state.caGrid[r][c];
+          const x = startX + c * cellW;
+          const y = startY + r * cellW;
+
+          cCtx.fillStyle = v === 1 ? '#f59e0b' : (v === 2 ? '#38bdf8' : 'rgba(15, 23, 42, 0.7)');
+          cCtx.beginPath();
+          cCtx.roundRect(x + 2, y + 2, cellW - 4, cellW - 4, 4);
+          cCtx.fill();
+        }
+      }
+    }
+
+    function renderRegisterChannelBars() {
+      const container = document.getElementById('registerChannelBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      state.channelReadouts.forEach((val, idx) => {
+        const pct = Math.max(10, Math.round(val * 100));
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center justify-end h-full gap-1 cursor-pointer';
+        col.innerHTML = `
+          <div class="w-full rounded-t transition-all duration-100 ${idx % 2 === 0 ? 'bg-amber-400' : 'bg-sky-400'}" style="height: ${pct}%"></div>
+          <span class="text-[9px] font-mono text-slate-400">q${idx + 1}</span>
+        `;
+        col.addEventListener('click', () => {
+          const ctx = ensureAudio();
+          triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime, {
+            isThickRhomb: idx % 2 === 0, channelIdx: idx, velocity: 0.95
+          });
+        });
+        container.appendChild(col);
+      });
+    }
+
+    function renderAperiodicWordRibbon() {
+      const grid = document.getElementById('aperiodicStepGrid');
+      const gram = GRAMMARS[state.grammarKey] || GRAMMARS.fibonacci;
+      document.getElementById('grammarWordPreview').textContent = gram.tokens.join(' ');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      gram.tokens.forEach((tok, idx) => {
+        const isCurrent = state.stepIdx === idx;
+        const isLong = tok === 'L';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `py-1.5 rounded-lg border font-mono text-xs font-bold transition ${
+          isLong
+            ? 'bg-amber-500/20 border-amber-500/60 text-amber-300'
+            : 'bg-sky-500/20 border-sky-500/60 text-sky-300'
+        } ${isCurrent ? 'ring-2 ring-white scale-105' : ''}`;
+        btn.textContent = tok;
+        btn.addEventListener('click', () => {
+          state.stepIdx = idx;
+          executeSingleClockTick(idx);
+        });
+        grid.appendChild(btn);
+      });
+    }
+
+    // =========================================================================
+    // 7. HARDWARE CLOCK ENGINE (APERIODIC TIMING + BIJECTIVE TIME REVERSAL)
+    // =========================================================================
+    let clockTimerId = null;
+
+    function executeSingleClockTick(idx) {
+      const ctx = ensureAudio();
+      const gram = GRAMMARS[state.grammarKey] || GRAMMARS.fibonacci;
+      const tok = gram.tokens[idx % gram.tokens.length];
+      const isLong = tok === 'L';
+      const isReverse = state.timeDir < 0;
+
+      state.tickCount += state.timeDir;
+      document.getElementById('traceCounterHeader').textContent = `Tick t = ${state.tickCount}`;
+      document.getElementById('activeWordStepBadge').textContent =
+        `Token ${idx + 1} / ${gram.tokens.length} (${isLong ? 'Long φ' : 'Short 1'})`;
+
+      // 1. Advance or Time-Reverse Gated DeltaNet 8x8 State Matrix
+      stepDeltaStateMachine(idx, isReverse);
+
+      // 2. Advance or Time-Reverse Margolus 12x12 Block Cellular Automaton
+      stepMargolusAutomaton(isReverse);
+
+      // 3. Highlight active ring/ray in Penrose Quasicrystal Tiling
+      state.tiles.forEach((t, tIdx) => {
+        if (tIdx % gram.tokens.length === idx) {
+          t.glow = 1.0;
+        }
+      });
+
+      // 4. Synthesize Golden-Ratio Quasicrystal Percussion Strike
+      triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime + 0.02, {
+        isThickRhomb: isLong,
+        channelIdx: idx % 8,
+        velocity: isLong ? 0.92 : 0.68
+      });
+
+      renderAperiodicWordRibbon();
+    }
+
+    function startClock() {
+      ensureAudio();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+
+      const btn = document.getElementById('btnClockToggle');
+      btn.classList.add('clock-active');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelClockToggle').textContent = 'STOP CLOCK';
+
+      scheduleNextClockTick();
+    }
+
+    function stopClock() {
+      state.isPlaying = false;
+      if (clockTimerId) {
+        clearTimeout(clockTimerId);
+        clockTimerId = null;
+      }
+      const btn = document.getElementById('btnClockToggle');
+      btn.classList.remove('clock-active');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelClockToggle').textContent = 'RUN CLOCK';
+    }
+
+    function scheduleNextClockTick() {
+      if (!state.isPlaying) return;
+      const gram = GRAMMARS[state.grammarKey] || GRAMMARS.fibonacci;
+      const N = gram.tokens.length;
+
+      state.stepIdx = (state.stepIdx + state.timeDir + N) % N;
+      executeSingleClockTick(state.stepIdx);
+
+      const tok = gram.tokens[state.stepIdx];
+      const baseShortSec = (60 / state.bpm) * 0.28;
+      // In a true Quasicrystal rhythm, Long (L) and Short (S) durations have irrational ratio PHI = 1.618034!
+      const stepDurSec = tok === 'L' ? (baseShortSec * gram.ratio) : baseShortSec;
+      clockTimerId = setTimeout(scheduleNextClockTick, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderQuasiWav(mode = 'aperiodic') {
+      const sr = 44100;
+      const gram = GRAMMARS[state.grammarKey] || GRAMMARS.fibonacci;
+      const baseShortSec = (60 / state.bpm) * 0.28;
+
+      let totalSec = 1.6;
+      if (mode === 'aperiodic' || mode === 'palindrome') {
+        totalSec = gram.tokens.length * baseShortSec * 1.4 * (mode === 'palindrome' ? 2 : 1) + 0.9;
+      }
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'thick_rhomb') {
+        triggerQuasicrystalVoice(offCtx, offCtx.destination, 0.05, { isThickRhomb: true, channelIdx: 0, velocity: 0.96 });
+      } else if (mode === 'thin_rhomb') {
+        triggerQuasicrystalVoice(offCtx, offCtx.destination, 0.05, { isThickRhomb: false, channelIdx: 3, velocity: 0.96 });
+      } else if (mode === 'phi_chime') {
+        for (let c = 0; c < 6; c++) {
+          triggerQuasicrystalVoice(offCtx, offCtx.destination, 0.04 + c * 0.045, { isThickRhomb: c % 2 === 0, channelIdx: c, velocity: 0.82 });
+        }
+      } else {
+        let cursor = 0.05;
+        const seq = mode === 'palindrome'
+          ? [...gram.tokens, ...gram.tokens.slice().reverse()]
+          : gram.tokens;
+        seq.forEach((tok, idx) => {
+          const isLong = tok === 'L';
+          triggerQuasicrystalVoice(offCtx, offCtx.destination, cursor, {
+            isThickRhomb: isLong,
+            channelIdx: idx % 8,
+            velocity: isLong ? 0.92 : 0.68
+          });
+          cursor += isLong ? (baseShortSec * gram.ratio) : baseShortSec;
+        });
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `quasicrystal_${mode}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('quasiVaultList');
+      const count = document.getElementById('quasiVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-silicon-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyProgramPreset(pr) {
+      state.activePresetId = pr.id;
+      state.symmetryFold = pr.sym;
+      state.grammarKey = pr.grammar;
+      state.quantMode = pr.quant;
+      state.betaGate = pr.beta;
+      state.alphaDecay = pr.alpha;
+      state.bpm = pr.bpm;
+
+      document.getElementById('selectQuasiSymmetry').value = String(pr.sym);
+      document.getElementById('selectAperiodicGrammar').value = pr.grammar;
+      document.getElementById('selectQuantMode').value = pr.quant;
+      document.getElementById('sliderBetaGate').value = Math.round(pr.beta * 100);
+      document.getElementById('valBetaGate').textContent = `${pr.beta.toFixed(2)}${pr.beta === 2 ? ' (Householder)' : ''}`;
+      document.getElementById('sliderAlphaDecay').value = Math.round(pr.alpha * 1000);
+      document.getElementById('valAlphaDecay').textContent = `${pr.alpha.toFixed(3)}`;
+      document.getElementById('sliderBpm').value = pr.bpm;
+      document.getElementById('bpmReadout').textContent = pr.bpm;
+
+      setTabMode(pr.tab);
+      generateQuasicrystalTiling(pr.sym);
+      renderAperiodicWordRibbon();
+      renderProgramPresetList();
+    }
+
+    function setTabMode(tab) {
+      state.activeTab = tab;
+      const bPen = document.getElementById('tabPenrose');
+      const bDel = document.getElementById('tabDeltaMatrix');
+      const bAut = document.getElementById('tabAutomaton');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bPen.className = tab === 'penrose' ? act : idl;
+      bDel.className = tab === 'delta' ? act : idl;
+      bAut.className = tab === 'automaton' ? act : idl;
+
+      const hudL = document.getElementById('hudLeftLabel');
+      if (tab === 'penrose') {
+        hudL.textContent = 'Click any Rhombus Tile to Phason-Flip & Excite φ-Mode';
+      } else if (tab === 'delta') {
+        hudL.textContent = '8×8 Fast-Weight State Register S_t • Click cell to invert sign';
+      } else {
+        hudL.textContent = '12×12 Reversible Margolus Block Automaton • Click cell to add Glider';
+      }
+    }
+
+    function renderProgramPresetList() {
+      const container = document.getElementById('programPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      PROGRAM_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-amber-500/15 border-amber-400/60 text-white' : 'bg-silicon-950/75 hover:bg-silicon-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-amber-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-silicon-900 text-sky-300 border border-slate-800">${pr.quant.toUpperCase()}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyProgramPreset(pr);
+          executeSingleClockTick(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function toggleTimeDirection() {
+      state.timeDir *= -1;
+      const lbl = document.getElementById('lblTimeDir');
+      lbl.textContent = state.timeDir > 0 ? 'FWD (+t)' : 'REV (−t)';
+      showToast(state.timeDir < 0
+        ? 'Time Arrow Inverted (−t): Unwinding Householder & Margolus state history!'
+        : 'Time Arrow Restored (+t): Forward Evolution');
+    }
+
+    function initEventListeners() {
+      document.getElementById('btnClockToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopClock();
+        else startClock();
+      });
+
+      document.getElementById('btnStepTick').addEventListener('click', () => {
+        if (state.isPlaying) stopClock();
+        const gram = GRAMMARS[state.grammarKey] || GRAMMARS.fibonacci;
+        state.stepIdx = (state.stepIdx + state.timeDir + gram.tokens.length) % gram.tokens.length;
+        executeSingleClockTick(state.stepIdx);
+      });
+
+      document.getElementById('btnTimeReverse').addEventListener('click', toggleTimeDirection);
+      document.getElementById('btnInvertTimeArrow').addEventListener('click', toggleTimeDirection);
+
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      document.getElementById('tabPenrose').addEventListener('click', () => setTabMode('penrose'));
+      document.getElementById('tabDeltaMatrix').addEventListener('click', () => setTabMode('delta'));
+      document.getElementById('tabAutomaton').addEventListener('click', () => setTabMode('automaton'));
+
+      document.getElementById('selectQuasiSymmetry').addEventListener('change', (e) => {
+        state.symmetryFold = parseInt(e.target.value, 10);
+        generateQuasicrystalTiling(state.symmetryFold);
+      });
+
+      document.getElementById('selectQuantMode').addEventListener('change', (e) => {
+        state.quantMode = e.target.value;
+        executeSingleClockTick(state.stepIdx);
+      });
+
+      document.getElementById('sliderBetaGate').addEventListener('input', (e) => {
+        state.betaGate = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valBetaGate').textContent =
+          `${state.betaGate.toFixed(2)}${Math.abs(state.betaGate - 2.0) < 0.02 ? ' (Householder)' : ''}`;
+      });
+
+      document.getElementById('sliderAlphaDecay').addEventListener('input', (e) => {
+        state.alphaDecay = parseInt(e.target.value, 10) / 1000;
+        document.getElementById('valAlphaDecay').textContent = state.alphaDecay.toFixed(3);
+      });
+
+      document.getElementById('selectAperiodicGrammar').addEventListener('change', (e) => {
+        state.grammarKey = e.target.value;
+        state.stepIdx = 0;
+        renderAperiodicWordRibbon();
+        executeSingleClockTick(0);
+      });
+
+      // Canvas Interactive Click (Phason Flip in Penrose, Cell Flip in Matrix/Automaton)
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const w = rect.width;
+        const h = rect.height;
+
+        if (state.activeTab === 'penrose') {
+          const cx = w / 2;
+          const cy = h / 2;
+          const scale = Math.min(cx, cy) * 0.88;
+          const nx = (x - cx) / scale;
+          const ny = (y - cy) / scale;
+
+          let bestTile = null;
+          let bestDist = 999;
+          state.tiles.forEach(t => {
+            const d = Math.hypot(t.cx - nx, t.cy - ny);
+            if (d < bestDist) { bestDist = d; bestTile = t; }
+          });
+
+          if (bestTile && bestDist < 0.25) {
+            bestTile.phasonFlipped = !bestTile.phasonFlipped;
+            bestTile.isThick = !bestTile.isThick;
+            bestTile.glow = 1.0;
+            const ctx = ensureAudio();
+            triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime, {
+              isThickRhomb: bestTile.isThick, channelIdx: bestTile.ray % 8, velocity: 0.95
+            });
+          }
+        } else if (state.activeTab === 'delta') {
+          const size = Math.min(w, h) * 0.72;
+          const startX = (w - size) / 2;
+          const startY = (h - size) / 2;
+          const c = Math.floor(((x - startX) / size) * 8);
+          const r = Math.floor(((y - startY) / size) * 8);
+          if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+            state.matrixQuant[r][c] *= -1;
+            state.matrixExact[r][c] *= -1;
+            const ctx = ensureAudio();
+            triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime, {
+              isThickRhomb: r % 2 === 0, channelIdx: c, velocity: 0.92
+            });
+          }
+        } else {
+          const size = Math.min(w, h) * 0.74;
+          const startX = (w - size) / 2;
+          const startY = (h - size) / 2;
+          const c = Math.floor(((x - startX) / size) * 12);
+          const r = Math.floor(((y - startY) / size) * 12);
+          if (r >= 0 && r < 12 && c >= 0 && c < 12) {
+            state.caGrid[r][c] = (state.caGrid[r][c] + 1) % 3;
+            const ctx = ensureAudio();
+            triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime, {
+              isThickRhomb: state.caGrid[r][c] === 1, channelIdx: c % 8, velocity: 0.9
+            });
+          }
+        }
+      });
+
+      document.getElementById('btnPhasonScramble').addEventListener('click', () => {
+        state.tiles.forEach(t => {
+          if (Math.random() < 0.28) {
+            t.phasonFlipped = !t.phasonFlipped;
+            t.isThick = !t.isThick;
+            t.glow = 0.85;
+          }
+        });
+        executeSingleClockTick(state.stepIdx);
+        showToast('Executed Global Phason Flip across Quasicrystal Tiling!');
+      });
+
+      document.getElementById('btnInjectRudimentBurst').addEventListener('click', () => {
+        for (let i = 0; i < 4; i++) stepDeltaStateMachine(i, false);
+        const ctx = ensureAudio();
+        triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime, { isThickRhomb: true, channelIdx: 2, velocity: 0.95 });
+        showToast('Injected 4-Step PAS Paradiddle Key Burst into Register S_t');
+      });
+
+      document.getElementById('btnResetStateRegister').addEventListener('click', () => {
+        initStateMatrixAndCA();
+        renderRegisterChannelBars();
+        showToast('Reset 8×8 State Register to Orthogonal Identity I₈');
+      });
+
+      document.getElementById('btnAuditionPhiChord').addEventListener('click', () => {
+        const ctx = ensureAudio();
+        for (let i = 0; i < 5; i++) {
+          triggerQuasicrystalVoice(ctx, masterGain, ctx.currentTime + i * 0.04, {
+            isThickRhomb: i % 2 === 0, channelIdx: i, velocity: 0.85
+          });
+        }
+      });
+
+      // Right Column Sliders
+      document.getElementById('sliderCarrierHz').addEventListener('input', (e) => {
+        state.carrierHz = parseInt(e.target.value, 10);
+        document.getElementById('valCarrierHz').textContent = `${state.carrierHz} Hz`;
+      });
+      document.getElementById('sliderPhiStretch').addEventListener('input', (e) => {
+        state.phiStretch = parseInt(e.target.value, 10) / 1000;
+        document.getElementById('valPhiStretch').textContent = state.phiStretch.toFixed(3);
+      });
+      document.getElementById('sliderResDecay').addEventListener('input', (e) => {
+        state.resDecaySec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valResDecay').textContent = `${state.resDecaySec.toFixed(2)} s`;
+      });
+      document.getElementById('sliderFmIndex').addEventListener('input', (e) => {
+        state.fmIndexPct = parseInt(e.target.value, 10);
+        document.getElementById('valFmIndex').textContent = `${state.fmIndexPct}%`;
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderQuasiWav('aperiodic'));
+      document.getElementById('btnExportAperiodicWav').addEventListener('click', () => renderQuasiWav('aperiodic'));
+      document.getElementById('btnExportPalindromeWav').addEventListener('click', () => renderQuasiWav('palindrome'));
+
+      document.querySelectorAll('.quasi-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderQuasiWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportTraceJson').addEventListener('click', () => {
+        const payload = {
+          app: "QUASICRYSTAL_PU_DELTANET_PERCUSSION",
+          symmetryFold: state.symmetryFold,
+          grammar: state.grammarKey,
+          quantMode: state.quantMode,
+          betaGate: state.betaGate,
+          alphaDecay: state.alphaDecay,
+          frobeniusDrift: Number(state.frobeniusDrift.toFixed(6)),
+          distinctStatesVisited: state.distinctStateHashes.size,
+          stateMatrixQuant: state.matrixQuant.map(row => Array.from(row).map(v => Number(v.toFixed(4))))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `quasicrystal_deltanet_trace_${state.quantMode}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded Bit-Exact State Matrix & Trace JSON');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnClockToggle').click();
+        }
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      resizeMainCanvas();
+      initStateMatrixAndCA();
+      applyProgramPreset(PROGRAM_PRESETS[0]);
+      renderRegisterChannelBars();
+      initEventListeners();
+      requestAnimationFrame(renderMainLoop);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAS-40 Studio — Interactive Drum Rudiments Simulator & Sample Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#07090e',
+              900: '#0c1018',
+              800: '#131926',
+              700: '#1c2536',
+              600: '#28354d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #07090e;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    /* Custom dark scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c1018; }
+    ::-webkit-scrollbar-thumb { background: #28354d; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4d6e; }
+
+    /* Custom range sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1c2536;
+      border: 1px solid #28354d;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #07090e;
+      margin-top: -6px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #fbbf24;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 16px 3px rgba(16, 185, 129, 0.25); }
+    }
+    .playing-glow {
+      animation: pulseGlow 1.6s infinite;
+    }
+    .step-active {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.45);
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(19, 25, 38, 0.92) 0%, rgba(12, 16, 24, 0.96) 100%);
+      border: 1px solid rgba(56, 73, 107, 0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP STUDIO TRANSPORT & GLOBAL HEADER -->
+  <header class="sticky top-0 z-30 bg-obsidian-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 via-sky-500/20 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="8" rx="9" ry="4"></ellipse>
+            <path d="M3 8v8c0 2.21 4.03 4 9 4s9-1.79 9-4V8"></path>
+            <path d="M7 12v7M17 12v7M12 12v8"></path>
+            <path d="M4 3l7 5M20 3l-7 5" stroke="#38bdf8" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PAS-40 RUDIMENT STUDIO</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Physical Synth + WAV Lab</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Percussive Arts Society 40 International Drum Rudiments • Open-to-Close Trainer • Acoustic Drum Modeler</p>
+        </div>
+      </div>
+
+      <!-- Center Transport & Tempo Controls -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-obsidian-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <!-- Play / Stop Button -->
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">PLAY</span>
+        </button>
+
+        <!-- Step Once / Audition -->
+        <button id="btnStepOnce" type="button" title="Step Forward 1 Note" class="px-2.5 py-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700/70 text-xs font-mono transition">
+          STEP &rarr;
+        </button>
+
+        <!-- BPM Readout & Slider -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[64px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-amber-400">110</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="tempoMarkingLabel" class="text-[10px] text-slate-400 font-medium leading-none">Moderato March</div>
+          </div>
+          <div class="flex flex-col gap-1 w-28 sm:w-36">
+            <input id="sliderBpm" type="range" min="40" max="240" value="110" class="w-full" />
+            <div class="flex justify-between text-[9px] font-mono text-slate-500">
+              <span>40 Open</span>
+              <span>120 March</span>
+              <span>240 Close</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tap Tempo -->
+        <button id="btnTapTempo" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 border border-slate-700/70 text-xs font-mono transition">
+          TAP
+        </button>
+
+        <!-- Metronome Toggle -->
+        <button id="btnMetronome" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/40 text-xs font-medium transition">
+          <span id="metroDot" class="w-2 h-2 rounded-full bg-sky-400"></span>
+          <span id="metroLabel">Click: ON</span>
+        </button>
+      </div>
+
+      <!-- Right Action Buttons: Randomizer & Quick Export -->
+      <div class="flex items-center gap-2">
+        <button id="btnRandomRudiment" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold transition" title="Pick a random rudiment matching current filter (Shortcut: R)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+            <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle>
+            <circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"></circle>
+            <circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>
+            <circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"></circle>
+            <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle>
+          </svg>
+          <span>Randomize</span>
+        </button>
+
+        <button id="btnSurpriseAll" type="button" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-xs font-semibold transition" title="Randomize Rudiment + Drum Shell + Drum Head + Tempo">
+          <span>⚡ Wildcard Setup</span>
+        </button>
+
+        <button id="btnQuickExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition shadow-md shadow-sky-500/20">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN: PAS 40 RUDIMENT BROWSER & RANDOMIZER FILTERS (3 COLS) -->
+    <aside class="lg:col-span-3 flex flex-col gap-3 glass-panel rounded-2xl p-3.5 max-h-[88vh]">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">PAS 40 Rudiments</h2>
+          <p class="text-[11px] text-slate-400">Official International Chart</p>
+        </div>
+        <span id="rudimentCountBadge" class="px-2 py-0.5 text-[11px] font-mono rounded-md bg-obsidian-800 text-amber-300 border border-slate-700">40 / 40</span>
+      </div>
+
+      <!-- Search Input -->
+      <div class="relative">
+        <input id="inputSearchRudiments" type="text" placeholder="Search #1-40, Paradiddle, Ratamacue..." class="w-full bg-obsidian-950 border border-slate-700/80 focus:border-amber-400 rounded-xl pl-8 pr-7 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none transition" />
+        <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <button id="btnClearSearch" type="button" class="hidden absolute right-2 top-2 text-xs text-slate-400 hover:text-white px-1">&times;</button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex flex-wrap gap-1.5" id="categoryFilterBar">
+        <button type="button" data-cat="ALL" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500 text-slate-950 transition">All (40)</button>
+        <button type="button" data-cat="Roll" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">I. Rolls (15)</button>
+        <button type="button" data-cat="Diddle" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">II. Diddles (4)</button>
+        <button type="button" data-cat="Flam" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">III. Flams (11)</button>
+        <button type="button" data-cat="Drag" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">IV. Drags (10)</button>
+        <button type="button" data-cat="STD26" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-amber-300/90 hover:bg-obsidian-700 border border-amber-500/30 transition">★ Standard 26</button>
+      </div>
+
+      <!-- Scrollable Rudiment List -->
+      <div id="rudimentListContainer" class="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-[280px]">
+        <!-- Populated dynamically via JS -->
+      </div>
+
+      <!-- Randomizer Smart Box -->
+      <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            Rudiment Roulette
+          </span>
+          <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer">
+            <input id="chkAutoRotateRudiment" type="checkbox" class="rounded bg-obsidian-800 border-slate-600 text-amber-500 focus:ring-0" />
+            <span>Auto-switch every 4 bars</span>
+          </label>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="btnRandomInCategory" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-medium text-amber-300 transition">
+            🎲 Random in Filter
+          </button>
+          <button id="btnRandomizeChain" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-medium text-sky-300 transition">
+            🔗 Random 4-Bar Chain
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN: ACTIVE RUDIMENT STAGE, NOTATION, STEP SEQUENCER & DRUM CANVAS (5 COLS) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- Active Rudiment Header & Sticking Controls -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="activeRudimentNumber" class="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 font-mono text-xs font-bold text-amber-300">PAS #16</span>
+              <span id="activeRudimentCategory" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] font-medium">II. Diddle Rudiments</span>
+              <span id="activeRudimentStdBadge" class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono">★ Standard 26</span>
+            </div>
+            <h2 id="activeRudimentTitle" class="text-xl sm:text-2xl font-extrabold text-white mt-1">Single Paradiddle</h2>
+            <p id="activeRudimentDesc" class="text-xs text-slate-400 mt-0.5">Alternating single strokes followed by a double stroke (diddle): R L R R L R L L.</p>
+          </div>
+
+          <!-- Sticking Lead Hand & Feel Controls -->
+          <div class="flex items-center gap-1.5">
+            <button id="btnInvertHands" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs font-mono text-slate-200 transition" title="Flip Right and Left hand sticking">
+              Lead: <span id="leadHandLabel" class="text-amber-400 font-bold">R-Hand</span>
+            </button>
+            <button id="btnResetPattern" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs text-slate-300 transition" title="Restore canonical PAS sticking & accents">
+              Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- SVG Musical Staff & Notation Renderer -->
+        <div class="bg-obsidian-950/90 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between mb-1 px-1">
+            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">PAS Notation &amp; Sticking View (Click any note to audition / toggle accent)</span>
+            <div class="flex items-center gap-3 text-[10px] font-mono">
+              <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span>R = Right Stick</span>
+              <span class="flex items-center gap-1 text-sky-400"><span class="w-2 h-2 rounded-full bg-sky-400"></span>L = Left Stick</span>
+              <span class="flex items-center gap-1 text-purple-400"><span class="w-2 h-2 rounded-full bg-purple-400"></span>Grace / Diddle</span>
+            </div>
+          </div>
+          <div class="w-full overflow-x-auto">
+            <svg id="notationSvg" viewBox="0 0 760 135" class="w-full h-32 min-w-[520px] select-none"></svg>
+          </div>
+        </div>
+
+        <!-- Interactive Sticking Step Sequencer Cards -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold text-slate-300">Interactive Step Sequencer &amp; Ornament Editor</span>
+            <span class="text-[10px] font-mono text-slate-400">Left-click: Audition • Right-click or buttons below: Customize step</span>
+          </div>
+          <div id="stepGridContainer" class="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+            <!-- Dynamically rendered step blocks -->
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE DRUM HEAD SIMULATOR & REAL-TIME OSCILLOSCOPE -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span>Interactive Acoustic Drum Head</span>
+              <span id="activeDrumBadge" class="px-2 py-0.5 text-[10px] font-mono rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">Marching Corps Snare • Kevlar Head</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">Click drum zones or tap keys <kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-sky-300">D</kbd> / <kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-sky-300">F</kbd> (Left) &amp; <kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-amber-300">J</kbd> / <kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-amber-300">K</kbd> (Right)</p>
+          </div>
+
+          <!-- Live Practice Timing Accuracy Readout -->
+          <div class="flex items-center gap-2 bg-obsidian-950 border border-slate-800 px-3 py-1.5 rounded-xl">
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-mono text-slate-400">Tap Accuracy</div>
+              <div id="accuracyReadout" class="text-xs font-mono font-bold text-emerald-400">Ready — Tap F/J</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800"></div>
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-mono text-slate-400">Hit Streak</div>
+              <div id="streakReadout" class="text-xs font-mono font-bold text-amber-400">0 hits</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drum Head Canvas + Live Waveform Overlay -->
+        <div class="relative w-full h-72 sm:h-80 bg-obsidian-950 rounded-xl border border-slate-800/90 overflow-hidden flex items-center justify-center">
+          <canvas id="drumCanvas" class="w-full h-full cursor-pointer touch-none"></canvas>
+
+          <!-- Floating Zone Trigger Buttons for Quick Audition -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none">
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnTrigLeft" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-mono font-semibold transition">
+                L Stick [F]
+              </button>
+              <button id="btnTrigFlam" type="button" class="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/50 text-purple-200 text-xs font-mono font-semibold transition">
+                Flam [G]
+              </button>
+              <button id="btnTrigDrag" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/50 text-indigo-200 text-xs font-mono font-semibold transition">
+                Drag [H]
+              </button>
+              <button id="btnTrigRimshot" type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-xs font-mono font-semibold transition">
+                Rimshot
+              </button>
+              <button id="btnTrigRight" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-xs font-mono font-semibold transition">
+                R Stick [J]
+              </button>
+            </div>
+            <div id="lastStrikeTelemetry" class="px-2.5 py-1 rounded-lg bg-obsidian-900/90 border border-slate-800 text-[10px] font-mono text-slate-300">
+              Zone: Center • Vel: 0.92
+            </div>
+          </div>
+        </div>
+
+        <!-- PAS "OPEN -> CLOSE -> OPEN" (SLOW-FAST-SLOW) PRACTICE CURVE TRAINER -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">PAS Open–Close–Open Tempo Trainer</span>
+                <span id="rampStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">Standby</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Automatically accelerates from Open (Slow) &rarr; Close (Peak Speed) &rarr; Open (Slow) per PAS guidelines.</p>
+            </div>
+            <button id="btnToggleRamp" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition">
+              Start Open–Close–Open Ramp
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-1">
+            <div class="bg-obsidian-900 border border-slate-800/80 rounded-lg p-2">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>OPEN (SLOW)</span>
+                <span id="lblRampStart" class="text-sky-300 font-bold">65 BPM</span>
+              </div>
+              <input id="sliderRampStart" type="range" min="40" max="130" value="65" class="w-full slider-cyan mt-1" />
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800/80 rounded-lg p-2">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>CLOSE (PEAK)</span>
+                <span id="lblRampPeak" class="text-amber-300 font-bold">180 BPM</span>
+              </div>
+              <input id="sliderRampPeak" type="range" min="110" max="240" value="180" class="w-full mt-1" />
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800/80 rounded-lg p-2">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>CYCLE DURATION</span>
+                <span id="lblRampDuration" class="text-emerald-300 font-bold">45 sec</span>
+              </div>
+              <input id="sliderRampDuration" type="range" min="15" max="120" step="5" value="45" class="w-full slider-emerald mt-1" />
+            </div>
+          </div>
+
+          <!-- Progress Curve Bar -->
+          <div class="w-full bg-obsidian-900 h-2.5 rounded-full overflow-hidden border border-slate-800 relative">
+            <div id="rampProgressBar" class="h-full bg-gradient-to-r from-sky-500 via-amber-500 to-emerald-500 w-0 transition-all duration-150"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: VARIABLE DRUM / DRUM HEAD LAB, 4-BAR CHAINER & WAV SAMPLE EXPORTER (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- VARIABLE DRUM SHELL & DRUM HEAD ACOUSTIC DESIGNER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Variable Drum &amp; Head Lab</h2>
+            <p class="text-[11px] text-slate-400">Real-Time Physical Membrane &amp; Shell Modeler</p>
+          </div>
+          <button id="btnRandomDrumTone" type="button" class="px-2.5 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-mono text-amber-300 transition">
+            🎲 Random Drum
+          </button>
+        </div>
+
+        <!-- Drum Shell Selector (6 Models) -->
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">1. Drum Shell / Instrument Type</label>
+          <div id="drumShellGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            <button type="button" data-shell="marching" class="shell-btn p-2 rounded-xl border text-left transition bg-amber-500/15 border-amber-500/60 text-white">
+              <div class="text-xs font-bold">Marching Snare</div>
+              <div class="text-[10px] text-slate-400">High-Tension Corps</div>
+            </button>
+            <button type="button" data-shell="maple" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Studio Maple</div>
+              <div class="text-[10px] text-slate-400">14&times;5.5" Warm Crack</div>
+            </button>
+            <button type="button" data-shell="brass" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Brass Piccolo</div>
+              <div class="text-[10px] text-slate-400">14&times;3.5" Bright Ring</div>
+            </button>
+            <button type="button" data-shell="tenors" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Tenor Quads</div>
+              <div class="text-[10px] text-slate-400">4-Drum Split Routing</div>
+            </button>
+            <button type="button" data-shell="pad" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Practice Pad</div>
+              <div class="text-[10px] text-slate-400">Dry Gum/Neoprene</div>
+            </button>
+            <button type="button" data-shell="hybrid808" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">808 / Hybrid</div>
+              <div class="text-[10px] text-slate-400">Sub Punch + Crisp</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Drum Head Material Selector (5 Heads) -->
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">2. Drum Head Membrane Material</label>
+          <div id="drumHeadGrid" class="grid grid-cols-5 gap-1">
+            <button type="button" data-head="kevlar" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-sky-500/15 border-sky-400/60 text-white">
+              <div class="text-[11px] font-bold">Kevlar</div>
+              <div class="text-[9px] text-slate-400">Aramid</div>
+            </button>
+            <button type="button" data-head="coated" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Coated</div>
+              <div class="text-[9px] text-slate-400">Warm</div>
+            </button>
+            <button type="button" data-head="clear" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Clear</div>
+              <div class="text-[9px] text-slate-400">Mylar</div>
+            </button>
+            <button type="button" data-head="hydraulic" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Hydraulic</div>
+              <div class="text-[9px] text-slate-400">Fat Oil</div>
+            </button>
+            <button type="button" data-head="calfskin" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Calfskin</div>
+              <div class="text-[9px] text-slate-400">Vintage</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 6 Physical Acoustic Parameter Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <!-- Pitch / Tension -->
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Head Tension / Pitch</span>
+              <span id="valPitch" class="font-mono text-amber-400">245 Hz</span>
+            </div>
+            <input id="sliderPitch" type="range" min="90" max="360" value="245" class="w-full" />
+          </div>
+
+          <!-- Snare Wire Buzz -->
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Snare Wire Snap</span>
+              <span id="valSnareBuzz" class="font-mono text-sky-400">78%</span>
+            </div>
+            <input id="sliderSnareBuzz" type="range" min="0" max="100" value="78" class="w-full slider-cyan" />
+          </div>
+
+          <!-- Shell Resonance / Decay -->
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Shell Ring / Decay</span>
+              <span id="valDecay" class="font-mono text-emerald-400">42%</span>
+            </div>
+            <input id="sliderDecay" type="range" min="10" max="100" value="42" class="w-full slider-emerald" />
+          </div>
+
+          <!-- Strike Zone / Rimshot Mix -->
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Strike Position</span>
+              <span id="valStrikeZone" class="font-mono text-amber-300">Center (15%)</span>
+            </div>
+            <input id="sliderStrikeZone" type="range" min="0" max="100" value="15" class="w-full" />
+          </div>
+
+          <!-- Flam / Drag Spacing -->
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Grace Note Openness</span>
+              <span id="valFlamSpace" class="font-mono text-purple-300">24 ms</span>
+            </div>
+            <input id="sliderFlamSpace" type="range" min="10" max="45" value="24" class="w-full slider-cyan" />
+          </div>
+
+          <!-- Accent Dynamic Ratio -->
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Accent Bite (&gt;)</span>
+              <span id="valAccentContrast" class="font-mono text-emerald-300">80%</span>
+            </div>
+            <input id="sliderAccentContrast" type="range" min="20" max="100" value="80" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-BAR RUDIMENT WORKOUT CHAINER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">4-Bar Rudiment Phrase Chainer</h2>
+            <p class="text-[11px] text-slate-400">Sequence 4 PAS rudiments for hybrid workouts &amp; multi-bar WAV export</p>
+          </div>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-300 cursor-pointer bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg">
+            <input id="chkChainMode" type="checkbox" class="rounded bg-obsidian-800 border-slate-600 text-amber-500 focus:ring-0" />
+            <span>Play Chain</span>
+          </label>
+        </div>
+
+        <div id="chainSlotsContainer" class="grid grid-cols-2 gap-2">
+          <!-- Populated dynamically with 4 dropdown/interactive slots -->
+        </div>
+      </div>
+
+      <!-- EXPORTABLE SAMPLES & WAV RENDER VAULT -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Sample &amp; Loop WAV Exporter</h2>
+            <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+        </div>
+
+        <!-- Export Controls Row -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnExportLoopWav" type="button" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+            <span>💾 Export Rudiment Loop (.WAV)</span>
+          </button>
+          <button id="btnExportChainWav" type="button" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+            <span>🔗 Export 4-Bar Chain (.WAV)</span>
+          </button>
+        </div>
+
+        <!-- One-Shot Sample Pack Generator -->
+        <div>
+          <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Custom Drum One-Shot Samples (.WAV)</div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" data-oneshot="center" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-slate-200 transition">
+              Center.wav
+            </button>
+            <button type="button" data-oneshot="rimshot" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-rose-300 transition">
+              Rimshot.wav
+            </button>
+            <button type="button" data-oneshot="flam" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-purple-300 transition">
+              Flam.wav
+            </button>
+            <button type="button" data-oneshot="buzz" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-sky-300 transition">
+              BuzzRoll.wav
+            </button>
+          </div>
+        </div>
+
+        <!-- Preset JSON Export -->
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+          <span class="text-[11px] text-slate-400">Save Studio Patch &amp; Sticking JSON</span>
+          <button id="btnExportJsonPreset" type="button" class="px-2.5 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-mono text-slate-200 transition">
+            Download Preset (.JSON)
+          </button>
+        </div>
+
+        <!-- Rendered Sample Vault (Playable In-Browser & Downloadable) -->
+        <div class="space-y-1.5 pt-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+            <span id="vaultCountLabel" class="text-[10px] font-mono text-slate-500">0 files rendered</span>
+          </div>
+          <div id="sampleVaultList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            <div class="text-xs text-slate-500 bg-obsidian-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+              Click any Export WAV button above to synthesize a studio-grade 44.1 kHz WAV file for instant download and preview.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Notification Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-obsidian-800/95 border border-amber-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Sample exported!</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. COMPLETE PERCUSSIVE ARTS SOCIETY (PAS) 40 INTERNATIONAL DRUM RUDIMENTS
+    //    Verified against the official PAS International Drum Rudiments chart.
+    //    Step properties:
+    //      h: 'R' | 'L' (primary stick)
+    //      a: 0 | 1 (accent >)
+    //      o: 'none' | 'flam' | 'drag' | 'triple_drag' | 'diddle' | 'buzz'
+    //      dur: relative step weight (1 = standard step)
+    // =========================================================================
+    const PAS_RUDIMENTS = [
+      // I. ROLL RUDIMENTS - A. Single Stroke Roll Rudiments
+      {
+        id: 1, name: "Single Stroke Roll", category: "Roll", sub: "A. Single Stroke Roll", std26: true,
+        desc: "Evenly spaced alternating single strokes (R L R L R L R L) practiced open to close.",
+        tuplets: "16th Notes",
+        steps: [
+          {h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 2, name: "Single Stroke Four", category: "Roll", sub: "A. Single Stroke Roll", std26: false,
+        desc: "Four rapid single strokes (triplet 16ths into an 8th release): R L R L — L R L R.",
+        tuplets: "Triplet 4-Note Grouping",
+        steps: [
+          {h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.68},{h:'L',a:1,o:'none',dur:2.0},
+          {h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.68},{h:'R',a:1,o:'none',dur:2.0}
+        ]
+      },
+      {
+        id: 3, name: "Single Stroke Seven", category: "Roll", sub: "A. Single Stroke Roll", std26: false,
+        desc: "Seven rapid alternating strokes (sextuplet 16ths ending on the beat): R L R L R L R.",
+        tuplets: "Sextuplet + Release",
+        steps: [
+          {h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.66},
+          {h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.70},
+          {h:'R',a:1,o:'none',dur:2.5},{h:'L',a:1,o:'none',dur:1.5}
+        ]
+      },
+      // B. Multiple Bounce Roll Rudiments
+      {
+        id: 4, name: "Multiple Bounce Roll", category: "Roll", sub: "B. Multiple Bounce Roll", std26: false,
+        desc: "Closed orchestral buzz/press roll where each stick bounces multiple times into a seamless sustain.",
+        tuplets: "Buzz / Press Roll (Z)",
+        steps: [
+          {h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1},{h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1},
+          {h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1},{h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1}
+        ]
+      },
+      {
+        id: 5, name: "Triple Stroke Roll", category: "Roll", sub: "B. Multiple Bounce Roll", std26: false,
+        desc: "Three controlled strokes per hand in triplet subdivision: R R R L L L R R R L L L.",
+        tuplets: "Triplet Triple Strokes",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      // C. Double Stroke Open Roll Rudiments
+      {
+        id: 6, name: "Double Stroke Open Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Foundational open double-stroke roll (mamadada): R R L L R R L L.",
+        tuplets: "16th Double Strokes",
+        steps: [
+          {h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 7, name: "Five Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Two diddles followed by an accented single stroke: R R L L R> | L L R R L>.",
+        tuplets: "5-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:1,o:'none',dur:2},
+          {h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:2}
+        ]
+      },
+      {
+        id: 8, name: "Six Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: false,
+        desc: "Accented single, two interior diddles, and an accented release: R> l l r r L>.",
+        tuplets: "6-Stroke Roll",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1.5},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:1.5},
+          {h:'R',a:1,o:'none',dur:1.5},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:1.5}
+        ]
+      },
+      {
+        id: 9, name: "Seven Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Three rapid diddles culminating in an accented release: R R L L R R L>.",
+        tuplets: "7-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:1,o:'none',dur:2.0},
+          {h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:1,o:'none',dur:2.0}
+        ]
+      },
+      {
+        id: 10, name: "Nine Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Four 16th-note diddles resolving to an accented quarter/eighth release: R R L L R R L L R>.",
+        tuplets: "9-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:1,o:'none',dur:2},
+          {h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:2}
+        ]
+      },
+      {
+        id: 11, name: "Ten Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Four diddles followed by two consecutive accented single strokes: R R L L R R L L R> L>.",
+        tuplets: "10-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},
+          {h:'R',a:1,o:'none',dur:1.5},{h:'L',a:1,o:'none',dur:2.5}
+        ]
+      },
+      {
+        id: 12, name: "Eleven Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Five diddles resolving into a crisp accented release: R R L L R R L L R R L>.",
+        tuplets: "11-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},
+          {h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:1,o:'none',dur:2.5}
+        ]
+      },
+      {
+        id: 13, name: "Thirteen Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Six diddles followed by an accented release: R R L L R R L L R R L L R>.",
+        tuplets: "13-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},
+          {h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},
+          {h:'R',a:1,o:'none',dur:2.2}
+        ]
+      },
+      {
+        id: 14, name: "Fifteen Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Seven diddles ending with a strong accented single stroke: R R L L R R L L R R L L R R L>.",
+        tuplets: "15-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},
+          {h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:1,o:'none',dur:2.0}
+        ]
+      },
+      {
+        id: 15, name: "Seventeen Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: false,
+        desc: "Eight full diddles resolving to an accented release on count 3: R R L L x4 + R>.",
+        tuplets: "17-Stroke Roll",
+        steps: [
+          {h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},
+          {h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},
+          {h:'R',a:1,o:'none',dur:2.2}
+        ]
+      },
+
+      // II. DIDDLE RUDIMENTS (#16 - #19)
+      {
+        id: 16, name: "Single Paradiddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: true,
+        desc: "Two alternating single strokes followed by a double stroke: R> L R R L> R L L.",
+        tuplets: "16th Paradiddle",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 17, name: "Double Paradiddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: true,
+        desc: "Four alternating single strokes followed by a diddle in 6-note sextuplet phrasing: R> L R L R R L> R L R L L.",
+        tuplets: "Sextuplet Double Paradiddle",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 18, name: "Triple Paradiddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: false,
+        desc: "Six alternating single strokes followed by a double stroke: R> L R L R L R R | L> R L R L R L L.",
+        tuplets: "8-Note Triple Paradiddle",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 19, name: "Single Paradiddle-diddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: false,
+        desc: "Two alternating single strokes followed by two consecutive diddles: R> L R R L L R> L R R L L.",
+        tuplets: "Sextuplet Paradiddle-diddle",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+
+      // III. FLAM RUDIMENTS (#20 - #30)
+      {
+        id: 20, name: "Flam", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "A soft grace note immediately preceding a primary stroke on the opposite hand: lR> rL> lR> rL>.",
+        tuplets: "Alternating Flams",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1.5},{h:'L',a:1,o:'flam',dur:1.5},{h:'R',a:1,o:'flam',dur:1.5},{h:'L',a:1,o:'flam',dur:1.5}
+        ]
+      },
+      {
+        id: 21, name: "Flam Accent", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Triplet feel with a flam on the downbeat of each 3-note group: lR> L R | rL> R L.",
+        tuplets: "Triplet Flam Accent",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 22, name: "Flam Tap", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Alternating diddles where the first note of each pair is ornamented with a flam: lR> R rL> L.",
+        tuplets: "16th Flam Taps",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 23, name: "Flamacue", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Syncopated flam figure with a sharp second-note accent: lR L> R L lR> | rL R> L R rL>.",
+        tuplets: "Syncopated Flamacue",
+        steps: [
+          {h:'R',a:0,o:'flam',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:2},
+          {h:'L',a:0,o:'flam',dur:1},{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:2}
+        ]
+      },
+      {
+        id: 24, name: "Flam Paradiddle", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Single paradiddle with a flam on the accented lead note (flamadiddle): lR> L R R rL> R L L.",
+        tuplets: "16th Flam Paradiddle",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 25, name: "Single Flammed Mill", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Inverted paradiddle sticking (R R L R) with a flam on the first stroke: lR> R L R rL> L R L.",
+        tuplets: "16th Flammed Mill",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 26, name: "Flam Paradiddle-diddle", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Paradiddle-diddle ornamented with a lead flam: lR> L R R L L | rL> R L L R R.",
+        tuplets: "Sextuplet Flam Paradiddle-diddle",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 27, name: "Pataflafla", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Four-note figure bookended by alternating flams: lR> L R lR> rL> R L rL>.",
+        tuplets: "16th Pataflafla",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:1},
+          {h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1}
+        ]
+      },
+      {
+        id: 28, name: "Swiss Army Triplet", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Driving triplet with a flam on the first of two same-hand strokes: lR> R L lR> R L.",
+        tuplets: "Swiss Triplet",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 29, name: "Inverted Flam Tap", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Alternating diddles where the flam falls on the second stroke of each double: lR> L rL> R lR> L rL> R.",
+        tuplets: "16th Inverted Flam Tap",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 30, name: "Flam Drag", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Hybrid triplet combining a lead flam, an interior drag/diddle, and a tap release: lR> llR L | rL> rrL R.",
+        tuplets: "Triplet Flam Drag",
+        steps: [
+          {h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'drag',dur:1},{h:'L',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:0,o:'none',dur:1}
+        ]
+      },
+
+      // IV. DRAG RUDIMENTS (#31 - #40)
+      {
+        id: 31, name: "Drag", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two rapid grace notes (diddle) preceding an accented opposite-hand stroke (half-ruff): llR> rrL>.",
+        tuplets: "Alternating Drags (Ruffs)",
+        steps: [
+          {h:'R',a:1,o:'drag',dur:1.5},{h:'L',a:1,o:'drag',dur:1.5},{h:'R',a:1,o:'drag',dur:1.5},{h:'L',a:1,o:'drag',dur:1.5}
+        ]
+      },
+      {
+        id: 32, name: "Single Drag Tap", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "A drag into an unaccented tap followed by an accented opposite-hand stroke: llR L> rrL R>.",
+        tuplets: "Duple Single Drag Tap",
+        steps: [
+          {h:'R',a:0,o:'drag',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:1,o:'none',dur:1},
+          {h:'R',a:0,o:'drag',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:1,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 33, name: "Double Drag Tap", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two consecutive drags followed by an accented single stroke: llR llR L> | rrL rrL R>.",
+        tuplets: "3/8 Double Drag Tap",
+        steps: [
+          {h:'R',a:0,o:'drag',dur:1},{h:'R',a:0,o:'drag',dur:1},{h:'L',a:1,o:'none',dur:1.5},
+          {h:'L',a:0,o:'drag',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:1,o:'none',dur:1.5}
+        ]
+      },
+      {
+        id: 34, name: "Lesson 25", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Classic martial rhythm: a drag into two alternating 16ths and an accented release: llR L R>.",
+        tuplets: "Lesson 25 Rhythm",
+        steps: [
+          {h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:1,o:'none',dur:1.6},
+          {h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:1,o:'none',dur:1.6}
+        ]
+      },
+      {
+        id: 35, name: "Single Dragadiddle", category: "Drag", sub: "IV. Drag Rudiments", std26: false,
+        desc: "A paradiddle where the first single stroke is replaced by a double/drag: R> R L R R | L> L R L L.",
+        tuplets: "16th Dragadiddle",
+        steps: [
+          {h:'R',a:1,o:'drag',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},
+          {h:'L',a:1,o:'drag',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}
+        ]
+      },
+      {
+        id: 36, name: "Drag Paradiddle #1", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Accented stroke followed by a drag paradiddle: R> llR L R R | L> rrL R L L.",
+        tuplets: "Drag Paradiddle #1",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1.3},{h:'R',a:0,o:'drag',dur:0.9},{h:'L',a:0,o:'none',dur:0.9},{h:'R',a:0,o:'none',dur:0.9},{h:'R',a:0,o:'none',dur:0.9},
+          {h:'L',a:1,o:'none',dur:1.3},{h:'L',a:0,o:'drag',dur:0.9},{h:'R',a:0,o:'none',dur:0.9},{h:'L',a:0,o:'none',dur:0.9},{h:'L',a:0,o:'none',dur:0.9}
+        ]
+      },
+      {
+        id: 37, name: "Drag Paradiddle #2", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two accented drag figures leading into a paradiddle finish: R> llR llR L R R | L> rrL rrL R L L.",
+        tuplets: "Drag Paradiddle #2",
+        steps: [
+          {h:'R',a:1,o:'none',dur:1.2},{h:'R',a:1,o:'drag',dur:1.2},{h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},
+          {h:'L',a:1,o:'none',dur:1.2},{h:'L',a:1,o:'drag',dur:1.2},{h:'L',a:0,o:'drag',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'L',a:0,o:'none',dur:0.8}
+        ]
+      },
+      {
+        id: 38, name: "Single Ratamacue", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "A drag leading into a triplet and an accented release: llR L R L> | rrL R L R>.",
+        tuplets: "Triplet Single Ratamacue",
+        steps: [
+          {h:'R',a:0,o:'drag',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:1,o:'none',dur:1.8},
+          {h:'L',a:0,o:'drag',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:1,o:'none',dur:1.8}
+        ]
+      },
+      {
+        id: 39, name: "Double Ratamacue", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "A drag followed by a Single Ratamacue: llR llR L R L> | rrL rrL R L R>.",
+        tuplets: "Triplet Double Ratamacue",
+        steps: [
+          {h:'R',a:0,o:'drag',dur:1.2},{h:'R',a:0,o:'drag',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:1,o:'none',dur:1.8},
+          {h:'L',a:0,o:'drag',dur:1.2},{h:'L',a:0,o:'drag',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:1,o:'none',dur:1.8}
+        ]
+      },
+      {
+        id: 40, name: "Triple Ratamacue", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two drags followed by a Single Ratamacue: llR llR llR L R L> | rrL rrL rrL R L R>.",
+        tuplets: "Triplet Triple Ratamacue",
+        steps: [
+          {h:'R',a:0,o:'drag',dur:1.1},{h:'R',a:0,o:'drag',dur:1.1},{h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:1,o:'none',dur:1.7},
+          {h:'L',a:0,o:'drag',dur:1.1},{h:'L',a:0,o:'drag',dur:1.1},{h:'L',a:0,o:'drag',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:1,o:'none',dur:1.7}
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 2. DRUM SHELL & DRUM HEAD ACOUSTIC PRESET PROFILES
+    // =========================================================================
+    const DRUM_SHELLS = {
+      marching: {
+        name: "Marching Corps Snare",
+        basePitch: 245, snareMix: 0.78, decay: 0.42, overtoneRatio: 1.68, rimClickGain: 0.9,
+        shellColor: "#f59e0b"
+      },
+      maple: {
+        name: "Studio Maple 14×5.5\"",
+        basePitch: 175, snareMix: 0.65, decay: 0.58, overtoneRatio: 1.48, rimClickGain: 0.65,
+        shellColor: "#fb923c"
+      },
+      brass: {
+        name: "Vintage Brass Piccolo",
+        basePitch: 215, snareMix: 0.72, decay: 0.74, overtoneRatio: 1.89, rimClickGain: 0.85,
+        shellColor: "#facc15"
+      },
+      tenors: {
+        name: "Marching Tenor Quads",
+        basePitch: 210, snareMix: 0.05, decay: 0.64, overtoneRatio: 1.42, rimClickGain: 0.55,
+        shellColor: "#38bdf8"
+      },
+      pad: {
+        name: "Neoprene Practice Pad",
+        basePitch: 140, snareMix: 0.04, decay: 0.14, overtoneRatio: 1.25, rimClickGain: 0.95,
+        shellColor: "#94a3b8"
+      },
+      hybrid808: {
+        name: "808 / Hybrid Trap Snare",
+        basePitch: 155, snareMix: 0.86, decay: 0.68, overtoneRatio: 2.1, rimClickGain: 0.75,
+        shellColor: "#a855f7"
+      }
+    };
+
+    const DRUM_HEADS = {
+      kevlar: {
+        name: "Kevlar Head", pitchMult: 1.15, brightFilter: 5200, decayMult: 0.82,
+        surfaceColor: "#141c2b", weavePattern: "kevlar", rimColor: "#334155"
+      },
+      coated: {
+        name: "Coated Ambassador", pitchMult: 0.96, brightFilter: 3400, decayMult: 1.0,
+        surfaceColor: "#1e293b", weavePattern: "coated", rimColor: "#475569"
+      },
+      clear: {
+        name: "Clear Emperor", pitchMult: 1.02, brightFilter: 4600, decayMult: 1.18,
+        surfaceColor: "#0f172a", weavePattern: "clear", rimColor: "#38bdf8"
+      },
+      hydraulic: {
+        name: "Hydraulic Oil Head", pitchMult: 0.86, brightFilter: 2300, decayMult: 0.68,
+        surfaceColor: "#0c192c", weavePattern: "hydraulic", rimColor: "#0284c7"
+      },
+      calfskin: {
+        name: "Vintage Calfskin", pitchMult: 0.90, brightFilter: 2700, decayMult: 0.92,
+        surfaceColor: "#262018", weavePattern: "calfskin", rimColor: "#d97706"
+      }
+    };
+
+    // =========================================================================
+    // 3. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      selectedRudimentId: 16, // Default: Single Paradiddle (#16)
+      categoryFilter: "ALL",
+      searchQuery: "",
+      leadHandInverted: false,
+      customSteps: [], // Deep clone of active rudiment steps for live editing
+
+      // Transport
+      isPlaying: false,
+      bpm: 110,
+      metronomeOn: true,
+      currentStepIndex: -1,
+      barCounter: 0,
+      autoRotateRudiment: false,
+
+      // Open-Close-Open Trainer
+      rampActive: false,
+      rampStartBpm: 65,
+      rampPeakBpm: 180,
+      rampDurationSec: 45,
+      rampElapsedSec: 0,
+
+      // 4-Bar Chainer
+      chainMode: false,
+      chainIds: [16, 21, 8, 38], // Single Paradiddle -> Flam Accent -> Six Stroke Roll -> Single Ratamacue
+      activeChainSlot: 0,
+
+      // Drum & Head Physics Parameters
+      shellKey: "marching",
+      headKey: "kevlar",
+      pitchHz: 245,
+      snareBuzz: 78,     // 0 - 100
+      decayPct: 42,      // 10 - 100
+      strikeZone: 15,    // 0 (center) to 100 (rimshot)
+      flamSpaceMs: 24,   // 10 - 45 ms
+      accentContrast: 80,// 20 - 100
+
+      // Visual & Practice Telemetry
+      ripples: [],
+      leftStickAnim: { angle: 0, targetX: 0, targetY: 0, hitTime: 0 },
+      rightStickAnim: { angle: 0, targetX: 0, targetY: 0, hitTime: 0 },
+      lastExpectedStepTime: 0,
+      lastExpectedHand: 'R',
+      hitStreak: 0,
+      renderedVault: []
+    };
+
+    // =========================================================================
+    // 4. WEB AUDIO API PHYSICAL DRUM SYNTHESIS ENGINE (REAL-TIME + OFFLINE WAV)
+    // =========================================================================
+    let audioCtx = null;
+    let analyserNode = null;
+    let noiseBufferCache = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function createNoiseBuffer(ctx) {
+      const sampleRate = ctx.sampleRate;
+      const length = sampleRate * 1.5;
+      const buffer = ctx.createBuffer(1, length, sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      return buffer;
+    }
+
+    /**
+     * Synthesizes a single physical drum hit on any target AudioContext or OfflineAudioContext.
+     * Supports Fundamental Membrane, Overtone Ring, Snare Wire Snap, Stick Transient, and Tenor Quad pitch routing.
+     */
+    function synthesizeSingleStrike(ctx, destNode, when, options = {}) {
+      const {
+        hand = 'R',
+        velocity = 0.85,
+        zoneOverride = null,
+        tenorDrumIdx = 0,
+        noiseBuf = null
+      } = options;
+
+      const shell = DRUM_SHELLS[state.shellKey] || DRUM_SHELLS.marching;
+      const head = DRUM_HEADS[state.headKey] || DRUM_HEADS.kevlar;
+
+      const zoneNorm = (zoneOverride !== null ? zoneOverride : state.strikeZone) / 100; // 0=center, 1=rimshot
+      const buzzNorm = state.snareBuzz / 100;
+      const decaySec = (0.06 + (state.decayPct / 100) * 0.42) * head.decayMult * (shell.decay / 0.5);
+
+      // Calculate fundamental pitch (with Tenor Quads routing across 4 drums)
+      let baseFreq = state.pitchHz * head.pitchMult;
+      if (state.shellKey === 'tenors') {
+        const tenorRatios = [1.22, 1.06, 0.92, 0.78]; // Drum 1 (high) to Drum 4 (low)
+        baseFreq *= tenorRatios[tenorDrumIdx % 4];
+      }
+      // Subtle L/R timber variance for realism
+      const handDetune = hand === 'R' ? 1.0 : 0.988;
+      const f0 = baseFreq * handDetune;
+
+      // Master hit gain + stereo panner
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.05, Math.min(1.2, velocity)), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        let panVal = hand === 'R' ? 0.16 : -0.16;
+        if (state.shellKey === 'tenors') {
+          const tenorPans = [-0.45, -0.15, 0.15, 0.45];
+          panVal = tenorPans[tenorDrumIdx % 4];
+        }
+        panner.pan.setValueAtTime(panVal, when);
+        hitGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        hitGain.connect(destNode);
+      }
+
+      // 1. Fundamental Membrane Oscillator (Pitch drop envelope)
+      const oscFund = ctx.createOscillator();
+      const gainFund = ctx.createGain();
+      oscFund.type = state.shellKey === 'hybrid808' ? 'sine' : 'triangle';
+      const startPitch = f0 * (1.45 + zoneNorm * 0.25);
+      oscFund.frequency.setValueAtTime(startPitch, when);
+      oscFund.frequency.exponentialRampToValueAtTime(Math.max(35, f0), when + 0.028);
+      oscFund.frequency.exponentialRampToValueAtTime(Math.max(30, f0 * 0.92), when + decaySec);
+
+      const fundLevel = (1.0 - zoneNorm * 0.35) * 0.65;
+      gainFund.gain.setValueAtTime(0.001, when);
+      gainFund.gain.linearRampToValueAtTime(fundLevel, when + 0.002);
+      gainFund.gain.exponentialRampToValueAtTime(0.0008, when + decaySec);
+
+      oscFund.connect(gainFund);
+      gainFund.connect(hitGain);
+      oscFund.start(when);
+      oscFund.stop(when + decaySec + 0.02);
+
+      // 2. Rim / Shell Metallic Overtone Oscillator (stronger near edge & rimshot)
+      const oscOver = ctx.createOscillator();
+      const gainOver = ctx.createGain();
+      oscOver.type = 'sine';
+      const overFreq = f0 * shell.overtoneRatio * (1 + zoneNorm * 0.18);
+      oscOver.frequency.setValueAtTime(overFreq * 1.15, when);
+      oscOver.frequency.exponentialRampToValueAtTime(overFreq, when + 0.015);
+
+      const overLevel = (0.14 + zoneNorm * 0.55) * 0.45;
+      const overDecay = decaySec * (0.65 + zoneNorm * 0.5);
+      gainOver.gain.setValueAtTime(overLevel, when);
+      gainOver.gain.exponentialRampToValueAtTime(0.0008, when + overDecay);
+
+      oscOver.connect(gainOver);
+      gainOver.connect(hitGain);
+      oscOver.start(when);
+      oscOver.stop(when + overDecay + 0.02);
+
+      // 3. Snare Wire Buzz & Stick Attack Noise
+      const activeNoiseBuf = noiseBuf || noiseBufferCache || (noiseBufferCache = createNoiseBuffer(ctx));
+      if (buzzNorm > 0.01 && state.shellKey !== 'pad' && state.shellKey !== 'tenors') {
+        const noiseSrc = ctx.createBufferSource();
+        noiseSrc.buffer = activeNoiseBuf;
+
+        const snareFilter = ctx.createBiquadFilter();
+        snareFilter.type = 'bandpass';
+        snareFilter.frequency.setValueAtTime(head.brightFilter * (0.85 + zoneNorm * 0.3), when);
+        snareFilter.Q.setValueAtTime(1.1, when);
+
+        const highShelf = ctx.createBiquadFilter();
+        highShelf.type = 'highpass';
+        highShelf.frequency.setValueAtTime(950, when);
+
+        const gainSnare = ctx.createGain();
+        const snareAmt = buzzNorm * shell.snareMix * 0.75;
+        const snareDecay = decaySec * 0.95;
+        gainSnare.gain.setValueAtTime(0.001, when);
+        gainSnare.gain.linearRampToValueAtTime(snareAmt, when + 0.003);
+        gainSnare.gain.exponentialRampToValueAtTime(0.0008, when + snareDecay);
+
+        noiseSrc.connect(snareFilter);
+        snareFilter.connect(highShelf);
+        highShelf.connect(gainSnare);
+        gainSnare.connect(hitGain);
+
+        noiseSrc.start(when);
+        noiseSrc.stop(when + snareDecay + 0.02);
+      }
+
+      // 4. Crisp Stick Bead / Rimshot Transient Click
+      const clickSrc = ctx.createBufferSource();
+      clickSrc.buffer = activeNoiseBuf;
+      const clickFilter = ctx.createBiquadFilter();
+      clickFilter.type = 'bandpass';
+      clickFilter.frequency.setValueAtTime(zoneNorm > 0.65 ? 3600 : 2800, when);
+      clickFilter.Q.setValueAtTime(zoneNorm > 0.65 ? 3.2 : 1.8, when);
+
+      const clickGain = ctx.createGain();
+      const clickAmt = (0.35 + zoneNorm * 0.55) * shell.rimClickGain;
+      clickGain.gain.setValueAtTime(clickAmt, when);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, when + (zoneNorm > 0.65 ? 0.028 : 0.014));
+
+      clickSrc.connect(clickFilter);
+      clickFilter.connect(clickGain);
+      clickGain.connect(hitGain);
+      clickSrc.start(when);
+      clickSrc.stop(when + 0.035);
+    }
+
+    /**
+     * Schedules a full rudiment step (including Flam, Drag, Triple-Drag, Diddle, or Buzz Roll)
+     */
+    function scheduleRudimentStepAudio(ctx, destNode, step, stepTime, stepDurationSec, stepIdx = 0, noiseBuf = null) {
+      const primaryHand = state.leadHandInverted ? (step.h === 'R' ? 'L' : 'R') : step.h;
+      const graceHand = primaryHand === 'R' ? 'L' : 'R';
+
+      const accentBoost = state.accentContrast / 100;
+      const mainVelocity = step.a ? (0.72 + accentBoost * 0.28) : (0.58 - accentBoost * 0.20);
+      const graceGapSec = state.flamSpaceMs / 1000;
+      const tenorIdx = stepIdx % 4;
+
+      if (step.o === 'flam') {
+        const graceTime = Math.max(0, stepTime - graceGapSec);
+        synthesizeSingleStrike(ctx, destNode, graceTime, {
+          hand: graceHand, velocity: mainVelocity * 0.42, tenorDrumIdx: (tenorIdx + 1) % 4, noiseBuf
+        });
+        synthesizeSingleStrike(ctx, destNode, stepTime, {
+          hand: primaryHand, velocity: mainVelocity, zoneOverride: step.a ? Math.max(state.strikeZone, 55) : null, tenorDrumIdx: tenorIdx, noiseBuf
+        });
+      } else if (step.o === 'drag') {
+        const g1 = Math.max(0, stepTime - graceGapSec * 1.9);
+        const g2 = Math.max(0, stepTime - graceGapSec * 0.95);
+        synthesizeSingleStrike(ctx, destNode, g1, {
+          hand: graceHand, velocity: mainVelocity * 0.36, tenorDrumIdx: (tenorIdx + 1) % 4, noiseBuf
+        });
+        synthesizeSingleStrike(ctx, destNode, g2, {
+          hand: graceHand, velocity: mainVelocity * 0.44, tenorDrumIdx: (tenorIdx + 1) % 4, noiseBuf
+        });
+        synthesizeSingleStrike(ctx, destNode, stepTime, {
+          hand: primaryHand, velocity: mainVelocity, tenorDrumIdx: tenorIdx, noiseBuf
+        });
+      } else if (step.o === 'diddle') {
+        synthesizeSingleStrike(ctx, destNode, stepTime, {
+          hand: primaryHand, velocity: mainVelocity, tenorDrumIdx: tenorIdx, noiseBuf
+        });
+        synthesizeSingleStrike(ctx, destNode, stepTime + stepDurationSec * 0.5, {
+          hand: primaryHand, velocity: mainVelocity * 0.90, tenorDrumIdx: tenorIdx, noiseBuf
+        });
+      } else if (step.o === 'buzz') {
+        // Multi-bounce press roll (4 rapid decaying bounces per stick)
+        const bounces = [0, 0.22, 0.43, 0.64, 0.82];
+        const vels = [1.0, 0.76, 0.60, 0.46, 0.34];
+        for (let b = 0; b < bounces.length; b++) {
+          synthesizeSingleStrike(ctx, destNode, stepTime + stepDurationSec * bounces[b], {
+            hand: primaryHand, velocity: mainVelocity * vels[b], tenorDrumIdx: tenorIdx, noiseBuf
+          });
+        }
+      } else {
+        synthesizeSingleStrike(ctx, destNode, stepTime, {
+          hand: primaryHand,
+          velocity: mainVelocity,
+          zoneOverride: step.a ? Math.max(state.strikeZone, 45) : null,
+          tenorDrumIdx: tenorIdx,
+          noiseBuf
+        });
+      }
+    }
+
+    /**
+     * Synthesizes a subtle woodblock/metronome click on quarter notes
+     */
+    function triggerMetronomeClick(ctx, destNode, when, isDownbeat = false) {
+      if (!state.metronomeOn) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isDownbeat ? 1320 : 880, when);
+      gain.gain.setValueAtTime(isDownbeat ? 0.16 : 0.09, when);
+      gain.gain.exponentialRampToValueAtTime(0.001, when + 0.025);
+      osc.connect(gain);
+      gain.connect(destNode);
+      osc.start(when);
+      osc.stop(when + 0.03);
+    }
+
+    // =========================================================================
+    // 5. VISUAL DRUM HEAD & ANIMATED STICKS RENDERER (2D CANVAS)
+    // =========================================================================
+    const drumCanvas = document.getElementById('drumCanvas');
+    const dCtx = drumCanvas.getContext('2d');
+    let freqDataArray = new Uint8Array(64);
+
+    function resizeDrumCanvas() {
+      const rect = drumCanvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      drumCanvas.width = rect.width * dpr;
+      drumCanvas.height = rect.height * dpr;
+      dCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeDrumCanvas);
+
+    function triggerVisualStrike(hand, velocity = 0.85, zoneOverride = null, stepIdx = 0) {
+      const rect = drumCanvas.parentElement.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const radius = Math.min(cx, cy) * 0.72;
+
+      const zoneNorm = (zoneOverride !== null ? zoneOverride : state.strikeZone) / 100;
+      let hitX = cx + (hand === 'R' ? 18 : -18) + (Math.random() - 0.5) * 10;
+      let hitY = cy - zoneNorm * (radius * 0.72) + (Math.random() - 0.5) * 8;
+
+      if (state.shellKey === 'tenors') {
+        const offsets = [-0.58, -0.20, 0.20, 0.58];
+        const idx = stepIdx % 4;
+        hitX = cx + offsets[idx] * radius * 1.15;
+        hitY = cy + (idx === 0 || idx === 3 ? 16 : -14);
+      }
+
+      state.ripples.push({
+        x: hitX,
+        y: hitY,
+        r: 6,
+        maxR: 35 + velocity * 55,
+        alpha: 0.95,
+        color: hand === 'R' ? '#f59e0b' : '#38bdf8'
+      });
+
+      const now = performance.now();
+      if (hand === 'R') {
+        state.rightStickAnim = { targetX: hitX, targetY: hitY, hitTime: now, vel: velocity };
+      } else {
+        state.leftStickAnim = { targetX: hitX, targetY: hitY, hitTime: now, vel: velocity };
+      }
+
+      const zoneLabel = zoneNorm > 0.65 ? 'Rimshot' : (zoneNorm > 0.35 ? 'Edge' : 'Center');
+      const tele = document.getElementById('lastStrikeTelemetry');
+      if (tele) {
+        tele.textContent = `${hand}-Stick • ${zoneLabel} • Vel ${velocity.toFixed(2)}`;
+      }
+    }
+
+    function renderDrumCanvasFrame() {
+      const rect = drumCanvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (w === 0 || h === 0) {
+        requestAnimationFrame(renderDrumCanvasFrame);
+        return;
+      }
+
+      dCtx.clearRect(0, 0, w, h);
+
+      const shell = DRUM_SHELLS[state.shellKey] || DRUM_SHELLS.marching;
+      const head = DRUM_HEADS[state.headKey] || DRUM_HEADS.kevlar;
+
+      // Subtle background grid
+      dCtx.strokeStyle = 'rgba(30, 41, 59, 0.35)';
+      dCtx.lineWidth = 1;
+      for (let x = 0; x < w; x += 28) {
+        dCtx.beginPath(); dCtx.moveTo(x, 0); dCtx.lineTo(x, h); dCtx.stroke();
+      }
+      for (let y = 0; y < h; y += 28) {
+        dCtx.beginPath(); dCtx.moveTo(0, y); dCtx.lineTo(w, y); dCtx.stroke();
+      }
+
+      // Live audio frequency spectrum bars at the bottom of canvas
+      if (analyserNode && state.isPlaying) {
+        analyserNode.getByteFrequencyData(freqDataArray);
+        const barW = w / 36;
+        for (let i = 0; i < 36; i++) {
+          const val = freqDataArray[i] / 255;
+          const barH = val * 48;
+          dCtx.fillStyle = i % 2 === 0 ? 'rgba(245, 158, 11, 0.18)' : 'rgba(56, 189, 248, 0.18)';
+          dCtx.fillRect(i * barW, h - barH, barW - 2, barH);
+        }
+      }
+
+      const cx = w / 2;
+      const cy = h / 2 - 4;
+      const mainR = Math.min(cx, cy) * 0.74;
+
+      if (state.shellKey === 'tenors') {
+        // Draw 4 Marching Tenor Quad Drums
+        const offsets = [-0.58, -0.20, 0.20, 0.58];
+        const radii = [mainR * 0.36, mainR * 0.42, mainR * 0.45, mainR * 0.49];
+        const labels = ['Drum 1 (Hi)', 'Drum 2', 'Drum 3', 'Drum 4 (Low)'];
+        for (let i = 0; i < 4; i++) {
+          const tx = cx + offsets[i] * mainR * 1.15;
+          const ty = cy + (i === 0 || i === 3 ? 16 : -14);
+          const tr = radii[i];
+
+          dCtx.beginPath();
+          dCtx.arc(tx, ty, tr + 5, 0, Math.PI * 2);
+          dCtx.fillStyle = '#334155';
+          dCtx.fill();
+
+          dCtx.beginPath();
+          dCtx.arc(tx, ty, tr, 0, Math.PI * 2);
+          dCtx.fillStyle = head.surfaceColor;
+          dCtx.fill();
+          dCtx.lineWidth = 2;
+          dCtx.strokeStyle = shell.shellColor;
+          dCtx.stroke();
+
+          dCtx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+          dCtx.font = '10px JetBrains Mono';
+          dCtx.textAlign = 'center';
+          dCtx.fillText(labels[i], tx, ty + tr + 16);
+        }
+      } else {
+        // Outer Drum Shell & Rim Hoop
+        dCtx.beginPath();
+        dCtx.arc(cx, cy, mainR + 12, 0, Math.PI * 2);
+        dCtx.fillStyle = '#1e293b';
+        dCtx.fill();
+        dCtx.lineWidth = 3;
+        dCtx.strokeStyle = shell.shellColor;
+        dCtx.stroke();
+
+        // 12 Tension Lugs around rim
+        for (let i = 0; i < 12; i++) {
+          const ang = (i / 12) * Math.PI * 2;
+          const lx = cx + Math.cos(ang) * (mainR + 6);
+          const ly = cy + Math.sin(ang) * (mainR + 6);
+          dCtx.beginPath();
+          dCtx.arc(lx, ly, 3.5, 0, Math.PI * 2);
+          dCtx.fillStyle = '#94a3b8';
+          dCtx.fill();
+        }
+
+        // Main Drum Head Membrane
+        const grad = dCtx.createRadialGradient(cx, cy, mainR * 0.08, cx, cy, mainR);
+        grad.addColorStop(0, '#1e293b');
+        grad.addColorStop(0.75, head.surfaceColor);
+        grad.addColorStop(1, '#090d16');
+        dCtx.beginPath();
+        dCtx.arc(cx, cy, mainR, 0, Math.PI * 2);
+        dCtx.fillStyle = grad;
+        dCtx.fill();
+
+        // Head Texture Overlay (Kevlar weave, Hydraulic ring, or Center Dot)
+        if (state.headKey === 'kevlar') {
+          dCtx.save();
+          dCtx.beginPath();
+          dCtx.arc(cx, cy, mainR - 2, 0, Math.PI * 2);
+          dCtx.clip();
+          dCtx.strokeStyle = 'rgba(245, 158, 11, 0.07)';
+          dCtx.lineWidth = 1;
+          for (let d = -mainR; d < mainR; d += 10) {
+            dCtx.beginPath();
+            dCtx.moveTo(cx + d, cy - mainR);
+            dCtx.lineTo(cx + d + 40, cy + mainR);
+            dCtx.stroke();
+          }
+          dCtx.restore();
+        }
+
+        // Strike Zone Guide Rings (Center, Edge, Rim)
+        dCtx.setLineDash([4, 4]);
+        dCtx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+        dCtx.lineWidth = 1;
+        dCtx.beginPath();
+        dCtx.arc(cx, cy, mainR * 0.35, 0, Math.PI * 2);
+        dCtx.stroke();
+        dCtx.beginPath();
+        dCtx.arc(cx, cy, mainR * 0.72, 0, Math.PI * 2);
+        dCtx.stroke();
+        dCtx.setLineDash([]);
+
+        // Active Strike Position Target Indicator
+        const targetY = cy - (state.strikeZone / 100) * (mainR * 0.76);
+        dCtx.beginPath();
+        dCtx.arc(cx, targetY, 5, 0, Math.PI * 2);
+        dCtx.fillStyle = 'rgba(245, 158, 11, 0.45)';
+        dCtx.fill();
+      }
+
+      // Render Physics Impact Ripples
+      for (let i = state.ripples.length - 1; i >= 0; i--) {
+        const rp = state.ripples[i];
+        dCtx.beginPath();
+        dCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+        dCtx.strokeStyle = rp.color;
+        dCtx.globalAlpha = Math.max(0, rp.alpha);
+        dCtx.lineWidth = 2.5;
+        dCtx.stroke();
+        dCtx.globalAlpha = 1.0;
+
+        rp.r += 2.6;
+        rp.alpha -= 0.042;
+        if (rp.alpha <= 0 || rp.r > rp.maxR) {
+          state.ripples.splice(i, 1);
+        }
+      }
+
+      // Draw Animated Left (Cyan) and Right (Amber) Drumsticks
+      const now = performance.now();
+      drawDrumstick(
+        cx - mainR * 0.95, cy + mainR * 0.82,
+        state.leftStickAnim.targetX || (cx - 18),
+        state.leftStickAnim.targetY || cy,
+        now - state.leftStickAnim.hitTime,
+        '#38bdf8', 'L'
+      );
+      drawDrumstick(
+        cx + mainR * 0.95, cy + mainR * 0.82,
+        state.rightStickAnim.targetX || (cx + 18),
+        state.rightStickAnim.targetY || cy,
+        now - state.rightStickAnim.hitTime,
+        '#f59e0b', 'R'
+      );
+
+      requestAnimationFrame(renderDrumCanvasFrame);
+    }
+
+    function drawDrumstick(baseX, baseY, tipX, tipY, elapsedMs, color, label) {
+      const rebound = elapsedMs < 130 ? Math.sin((elapsedMs / 130) * Math.PI) * 14 : 14;
+      const curTipY = tipY - rebound;
+
+      dCtx.save();
+      dCtx.strokeStyle = color;
+      dCtx.lineWidth = 5;
+      dCtx.lineCap = 'round';
+      dCtx.beginPath();
+      dCtx.moveTo(baseX, baseY);
+      dCtx.lineTo(tipX, curTipY);
+      dCtx.stroke();
+
+      // Stick Bead Tip
+      dCtx.beginPath();
+      dCtx.arc(tipX, curTipY, 5.5, 0, Math.PI * 2);
+      dCtx.fillStyle = elapsedMs < 90 ? '#ffffff' : color;
+      dCtx.fill();
+
+      dCtx.fillStyle = '#07090e';
+      dCtx.font = 'bold 8px JetBrains Mono';
+      dCtx.textAlign = 'center';
+      dCtx.textBaseline = 'middle';
+      dCtx.fillText(label, tipX, curTipY);
+      dCtx.restore();
+    }
+
+    // =========================================================================
+    // 6. SVG MUSICAL NOTATION & INTERACTIVE STEP SEQUENCER RENDERER
+    // =========================================================================
+    function renderNotationAndStepGrid() {
+      const steps = state.customSteps;
+      const svg = document.getElementById('notationSvg');
+      const grid = document.getElementById('stepGridContainer');
+      if (!svg || !grid) return;
+
+      const W = 760;
+      const H = 135;
+      const padX = 48;
+      const usableW = W - padX * 2;
+      const n = steps.length;
+
+      let svgHtml = `
+        <!-- Staff Lines -->
+        <line x1="20" y1="45" x2="${W - 20}" y2="45" stroke="#1e293b" stroke-width="1" />
+        <line x1="20" y1="62" x2="${W - 20}" y2="62" stroke="#334155" stroke-width="1.5" />
+        <line x1="20" y1="79" x2="${W - 20}" y2="79" stroke="#1e293b" stroke-width="1" />
+        <!-- Percussion Clef Bars -->
+        <rect x="24" y="48" width="4" height="28" fill="#94a3b8" />
+        <rect x="31" y="48" width="4" height="28" fill="#94a3b8" />
+      `;
+
+      // Beam connection line across groups
+      if (n > 1) {
+        svgHtml += `<line x1="${padX}" y1="30" x2="${padX + usableW}" y2="30" stroke="#64748b" stroke-width="3" />`;
+      }
+
+      steps.forEach((st, idx) => {
+        const x = n === 1 ? W / 2 : padX + (idx / (n - 1)) * usableW;
+        const y = 62;
+        const effectiveHand = state.leadHandInverted ? (st.h === 'R' ? 'L' : 'R') : st.h;
+        const isCurrent = state.currentStepIndex === idx;
+        const noteColor = isCurrent ? '#10b981' : (effectiveHand === 'R' ? '#f59e0b' : '#38bdf8');
+
+        // Active Step Highlight Column
+        if (isCurrent) {
+          svgHtml += `<rect x="${x - 16}" y="8" width="32" height="118" rx="6" fill="rgba(16, 185, 129, 0.16)" stroke="#10b981" stroke-width="1" />`;
+        }
+
+        // Accent mark (>) above stem
+        if (st.a) {
+          svgHtml += `<path d="M ${x - 6} 12 L ${x + 6} 16 L ${x - 6} 20" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" />`;
+        }
+
+        // Grace Notes (Flam or Drag)
+        if (st.o === 'flam') {
+          svgHtml += `
+            <line x1="${x - 12}" y1="44" x2="${x - 12}" y2="60" stroke="#c084fc" stroke-width="1.3" />
+            <line x1="${x - 15}" y1="50" x2="${x - 8}" y2="44" stroke="#c084fc" stroke-width="1.3" />
+            <circle cx="${x - 14}" cy="61" r="3.5" fill="#c084fc" />
+            <path d="M ${x - 13} 66 Q ${x - 7} 71 ${x - 2} 65" fill="none" stroke="#c084fc" stroke-width="1.2" />
+          `;
+        } else if (st.o === 'drag') {
+          svgHtml += `
+            <line x1="${x - 18}" y1="44" x2="${x - 10}" y2="44" stroke="#c084fc" stroke-width="2" />
+            <circle cx="${x - 19}" cy="61" r="3" fill="#c084fc" />
+            <circle cx="${x - 11}" cy="61" r="3" fill="#c084fc" />
+            <path d="M ${x - 15} 66 Q ${x - 8} 71 ${x - 2} 65" fill="none" stroke="#c084fc" stroke-width="1.2" />
+          `;
+        }
+
+        // Stem & Diddle/Buzz Slash on Stem
+        svgHtml += `<line x1="${x + 5}" y1="30" x2="${x + 5}" y2="${y}" stroke="${noteColor}" stroke-width="2" />`;
+        if (st.o === 'diddle') {
+          svgHtml += `
+            <line x1="${x - 1}" y1="43" x2="${x + 11}" y2="37" stroke="#c084fc" stroke-width="2.2" />
+            <line x1="${x - 1}" y1="49" x2="${x + 11}" y2="43" stroke="#c084fc" stroke-width="2.2" />
+          `;
+        } else if (st.o === 'buzz') {
+          svgHtml += `<text x="${x + 5}" y="47" text-anchor="middle" fill="#38bdf8" font-size="11" font-family="JetBrains Mono" font-weight="bold">Z</text>`;
+        }
+
+        // Main Notehead (Clickable)
+        svgHtml += `
+          <g class="cursor-pointer note-hit-group" data-step="${idx}">
+            <ellipse cx="${x}" cy="${y}" rx="6.5" ry="5" transform="rotate(-20 ${x} ${y})" fill="${noteColor}" />
+            <text x="${x}" y="102" text-anchor="middle" fill="${noteColor}" font-size="13" font-family="JetBrains Mono" font-weight="bold">${effectiveHand}</text>
+            <text x="${x}" y="118" text-anchor="middle" fill="#64748b" font-size="9" font-family="JetBrains Mono">${st.o !== 'none' ? st.o.toUpperCase() : (st.a ? 'ACC' : 'TAP')}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+
+      // Attach click listeners on SVG note groups
+      svg.querySelectorAll('.note-hit-group').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = parseInt(el.getAttribute('data-step'), 10);
+          auditionSingleStep(idx);
+        });
+      });
+
+      // Render Interactive Step Sequencer Cards
+      grid.innerHTML = '';
+      steps.forEach((st, idx) => {
+        const effectiveHand = state.leadHandInverted ? (st.h === 'R' ? 'L' : 'R') : st.h;
+        const isCurrent = state.currentStepIndex === idx;
+        const handBg = effectiveHand === 'R'
+          ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+          : 'border-sky-500/40 bg-sky-500/10 text-sky-300';
+
+        const card = document.createElement('div');
+        card.className = `rounded-xl border p-2 transition flex flex-col justify-between gap-1.5 ${handBg} ${isCurrent ? 'step-active ring-2 ring-emerald-400' : ''}`;
+
+        const ornamentLabel = st.o === 'none' ? 'Clean' : st.o.toUpperCase();
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono text-slate-400">#${idx + 1}</span>
+            <button type="button" data-action="accent" data-idx="${idx}" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${st.a ? 'bg-amber-400 text-slate-950' : 'bg-obsidian-900 text-slate-500 hover:text-slate-300'}" title="Toggle Accent (>)">&gt;</button>
+          </div>
+          <button type="button" data-action="audition" data-idx="${idx}" class="py-1 text-center font-mono text-lg font-extrabold tracking-tight hover:scale-105 transition">
+            ${st.o === 'flam' ? `<span class="text-xs text-purple-300">${effectiveHand === 'R' ? 'l' : 'r'}</span>` : ''}${st.o === 'drag' ? `<span class="text-xs text-purple-300">${effectiveHand === 'R' ? 'll' : 'rr'}</span>` : ''}${effectiveHand}${st.o === 'diddle' ? `<span class="text-xs text-purple-300">${effectiveHand}</span>` : ''}
+          </button>
+          <div class="flex items-center justify-between gap-1">
+            <button type="button" data-action="hand" data-idx="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-900/90 hover:bg-obsidian-800 text-[9px] font-mono text-slate-300 border border-slate-700/60" title="Flip R/L Hand">R/L</button>
+            <button type="button" data-action="ornament" data-idx="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-900/90 hover:bg-obsidian-800 text-[9px] font-mono text-purple-300 border border-slate-700/60" title="Cycle Ornament (None/Flam/Drag/Diddle/Buzz)">${ornamentLabel}</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const action = btn.getAttribute('data-action');
+          const idx = parseInt(btn.getAttribute('data-idx'), 10);
+          const step = state.customSteps[idx];
+          if (!step) return;
+
+          if (action === 'audition') {
+            auditionSingleStep(idx);
+          } else if (action === 'accent') {
+            step.a = step.a ? 0 : 1;
+            auditionSingleStep(idx);
+            renderNotationAndStepGrid();
+          } else if (action === 'hand') {
+            step.h = step.h === 'R' ? 'L' : 'R';
+            auditionSingleStep(idx);
+            renderNotationAndStepGrid();
+          } else if (action === 'ornament') {
+            const order = ['none', 'flam', 'drag', 'diddle', 'buzz'];
+            const nextIdx = (order.indexOf(step.o) + 1) % order.length;
+            step.o = order[nextIdx];
+            auditionSingleStep(idx);
+            renderNotationAndStepGrid();
+          }
+        });
+      });
+    }
+
+    function auditionSingleStep(idx) {
+      const ctx = ensureAudioContext();
+      const step = state.customSteps[idx];
+      if (!step) return;
+      state.currentStepIndex = idx;
+      const stepDur = (60 / state.bpm) * 0.5;
+      scheduleRudimentStepAudio(ctx, analyserNode, step, ctx.currentTime + 0.03, stepDur, idx);
+      const effectiveHand = state.leadHandInverted ? (step.h === 'R' ? 'L' : 'R') : step.h;
+      triggerVisualStrike(effectiveHand, step.a ? 0.95 : 0.65, null, idx);
+      renderNotationAndStepGrid();
+    }
+
+    // =========================================================================
+    // 7. REAL-TIME TRANSPORT ENGINE & OPEN-CLOSE-OPEN RAMP TRAINER
+    // =========================================================================
+    let transportTimerId = null;
+
+    function getTempoMarking(bpm) {
+      if (bpm < 65) return "Open (Largo / Slow)";
+      if (bpm < 95) return "Andante Practice";
+      if (bpm < 128) return "Moderato March Tempo";
+      if (bpm < 165) return "Allegro Corps Tempo";
+      return "Close (Presto Peak)";
+    }
+
+    function updateBpmUI(newBpm) {
+      state.bpm = Math.max(40, Math.min(240, Math.round(newBpm)));
+      document.getElementById('bpmReadout').textContent = state.bpm;
+      document.getElementById('sliderBpm').value = state.bpm;
+      document.getElementById('tempoMarkingLabel').textContent = getTempoMarking(state.bpm);
+    }
+
+    function startTransport() {
+      ensureAudioContext();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.currentStepIndex = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('playing-glow');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP';
+
+      scheduleNextTransportStep();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (transportTimerId) {
+        clearTimeout(transportTimerId);
+        transportTimerId = null;
+      }
+      state.currentStepIndex = -1;
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('playing-glow');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'PLAY';
+      renderNotationAndStepGrid();
+    }
+
+    function scheduleNextTransportStep() {
+      if (!state.isPlaying) return;
+      const ctx = ensureAudioContext();
+
+      // Advance step index
+      state.currentStepIndex++;
+      if (state.currentStepIndex >= state.customSteps.length) {
+        state.currentStepIndex = 0;
+        state.barCounter++;
+
+        // Handle 4-Bar Chain Mode progression
+        if (state.chainMode) {
+          state.activeChainSlot = (state.activeChainSlot + 1) % 4;
+          selectRudimentById(state.chainIds[state.activeChainSlot], false);
+          renderChainSlotsUI();
+        } else if (state.autoRotateRudiment && state.barCounter % 4 === 0) {
+          pickRandomRudimentInFilter(false);
+        }
+      }
+
+      const step = state.customSteps[state.currentStepIndex];
+      const baseSixteenthSec = (60 / state.bpm) * 0.5;
+      const stepDurSec = baseSixteenthSec * (step.dur || 1);
+
+      // Update Open-to-Close-to-Open Ramp if active
+      if (state.rampActive) {
+        state.rampElapsedSec += stepDurSec;
+        if (state.rampElapsedSec >= state.rampDurationSec) {
+          state.rampElapsedSec = 0;
+        }
+        const progress = state.rampElapsedSec / state.rampDurationSec; // 0 -> 1
+        // Triangle wave: 0 -> 1 (Peak at 0.5) -> 0
+        const triangle = progress <= 0.5 ? (progress * 2) : ((1 - progress) * 2);
+        const rampedBpm = state.rampStartBpm + triangle * (state.rampPeakBpm - state.rampStartBpm);
+        updateBpmUI(rampedBpm);
+
+        document.getElementById('rampProgressBar').style.width = `${(progress * 100).toFixed(1)}%`;
+        const phaseText = progress < 0.45 ? 'Accelerating (Open → Close)' : (progress < 0.55 ? 'PEAK SPEED (Closed)' : 'Decelerating (Close → Open)');
+        document.getElementById('rampStatusBadge').textContent = `${phaseText} • ${Math.round(progress * 100)}%`;
+      }
+
+      // Schedule Audio & Metronome on Downbeats
+      const playWhen = ctx.currentTime + 0.035;
+      if (state.currentStepIndex === 0 || state.currentStepIndex === Math.floor(state.customSteps.length / 2)) {
+        triggerMetronomeClick(ctx, analyserNode, playWhen, state.currentStepIndex === 0);
+        const dot = document.getElementById('metroDot');
+        if (dot) {
+          dot.classList.toggle('scale-150', true);
+          setTimeout(() => dot.classList.toggle('scale-150', false), 90);
+        }
+      }
+
+      scheduleRudimentStepAudio(ctx, analyserNode, step, playWhen, stepDurSec, state.currentStepIndex);
+
+      // Record expected step time for live user tap-along accuracy coach
+      const effectiveHand = state.leadHandInverted ? (step.h === 'R' ? 'L' : 'R') : step.h;
+      state.lastExpectedStepTime = performance.now();
+      state.lastExpectedHand = effectiveHand;
+
+      // Visual Drum & Notation Highlight
+      triggerVisualStrike(effectiveHand, step.a ? 0.95 : 0.65, null, state.currentStepIndex);
+      renderNotationAndStepGrid();
+
+      transportTimerId = setTimeout(scheduleNextTransportStep, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 8. RUDIMENT SELECTION, SEARCH, FILTERING & CHAINER UI
+    // =========================================================================
+    function selectRudimentById(id, resetChainHighlight = true) {
+      const rud = PAS_RUDIMENTS.find(r => r.id === id) || PAS_RUDIMENTS[0];
+      state.selectedRudimentId = rud.id;
+      state.customSteps = rud.steps.map(s => ({ ...s }));
+      if (resetChainHighlight) {
+        state.currentStepIndex = -1;
+      }
+
+      document.getElementById('activeRudimentNumber').textContent = `PAS #${rud.id}`;
+      document.getElementById('activeRudimentCategory').textContent = `${rud.sub} • ${rud.tuplets}`;
+      document.getElementById('activeRudimentTitle').textContent = rud.name;
+      document.getElementById('activeRudimentDesc').textContent = rud.desc;
+
+      const stdBadge = document.getElementById('activeRudimentStdBadge');
+      if (rud.std26) {
+        stdBadge.classList.remove('hidden');
+      } else {
+        stdBadge.classList.add('hidden');
+      }
+
+      renderRudimentList();
+      renderNotationAndStepGrid();
+    }
+
+    function getFilteredRudiments() {
+      return PAS_RUDIMENTS.filter(r => {
+        const matchesCat =
+          state.categoryFilter === 'ALL' ? true :
+          state.categoryFilter === 'STD26' ? r.std26 :
+          r.category === state.categoryFilter;
+
+        const q = state.searchQuery.trim().toLowerCase();
+        const matchesSearch = !q ||
+          r.name.toLowerCase().includes(q) ||
+          String(r.id) === q ||
+          `#${r.id}` === q ||
+          r.sub.toLowerCase().includes(q);
+
+        return matchesCat && matchesSearch;
+      });
+    }
+
+    function renderRudimentList() {
+      const container = document.getElementById('rudimentListContainer');
+      const filtered = getFilteredRudiments();
+      document.getElementById('rudimentCountBadge').textContent = `${filtered.length} / 40`;
+
+      container.innerHTML = '';
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">No rudiments match your filter.</div>`;
+        return;
+      }
+
+      filtered.forEach(rud => {
+        const active = rud.id === state.selectedRudimentId;
+        const stickingPreview = rud.steps.slice(0, 8).map(s => {
+          const h = state.leadHandInverted ? (s.h === 'R' ? 'L' : 'R') : s.h;
+          return (s.o === 'flam' ? (h === 'R' ? 'l' : 'r') : '') + h + (s.a ? '>' : '');
+        }).join(' ');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${
+          active
+            ? 'bg-amber-500/15 border-amber-500/60 text-white shadow-sm'
+            : 'bg-obsidian-900/70 hover:bg-obsidian-800 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[11px] font-bold ${active ? 'text-amber-400' : 'text-slate-400'}">#${rud.id}</span>
+              <span class="text-xs font-bold truncate">${rud.name}</span>
+              ${rud.std26 ? `<span class="text-[10px] text-amber-400" title="Standard 26 American Drum Rudiment">★</span>` : ''}
+            </div>
+            <div class="font-mono text-[10px] text-slate-400 truncate mt-0.5">${stickingPreview}</div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-obsidian-950 text-slate-400 border border-slate-800 shrink-0">${rud.category}</span>
+        `;
+        btn.addEventListener('click', () => {
+          selectRudimentById(rud.id);
+          auditionSingleStep(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function pickRandomRudimentInFilter(audition = true) {
+      const pool = getFilteredRudiments();
+      const list = pool.length > 0 ? pool : PAS_RUDIMENTS;
+      const picked = list[Math.floor(Math.random() * list.length)];
+      selectRudimentById(picked.id);
+      if (audition) {
+        auditionSingleStep(0);
+        showToast(`Random Rudiment: #${picked.id} ${picked.name}`);
+      }
+    }
+
+    function renderChainSlotsUI() {
+      const container = document.getElementById('chainSlotsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      state.chainIds.forEach((rId, slotIdx) => {
+        const isCurrentSlot = state.chainMode && state.activeChainSlot === slotIdx;
+        const wrap = document.createElement('div');
+        wrap.className = `p-2 rounded-xl border transition ${
+          isCurrentSlot ? 'bg-amber-500/15 border-amber-500/60' : 'bg-obsidian-950/80 border-slate-800'
+        }`;
+
+        const optionsHtml = PAS_RUDIMENTS.map(r =>
+          `<option value="${r.id}" ${r.id === rId ? 'selected' : ''}>#${r.id} ${r.name}</option>`
+        ).join('');
+
+        wrap.innerHTML = `
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+            <span>BAR ${slotIdx + 1}</span>
+            <button type="button" data-load-slot="${slotIdx}" class="text-sky-400 hover:underline">Load</button>
+          </div>
+          <select data-chain-select="${slotIdx}" class="w-full bg-obsidian-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none">
+            ${optionsHtml}
+          </select>
+        `;
+        container.appendChild(wrap);
+      });
+
+      container.querySelectorAll('select[data-chain-select]').forEach(sel => {
+        sel.addEventListener('change', () => {
+          const sIdx = parseInt(sel.getAttribute('data-chain-select'), 10);
+          state.chainIds[sIdx] = parseInt(sel.value, 10);
+        });
+      });
+
+      container.querySelectorAll('button[data-load-slot]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sIdx = parseInt(btn.getAttribute('data-load-slot'), 10);
+          state.activeChainSlot = sIdx;
+          selectRudimentById(state.chainIds[sIdx]);
+          renderChainSlotsUI();
+        });
+      });
+    }
+
+    // =========================================================================
+    // 9. OFFLINE AUDIO CONTEXT -> 16-BIT 44.1kHz STEREO WAV SAMPLE EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const bytesPerSample = 2; // 16-bit PCM
+      const blockAlign = numChannels * bytesPerSample;
+      const dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+
+      function writeStr(offset, str) {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      }
+
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true); // PCM chunk size
+      view.setUint16(20, 1, true);  // PCM format = 1
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true); // 16-bit
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) {
+        channels.push(audioBuffer.getChannelData(c));
+      }
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+          view.setInt16(offset, int16, true);
+          offset += 2;
+        }
+      }
+
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function renderAndDownloadWav({ title, stepsList, bars = 2, isOneShot = false, oneShotType = 'center' }) {
+      const sampleRate = 44100;
+      const baseStepSec = (60 / state.bpm) * 0.5;
+
+      let totalDurationSec = 1.2;
+      if (!isOneShot) {
+        let singleBarSec = 0;
+        stepsList.forEach(s => { singleBarSec += baseStepSec * (s.dur || 1); });
+        totalDurationSec = Math.max(1.0, singleBarSec * bars + 0.65);
+      }
+
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offlineCtx = new OfflineCtx(2, Math.ceil(totalDurationSec * sampleRate), sampleRate);
+      const offlineNoise = createNoiseBuffer(offlineCtx);
+
+      if (isOneShot) {
+        const t0 = 0.04;
+        if (oneShotType === 'center') {
+          synthesizeSingleStrike(offlineCtx, offlineCtx.destination, t0, { hand: 'R', velocity: 0.95, zoneOverride: 10, noiseBuf: offlineNoise });
+        } else if (oneShotType === 'rimshot') {
+          synthesizeSingleStrike(offlineCtx, offlineCtx.destination, t0, { hand: 'R', velocity: 1.0, zoneOverride: 92, noiseBuf: offlineNoise });
+        } else if (oneShotType === 'flam') {
+          scheduleRudimentStepAudio(offlineCtx, offlineCtx.destination, { h: 'R', a: 1, o: 'flam', dur: 1 }, t0 + 0.04, 0.25, 0, offlineNoise);
+        } else if (oneShotType === 'buzz') {
+          scheduleRudimentStepAudio(offlineCtx, offlineCtx.destination, { h: 'R', a: 1, o: 'buzz', dur: 1 }, t0, 0.45, 0, offlineNoise);
+        }
+      } else {
+        let cursorSec = 0.05;
+        for (let b = 0; b < bars; b++) {
+          stepsList.forEach((st, idx) => {
+            const dur = baseStepSec * (st.dur || 1);
+            scheduleRudimentStepAudio(offlineCtx, offlineCtx.destination, st, cursorSec, dur, idx, offlineNoise);
+            cursorSec += dur;
+          });
+        }
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${state.bpm}bpm.wav`;
+
+      // Trigger automatic browser download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      // Add to Rendered Sample Vault UI
+      state.renderedVault.unshift({
+        name: safeFilename,
+        url,
+        duration: totalDurationSec.toFixed(2) + 's',
+        meta: `${DRUM_SHELLS[state.shellKey].name} • ${state.bpm} BPM`
+      });
+      renderSampleVaultUI();
+      showToast(`Exported WAV: ${safeFilename}`);
+    }
+
+    function renderSampleVaultUI() {
+      const container = document.getElementById('sampleVaultList');
+      const countLbl = document.getElementById('vaultCountLabel');
+      countLbl.textContent = `${state.renderedVault.length} file${state.renderedVault.length === 1 ? '' : 's'} rendered`;
+
+      if (state.renderedVault.length === 0) return;
+      container.innerHTML = '';
+
+      state.renderedVault.slice(0, 6).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'bg-obsidian-950 border border-slate-800 rounded-xl p-2 flex flex-col gap-1.5';
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[11px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[10px] font-mono shrink-0">Download</a>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <audio controls src="${item.url}" class="h-6 w-full"></audio>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastText');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._hideTimer);
+      banner._hideTimer = setTimeout(() => banner.classList.add('hidden'), 2800);
+    }
+
+    // =========================================================================
+    // 10. EVENT LISTENERS, KEYBOARD SHORTCUTS & INITIALIZATION
+    // =========================================================================
+    function applyDrumPresetShell(shellKey) {
+      state.shellKey = shellKey;
+      const shell = DRUM_SHELLS[shellKey];
+      state.pitchHz = shell.basePitch;
+      state.snareBuzz = Math.round(shell.snareMix * 100);
+      state.decayPct = Math.round(shell.decay * 100);
+
+      document.getElementById('sliderPitch').value = state.pitchHz;
+      document.getElementById('valPitch').textContent = `${state.pitchHz} Hz`;
+      document.getElementById('sliderSnareBuzz').value = state.snareBuzz;
+      document.getElementById('valSnareBuzz').textContent = `${state.snareBuzz}%`;
+      document.getElementById('sliderDecay').value = state.decayPct;
+      document.getElementById('valDecay').textContent = `${state.decayPct}%`;
+
+      document.querySelectorAll('.shell-btn').forEach(btn => {
+        const active = btn.getAttribute('data-shell') === shellKey;
+        btn.className = `shell-btn p-2 rounded-xl border text-left transition ${
+          active ? 'bg-amber-500/15 border-amber-500/60 text-white' : 'bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700'
+        }`;
+      });
+      updateActiveDrumBadge();
+    }
+
+    function applyDrumPresetHead(headKey) {
+      state.headKey = headKey;
+      document.querySelectorAll('.head-btn').forEach(btn => {
+        const active = btn.getAttribute('data-head') === headKey;
+        btn.className = `head-btn px-1.5 py-2 rounded-lg border text-center transition ${
+          active ? 'bg-sky-500/15 border-sky-400/60 text-white' : 'bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700'
+        }`;
+      });
+      updateActiveDrumBadge();
+    }
+
+    function updateActiveDrumBadge() {
+      const shell = DRUM_SHELLS[state.shellKey];
+      const head = DRUM_HEADS[state.headKey];
+      document.getElementById('activeDrumBadge').textContent = `${shell.name} • ${head.name}`;
+    }
+
+    function recordManualUserHit(hand, zoneOverride = null) {
+      const ctx = ensureAudioContext();
+      synthesizeSingleStrike(ctx, analyserNode, ctx.currentTime, {
+        hand, velocity: 0.92, zoneOverride
+      });
+      triggerVisualStrike(hand, 0.92, zoneOverride, Math.floor(Math.random() * 4));
+
+      // Evaluate timing accuracy if transport is running
+      const accEl = document.getElementById('accuracyReadout');
+      const streakEl = document.getElementById('streakReadout');
+      if (state.isPlaying && state.lastExpectedStepTime > 0) {
+        const deltaMs = Math.round(performance.now() - state.lastExpectedStepTime);
+        const absDelta = Math.abs(deltaMs);
+        const handMatch = hand === state.lastExpectedHand;
+        if (absDelta <= 45 && handMatch) {
+          state.hitStreak++;
+          accEl.textContent = `LOCKED IN (${deltaMs >= 0 ? '+' : ''}${deltaMs} ms)`;
+          accEl.className = 'text-xs font-mono font-bold text-emerald-400';
+        } else if (absDelta <= 95) {
+          state.hitStreak++;
+          accEl.textContent = `Good (${deltaMs >= 0 ? '+' : ''}${deltaMs} ms)`;
+          accEl.className = 'text-xs font-mono font-bold text-amber-400';
+        } else {
+          state.hitStreak = 0;
+          accEl.textContent = `Rush/Drag (${deltaMs >= 0 ? '+' : ''}${deltaMs} ms)`;
+          accEl.className = 'text-xs font-mono font-bold text-rose-400';
+        }
+      } else {
+        state.hitStreak++;
+        accEl.textContent = `Manual ${hand}-Stick Hit`;
+        accEl.className = 'text-xs font-mono font-bold text-sky-400';
+      }
+      streakEl.textContent = `${state.hitStreak} hits`;
+    }
+
+    function initAppListeners() {
+      // Transport Play/Stop
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+
+      // Step Forward Once
+      document.getElementById('btnStepOnce').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        const nextIdx = (state.currentStepIndex + 1) % state.customSteps.length;
+        auditionSingleStep(nextIdx);
+      });
+
+      // BPM Slider
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        updateBpmUI(parseInt(e.target.value, 10));
+      });
+
+      // Tap Tempo
+      let tapTimes = [];
+      document.getElementById('btnTapTempo').addEventListener('click', () => {
+        const now = performance.now();
+        tapTimes = tapTimes.filter(t => now - t < 2500);
+        tapTimes.push(now);
+        if (tapTimes.length >= 2) {
+          let sum = 0;
+          for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i - 1]);
+          const avgMs = sum / (tapTimes.length - 1);
+          updateBpmUI(Math.round(60000 / avgMs));
+        }
+        recordManualUserHit('R');
+      });
+
+      // Metronome Toggle
+      document.getElementById('btnMetronome').addEventListener('click', () => {
+        state.metronomeOn = !state.metronomeOn;
+        document.getElementById('metroLabel').textContent = `Click: ${state.metronomeOn ? 'ON' : 'OFF'}`;
+        document.getElementById('metroDot').className = `w-2 h-2 rounded-full ${state.metronomeOn ? 'bg-sky-400' : 'bg-slate-600'}`;
+      });
+
+      // Search & Category Filters
+      const searchInput = document.getElementById('inputSearchRudiments');
+      const clearBtn = document.getElementById('btnClearSearch');
+      searchInput.addEventListener('input', () => {
+        state.searchQuery = searchInput.value;
+        clearBtn.classList.toggle('hidden', !state.searchQuery);
+        renderRudimentList();
+      });
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        state.searchQuery = '';
+        clearBtn.classList.add('hidden');
+        renderRudimentList();
+      });
+
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.categoryFilter = btn.getAttribute('data-cat');
+          document.querySelectorAll('.cat-pill').forEach(p => {
+            const active = p.getAttribute('data-cat') === state.categoryFilter;
+            p.className = active
+              ? 'cat-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500 text-slate-950 transition'
+              : 'cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition';
+          });
+          renderRudimentList();
+        });
+      });
+
+      // Lead Hand Inversion & Reset
+      document.getElementById('btnInvertHands').addEventListener('click', () => {
+        state.leadHandInverted = !state.leadHandInverted;
+        const lbl = document.getElementById('leadHandLabel');
+        lbl.textContent = state.leadHandInverted ? 'L-Hand' : 'R-Hand';
+        lbl.className = state.leadHandInverted ? 'text-sky-400 font-bold' : 'text-amber-400 font-bold';
+        renderRudimentList();
+        renderNotationAndStepGrid();
+      });
+
+      document.getElementById('btnResetPattern').addEventListener('click', () => {
+        selectRudimentById(state.selectedRudimentId);
+        showToast('Restored canonical PAS pattern');
+      });
+
+      // Randomizer Controls
+      document.getElementById('btnRandomRudiment').addEventListener('click', () => pickRandomRudimentInFilter(true));
+      document.getElementById('btnRandomInCategory').addEventListener('click', () => pickRandomRudimentInFilter(true));
+      document.getElementById('chkAutoRotateRudiment').addEventListener('change', (e) => {
+        state.autoRotateRudiment = e.target.checked;
+      });
+
+      document.getElementById('btnRandomizeChain').addEventListener('click', () => {
+        state.chainIds = Array.from({ length: 4 }, () => {
+          const r = PAS_RUDIMENTS[Math.floor(Math.random() * PAS_RUDIMENTS.length)];
+          return r.id;
+        });
+        state.chainMode = true;
+        document.getElementById('chkChainMode').checked = true;
+        selectRudimentById(state.chainIds[0]);
+        renderChainSlotsUI();
+        showToast('Generated random 4-Bar PAS Rudiment Chain!');
+      });
+
+      document.getElementById('chkChainMode').addEventListener('change', (e) => {
+        state.chainMode = e.target.checked;
+        if (state.chainMode) {
+          state.activeChainSlot = 0;
+          selectRudimentById(state.chainIds[0]);
+        }
+        renderChainSlotsUI();
+      });
+
+      // Wildcard Surprise Setup
+      document.getElementById('btnSurpriseAll').addEventListener('click', () => {
+        const shells = Object.keys(DRUM_SHELLS);
+        const heads = Object.keys(DRUM_HEADS);
+        applyDrumPresetShell(shells[Math.floor(Math.random() * shells.length)]);
+        applyDrumPresetHead(heads[Math.floor(Math.random() * heads.length)]);
+        updateBpmUI(80 + Math.floor(Math.random() * 105));
+        pickRandomRudimentInFilter(true);
+      });
+
+      document.getElementById('btnRandomDrumTone').addEventListener('click', () => {
+        const shells = Object.keys(DRUM_SHELLS);
+        const heads = Object.keys(DRUM_HEADS);
+        applyDrumPresetShell(shells[Math.floor(Math.random() * shells.length)]);
+        applyDrumPresetHead(heads[Math.floor(Math.random() * heads.length)]);
+        recordManualUserHit('R');
+        showToast(`Loaded ${DRUM_SHELLS[state.shellKey].name} + ${DRUM_HEADS[state.headKey].name}`);
+      });
+
+      // Shell & Head Buttons
+      document.querySelectorAll('.shell-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyDrumPresetShell(btn.getAttribute('data-shell'));
+          recordManualUserHit('R');
+        });
+      });
+
+      document.querySelectorAll('.head-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          applyDrumPresetHead(btn.getAttribute('data-head'));
+          recordManualUserHit('L');
+        });
+      });
+
+      // 6 Acoustic Sliders
+      document.getElementById('sliderPitch').addEventListener('input', (e) => {
+        state.pitchHz = parseInt(e.target.value, 10);
+        document.getElementById('valPitch').textContent = `${state.pitchHz} Hz`;
+      });
+      document.getElementById('sliderSnareBuzz').addEventListener('input', (e) => {
+        state.snareBuzz = parseInt(e.target.value, 10);
+        document.getElementById('valSnareBuzz').textContent = `${state.snareBuzz}%`;
+      });
+      document.getElementById('sliderDecay').addEventListener('input', (e) => {
+        state.decayPct = parseInt(e.target.value, 10);
+        document.getElementById('valDecay').textContent = `${state.decayPct}%`;
+      });
+      document.getElementById('sliderStrikeZone').addEventListener('input', (e) => {
+        state.strikeZone = parseInt(e.target.value, 10);
+        const zoneName = state.strikeZone > 65 ? 'Rimshot' : (state.strikeZone > 35 ? 'Edge' : 'Center');
+        document.getElementById('valStrikeZone').textContent = `${zoneName} (${state.strikeZone}%)`;
+      });
+      document.getElementById('sliderFlamSpace').addEventListener('input', (e) => {
+        state.flamSpaceMs = parseInt(e.target.value, 10);
+        document.getElementById('valFlamSpace').textContent = `${state.flamSpaceMs} ms`;
+      });
+      document.getElementById('sliderAccentContrast').addEventListener('input', (e) => {
+        state.accentContrast = parseInt(e.target.value, 10);
+        document.getElementById('valAccentContrast').textContent = `${state.accentContrast}%`;
+      });
+
+      // Open-Close-Open Trainer Controls
+      document.getElementById('sliderRampStart').addEventListener('input', (e) => {
+        state.rampStartBpm = parseInt(e.target.value, 10);
+        document.getElementById('lblRampStart').textContent = `${state.rampStartBpm} BPM`;
+      });
+      document.getElementById('sliderRampPeak').addEventListener('input', (e) => {
+        state.rampPeakBpm = parseInt(e.target.value, 10);
+        document.getElementById('lblRampPeak').textContent = `${state.rampPeakBpm} BPM`;
+      });
+      document.getElementById('sliderRampDuration').addEventListener('input', (e) => {
+        state.rampDurationSec = parseInt(e.target.value, 10);
+        document.getElementById('lblRampDuration').textContent = `${state.rampDurationSec} sec`;
+      });
+      document.getElementById('btnToggleRamp').addEventListener('click', () => {
+        state.rampActive = !state.rampActive;
+        state.rampElapsedSec = 0;
+        const btn = document.getElementById('btnToggleRamp');
+        if (state.rampActive) {
+          btn.textContent = 'Stop Open–Close–Open Ramp';
+          btn.className = 'px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold transition';
+          updateBpmUI(state.rampStartBpm);
+          if (!state.isPlaying) startTransport();
+        } else {
+          btn.textContent = 'Start Open–Close–Open Ramp';
+          btn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition';
+          document.getElementById('rampStatusBadge').textContent = 'Standby';
+          document.getElementById('rampProgressBar').style.width = '0%';
+        }
+      });
+
+      // Drum Canvas Direct Click / Pointer Strike
+      drumCanvas.addEventListener('pointerdown', (e) => {
+        const rect = drumCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const dist = Math.hypot(x - cx, y - cy);
+        const maxR = Math.min(cx, cy) * 0.74;
+        const zone = Math.min(100, Math.round((dist / maxR) * 100));
+        const hand = x < cx ? 'L' : 'R';
+        recordManualUserHit(hand, zone);
+      });
+
+      // Floating Drum Trigger Buttons
+      document.getElementById('btnTrigLeft').addEventListener('click', () => recordManualUserHit('L'));
+      document.getElementById('btnTrigRight').addEventListener('click', () => recordManualUserHit('R'));
+      document.getElementById('btnTrigRimshot').addEventListener('click', () => recordManualUserHit('R', 92));
+      document.getElementById('btnTrigFlam').addEventListener('click', () => {
+        const ctx = ensureAudioContext();
+        scheduleRudimentStepAudio(ctx, analyserNode, { h: 'R', a: 1, o: 'flam', dur: 1 }, ctx.currentTime + 0.04, 0.25, 0);
+        triggerVisualStrike('L', 0.5, 20);
+        setTimeout(() => triggerVisualStrike('R', 0.95, 20), state.flamSpaceMs);
+      });
+      document.getElementById('btnTrigDrag').addEventListener('click', () => {
+        const ctx = ensureAudioContext();
+        scheduleRudimentStepAudio(ctx, analyserNode, { h: 'R', a: 1, o: 'drag', dur: 1 }, ctx.currentTime + 0.05, 0.25, 0);
+        triggerVisualStrike('L', 0.45, 20);
+        setTimeout(() => triggerVisualStrike('R', 0.95, 20), state.flamSpaceMs * 1.8);
+      });
+
+      // Keyboard Shortcuts (D/F = Left, J/K = Right, Space = Play/Stop, R = Randomize)
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        const key = e.key.toLowerCase();
+        if (key === ' ') {
+          e.preventDefault();
+          if (state.isPlaying) stopTransport();
+          else startTransport();
+        } else if (key === 'f' || key === 'd') {
+          recordManualUserHit('L');
+        } else if (key === 'j' || key === 'k') {
+          recordManualUserHit('R');
+        } else if (key === 'g') {
+          document.getElementById('btnTrigFlam').click();
+        } else if (key === 'h') {
+          document.getElementById('btnTrigDrag').click();
+        } else if (key === 'r') {
+          pickRandomRudimentInFilter(true);
+        }
+      });
+
+      // WAV Sample & Loop Exporters
+      const triggerLoopExport = () => {
+        const rud = PAS_RUDIMENTS.find(r => r.id === state.selectedRudimentId);
+        renderAndDownloadWav({
+          title: `pas${rud.id}_${rud.name}`,
+          stepsList: state.customSteps,
+          bars: 2,
+          isOneShot: false
+        });
+      };
+      document.getElementById('btnQuickExportWav').addEventListener('click', triggerLoopExport);
+      document.getElementById('btnExportLoopWav').addEventListener('click', triggerLoopExport);
+
+      document.getElementById('btnExportChainWav').addEventListener('click', () => {
+        const combinedSteps = [];
+        state.chainIds.forEach(id => {
+          const r = PAS_RUDIMENTS.find(item => item.id === id) || PAS_RUDIMENTS[0];
+          r.steps.forEach(s => combinedSteps.push({ ...s }));
+        });
+        renderAndDownloadWav({
+          title: `pas_4bar_chain_${state.chainIds.join('_')}`,
+          stepsList: combinedSteps,
+          bars: 1,
+          isOneShot: false
+        });
+      });
+
+      document.querySelectorAll('.oneshot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const shotType = btn.getAttribute('data-oneshot');
+          renderAndDownloadWav({
+            title: `${state.shellKey}_${state.headKey}_${shotType}`,
+            stepsList: [],
+            bars: 1,
+            isOneShot: true,
+            oneShotType: shotType
+          });
+        });
+      });
+
+      // Export Studio JSON Preset
+      document.getElementById('btnExportJsonPreset').addEventListener('click', () => {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          rudimentId: state.selectedRudimentId,
+          rudimentName: PAS_RUDIMENTS.find(r => r.id === state.selectedRudimentId)?.name,
+          bpm: state.bpm,
+          drumShell: state.shellKey,
+          drumHead: state.headKey,
+          acousticParams: {
+            pitchHz: state.pitchHz,
+            snareBuzz: state.snareBuzz,
+            decayPct: state.decayPct,
+            strikeZone: state.strikeZone,
+            flamSpaceMs: state.flamSpaceMs,
+            accentContrast: state.accentContrast
+          },
+          chainIds: state.chainIds,
+          customSteps: state.customSteps
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pas40_studio_preset_${state.shellKey}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded JSON Studio Preset');
+      });
+    }
+
+    // Boot Application on Load
+    window.addEventListener('load', () => {
+      resizeDrumCanvas();
+      selectRudimentById(16); // Start on #16 Single Paradiddle
+      renderChainSlotsUI();
+      initAppListeners();
+      requestAnimationFrame(renderDrumCanvasFrame);
+    });
+  </script>
+</body>
+</html>

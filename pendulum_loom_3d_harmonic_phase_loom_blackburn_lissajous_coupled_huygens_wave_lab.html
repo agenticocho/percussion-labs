@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PENDULUM-LOOM // 3D Harmonic Phase Loom, Blackburn Lissajous & Coupled Huygens Wave Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            loom: {
+              950: '#04060b',
+              900: '#080d17',
+              800: '#0f1729',
+              700: '#192642',
+              600: '#273b66'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #04060b;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #080d17; }
+    ::-webkit-scrollbar-thumb { background: #273b66; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b5896; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #192642;
+      border: 1px solid #273b66;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 2px solid #04060b;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .slider-amber::-webkit-slider-thumb {
+      background: #f59e0b !important;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6) !important;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.6) !important;
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(15, 23, 41, 0.94) 0%, rgba(8, 13, 23, 0.98) 100%);
+      border: 1px solid rgba(50, 76, 128, 0.55);
+    }
+    /* Full-Screen Theater Overlay Class (works in both native Fullscreen API and sandboxed iframe fallback) */
+    .loom-fullscreen-stage {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 9999 !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+    @keyframes pulseLoom {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+      50% { box-shadow: 0 0 18px 3px rgba(16, 185, 129, 0.25); }
+    }
+    .loom-active {
+      animation: pulseLoom 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500/30 selection:text-emerald-200">
+
+  <!-- TOP STUDIO HEADER & PHASE-LOOM MASTER TRANSPORT -->
+  <header class="sticky top-0 z-30 bg-loom-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1640px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/25 via-sky-500/20 to-amber-500/25 border border-emerald-400/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="3" y1="3" x2="21" y2="3" stroke="#94a3b8" stroke-width="2"></line>
+            <line x1="7" y1="3" x2="5" y2="16" stroke="#38bdf8"></line>
+            <line x1="12" y1="3" x2="12" y2="19" stroke="#10b981"></line>
+            <line x1="17" y1="3" x2="19" y2="14" stroke="#f59e0b"></line>
+            <circle cx="5" cy="16" r="2.2" fill="#38bdf8"></circle>
+            <circle cx="12" cy="19" r="2.2" fill="#10b981"></circle>
+            <circle cx="19" cy="14" r="2.2" fill="#f59e0b"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PENDULUM-LOOM // 3D HARMONIC PHASE LOOM LAB</h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Full-Screen 3D WebGL</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Inverse-Square Length Parabola L_k = g/(2πf_k)² • Fractional Phase Revivals (t = T_rev · p/q) • Blackburn 2D Lissajous • Huygens Springs</p>
+        </div>
+      </div>
+
+      <!-- Center Master Transport -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-loom-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs sm:text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">RELEASE LOOM</span>
+        </button>
+
+        <button id="btnResetPhaseZero" type="button" class="px-2.5 py-2 rounded-lg bg-loom-800 hover:bg-loom-700 text-amber-300 border border-amber-500/40 text-xs font-mono font-semibold transition" title="Realign all pendulums to t = 0 Unison Release">
+          t = 0 UNISON ↺
+        </button>
+
+        <!-- Camera Preset Selector -->
+        <div class="flex items-center gap-1.5 border-l border-slate-800 pl-2">
+          <span class="text-[10px] font-mono text-slate-400">3D Cam:</span>
+          <select id="selectCameraView" class="bg-loom-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-sky-300 outline-none">
+            <option value="tunnel">1. Axial Tunnel (Down-the-Line Z)</option>
+            <option value="isometric" selected>2. Isometric Studio Orbit</option>
+            <option value="zenith">3. Zenith Top-Down (X-Z Floor)</option>
+            <option value="parabola">4. Side Parabola (L_k Staircase)</option>
+            <option value="drone">5. Cinematic Auto-Orbit Drone</option>
+          </select>
+        </div>
+
+        <!-- Time Warp Speed & Revival Readout -->
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[82px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="speedReadout" class="font-mono text-sm font-bold text-emerald-400">1.00×</span>
+              <span class="text-[10px] font-mono text-slate-400">SPEED</span>
+            </div>
+            <div id="revivalHeaderReadout" class="text-[10px] text-amber-400 font-mono">t = 0.0s / 60.0s</div>
+          </div>
+          <input id="sliderTimeSpeed" type="range" min="10" max="300" value="100" class="w-24 sm:w-28" />
+        </div>
+      </div>
+
+      <!-- Right Action Buttons: Fullscreen & WAV Export -->
+      <div class="flex items-center gap-2">
+        <button id="btnHeaderFullscreen" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-400/50 text-xs font-bold transition shadow-md shadow-sky-500/10" title="Launch Immersive Full-Screen 3D Loom (Shortcut: F)">
+          <span>⛶ Full Screen [F]</span>
+        </button>
+        <button id="btnHeaderExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-md shadow-amber-500/20">
+          <span>💾 Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN 12-COLUMN WORKSPACE -->
+  <main class="flex-1 max-w-[1640px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN (3 COLS): LOOM ARCHITECTURES, PRESETS, STRING PARABOLA & GRAVITY -->
+    <aside class="lg:col-span-3 flex flex-col gap-3.5">
+
+      <!-- Curated 3D Phase-Loom & Lissajous Presets -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">3D Phase-Loom Presets</h2>
+            <p class="text-[11px] text-slate-400">Revivals, Lissajous &amp; Coupled Chains</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">8 Programs</span>
+        </div>
+
+        <div id="loomPresetList" class="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- PENDULUM ARRAY & PHYSICAL GEOMETRY ARCHITECT -->
+      <div class="glass-panel rounded-2xl p-3.5 space-y-3 flex-1">
+        <div>
+          <h2 class="text-xs font-bold uppercase tracking-wider text-emerald-300">Pendulum Array Geometry</h2>
+          <p class="text-[10px] text-slate-400">L_k = g · [T_rev / (2π (N₀ + k·Δn))]²</p>
+        </div>
+
+        <!-- 4 Core Array Sliders: Bob Count N, Base Cycles N0, Revival Period T_rev, Huygens Coupling -->
+        <div class="bg-loom-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Pendulum Count (N)</span>
+              <span id="valBobCount" class="text-emerald-400 font-bold">24 Bobs</span>
+            </div>
+            <input id="sliderBobCount" type="range" min="8" max="42" value="24" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Base Oscillations (N₀)</span>
+              <span id="valBaseCycles" class="text-sky-400 font-bold">48 Cycles / T_rev</span>
+            </div>
+            <input id="sliderBaseCycles" type="range" min="20" max="80" value="48" class="w-full slider-cyan" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Revival Period (T_rev)</span>
+              <span id="valRevivalPeriod" class="text-amber-400 font-bold">60.0 sec</span>
+            </div>
+            <input id="sliderRevivalPeriod" type="range" min="20" max="120" value="60" class="w-full slider-amber" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-[11px] font-mono mb-1">
+              <span class="text-slate-300">Huygens Spring (κ_couple)</span>
+              <span id="valSpringKappa" class="text-purple-400 font-bold">0.00 (Uncoupled)</span>
+            </div>
+            <input id="sliderSpringKappa" type="range" min="0" max="100" value="0" class="w-full slider-purple" />
+          </div>
+        </div>
+
+        <!-- Initial Release Wave-Shape Sculptor & Planetary Gravity -->
+        <div class="bg-loom-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div>
+            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Initial Release Wave Profile θ_k(0)</label>
+            <select id="selectReleaseProfile" class="w-full bg-loom-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs font-mono text-amber-300 outline-none">
+              <option value="unison" selected>Uniform Line Release (θ_k = +θ₀)</option>
+              <option value="alternating">Alternating Zig-Zag (θ_k = (−1)^k θ₀)</option>
+              <option value="sine">Sinusoidal Standing Wave (sin 2πk/N)</option>
+              <option value="gaussian">Central Gaussian Pluck Packet</option>
+              <option value="v_wedge">Symmetric V-Wedge Release</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
+            <div>
+              <label class="block text-[9px] font-mono uppercase text-slate-400 mb-0.5">Gravity Field (g)</label>
+              <select id="selectGravity" class="w-full bg-loom-900 border border-slate-700 rounded-lg px-1.5 py-1 text-[11px] font-mono text-sky-300 outline-none">
+                <option value="9.81" selected>Earth (9.81 m/s²)</option>
+                <option value="1.62">Moon (1.62 m/s²)</option>
+                <option value="3.72">Mars (3.72 m/s²)</option>
+                <option value="24.79">Jupiter (24.8 m/s²)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[9px] font-mono uppercase text-slate-400 mb-0.5">Strike Trigger</label>
+              <select id="selectTriggerZone" class="w-full bg-loom-900 border border-slate-700 rounded-lg px-1.5 py-1 text-[11px] font-mono text-emerald-300 outline-none">
+                <option value="center" selected>Center Laser (θ = 0)</option>
+                <option value="apex">Outer Apex (θ = ±θ_max)</option>
+                <option value="both">Dual Center + Apex</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN (5 COLS): FULL-SCREEN CAPABLE 3D THREE.JS VIEWPORT + FRACTIONAL REVIVAL TIMELINE -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- 3D WEBGL PHASE-LOOM CARD -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <!-- 4 Loom Geometry Architecture Tabs -->
+          <div class="flex flex-wrap items-center gap-1 bg-loom-950 p-1 rounded-xl border border-slate-800">
+            <button id="tabLinearLoom" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">
+              ⏳ 1. Linear Wave
+            </button>
+            <button id="tabBlackburn2D" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🌀 2. Blackburn 2D
+            </button>
+            <button id="tabCircularTemple" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🎪 3. Circular Ring
+            </button>
+            <button id="tabHuygensChain" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition">
+              🔗 4. Coupled Springs
+            </button>
+          </div>
+
+          <!-- Visual Trails & Ribbon Toggles -->
+          <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1 text-[11px] font-mono text-emerald-300 cursor-pointer">
+              <input id="chkSpineRibbon" type="checkbox" checked class="rounded bg-loom-800 border-slate-600 text-emerald-500 focus:ring-0" />
+              <span>Spine Wave</span>
+            </label>
+            <label class="flex items-center gap-1 text-[11px] font-mono text-sky-300 cursor-pointer">
+              <input id="chkLightTrails" type="checkbox" checked class="rounded bg-loom-800 border-slate-600 text-sky-500 focus:ring-0" />
+              <span>3D Trails</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- FULL-SCREEN CAPABLE 3D VIEWPORT CONTAINER -->
+        <div id="loomStageWrapper" class="relative w-full h-80 sm:h-[380px] bg-loom-950 rounded-xl border border-slate-800/90 overflow-hidden flex flex-col justify-between">
+          <!-- Three.js WebGL Canvas mounts here -->
+          <div id="threeMount" class="absolute inset-0 w-full h-full"></div>
+
+          <!-- Top Floating HUD Overlay (Visible in both normal & full-screen modes!) -->
+          <div class="relative z-10 p-3 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+            <div class="flex items-center gap-2 pointer-events-auto">
+              <div id="hudPhaseTopologyBadge" class="px-3 py-1 rounded-lg bg-loom-900/90 backdrop-blur-md border border-emerald-500/40 text-xs font-mono font-bold text-emerald-300">
+                Phase State: t = 0.00 T_rev (Unison Alignment)
+              </div>
+              <span id="hudActiveStruckBob" class="hidden sm:inline-block px-2.5 py-1 rounded-lg bg-loom-900/90 border border-slate-800 text-[10px] font-mono text-amber-300">
+                Click any 3D Bob to Pluck • Drag to Orbit
+              </span>
+            </div>
+
+            <!-- Full-Screen & Camera Quick Switcher inside Stage -->
+            <div class="flex items-center gap-1.5 pointer-events-auto">
+              <button id="btnStageCamCycle" type="button" class="px-2.5 py-1 rounded-lg bg-loom-900/90 hover:bg-loom-800 border border-slate-700 text-[11px] font-mono text-sky-300 transition">
+                🎥 Next Angle
+              </button>
+              <button id="btnStageFullscreen" type="button" class="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-lg">
+                ⛶ Full Screen
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Floating HUD Dock (Allows Full Control While in Full-Screen!) -->
+          <div class="relative z-10 p-3 bg-gradient-to-t from-loom-950/95 via-loom-950/70 to-transparent flex flex-col gap-2 pointer-events-auto">
+            <!-- Fractional Revival Quick-Jump Buttons -->
+            <div class="flex flex-wrap items-center justify-between gap-1.5">
+              <div class="flex flex-wrap items-center gap-1">
+                <span class="text-[10px] font-mono uppercase text-slate-400 mr-1">Jump to Revival:</span>
+                <button type="button" data-frac="0" class="revival-jump-btn px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/50 text-[10px] font-mono text-emerald-200 font-bold">0 (Unison)</button>
+                <button type="button" data-frac="0.166667" class="revival-jump-btn px-2 py-0.5 rounded bg-loom-900/90 hover:bg-loom-800 border border-slate-700 text-[10px] font-mono text-sky-300">1/6 (3-Helix)</button>
+                <button type="button" data-frac="0.25" class="revival-jump-btn px-2 py-0.5 rounded bg-loom-900/90 hover:bg-loom-800 border border-slate-700 text-[10px] font-mono text-amber-300">1/4 (4-Weave)</button>
+                <button type="button" data-frac="0.333333" class="revival-jump-btn px-2 py-0.5 rounded bg-loom-900/90 hover:bg-loom-800 border border-slate-700 text-[10px] font-mono text-purple-300">1/3 (Triplets)</button>
+                <button type="button" data-frac="0.5" class="revival-jump-btn px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/35 border border-rose-500/50 text-[10px] font-mono text-rose-200 font-bold">1/2 (Anti-Phase DNA)</button>
+                <button type="button" data-frac="1.0" class="revival-jump-btn px-2 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/50 text-[10px] font-mono text-emerald-200">1.0 (Full Revival)</button>
+              </div>
+              <button id="btnSweepGlissando" type="button" class="px-2.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-[10px] font-mono text-amber-200 font-semibold">
+                🎵 Strum All Bobs
+              </button>
+            </div>
+
+            <!-- Interactive Revival Cycle Timeline Scrubber -->
+            <div class="flex items-center gap-2.5">
+              <span class="text-[10px] font-mono text-slate-400 shrink-0">Phase t/T_rev:</span>
+              <input id="sliderPhaseTimeline" type="range" min="0" max="1000" value="0" class="flex-1" />
+              <span id="lblPhaseFraction" class="text-[11px] font-mono font-bold text-emerald-400 w-16 text-right">0.0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2D POINCARÉ PHASE-SPACE & LISSAJOUS FLOOR PROJECTION STRIP -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-loom-950/90 border border-slate-800 rounded-xl p-3 items-center">
+          <!-- Live 2D X-Z Top-Down Phase-Space / Lissajous Mini-Canvas (4 cols) -->
+          <div class="sm:col-span-4 flex flex-col items-center">
+            <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">2D Phase-Loom &amp; Lissajous Trace</div>
+            <canvas id="phaseTraceCanvas" width="160" height="104" class="w-40 h-24 rounded-xl bg-loom-900 border border-slate-800"></canvas>
+          </div>
+
+          <!-- Instantaneous Phase Coherence & Telemetry Readouts (8 cols) -->
+          <div class="sm:col-span-8 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-200">Harmonic Phase-Coherence Telemetry</span>
+              <span id="syncOrderBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Coherence R = 1.000</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs font-mono">
+              <div class="bg-loom-900 border border-slate-800/80 rounded-lg p-2">
+                <div class="text-[9px] text-slate-400">LONGEST L₁ / SHORTEST L_N</div>
+                <div id="readoutLengthRatio" class="text-xs font-bold text-sky-400">2.48 m / 1.12 m</div>
+              </div>
+              <div class="bg-loom-900 border border-slate-800/80 rounded-lg p-2">
+                <div class="text-[9px] text-slate-400">BLACKBURN RATIO ω_x:ω_z</div>
+                <div id="readoutLissajousRatio" class="text-xs font-bold text-amber-400">1 : 1 (Linear)</div>
+              </div>
+              <div class="bg-loom-900 border border-slate-800/80 rounded-lg p-2">
+                <div class="text-[9px] text-slate-400">ZERO CROSSINGS / SEC</div>
+                <div id="readoutStrikeRate" class="text-xs font-bold text-emerald-400">18.4 hits/s</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN (4 COLS): SPECTRAL TUNING, INDIVIDUAL BOB RIBBON & WAV EXPORTER -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- SPECTRAL TUNING SCALE, TIMBRE & BLACKBURN LISSAJOUS RATIO -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Spectral Pitch &amp; Timbre Synthesizer</h2>
+            <p class="text-[11px] text-slate-400">Maps pendulum frequencies f_k = (N₀ + kΔn)/T_rev to audio</p>
+          </div>
+          <button id="btnStrikeHarmonicChord" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 text-[11px] font-mono text-emerald-300 font-semibold transition">
+            🔔 Harmonic Chord
+          </button>
+        </div>
+
+        <!-- Live Pendulum Displacement & Velocity Ribbon (24 Bars) -->
+        <div class="bg-loom-950 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+            <span>INDIVIDUAL PENDULUM DISPLACEMENT θ_k(t) (Click bar to pluck)</span>
+            <span class="text-emerald-400">k = 1 .. N</span>
+          </div>
+          <div id="bobDisplacementBars" class="flex items-end gap-0.5 h-20 pt-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Scale & Timbre Selectors -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-loom-950/90 border border-slate-800 rounded-xl p-2">
+            <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">1. Pitch Scale Quantizer</label>
+            <select id="selectPitchScale" class="w-full bg-loom-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-emerald-300 outline-none">
+              <option value="harmonic" selected>Exact Harmonic Series (f₀ · k)</option>
+              <option value="pendulum">Physical Pendulum Ratio (N₀+k)/N₀</option>
+              <option value="pentatonic">Celestial Minor Pentatonic</option>
+              <option value="slendro">Javanese Gamelan Slendro</option>
+              <option value="just_chord">Just Intonation Overtone Spiral</option>
+            </select>
+          </div>
+
+          <div class="bg-loom-950/90 border border-slate-800 rounded-xl p-2">
+            <label class="block text-[9px] font-mono uppercase text-slate-400 mb-1">2. Resonator Instrument</label>
+            <select id="selectResonatorTimbre" class="w-full bg-loom-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-amber-300 outline-none">
+              <option value="celesta" selected>Crystal Glass Harp / Celesta</option>
+              <option value="gamelan">Bronze Temple Singing Bell</option>
+              <option value="marimba">Concert Rosewood Marimba</option>
+              <option value="kalimba">African Mbira / Kalimba Tine</option>
+              <option value="handpan">Steel Handpan Harmonic Dome</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4 Acoustic & Lissajous Sliders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-loom-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Fundamental Pitch (f₀)</span>
+              <span id="valRootHz" class="font-mono text-emerald-400">165 Hz</span>
+            </div>
+            <input id="sliderRootHz" type="range" min="65" max="360" value="165" class="w-full" />
+          </div>
+
+          <div class="bg-loom-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Bell Decay / Sustain</span>
+              <span id="valBellDecay" class="font-mono text-sky-400">0.75 s</span>
+            </div>
+            <input id="sliderBellDecay" type="range" min="15" max="240" value="75" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-loom-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">2D Lissajous Depth (Z)</span>
+              <span id="valLissajousDepth" class="font-mono text-amber-400">0% (1D Planar)</span>
+            </div>
+            <input id="sliderLissajousDepth" type="range" min="0" max="100" value="0" class="w-full slider-amber" />
+          </div>
+
+          <div class="bg-loom-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Air Damping / Drag (ζ)</span>
+              <span id="valDampingDrag" class="font-mono text-purple-400">0.00 (Perpetual)</span>
+            </div>
+            <input id="sliderDampingDrag" type="range" min="0" max="100" value="0" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LOSSLESS 44.1 kHz STEREO WAV & LOOM TELEMETRY EXPORTER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1 flex flex-col justify-between">
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Phase-Loom WAV &amp; Patch Exporter</h2>
+              <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button id="btnExportLoomCycleWav" type="button" class="px-3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition shadow-md shadow-emerald-500/15">
+              💾 Export Phase-Loom (.WAV)
+            </button>
+            <button id="btnExportGlissandoWav" type="button" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+              🎵 Export Strum Cascade (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Specialized Loom Stems (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-shot="unison_chord" class="loom-shot-btn px-2 py-1.5 rounded-lg bg-loom-900 hover:bg-loom-800 border border-slate-700/80 text-[10px] font-mono text-emerald-300 transition">
+                UnisonRelease.wav
+              </button>
+              <button type="button" data-shot="dna_anti" class="loom-shot-btn px-2 py-1.5 rounded-lg bg-loom-900 hover:bg-loom-800 border border-slate-700/80 text-[10px] font-mono text-sky-300 transition">
+                DoubleHelix.wav
+              </button>
+              <button type="button" data-shot="temple_chime" class="loom-shot-btn px-2 py-1.5 rounded-lg bg-loom-900 hover:bg-loom-800 border border-slate-700/80 text-[10px] font-mono text-amber-300 transition">
+                TempleBell.wav
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+            <span class="text-[11px] text-slate-400">Export Pendulum Lengths L_k &amp; Patch JSON</span>
+            <button id="btnExportLoomJson" type="button" class="px-2.5 py-1 rounded-lg bg-loom-800 hover:bg-loom-700 border border-slate-700 text-[10px] font-mono text-slate-200 transition">
+              Download Telemetry (.JSON)
+            </button>
+          </div>
+
+          <!-- Rendered Sample Vault -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+              <span id="loomVaultCount" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="loomVaultList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+              <div class="text-xs text-slate-500 bg-loom-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+                Click any WAV button above to render a 44.1 kHz stereo file with inline audio playback.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- Toast Banner -->
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-[10000] hidden px-4 py-2.5 rounded-xl bg-loom-800/95 border border-emerald-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+    <span id="toastText">Ready</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC -->
+  <script>
+    // =========================================================================
+    // 1. CURATED 3D PENDULUM HARMONIC PHASE-LOOM PRESETS
+    // =========================================================================
+    const LOOM_PRESETS = [
+      {
+        id: "mach_24_classic",
+        name: "Ernst Mach 24-Bob Harmonic Phase Loom",
+        desc: "Classic 60s revival cycle morphing from unison line to traveling waves, 3-helix & double DNA",
+        mode: "linear", count: 24, baseN0: 48, revSec: 60, spring: 0.0, lissajous: 0, cam: "isometric", scale: "harmonic", timbre: "celesta"
+      },
+      {
+        id: "axial_dna_tunnel",
+        name: "Down-the-Barrel Double-Helix DNA Tunnel",
+        desc: "Axial Z-camera looking straight through 32 counter-rotating pendulums at t = 1/2 T_rev",
+        mode: "linear", count: 32, baseN0: 50, revSec: 60, spring: 0.0, lissajous: 25, cam: "tunnel", scale: "pentatonic", timbre: "handpan", startFrac: 0.48
+      },
+      {
+        id: "blackburn_lissajous",
+        name: "Blackburn 2D Spherical Lissajous Vortex",
+        desc: "Bi-axial X-Z oscillations (ω_x : ω_z = 2 : 1) weaving a 3D cylindrical figure-eight tube",
+        mode: "blackburn", count: 24, baseN0: 44, revSec: 54, spring: 0.0, lissajous: 85, cam: "zenith", scale: "just_chord", timbre: "celesta"
+      },
+      {
+        id: "circular_temple_chandelier",
+        name: "Circular Chandelier Temple Bell Mandala",
+        desc: "28 pendulums suspended from a circular overhead ring converging on a central resonance pillar",
+        mode: "circular", count: 28, baseN0: 42, revSec: 60, spring: 0.0, lissajous: 35, cam: "zenith", scale: "slendro", timbre: "gamelan"
+      },
+      {
+        id: "huygens_soliton_chain",
+        name: "Huygens-Frenkel Coupled Torsion Spring Chain",
+        desc: "Adjacent pendulums linked by 3D helical springs propagating breather waves & synchronization",
+        mode: "coupled", count: 20, baseN0: 48, revSec: 60, spring: 0.65, lissajous: 0, cam: "isometric", scale: "pentatonic", timbre: "marimba", profile: "gaussian"
+      },
+      {
+        id: "fractional_triplet_braid",
+        name: "1/6 Revival Three-Strand Braided Helix",
+        desc: "Locked near t = T_rev / 6 where pendulums partition into 3 distinct phase-locked wave trains",
+        mode: "linear", count: 27, baseN0: 54, revSec: 60, spring: 0.0, lissajous: 15, cam: "tunnel", scale: "harmonic", timbre: "kalimba", startFrac: 0.166
+      },
+      {
+        id: "parabolic_staircase",
+        name: "Inverse-Square Length Parabola L_k ∝ (N₀+k)⁻²",
+        desc: "Side-elevation view showcasing the exact physical string-length staircase under lunar gravity",
+        mode: "linear", count: 24, baseN0: 36, revSec: 72, spring: 0.0, lissajous: 0, cam: "parabola", scale: "pendulum", timbre: "gamelan"
+      },
+      {
+        id: "high_density_36",
+        name: "36-Bob Continuum Ribbon & Apex Chime Cathedral",
+        desc: "Ultra-dense 36-pendulum wave with dual Center + Outer Apex triggers and 3D light trails",
+        mode: "linear", count: 36, baseN0: 52, revSec: 60, spring: 0.0, lissajous: 40, cam: "drone", scale: "just_chord", timbre: "celesta"
+      }
+    ];
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePresetId: "mach_24_classic",
+      loomMode: "linear", // 'linear' | 'blackburn' | 'circular' | 'coupled'
+      isPlaying: true,
+      isFullscreen: false,
+
+      // Time & Revival Cycle Parameters
+      timeSec: 0.0,
+      timeSpeed: 1.0,
+      revivalPeriodSec: 60.0,
+      bobCount: 24,
+      baseCyclesN0: 48,
+      gravityG: 9.81,
+      dampingZeta: 0.0,
+      springKappa: 0.0,
+      lissajousDepthPct: 0,
+      releaseProfile: "unison",
+      triggerZone: "center", // 'center' | 'apex' | 'both'
+
+      // Visual & Camera Options
+      cameraPreset: "isometric", // 'tunnel' | 'isometric' | 'zenith' | 'parabola' | 'drone'
+      showSpineRibbon: true,
+      showLightTrails: true,
+
+      // Per-Pendulum Physical State Array
+      bobs: [], // { idx, freqHz, lengthM, thetaX, omegaX, thetaZ, omegaZ, prevThetaX, prevOmegaX, glow, colorHex, trailPts }
+      strikeCounterWindow: 0,
+
+      // Audio Synthesis Parameters
+      pitchScale: "harmonic",
+      timbre: "celesta",
+      rootHz: 165,
+      bellDecaySec: 0.75,
+
+      // Vault
+      vault: []
+    };
+
+    // =========================================================================
+    // 3. EXACT PENDULUM LENGTH PARABOLA & INITIAL RELEASE PROFILE BUILDER
+    // =========================================================================
+    function initPendulumArray(preserveTime = false) {
+      if (!preserveTime) state.timeSec = 0.0;
+      const N = state.bobCount;
+      const N0 = state.baseCyclesN0;
+      const Trev = state.revivalPeriodSec;
+      const g = state.gravityG;
+
+      state.bobs = [];
+      for (let k = 0; k < N; k++) {
+        // Exact harmonic pendulum frequency: f_k = (N0 + k) / T_rev
+        const cycles = N0 + k;
+        const freqHz = cycles / Trev;
+        const omega = 2 * Math.PI * freqHz;
+        // Exact classical length: L_k = g / omega_k^2
+        const lengthM = g / (omega * omega);
+
+        // Compute initial angle from selected release profile
+        let initTheta = 0.62;
+        if (state.releaseProfile === 'alternating') {
+          initTheta = (k % 2 === 0 ? 1 : -1) * 0.58;
+        } else if (state.releaseProfile === 'sine') {
+          initTheta = 0.65 * Math.sin((2 * Math.PI * k) / Math.max(1, N - 1));
+        } else if (state.releaseProfile === 'gaussian') {
+          const mid = (N - 1) * 0.5;
+          const sigma = N * 0.14;
+          initTheta = 0.72 * Math.exp(-Math.pow(k - mid, 2) / (2 * sigma * sigma));
+        } else if (state.releaseProfile === 'v_wedge') {
+          const norm = Math.abs((k / Math.max(1, N - 1)) * 2 - 1);
+          initTheta = 0.20 + norm * 0.52;
+        }
+
+        // Color gradient across the rainbow/emerald-cyan-amber spectrum
+        const hue = (k / N) * 200 + 150;
+        const colorObj = new THREE.Color(`hsl(${Math.round(hue % 360)}, 88%, 60%)`);
+
+        state.bobs.push({
+          idx: k,
+          cycles,
+          freqHz,
+          omega,
+          lengthM,
+          initTheta,
+          thetaX: initTheta,
+          omegaX: 0.0,
+          thetaZ: 0.0,
+          omegaZ: 0.0,
+          prevThetaX: initTheta,
+          prevOmegaX: 0.0,
+          glow: 0.0,
+          colorHex: colorObj.getHex(),
+          colorCss: `hsl(${Math.round(hue % 360)}, 88%, 60%)`,
+          trailPts: []
+        });
+      }
+
+      // Update length telemetry
+      const Lmax = state.bobs[0].lengthM;
+      const Lmin = state.bobs[N - 1].lengthM;
+      document.getElementById('readoutLengthRatio').textContent = `${Lmax.toFixed(2)}m / ${Lmin.toFixed(2)}m`;
+
+      buildBobDisplacementBarsDOM();
+      rebuildThreeLoomScene();
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO SPECTRAL CHIME & RESONATOR ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AC();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.82;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function computeBobPitchHz(k) {
+      const f0 = state.rootHz;
+      const N = state.bobCount;
+      const N0 = state.baseCyclesN0;
+
+      if (state.pitchScale === 'pendulum') {
+        // Exact physical frequency ratio of the k-th pendulum!
+        return f0 * ((N0 + k) / N0) * 1.35;
+      } else if (state.pitchScale === 'pentatonic') {
+        const penta = [1.0, 1.125, 1.25, 1.5, 1.667, 2.0, 2.25, 2.5, 3.0, 3.333, 4.0, 4.5];
+        const oct = Math.floor(k / penta.length);
+        return f0 * penta[k % penta.length] * Math.pow(1.5, oct * 0.5);
+      } else if (state.pitchScale === 'slendro') {
+        const slendro = [1.0, 1.149, 1.319, 1.516, 1.741, 2.0, 2.297, 2.639, 3.031, 3.482];
+        return f0 * slendro[k % slendro.length] * (1 + Math.floor(k / 10) * 0.5);
+      } else if (state.pitchScale === 'just_chord') {
+        const just = [1.0, 1.125, 1.25, 1.333, 1.5, 1.667, 1.875, 2.0, 2.25, 2.5, 2.667, 3.0];
+        return f0 * just[k % just.length] * (1 + Math.floor(k / 12) * 0.5);
+      } else {
+        // Harmonic overtone series
+        return f0 * (1 + k * 0.18);
+      }
+    }
+
+    function triggerPendulumStrike(ctx, destNode, when, options = {}) {
+      const {
+        bobIdx = 0,
+        velocity = 0.78,
+        isApex = false
+      } = options;
+
+      const baseFreq = Math.min(4800, computeBobPitchHz(bobIdx) * (isApex ? 1.5 : 1.0));
+      const decay = state.bellDecaySec * (isApex ? 0.65 : 1.0);
+      const N = Math.max(1, state.bobCount);
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.015, velocity * 0.36), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        const pan = ((bobIdx / Math.max(1, N - 1)) * 2 - 1) * 0.85;
+        panner.pan.setValueAtTime(pan, when);
+        hitGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        hitGain.connect(destNode);
+      }
+
+      // Select overtone profile by instrument timbre
+      let partials = [1.0, 2.0, 3.0];
+      let oscType = 'sine';
+      if (state.timbre === 'celesta') {
+        partials = [1.0, 2.0, 4.0, 5.4];
+        oscType = 'sine';
+      } else if (state.timbre === 'gamelan') {
+        partials = [1.0, 1.007, 2.41, 3.85];
+        oscType = 'triangle';
+      } else if (state.timbre === 'marimba') {
+        partials = [1.0, 4.0, 9.6];
+        oscType = 'sine';
+      } else if (state.timbre === 'kalimba') {
+        partials = [1.0, 2.92, 5.8];
+        oscType = 'triangle';
+      } else if (state.timbre === 'handpan') {
+        partials = [1.0, 2.0, 3.0, 4.02]; // Fundamental + octave + twelfth
+        oscType = 'sine';
+      }
+
+      partials.forEach((ratio, pIdx) => {
+        const freq = Math.min(13500, baseFreq * ratio);
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = pIdx === 0 ? oscType : 'sine';
+        osc.frequency.setValueAtTime(freq, when);
+
+        const amp = pIdx === 0 ? 0.78 : (0.28 / pIdx);
+        const pDecay = Math.max(0.05, decay / Math.pow(pIdx + 1, 0.55));
+        g.gain.setValueAtTime(0.001, when);
+        g.gain.linearRampToValueAtTime(amp, when + 0.0025);
+        g.gain.exponentialRampToValueAtTime(0.0008, when + pDecay);
+
+        osc.connect(g);
+        g.connect(hitGain);
+        osc.start(when);
+        osc.stop(when + pDecay + 0.02);
+      });
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D WEBGL SCENE (PENDULUM LOOM, SPINE RIBBON, TRAILS & CAMERAS)
+    // =========================================================================
+    let scene, camera, renderer, raycaster, mouseVec;
+    let loomGroup, spineLineMesh, springLineMesh, centerLaserMesh;
+    let bobMeshes = [];
+    let stringLines = [];
+    let trailLineMeshes = [];
+    let isDraggingOrbit = false;
+    let prevPointer = { x: 0, y: 0 };
+    let camSpherical = { theta: 0.68, phi: 1.15, radius: 15.5, targetY: -0.5 };
+
+    function initThreeLoomEngine() {
+      const mount = document.getElementById('threeMount');
+      const w = mount.clientWidth || 640;
+      const h = mount.clientHeight || 380;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04060b);
+
+      camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 200);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      mount.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      // Studio Lighting
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.72);
+      scene.add(ambLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 0.95);
+      dirLight1.position.set(10, 16, 12);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xf59e0b, 0.80);
+      dirLight2.position.set(-12, -8, -10);
+      scene.add(dirLight2);
+
+      loomGroup = new THREE.Group();
+      scene.add(loomGroup);
+
+      rebuildThreeLoomScene();
+      applyCameraPreset(state.cameraPreset);
+
+      window.addEventListener('resize', handleViewportResize);
+      document.addEventListener('fullscreenchange', handleViewportResize);
+
+      // Orbit Dragging & 3D Bob Raycast Plucking
+      let downPos = { x: 0, y: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDraggingOrbit = true;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        downPos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!isDraggingOrbit) return;
+        const dx = e.clientX - prevPointer.x;
+        const dy = e.clientY - prevPointer.y;
+        prevPointer = { x: e.clientX, y: e.clientY };
+        camSpherical.theta -= dx * 0.0075;
+        camSpherical.phi = Math.max(0.12, Math.min(Math.PI - 0.15, camSpherical.phi - dy * 0.0075));
+        updateCameraPositionFromSpherical();
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!isDraggingOrbit) return;
+        isDraggingOrbit = false;
+        if (Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 6) {
+          handleThreeBobClick(e);
+        }
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camSpherical.radius = Math.max(5.5, Math.min(34, camSpherical.radius + e.deltaY * 0.01));
+        updateCameraPositionFromSpherical();
+      }, { passive: false });
+    }
+
+    function handleViewportResize() {
+      const mount = document.getElementById('threeMount');
+      if (!mount || !renderer || !camera) return;
+      const w = mount.clientWidth;
+      const h = mount.clientHeight;
+      if (!w || !h) return;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function applyCameraPreset(preset) {
+      state.cameraPreset = preset;
+      document.getElementById('selectCameraView').value = preset;
+      if (preset === 'tunnel') {
+        // Iconic Down-the-Barrel Z-Axis Tunnel View!
+        camSpherical = { theta: 0.0, phi: 1.48, radius: 13.8, targetY: -0.9 };
+      } else if (preset === 'isometric') {
+        camSpherical = { theta: 0.68, phi: 1.15, radius: 15.5, targetY: -0.6 };
+      } else if (preset === 'zenith') {
+        camSpherical = { theta: 0.0, phi: 0.14, radius: 16.5, targetY: 0.0 };
+      } else if (preset === 'parabola') {
+        camSpherical = { theta: Math.PI / 2, phi: 1.45, radius: 16.0, targetY: -0.5 };
+      }
+      updateCameraPositionFromSpherical();
+    }
+
+    function updateCameraPositionFromSpherical() {
+      if (!camera) return;
+      const r = camSpherical.radius;
+      const x = r * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      const y = r * Math.cos(camSpherical.phi) + camSpherical.targetY;
+      const z = r * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.position.set(x, y, z);
+      camera.lookAt(0, camSpherical.targetY, 0);
+    }
+
+    function rebuildThreeLoomScene() {
+      if (!loomGroup) return;
+      while (loomGroup.children.length > 0) {
+        loomGroup.remove(loomGroup.children[0]);
+      }
+      bobMeshes = [];
+      stringLines = [];
+      trailLineMeshes = [];
+
+      const N = state.bobCount;
+      const isCircular = state.loomMode === 'circular';
+      const spanZ = 10.8;
+
+      // 1. Top Suspension Gantry (Linear Beam or Circular Chandelier Ring)
+      if (isCircular) {
+        const ringGeo = new THREE.TorusGeometry(4.2, 0.08, 12, 64);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.2 });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = Math.PI / 2;
+        ringMesh.position.set(0, 3.6, 0);
+        loomGroup.add(ringMesh);
+      } else {
+        const beamGeo = new THREE.BoxGeometry(0.22, 0.22, spanZ + 1.2);
+        const beamMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.6, roughness: 0.3 });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.position.set(0, 3.6, 0);
+        loomGroup.add(beam);
+      }
+
+      // 2. Floor Grid & Glowing Zero-Crossing Laser Gate
+      const gridHelper = new THREE.GridHelper(14, 28, 0x1e293b, 0x0f172a);
+      gridHelper.position.set(0, -3.5, 0);
+      loomGroup.add(gridHelper);
+
+      const laserGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, -3.48, -spanZ * 0.55),
+        new THREE.Vector3(0, -3.48, spanZ * 0.55)
+      ]);
+      const laserMat = new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.75 });
+      centerLaserMesh = new THREE.Line(laserGeo, laserMat);
+      loomGroup.add(centerLaserMesh);
+
+      // 3. Create Pendulum Bobs, Suspension Strings & 3D Light Trails
+      const sphereGeo = new THREE.SphereGeometry(0.24, 24, 24);
+      state.bobs.forEach((b, k) => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: b.colorHex,
+          emissive: b.colorHex,
+          emissiveIntensity: 0.22,
+          roughness: 0.18,
+          metalness: 0.65
+        });
+        const mesh = new THREE.Mesh(sphereGeo, mat);
+        mesh.userData = { bobIdx: k };
+        loomGroup.add(mesh);
+        bobMeshes.push(mesh);
+
+        // Suspension String Line (Pivot -> Bob)
+        const strGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 3.6, 0),
+          new THREE.Vector3(0, 0, 0)
+        ]);
+        const strMat = new THREE.LineBasicMaterial({ color: 0x64748b, transparent: true, opacity: 0.55 });
+        const strLine = new THREE.Line(strGeo, strMat);
+        loomGroup.add(strLine);
+        stringLines.push(strLine);
+
+        // 3D Trail Line
+        const trGeo = new THREE.BufferGeometry();
+        const trMat = new THREE.LineBasicMaterial({ color: b.colorHex, transparent: true, opacity: 0.45 });
+        const trLine = new THREE.Line(trGeo, trMat);
+        loomGroup.add(trLine);
+        trailLineMeshes.push(trLine);
+      });
+
+      // 4. Phase-Wave Spine Ribbon Connecting All N Bobs in 3D Space
+      const spineGeo = new THREE.BufferGeometry();
+      const spineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+      spineLineMesh = new THREE.Line(spineGeo, spineMat);
+      loomGroup.add(spineLineMesh);
+
+      // 5. Coupled Huygens Springs Line
+      const springGeo = new THREE.BufferGeometry();
+      const springMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.65 });
+      springLineMesh = new THREE.Line(springGeo, springMat);
+      loomGroup.add(springLineMesh);
+    }
+
+    function handleThreeBobClick(e) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouseVec, camera);
+      const hits = raycaster.intersectObjects(bobMeshes);
+      if (hits.length > 0) {
+        const k = hits[0].object.userData.bobIdx;
+        const bob = state.bobs[k];
+        if (bob) {
+          bob.thetaX = 0.82;
+          bob.omegaX = 0.0;
+          bob.glow = 1.0;
+          document.getElementById('hudActiveStruckBob').textContent =
+            `Plucked Bob #${k + 1} (${bob.cycles} cycles / T_rev • L = ${bob.lengthM.toFixed(2)}m)`;
+          const ctx = ensureAudio();
+          triggerPendulumStrike(ctx, masterGain, ctx.currentTime, { bobIdx: k, velocity: 0.96 });
+        }
+      }
+    }
+
+    // =========================================================================
+    // 6. REAL-TIME PENDULUM KINEMATICS, COUPLED ODE & PHASE COHERENCE LOOP
+    // =========================================================================
+    const traceCanvas = document.getElementById('phaseTraceCanvas');
+    const traceCtx = traceCanvas.getContext('2d');
+
+    let lastFrameTs = performance.now();
+    function animateMainLoop() {
+      const now = performance.now();
+      const dt = Math.min(0.04, (now - lastFrameTs) / 1000);
+      lastFrameTs = now;
+
+      if (state.cameraPreset === 'drone' && !isDraggingOrbit) {
+        camSpherical.theta += dt * 0.28;
+        updateCameraPositionFromSpherical();
+      }
+
+      stepPendulumLoomPhysics(dt);
+      updateThreeSceneGeometry(dt);
+      render2DPhaseTraceMiniCanvas();
+      updateBobDisplacementBarsDOM();
+
+      renderer.render(scene, camera);
+      requestAnimationFrame(animateMainLoop);
+    }
+
+    function stepPendulumLoomPhysics(dt) {
+      const N = state.bobs.length;
+      const Trev = state.revivalPeriodSec;
+      const dampFactor = Math.exp(-state.dampingZeta * state.timeSec * 0.05);
+      const lissDepth = (state.loomMode === 'blackburn' ? Math.max(0.65, state.lissajousDepthPct / 100) : state.lissajousDepthPct / 100);
+
+      if (state.isPlaying) {
+        state.timeSec = (state.timeSec + dt * state.timeSpeed) % Trev;
+        const frac = state.timeSec / Trev;
+        document.getElementById('sliderPhaseTimeline').value = Math.round(frac * 1000);
+        document.getElementById('lblPhaseFraction').textContent = `${(frac * 100).toFixed(1)}%`;
+        document.getElementById('revivalHeaderReadout').textContent = `t = ${state.timeSec.toFixed(1)}s / ${Trev.toFixed(0)}s`;
+        updatePhaseTopologyBadge(frac);
+      }
+
+      const useCoupledODE = state.loomMode === 'coupled' || state.springKappa > 0.01;
+      let sumCos = 0;
+      let sumSin = 0;
+
+      if (useCoupledODE && state.isPlaying) {
+        // Step Coupled Huygens-Frenkel-Kontorova Torsion Pendulum Lattice via RK2/Verlet
+        const dtSim = dt * state.timeSpeed * 3.2;
+        const kappa = Math.max(0.25, state.springKappa * 2.5);
+        const nextOmega = new Float64Array(N);
+
+        for (let k = 0; k < N; k++) {
+          const b = state.bobs[k];
+          const leftTheta = k > 0 ? state.bobs[k - 1].thetaX : b.thetaX;
+          const rightTheta = k < N - 1 ? state.bobs[k + 1].thetaX : b.thetaX;
+          const springForce = kappa * (leftTheta - 2 * b.thetaX + rightTheta);
+          const gravRestore = -(state.gravityG / b.lengthM) * Math.sin(b.thetaX) * 0.12;
+          const dampingForce = -state.dampingZeta * 0.25 * b.omegaX;
+          nextOmega[k] = b.omegaX + (gravRestore + springForce + dampingForce) * dtSim;
+        }
+
+        for (let k = 0; k < N; k++) {
+          const b = state.bobs[k];
+          b.prevThetaX = b.thetaX;
+          b.prevOmegaX = b.omegaX;
+          b.omegaX = nextOmega[k];
+          b.thetaX += b.omegaX * dtSim;
+          b.thetaZ = lissDepth * 0.45 * Math.sin(2 * b.omega * state.timeSec);
+          checkAndFireStrikeGate(b, k);
+        }
+      } else {
+        // Exact Analytical Harmonic Phase-Loom & Blackburn 2D Lissajous Evolution
+        for (let k = 0; k < N; k++) {
+          const b = state.bobs[k];
+          b.prevThetaX = b.thetaX;
+          b.prevOmegaX = b.omegaX;
+
+          const phase = b.omega * state.timeSec;
+          b.thetaX = b.initTheta * dampFactor * Math.cos(phase);
+          b.omegaX = -b.initTheta * b.omega * dampFactor * Math.sin(phase);
+          // Orthogonal Blackburn Z-oscillation at 2:1 frequency ratio
+          b.thetaZ = lissDepth * 0.48 * dampFactor * Math.sin(2 * phase + (k * Math.PI) / N);
+
+          if (state.isPlaying) {
+            checkAndFireStrikeGate(b, k);
+          }
+          sumCos += Math.cos(phase);
+          sumSin += Math.sin(phase);
+        }
+      }
+
+      const coherenceR = Math.hypot(sumCos / N, sumSin / N);
+      document.getElementById('syncOrderBadge').textContent = `Coherence R = ${coherenceR.toFixed(3)}`;
+    }
+
+    function checkAndFireStrikeGate(bob, k) {
+      const crossedCenter = (bob.prevThetaX < 0 && bob.thetaX >= 0) || (bob.prevThetaX > 0 && bob.thetaX <= 0);
+      const crossedApex = (bob.prevOmegaX > 0 && bob.omegaX <= 0) || (bob.prevOmegaX < 0 && bob.omegaX >= 0);
+
+      let shouldFire = false;
+      let isApex = false;
+
+      if ((state.triggerZone === 'center' || state.triggerZone === 'both') && crossedCenter) {
+        shouldFire = true;
+      } else if ((state.triggerZone === 'apex' || state.triggerZone === 'both') && crossedApex && Math.abs(bob.thetaX) > 0.15) {
+        shouldFire = true;
+        isApex = true;
+      }
+
+      if (shouldFire) {
+        bob.glow = 1.0;
+        state.strikeCounterWindow++;
+        const ctx = ensureAudio();
+        triggerPendulumStrike(ctx, masterGain, ctx.currentTime, {
+          bobIdx: k,
+          velocity: isApex ? 0.62 : 0.84,
+          isApex
+        });
+      }
+    }
+
+    function updatePhaseTopologyBadge(frac) {
+      const badge = document.getElementById('hudPhaseTopologyBadge');
+      if (!badge) return;
+      let label = 'Traveling Phase Wave';
+      if (frac < 0.015 || frac > 0.985) label = 'Unison Alignment (t = 0)';
+      else if (Math.abs(frac - 0.5) < 0.02) label = 'Anti-Phase Double Helix (1/2 T_rev)';
+      else if (Math.abs(frac - 0.3333) < 0.02 || Math.abs(frac - 0.6667) < 0.02) label = '3-Cluster Triplet Braid (1/3 T_rev)';
+      else if (Math.abs(frac - 0.25) < 0.02 || Math.abs(frac - 0.75) < 0.02) label = '4-Strand Quadrature Weave (1/4 T_rev)';
+      else if (Math.abs(frac - 0.1667) < 0.02 || Math.abs(frac - 0.8333) < 0.02) label = '6-Fold Hexagonal Helix (1/6 T_rev)';
+
+      badge.textContent = `Phase State: t = ${frac.toFixed(3)} T_rev (${label})`;
+    }
+
+    function updateThreeSceneGeometry(dt) {
+      const N = state.bobs.length;
+      const spanZ = 10.4;
+      const isCircular = state.loomMode === 'circular';
+      const spinePoints = [];
+      const springPoints = [];
+
+      // Normalize string visual lengths into the 3D viewport height [2.4 .. 5.8 units]
+      const Lmax = state.bobs[0]?.lengthM || 2.5;
+      const Lmin = state.bobs[N - 1]?.lengthM || 1.0;
+
+      for (let k = 0; k < N; k++) {
+        const b = state.bobs[k];
+        b.glow = Math.max(0, b.glow - dt * 3.2);
+
+        const normK = N > 1 ? k / (N - 1) : 0.5;
+        const lenNorm = (b.lengthM - Lmin) / Math.max(0.01, Lmax - Lmin);
+        const visLen = 3.2 + lenNorm * 2.5;
+
+        let pivX = 0, pivY = 3.6, pivZ = (normK - 0.5) * spanZ;
+        let bobX = 0, bobY = 0, bobZ = 0;
+
+        if (isCircular) {
+          const ringAng = (k / N) * Math.PI * 2;
+          const ringR = 4.2;
+          pivX = Math.cos(ringAng) * ringR;
+          pivZ = Math.sin(ringAng) * ringR;
+
+          const radialSwing = ringR - visLen * Math.sin(b.thetaX) * 0.85;
+          bobX = Math.cos(ringAng + b.thetaZ * 0.4) * radialSwing;
+          bobZ = Math.sin(ringAng + b.thetaZ * 0.4) * radialSwing;
+          bobY = pivY - visLen * Math.cos(b.thetaX) * 0.85;
+        } else {
+          bobX = visLen * Math.sin(b.thetaX);
+          bobY = pivY - visLen * Math.cos(b.thetaX) * Math.cos(b.thetaZ * 0.5);
+          bobZ = pivZ + visLen * Math.sin(b.thetaZ * 0.5) * 0.55;
+        }
+
+        const mesh = bobMeshes[k];
+        if (mesh) {
+          mesh.position.set(bobX, bobY, bobZ);
+          const s = 1.0 + b.glow * 0.72;
+          mesh.scale.set(s, s, s);
+          mesh.material.emissiveIntensity = 0.22 + b.glow * 0.78;
+        }
+
+        // Update suspension string
+        const strLine = stringLines[k];
+        if (strLine) {
+          strLine.geometry.setFromPoints([
+            new THREE.Vector3(pivX, pivY, pivZ),
+            new THREE.Vector3(bobX, bobY, bobZ)
+          ]);
+        }
+
+        // Update 3D Light Trail
+        const trLine = trailLineMeshes[k];
+        if (trLine) {
+          trLine.visible = state.showLightTrails;
+          if (state.showLightTrails) {
+            b.trailPts.push(new THREE.Vector3(bobX, bobY, bobZ));
+            if (b.trailPts.length > 26) b.trailPts.shift();
+            trLine.geometry.setFromPoints(b.trailPts);
+          }
+        }
+
+        const bobVec = new THREE.Vector3(bobX, bobY, bobZ);
+        spinePoints.push(bobVec);
+        springPoints.push(bobVec);
+      }
+
+      if (spineLineMesh) {
+        spineLineMesh.visible = state.showSpineRibbon;
+        if (state.showSpineRibbon && spinePoints.length > 1) {
+          if (isCircular) spinePoints.push(spinePoints[0]);
+          spineLineMesh.geometry.setFromPoints(spinePoints);
+        }
+      }
+
+      if (springLineMesh) {
+        const showSprings = state.loomMode === 'coupled' || state.springKappa > 0.01;
+        springLineMesh.visible = showSprings;
+        if (showSprings && springPoints.length > 1) {
+          springLineMesh.geometry.setFromPoints(springPoints);
+        }
+      }
+    }
+
+    function render2DPhaseTraceMiniCanvas() {
+      const W = traceCanvas.width;
+      const H = traceCanvas.height;
+      traceCtx.fillStyle = 'rgba(8, 13, 23, 0.32)';
+      traceCtx.fillRect(0, 0, W, H);
+
+      const N = state.bobs.length;
+      traceCtx.beginPath();
+      for (let k = 0; k < N; k++) {
+        const b = state.bobs[k];
+        const px = 12 + (k / Math.max(1, N - 1)) * (W - 24);
+        const py = H * 0.5 - b.thetaX * (H * 0.52);
+        if (k === 0) traceCtx.moveTo(px, py);
+        else traceCtx.lineTo(px, py);
+      }
+      traceCtx.strokeStyle = '#38bdf8';
+      traceCtx.lineWidth = 1.6;
+      traceCtx.stroke();
+
+      for (let k = 0; k < N; k++) {
+        const b = state.bobs[k];
+        const px = 12 + (k / Math.max(1, N - 1)) * (W - 24);
+        const py = H * 0.5 - b.thetaX * (H * 0.52);
+        traceCtx.beginPath();
+        traceCtx.arc(px, py, b.glow > 0.2 ? 3.2 : 2.0, 0, Math.PI * 2);
+        traceCtx.fillStyle = b.glow > 0.2 ? '#f59e0b' : b.colorCss;
+        traceCtx.fill();
+      }
+    }
+
+    // =========================================================================
+    // 7. INDIVIDUAL BOB DISPLACEMENT RIBBON & FULL-SCREEN ENGINE
+    // =========================================================================
+    function buildBobDisplacementBarsDOM() {
+      const container = document.getElementById('bobDisplacementBars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      state.bobs.forEach((b, k) => {
+        const col = document.createElement('div');
+        col.className = 'flex-1 h-full bg-loom-900 rounded overflow-hidden flex items-end cursor-pointer hover:ring-1 hover:ring-amber-400';
+        col.title = `Bob #${k + 1} (${b.cycles} cycles)`;
+        col.innerHTML = `<div id="bobBar_${k}" class="w-full transition-all duration-75" style="height: 50%; background:${b.colorCss}"></div>`;
+        col.addEventListener('click', () => {
+          b.thetaX = 0.82;
+          b.omegaX = 0;
+          b.glow = 1.0;
+          const ctx = ensureAudio();
+          triggerPendulumStrike(ctx, masterGain, ctx.currentTime, { bobIdx: k, velocity: 0.95 });
+        });
+        container.appendChild(col);
+      });
+    }
+
+    function updateBobDisplacementBarsDOM() {
+      state.bobs.forEach((b, k) => {
+        const bar = document.getElementById(`bobBar_${k}`);
+        if (!bar) return;
+        const pct = Math.min(100, Math.max(8, Math.round(((b.thetaX + 0.85) / 1.7) * 100)));
+        bar.style.height = `${pct}%`;
+      });
+    }
+
+    function toggleLoomFullscreen() {
+      const wrapper = document.getElementById('loomStageWrapper');
+      const btnStage = document.getElementById('btnStageFullscreen');
+      const btnHeader = document.getElementById('btnHeaderFullscreen');
+
+      state.isFullscreen = !state.isFullscreen;
+
+      if (state.isFullscreen) {
+        wrapper.classList.add('loom-fullscreen-stage');
+        btnStage.textContent = '✕ Exit Full Screen [Esc]';
+        btnHeader.innerHTML = '<span>✕ Exit Full Screen</span>';
+        if (wrapper.requestFullscreen) {
+          wrapper.requestFullscreen().catch(() => {});
+        }
+        showToast('Entered Full-Screen 3D Loom Theater Mode (Press F or Esc to exit)');
+      } else {
+        wrapper.classList.remove('loom-fullscreen-stage');
+        btnStage.textContent = '⛶ Full Screen';
+        btnHeader.innerHTML = '<span>⛶ Full Screen [F]</span>';
+        if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      setTimeout(handleViewportResize, 60);
+    }
+
+    // =========================================================================
+    // 8. OFFLINE AUDIO CONTEXT -> 44.1 kHz STEREO WAV EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWav(audioBuffer) {
+      const numCh = audioBuffer.numberOfChannels;
+      const sr = audioBuffer.sampleRate;
+      const len = audioBuffer.length;
+      const blockAlign = numCh * 2;
+      const dataSize = len * blockAlign;
+      const ab = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(ab);
+
+      const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const chData = [];
+      for (let c = 0; c < numCh; c++) chData.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        for (let c = 0; c < numCh; c++) {
+          const s = Math.max(-1, Math.min(1, chData[c][i]));
+          view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([ab], { type: 'audio/wav' });
+    }
+
+    async function renderLoomWav(mode = 'loom_cycle') {
+      const sr = 44100;
+      const N = state.bobs.length;
+      const totalSec = (mode === 'loom_cycle' || mode === 'glissando') ? 4.2 : 2.2;
+
+      const OfflineAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offCtx = new OfflineAC(2, Math.ceil(totalSec * sr), sr);
+
+      if (mode === 'unison_chord') {
+        for (let k = 0; k < Math.min(12, N); k += 2) {
+          triggerPendulumStrike(offCtx, offCtx.destination, 0.05, { bobIdx: k, velocity: 0.85 });
+        }
+      } else if (mode === 'dna_anti') {
+        for (let k = 0; k < N; k++) {
+          const t = (k % 2 === 0 ? 0.05 : 0.42) + k * 0.025;
+          triggerPendulumStrike(offCtx, offCtx.destination, t, { bobIdx: k, velocity: 0.82 });
+        }
+      } else if (mode === 'temple_chime') {
+        triggerPendulumStrike(offCtx, offCtx.destination, 0.05, { bobIdx: 0, velocity: 0.98 });
+        triggerPendulumStrike(offCtx, offCtx.destination, 0.18, { bobIdx: Math.floor(N / 2), velocity: 0.92 });
+      } else if (mode === 'glissando') {
+        for (let k = 0; k < N; k++) {
+          triggerPendulumStrike(offCtx, offCtx.destination, 0.04 + k * 0.09, { bobIdx: k, velocity: 0.86 });
+        }
+      } else {
+        // Simulate actual physical zero crossings over a 3.6-second window starting at current state.timeSec!
+        const dtStep = 0.01;
+        let simT = state.timeSec;
+        for (let step = 0; step < 340; step++) {
+          const prevT = simT;
+          simT += dtStep * state.timeSpeed;
+          for (let k = 0; k < N; k++) {
+            const b = state.bobs[k];
+            const c0 = Math.cos(b.omega * prevT);
+            const c1 = Math.cos(b.omega * simT);
+            if ((c0 < 0 && c1 >= 0) || (c0 > 0 && c1 <= 0)) {
+              triggerPendulumStrike(offCtx, offCtx.destination, 0.04 + step * dtStep, { bobIdx: k, velocity: 0.78 });
+            }
+          }
+        }
+      }
+
+      const rendered = await offCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWav(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const filename = `pendulum_loom_${mode}_${state.bobCount}bobs.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.vault.unshift({ name: filename, url });
+      renderVaultUI();
+      showToast(`Exported Stereo WAV: ${filename}`);
+    }
+
+    function renderVaultUI() {
+      const list = document.getElementById('loomVaultList');
+      const count = document.getElementById('loomVaultCount');
+      count.textContent = `${state.vault.length} file${state.vault.length === 1 ? '' : 's'}`;
+      if (state.vault.length === 0) return;
+
+      list.innerHTML = '';
+      state.vault.slice(0, 5).forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'bg-loom-950 border border-slate-800 rounded-xl p-2 space-y-1';
+        div.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-emerald-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] font-mono">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const txt = document.getElementById('toastText');
+      if (!banner || !txt) return;
+      txt.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._t);
+      banner._t = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 9. PRESET LOADING & UI EVENT WIRING
+    // =========================================================================
+    function applyLoomPreset(pr) {
+      state.activePresetId = pr.id;
+      state.loomMode = pr.mode;
+      state.bobCount = pr.count;
+      state.baseCyclesN0 = pr.baseN0;
+      state.revivalPeriodSec = pr.revSec;
+      state.springKappa = pr.spring;
+      state.lissajousDepthPct = pr.lissajous;
+      state.pitchScale = pr.scale;
+      state.timbre = pr.timbre;
+      if (pr.profile) {
+        state.releaseProfile = pr.profile;
+        document.getElementById('selectReleaseProfile').value = pr.profile;
+      } else {
+        state.releaseProfile = 'unison';
+        document.getElementById('selectReleaseProfile').value = 'unison';
+      }
+
+      document.getElementById('sliderBobCount').value = pr.count;
+      document.getElementById('valBobCount').textContent = `${pr.count} Bobs`;
+      document.getElementById('sliderBaseCycles').value = pr.baseN0;
+      document.getElementById('valBaseCycles').textContent = `${pr.baseN0} Cycles / T_rev`;
+      document.getElementById('sliderRevivalPeriod').value = pr.revSec;
+      document.getElementById('valRevivalPeriod').textContent = `${pr.revSec.toFixed(1)} sec`;
+      document.getElementById('sliderSpringKappa').value = Math.round(pr.spring * 100);
+      document.getElementById('valSpringKappa').textContent = `${pr.spring.toFixed(2)}`;
+      document.getElementById('sliderLissajousDepth').value = pr.lissajous;
+      document.getElementById('valLissajousDepth').textContent = `${pr.lissajous}%`;
+      document.getElementById('readoutLissajousRatio').textContent = pr.lissajous > 5 ? '2 : 1 (Figure-8)' : '1 : 1 (Linear)';
+      document.getElementById('selectPitchScale').value = pr.scale;
+      document.getElementById('selectResonatorTimbre').value = pr.timbre;
+
+      setModeTabUI(pr.mode);
+      initPendulumArray(false);
+      if (pr.startFrac !== undefined) {
+        state.timeSec = pr.startFrac * state.revivalPeriodSec;
+      }
+      applyCameraPreset(pr.cam);
+      renderPresetListUI();
+    }
+
+    function setModeTabUI(mode) {
+      state.loomMode = mode;
+      const bLin = document.getElementById('tabLinearLoom');
+      const bBlk = document.getElementById('tabBlackburn2D');
+      const bCir = document.getElementById('tabCircularTemple');
+      const bHuy = document.getElementById('tabHuygensChain');
+
+      const act = 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition';
+      const idl = 'px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition';
+
+      bLin.className = mode === 'linear' ? act : idl;
+      bBlk.className = mode === 'blackburn' ? act : idl;
+      bCir.className = mode === 'circular' ? act : idl;
+      bHuy.className = mode === 'coupled' ? act : idl;
+    }
+
+    function renderPresetListUI() {
+      const container = document.getElementById('loomPresetList');
+      if (!container) return;
+      container.innerHTML = '';
+
+      LOOM_PRESETS.forEach(pr => {
+        const active = pr.id === state.activePresetId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition ${
+          active ? 'bg-emerald-500/15 border-emerald-400/60 text-white' : 'bg-loom-950/75 hover:bg-loom-900 border-slate-800/80 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold ${active ? 'text-emerald-300' : 'text-slate-200'}">${pr.name}</span>
+            <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-loom-900 text-sky-300 border border-slate-800">${pr.count} Bobs</span>
+          </div>
+          <div class="text-[10px] text-slate-400 truncate mt-0.5">${pr.desc}</div>
+        `;
+        btn.addEventListener('click', () => {
+          applyLoomPreset(pr);
+          const ctx = ensureAudio();
+          triggerPendulumStrike(ctx, masterGain, ctx.currentTime, { bobIdx: 0, velocity: 0.92 });
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function updatePlayButtonUI() {
+      const btn = document.getElementById('btnPlayToggle');
+      if (state.isPlaying) {
+        btn.classList.add('loom-active');
+        document.getElementById('iconPlay').classList.add('hidden');
+        document.getElementById('iconStop').classList.remove('hidden');
+        document.getElementById('labelPlayToggle').textContent = 'PAUSE LOOM';
+      } else {
+        btn.classList.remove('loom-active');
+        document.getElementById('iconPlay').classList.remove('hidden');
+        document.getElementById('iconStop').classList.add('hidden');
+        document.getElementById('labelPlayToggle').textContent = 'RELEASE LOOM';
+      }
+    }
+
+    function initEventListeners() {
+      updatePlayButtonUI();
+
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        ensureAudio();
+        state.isPlaying = !state.isPlaying;
+        updatePlayButtonUI();
+      });
+
+      document.getElementById('btnResetPhaseZero').addEventListener('click', () => {
+        initPendulumArray(false);
+        const ctx = ensureAudio();
+        triggerPendulumStrike(ctx, masterGain, ctx.currentTime, { bobIdx: 0, velocity: 0.92 });
+        showToast('Realigned all Pendulums to t = 0 Unison Release');
+      });
+
+      document.getElementById('selectCameraView').addEventListener('change', (e) => {
+        applyCameraPreset(e.target.value);
+      });
+
+      document.getElementById('btnStageCamCycle').addEventListener('click', () => {
+        const order = ['tunnel', 'isometric', 'zenith', 'parabola', 'drone'];
+        const next = order[(order.indexOf(state.cameraPreset) + 1) % order.length];
+        applyCameraPreset(next);
+        showToast(`Camera Angle: ${next.toUpperCase()}`);
+      });
+
+      document.getElementById('btnHeaderFullscreen').addEventListener('click', toggleLoomFullscreen);
+      document.getElementById('btnStageFullscreen').addEventListener('click', toggleLoomFullscreen);
+
+      document.getElementById('sliderTimeSpeed').addEventListener('input', (e) => {
+        state.timeSpeed = parseInt(e.target.value, 10) / 100;
+        document.getElementById('speedReadout').textContent = `${state.timeSpeed.toFixed(2)}×`;
+      });
+
+      // Mode Tabs
+      document.getElementById('tabLinearLoom').addEventListener('click', () => {
+        setModeTabUI('linear');
+        rebuildThreeLoomScene();
+      });
+      document.getElementById('tabBlackburn2D').addEventListener('click', () => {
+        setModeTabUI('blackburn');
+        if (state.lissajousDepthPct < 40) {
+          state.lissajousDepthPct = 75;
+          document.getElementById('sliderLissajousDepth').value = 75;
+          document.getElementById('valLissajousDepth').textContent = '75%';
+        }
+        rebuildThreeLoomScene();
+      });
+      document.getElementById('tabCircularTemple').addEventListener('click', () => {
+        setModeTabUI('circular');
+        rebuildThreeLoomScene();
+      });
+      document.getElementById('tabHuygensChain').addEventListener('click', () => {
+        setModeTabUI('coupled');
+        if (state.springKappa < 0.2) {
+          state.springKappa = 0.55;
+          document.getElementById('sliderSpringKappa').value = 55;
+          document.getElementById('valSpringKappa').textContent = '0.55';
+        }
+        rebuildThreeLoomScene();
+      });
+
+      document.getElementById('chkSpineRibbon').addEventListener('change', (e) => {
+        state.showSpineRibbon = e.target.checked;
+      });
+      document.getElementById('chkLightTrails').addEventListener('change', (e) => {
+        state.showLightTrails = e.target.checked;
+      });
+
+      // Fractional Revival Jump Buttons
+      document.querySelectorAll('.revival-jump-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const frac = parseFloat(btn.getAttribute('data-frac'));
+          state.timeSec = (frac % 1.0) * state.revivalPeriodSec;
+          document.getElementById('sliderPhaseTimeline').value = Math.round(frac * 1000);
+          document.getElementById('lblPhaseFraction').textContent = `${(frac * 100).toFixed(1)}%`;
+          updatePhaseTopologyBadge(frac);
+          const ctx = ensureAudio();
+          triggerPendulumStrike(ctx, masterGain, ctx.currentTime, { bobIdx: 0, velocity: 0.90 });
+        });
+      });
+
+      document.getElementById('sliderPhaseTimeline').addEventListener('input', (e) => {
+        const frac = parseInt(e.target.value, 10) / 1000;
+        state.timeSec = frac * state.revivalPeriodSec;
+        document.getElementById('lblPhaseFraction').textContent = `${(frac * 100).toFixed(1)}%`;
+        updatePhaseTopologyBadge(frac);
+      });
+
+      const strumAllBobs = () => {
+        const ctx = ensureAudio();
+        const N = state.bobs.length;
+        for (let k = 0; k < N; k++) {
+          setTimeout(() => { if (state.bobs[k]) state.bobs[k].glow = 1.0; }, k * 35);
+          triggerPendulumStrike(ctx, masterGain, ctx.currentTime + k * 0.035, { bobIdx: k, velocity: 0.84 });
+        }
+      };
+      document.getElementById('btnSweepGlissando').addEventListener('click', strumAllBobs);
+      document.getElementById('btnStrikeHarmonicChord').addEventListener('click', strumAllBobs);
+
+      // Left Column Sliders
+      document.getElementById('sliderBobCount').addEventListener('input', (e) => {
+        state.bobCount = parseInt(e.target.value, 10);
+        document.getElementById('valBobCount').textContent = `${state.bobCount} Bobs`;
+        initPendulumArray(true);
+      });
+      document.getElementById('sliderBaseCycles').addEventListener('input', (e) => {
+        state.baseCyclesN0 = parseInt(e.target.value, 10);
+        document.getElementById('valBaseCycles').textContent = `${state.baseCyclesN0} Cycles / T_rev`;
+        initPendulumArray(true);
+      });
+      document.getElementById('sliderRevivalPeriod').addEventListener('input', (e) => {
+        state.revivalPeriodSec = parseInt(e.target.value, 10);
+        document.getElementById('valRevivalPeriod').textContent = `${state.revivalPeriodSec.toFixed(1)} sec`;
+        initPendulumArray(true);
+      });
+      document.getElementById('sliderSpringKappa').addEventListener('input', (e) => {
+        state.springKappa = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valSpringKappa').textContent = state.springKappa.toFixed(2);
+      });
+
+      document.getElementById('selectReleaseProfile').addEventListener('change', (e) => {
+        state.releaseProfile = e.target.value;
+        initPendulumArray(false);
+      });
+      document.getElementById('selectGravity').addEventListener('change', (e) => {
+        state.gravityG = parseFloat(e.target.value);
+        initPendulumArray(true);
+      });
+      document.getElementById('selectTriggerZone').addEventListener('change', (e) => {
+        state.triggerZone = e.target.value;
+      });
+
+      // Right Column Sliders & Selectors
+      document.getElementById('selectPitchScale').addEventListener('change', (e) => {
+        state.pitchScale = e.target.value;
+        strumAllBobs();
+      });
+      document.getElementById('selectResonatorTimbre').addEventListener('change', (e) => {
+        state.timbre = e.target.value;
+        strumAllBobs();
+      });
+      document.getElementById('sliderRootHz').addEventListener('input', (e) => {
+        state.rootHz = parseInt(e.target.value, 10);
+        document.getElementById('valRootHz').textContent = `${state.rootHz} Hz`;
+      });
+      document.getElementById('sliderBellDecay').addEventListener('input', (e) => {
+        state.bellDecaySec = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valBellDecay').textContent = `${state.bellDecaySec.toFixed(2)} s`;
+      });
+      document.getElementById('sliderLissajousDepth').addEventListener('input', (e) => {
+        state.lissajousDepthPct = parseInt(e.target.value, 10);
+        document.getElementById('valLissajousDepth').textContent = `${state.lissajousDepthPct}%`;
+        document.getElementById('readoutLissajousRatio').textContent =
+          state.lissajousDepthPct > 5 ? '2 : 1 (Figure-8)' : '1 : 1 (Linear)';
+      });
+      document.getElementById('sliderDampingDrag').addEventListener('input', (e) => {
+        state.dampingZeta = parseInt(e.target.value, 10) / 100;
+        document.getElementById('valDampingDrag').textContent = state.dampingZeta.toFixed(2);
+      });
+
+      // WAV & JSON Exporters
+      document.getElementById('btnHeaderExportWav').addEventListener('click', () => renderLoomWav('loom_cycle'));
+      document.getElementById('btnExportLoomCycleWav').addEventListener('click', () => renderLoomWav('loom_cycle'));
+      document.getElementById('btnExportGlissandoWav').addEventListener('click', () => renderLoomWav('glissando'));
+
+      document.querySelectorAll('.loom-shot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderLoomWav(btn.getAttribute('data-shot'));
+        });
+      });
+
+      document.getElementById('btnExportLoomJson').addEventListener('click', () => {
+        const payload = {
+          app: "PENDULUM_LOOM_3D_HARMONIC_PHASE_LAB",
+          loomMode: state.loomMode,
+          bobCount: state.bobCount,
+          baseCyclesN0: state.baseCyclesN0,
+          revivalPeriodSec: state.revivalPeriodSec,
+          gravityMps2: state.gravityG,
+          pendulumLengthsMeters: state.bobs.map(b => Number(b.lengthM.toFixed(4))),
+          pendulumFrequenciesHz: state.bobs.map(b => Number(b.freqHz.toFixed(4)))
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pendulum_loom_${state.bobCount}bobs_telemetry.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Downloaded Pendulum Lengths L_k & Phase-Loom JSON');
+      });
+
+      // Keyboard Shortcuts: F = Fullscreen, Esc = Exit Fullscreen, Space = Play/Pause
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.key === ' ') {
+          e.preventDefault();
+          document.getElementById('btnPlayToggle').click();
+        } else if (e.key === 'f' || e.key === 'F') {
+          e.preventDefault();
+          toggleLoomFullscreen();
+        } else if (e.key === 'Escape' && state.isFullscreen) {
+          toggleLoomFullscreen();
+        }
+      });
+
+      setInterval(() => {
+        const rate = (state.strikeCounterWindow / 1.0).toFixed(1);
+        document.getElementById('readoutStrikeRate').textContent = `${rate} hits/s`;
+        state.strikeCounterWindow = 0;
+      }, 1000);
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initThreeLoomEngine();
+      applyLoomPreset(LOOM_PRESETS[0]);
+      initEventListeners();
+      requestAnimationFrame(animateMainLoop);
+    });
+  </script>
+</body>
+</html>
