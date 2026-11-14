@@ -9,19 +9,22 @@ samples over it.
 
 No build step, no backend, no account. Open `index.html` or any module directly.
 
+Listed in the order the modules were built, which tracks the order of ambition
+as well — technique first, then visible physics, then abstractions.
+
 ## The nine
 
 | # | Module | Built on |
 |---|---|---|
-| 01 | **CHRONOCRYSTAL** | 3D spectral graph percussion, pendulum wave, polyrhythmic automaton |
+| 01 | **PAS-40 STUDIO** | The forty PAS rudiments as an interactive simulator and sample lab |
 | 02 | **EIGENPULSE** | Spatial drumline drill, Bessel-mode cymatics, polyrhythmic hocket |
-| 03 | **CYMA-FORGE** | Percussive cymatics: Faraday hydro-tank, biharmonic Chladni plate, acoustic levitation |
-| 04 | **CAVITRON** | Rayleigh–Plesset sonoluminescence, Rijke thermoacoustic flame, shear-thickening impact |
-| 05 | **HYPER-SOLITON** | 4D polychoron percussion via Hopf fibration, nonlinear Toda soliton lattice |
-| 06 | **KAC-SPECTRA** | Isospectral drum solver, Poincaré hyperbolic tree, Kuramoto chimera synth |
-| 07 | **PADIC-BRAID** | p-adic ultrametric tree, non-holomorphic fractal series, braid group B₄ loom |
-| 08 | **QUASICRYSTAL-PU** | Penrose aperiodic percussion, delta-rule state machine, reversible automaton |
-| 09 | **PAS-40 STUDIO** | The forty PAS rudiments as an interactive simulator and sample lab |
+| 03 | **CHRONOCRYSTAL** | 3D spectral graph percussion, pendulum wave, polyrhythmic automaton |
+| 04 | **KAC-SPECTRA** | Isospectral drum solver, Poincaré hyperbolic tree, Kuramoto chimera synth |
+| 05 | **QUASICRYSTAL-PU** | Penrose aperiodic percussion, delta-rule state machine, reversible automaton |
+| 06 | **PADIC-BRAID** | p-adic ultrametric tree, non-holomorphic fractal series, braid group B₄ loom |
+| 07 | **CYMA-FORGE** | Percussive cymatics: Faraday hydro-tank, biharmonic Chladni plate, acoustic levitation |
+| 08 | **HYPER-SOLITON** | 4D polychoron percussion via Hopf fibration, nonlinear Toda soliton lattice |
+| 09 | **CAVITRON** | Rayleigh–Plesset sonoluminescence, Rijke thermoacoustic flame, shear-thickening impact |
 
 ## Specialty
 
@@ -29,8 +32,8 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 |---|---|
 | **PENDULUM-LOOM** | 3D harmonic phase loom, Blackburn Lissajous figures, coupled Huygens clocks |
 
-The piece that started the series, and the most directly physical of them — every
-hit traces back to a pendulum you can watch swing.
+The most purely physical piece in the set — every hit traces back to a pendulum
+you can watch swing.
 
 ## Running locally
 
