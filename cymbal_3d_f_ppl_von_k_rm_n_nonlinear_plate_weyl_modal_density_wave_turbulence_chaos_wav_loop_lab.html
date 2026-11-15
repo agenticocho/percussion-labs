@@ -1,0 +1,3658 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CYMBAL-3D // Föppl–von Kármán Nonlinear Plate, Weyl Modal Density, Wave-Turbulence Chaos &amp; WAV Loop Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #040509;
+      --bg-panel: rgba(10, 13, 22, 0.94);
+      --border-subtle: rgba(148, 163, 184, 0.16);
+      --accent-amber: #f59e0b;
+      --accent-crimson: #f43f5e;
+      --accent-cyan: #22d3ee;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+    }
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-void);
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(7, 10, 18, 0.7); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.28); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.65); }
+
+    /* Scoped Range Sliders — prevents inline toolbar sliders from expanding to 100% width */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      background: rgba(30, 41, 59, 0.95);
+      border-radius: 999px;
+      outline: none;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      cursor: pointer;
+    }
+    .slider-full {
+      width: 100% !important;
+      display: block;
+    }
+    .slider-inline {
+      width: 72px !important;
+      flex-shrink: 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #05060a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.75);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    input[type="range"].crimson-slider::-webkit-slider-thumb {
+      background: #f43f5e;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.75);
+    }
+    input[type="range"].cyan-slider::-webkit-slider-thumb {
+      background: #22d3ee;
+      box-shadow: 0 0 8px rgba(34, 211, 238, 0.75);
+    }
+    input[type="range"].emerald-slider::-webkit-slider-thumb {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
+    }
+    input[type="range"].violet-slider::-webkit-slider-thumb {
+      background: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.75);
+    }
+
+    .glass-card {
+      background: rgba(11, 15, 25, 0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    .hud-pill {
+      background: rgba(5, 8, 15, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+
+    /* Locked Sidebar Dimensions */
+    #leftControlSidebar {
+      width: 312px;
+      min-width: 312px;
+      max-width: 312px;
+      transition: margin-left 0.22s ease, opacity 0.18s ease;
+    }
+    #rightPhysicsSidebar {
+      width: 336px;
+      min-width: 336px;
+      max-width: 336px;
+      transition: margin-right 0.22s ease, opacity 0.18s ease;
+    }
+    @media (min-width: 1440px) {
+      #leftControlSidebar {
+        width: 328px;
+        min-width: 328px;
+        max-width: 328px;
+      }
+      #rightPhysicsSidebar {
+        width: 360px;
+        min-width: 360px;
+        max-width: 360px;
+      }
+    }
+    @media (max-width: 1120px) {
+      #leftControlSidebar {
+        width: 272px;
+        min-width: 272px;
+        max-width: 272px;
+      }
+      #rightPhysicsSidebar {
+        width: 286px;
+        min-width: 286px;
+        max-width: 286px;
+      }
+    }
+
+    /* Individual Panel Collapse States */
+    body.hide-left-panel #leftControlSidebar {
+      display: none !important;
+    }
+    body.hide-right-panel #rightPhysicsSidebar {
+      display: none !important;
+    }
+    body.hide-bottom-deck #bottomSequencerDeck {
+      display: none !important;
+    }
+
+    /* Fullscreen 3D Stage Mode */
+    body.stage-fullscreen #topHeaderBar,
+    body.stage-fullscreen #leftControlSidebar,
+    body.stage-fullscreen #rightPhysicsSidebar,
+    body.stage-fullscreen #bottomSequencerDeck {
+      display: none !important;
+    }
+    body.stage-fullscreen #mainWorkspaceGrid {
+      height: 100vh !important;
+    }
+
+    /* HiDPI / Fullscreen Canvas Lock */
+    #threeCymbalMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeCymbalMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+
+    /* 16-Column CSS Grid for Sequencer */
+    .seq-row-grid {
+      display: grid !important;
+      grid-template-columns: repeat(16, minmax(0, 1fr)) !important;
+      gap: 3px !important;
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+    }
+
+    .seq-cell {
+      height: 22px;
+      min-width: 0;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(15, 23, 42, 0.84);
+      transition: all 0.08s ease;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .seq-cell.beat-downbeat {
+      border-color: rgba(148, 163, 184, 0.34);
+      background: rgba(22, 32, 56, 0.88);
+    }
+    .seq-cell:hover {
+      border-color: rgba(245, 158, 11, 0.65);
+      transform: translateY(-1px);
+    }
+    .seq-cell.active-bow {
+      background: linear-gradient(180deg, rgba(245,158,11,0.92), rgba(180,83,9,0.92));
+      border-color: #fde68a;
+      color: #05060a;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+    }
+    .seq-cell.active-bell {
+      background: linear-gradient(180deg, rgba(34,211,238,0.92), rgba(14,116,144,0.92));
+      border-color: #a5f3fc;
+      color: #05060a;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(34, 211, 238, 0.45);
+    }
+    .seq-cell.active-crash {
+      background: linear-gradient(180deg, rgba(244,63,94,0.92), rgba(190,18,60,0.92));
+      border-color: #fda4af;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.48);
+    }
+    .seq-cell.active-hihat {
+      background: linear-gradient(180deg, rgba(168,85,247,0.90), rgba(107,33,168,0.90));
+      border-color: #d8b4fe;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.42);
+    }
+    .seq-cell.active-roll {
+      background: linear-gradient(180deg, rgba(236,72,153,0.95), rgba(157,23,77,0.95));
+      border-color: #fbcfe8;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(236, 72, 153, 0.55);
+    }
+    .seq-cell.active-kick {
+      background: linear-gradient(180deg, rgba(16,185,129,0.90), rgba(4,120,87,0.90));
+      border-color: #a7f3d0;
+      color: #05060a;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.45);
+    }
+    .seq-cell.playhead-col {
+      outline: 2px solid #f8fafc;
+      outline-offset: -1px;
+      filter: brightness(1.22);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden bg-[#040509] text-slate-100">
+
+  <!-- TOP HEADER BAR -->
+  <header id="topHeaderBar" class="min-h-[50px] shrink-0 px-3 py-1.5 border-b border-slate-800/80 bg-[#070911]/95 flex flex-wrap items-center justify-between gap-2 z-30">
+    <!-- Brand & Title -->
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/35 via-rose-500/25 to-cyan-500/25 border border-amber-400/50 flex items-center justify-center shadow-inner shrink-0">
+        <span class="font-display text-sm font-bold text-amber-300">鐃</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h1 class="font-display text-xs sm:text-sm font-bold tracking-tight text-white truncate">
+            CYMBAL-3D <span class="text-amber-400 font-normal">//</span> <span class="text-slate-200 font-medium">Nonlinear Plate, Weyl Modal Density, Wave-Turbulence Chaos &amp; WAV Lab</span>
+          </h1>
+          <span class="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono-tech uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 shrink-0">
+            Cross-FM [w, Φ] Shimmer DSP
+          </span>
+        </div>
+        <p class="text-[10px] text-slate-400 truncate hidden sm:block">
+          Weyl Density <span class="font-mono-tech text-cyan-300">n(f) = πR²√[3(1−ν²)]/(h·c_L)</span> • 64-Partial FvK Phase-Chaotic Cascade • Multi-Mallet &amp; Hi-Hat Roll Engine
+        </p>
+      </div>
+    </div>
+
+    <!-- Center-Right Cymbal Class Selector & Quick Articulations -->
+    <div class="flex items-center flex-wrap gap-1.5 shrink-0">
+      <!-- 6 Authentic Cymbal Classes (Wikipedia Taxonomy) -->
+      <div class="flex items-center bg-slate-900/95 border border-slate-700/75 rounded-lg p-0.5 text-[10px] font-mono-tech">
+        <button data-cymbal="ride22" class="cymbal-type-btn px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold transition" title="22″ Jazz Sizzle Ride (Woody/Nylon Stick Ping over Dark B20 Shimmer Wash + 6 Brass Sizzle Rivets)">22″ Ride</button>
+        <button data-cymbal="crash18" class="cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="18″ Fast Thin Crash (Explosive Broadband Wave-Turbulence Crash Bloom &amp; Shimmering Tail)">18″ Crash</button>
+        <button data-cymbal="hihat14" class="cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="14″ Paired Hi-Hat (Closed Tip, Foot Chick, Dirty Half-Open Slosh &amp; 32nd-Note Hi-Hat Rolls)">14″ Hi-Hat</button>
+        <button data-cymbal="china19" class="cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="19″ Inverted Flange China (Aggressive Trashy 'Kang-Shhh' Conical Flange Turbulence)">19″ China</button>
+        <button data-cymbal="splash10" class="cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="10″ Paper-Thin Splash (Fast Silvery Splash Bloom &amp; 2.0s Golden Shimmer Tail)">10″ Splash</button>
+        <button data-cymbal="stack16" class="cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="16″ FX Trash Stack (Crash + Inverted China Stack in Metal-on-Metal Contact)">16″ Stack</button>
+        <button data-cymbal="crotale8" class="cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="8″ Antique Crotale (Very Thick + Very Small Tuned Disc • Clean Mix, Pronounced Attack, Long Sustain)">8″ Crotale</button>
+      </div>
+
+      <!-- Quick Articulation Triggers -->
+      <button id="strikeBellBtn" class="px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 text-[11px] font-mono-tech font-semibold transition" title="Strike Raised Bell/Dome Cup (Thick Cast Dome Ping) [B]">
+        🔔 Bell [B]
+      </button>
+
+      <button id="strikeBowBtn" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-bold text-[11px] shadow-lg shadow-amber-500/20 flex items-center gap-1 transition" title="Strike Bow / Ride Area with Selected Stick/Mallet/Brush [Space]">
+        <span>🥢 Bow Ride</span>
+        <span class="font-mono-tech text-[9px] bg-black/20 px-1 rounded">[Space]</span>
+      </button>
+
+      <button id="strikeCrashBtn" class="px-2.5 py-1 rounded-lg bg-rose-500/25 hover:bg-rose-500/40 text-rose-200 border border-rose-500/50 text-[11px] font-mono-tech font-bold transition" title="Explosive Shoulder Crash / Splash / China Burst [C]">
+        💥 Crash [C]
+      </button>
+
+      <button id="hihatRollTopBtn" class="px-2 py-1 rounded-lg bg-purple-500/25 hover:bg-purple-500/40 text-purple-200 border border-purple-500/50 text-[11px] font-mono-tech font-bold transition" title="Trigger Articulated 32nd-Note Closed-to-Open Hi-Hat Roll + Foot Chick [H]">
+        🥁 HH Roll [H]
+      </button>
+
+      <button id="chokeCymbalBtn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/80 text-slate-300 hover:text-rose-200 border border-slate-700 text-[11px] font-mono-tech transition" title="Hand Grab / Secco Choke Damping [M]">
+        ✋ Choke [M]
+      </button>
+
+      <!-- Workspace Panel & Fullscreen Toggles -->
+      <div class="flex items-center bg-slate-900/90 border border-slate-700/70 rounded-lg p-0.5 text-[10px] font-mono-tech">
+        <button id="toggleLeftPanelBtn" class="px-1.5 py-1 rounded bg-slate-800 text-slate-200 hover:text-white transition" title="Show/Hide Left Shell &amp; Beater Panel">◧</button>
+        <button id="toggleBottomDeckBtn" class="px-1.5 py-1 rounded bg-slate-800 text-slate-200 hover:text-white transition mx-0.5" title="Show/Hide Bottom Groove Sequencer">⬓</button>
+        <button id="toggleRightPanelBtn" class="px-1.5 py-1 rounded bg-slate-800 text-slate-200 hover:text-white transition" title="Show/Hide Right Modal Density &amp; Attractor Panel">◨</button>
+        <button id="headerFullscreenBtn" class="ml-0.5 px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold transition" title="Toggle Full-Screen 3D Stage [F]">
+          ⛶ [F]
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div id="mainWorkspaceGrid" class="flex-1 flex min-h-0 relative overflow-hidden">
+
+    <!-- LEFT SIDEBAR: SHELL GEOMETRY, METALLURGY, 6-BEATER ARSENAL, CHAOS & WAV EXPORTER -->
+    <aside id="leftControlSidebar" class="shrink-0 h-full overflow-y-auto border-r border-slate-800/80 bg-[#070a13]/95 p-2.5 space-y-2.5 z-20">
+
+      <!-- 1. WEYL MODAL DENSITY, SHELL CURVATURE & ALLOY METALLURGY -->
+      <section class="glass-card rounded-xl p-2.5 border-amber-500/35 bg-gradient-to-b from-amber-500/[0.07] to-transparent space-y-2">
+        <div class="flex items-center justify-between gap-1.5">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+            <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-amber-300 truncate">
+              1. Weyl Modal Density &amp; Alloy
+            </h2>
+          </div>
+          <span id="weylDensityBadge" class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 font-mono-tech text-[10px] font-bold text-amber-200 shrink-0" title="Asymptotic Weyl Modal Density n(f) = dN/df in modes per Hz">
+            n(f) = 0.44 /Hz
+          </span>
+        </div>
+
+        <p class="text-[10.5px] text-slate-300 leading-snug">
+          By <strong class="text-amber-300">Weyl's Law</strong>, a thin bronze shell of radius <span class="font-mono-tech text-cyan-200">R</span> and thickness <span class="font-mono-tech text-rose-200">h</span> packs <span class="font-mono-tech text-emerald-300">N(10 kHz) ≈ <span id="totalModes10kVal">4,420</span></span> modes whose cross-FM coupling dissolves pitch into metallic shimmer.
+        </p>
+
+        <!-- Cymbal Alloy Selector (Wikipedia Section 5) -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-mono-tech text-slate-400">
+            <span>COPPER ALLOY (合金)</span>
+            <span id="alloyNameLabel" class="text-amber-300">B20 Bell Bronze (80Cu/20Sn)</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 text-[10px] font-mono-tech">
+            <button data-alloy="b20" class="alloy-btn px-1.5 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold" title="B20 Bell Bronze (80% Cu, 20% Sn • Two-Phase α+δ Cast Alloy: Zildjian K/A, Sabian HH, Meinl Byzance)">
+              B20 Cast
+            </button>
+            <button data-alloy="b15" class="alloy-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="B15 Signature Bronze (85% Cu, 15% Sn • Paiste Signature Annealed Sheet Bronze)">
+              B15 Sig
+            </button>
+            <button data-alloy="b8" class="alloy-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="B8 Malleable Bronze (92% Cu, 8% Sn • Paiste 2002 / Sabian B8X Single-Phase Sheet)">
+              B8 2002
+            </button>
+            <button data-alloy="brass" class="alloy-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="MS63 Yellow Brass (63% Cu, 37% Zn • Higher Internal Damping, Warm/Dry Decay)">
+              MS63 Brass
+            </button>
+          </div>
+        </div>
+
+        <!-- Thickness h (mm) & Camber Profile Curvature -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300">Thickness h</span>
+              <span id="plateThicknessVal" class="text-cyan-300 font-bold">1.15 mm</span>
+            </div>
+            <input id="plateThicknessSlider" type="range" min="0.65" max="4.80" step="0.05" value="1.15" class="slider-full cyan-slider" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300">Bow Profile κ</span>
+              <span id="camberProfileVal" class="text-amber-300 font-bold">1.00×</span>
+            </div>
+            <input id="camberProfileSlider" type="range" min="0.25" max="1.85" step="0.05" value="1.00" class="slider-full" />
+          </div>
+        </div>
+
+        <!-- Bell Size Ratio & Paiste Frequency Mix (Clean/Delicate <-> Complex/Trashy) -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300" title="Paiste Bell Character: Separated (Ride/China) vs Integrated (Crash/Splash)">Bell Dome r_b/R</span>
+              <span id="bellRatioVal" class="text-emerald-300">0.22 (Sep)</span>
+            </div>
+            <input id="bellRatioSlider" type="range" min="0.10" max="0.38" step="0.01" value="0.22" class="slider-full emerald-slider" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300" title="Paiste Frequency Mix (Center 'Voice' Layer): Clean/Voiceless vs Complex/Trashy">Voice Mix σ_H</span>
+              <span id="hammeringVal" class="text-violet-300">55% (Balanced)</span>
+            </div>
+            <input id="hammeringSlider" type="range" min="0.0" max="1.0" step="0.02" value="0.55" class="slider-full violet-slider" />
+          </div>
+        </div>
+
+        <!-- Paiste Sound Color (Dark <-> Bright) & Stick Grip (Loose Rebound <-> Tight Choked) -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300" title="Paiste Sound Color: Relative strength of High 'Silver Sound' Shimmer vs Low 'Gong' Undertone">Sound Color</span>
+              <span id="soundColorVal" class="text-amber-300">0.58 (Med-Bright)</span>
+            </div>
+            <input id="soundColorSlider" type="range" min="0.10" max="1.00" step="0.02" value="0.58" class="slider-full" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300" title="RhythmNotes Stick Grip: Loose Grip ('Nano-Buzz' full overtones) vs Tight Grip (Choked/Dry)">Stick Grip</span>
+              <span id="stickGripVal" class="text-cyan-300">0.25 (Loose)</span>
+            </div>
+            <input id="stickGripSlider" type="range" min="0.00" max="1.00" step="0.02" value="0.25" class="slider-full cyan-slider" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. STICK / MALLET / BRUSH ARSENAL & FvK WAVE TURBULENCE -->
+      <section class="glass-card rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-rose-300 truncate">
+            2. Beater Arsenal &amp; Turbulence
+          </h2>
+          <span id="chaosRegimeBadge" class="px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 font-mono-tech text-[9.5px] font-bold text-rose-200 shrink-0">
+            KZ TURBULENCE
+          </span>
+        </div>
+
+        <!-- 5-Beater / Stick / Mallet Selector -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-mono-tech text-slate-400">
+            <span>BEATER / STICK TYPE</span>
+            <span id="beaterTypeLabel" class="text-emerald-300">5A Hickory Wood Tip (τ=0.35ms)</span>
+          </div>
+          <div class="grid grid-cols-5 gap-1 text-[9.5px] font-mono-tech">
+            <button data-beater="hickory" class="beater-btn px-1 py-1 rounded bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 font-semibold" title="5A Hickory Wood Tip Drumstick — Warm woody ping &amp; balanced crash wash">
+              🥢 Wood
+            </button>
+            <button data-beater="nylon" class="beater-btn px-1 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="5B Nylon Tip Drumstick — Hard point contact (τ=0.16ms), glassy 6–10 kHz Ride ping">
+              💎 Nylon
+            </button>
+            <button data-beater="mallet" class="beater-btn px-1 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Wound Yarn / Felt Suspended-Cymbal Mallet (τ=2.8ms) — Zero stick click, warm orchestral bloom">
+              🧶 Mallet
+            </button>
+            <button data-beater="brush" class="beater-btn px-1 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Retractable Steel Wire Jazz Brush — Shimmering multi-wire tap &amp; sweep">
+              🧹 Brush
+            </button>
+            <button data-beater="rute" class="beater-btn px-1 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Birch Rute / Multi-Rod Bundle — Clustered dowel micro-transients">
+              ⚡ Rute
+            </button>
+          </div>
+        </div>
+
+        <!-- Nonlinearity Coupling Gamma_NL -->
+        <div class="space-y-1 pt-1 border-t border-slate-800/80">
+          <div class="flex justify-between text-[10.5px] font-mono-tech">
+            <span class="text-slate-300">FvK Nonlinearity Γ_NL</span>
+            <span id="nonlinearCouplingVal" class="text-rose-300 font-semibold">0.85 (Chaotic Shimmer)</span>
+          </div>
+          <input id="nonlinearCouplingSlider" type="range" min="0.0" max="1.35" step="0.01" value="0.85" class="slider-full crimson-slider" />
+        </div>
+
+        <!-- Strike Velocity & Sustain Damping -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Strike Force F_0</span>
+              <span id="strikeForceVal" class="text-rose-300">0.88 (ff)</span>
+            </div>
+            <input id="strikeForceSlider" type="range" min="0.10" max="1.0" step="0.01" value="0.88" class="slider-full crimson-slider" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>L.V. Sustain τ</span>
+              <span id="sustainDecayVal" class="text-cyan-300">1.0× (3.6s)</span>
+            </div>
+            <input id="sustainDecaySlider" type="range" min="0.25" max="2.5" step="0.05" value="1.0" class="slider-full cyan-slider" />
+          </div>
+        </div>
+
+        <!-- Sizzle Rivets & Hi-Hat Clutch Pedal Openness -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Sizzle Rivets</span>
+              <span id="sizzleRivetsVal" class="text-amber-300">0 Rivets (Off)</span>
+            </div>
+            <input id="sizzleRivetsSlider" type="range" min="0" max="6" step="1" value="0" class="slider-full" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Hi-Hat Clutch</span>
+              <span id="hihatOpenVal" class="text-violet-300">25% (Slosh)</span>
+            </div>
+            <input id="hihatOpenSlider" type="range" min="0.0" max="1.0" step="0.02" value="0.25" class="slider-full violet-slider" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. STUDIO SAMPLE & LOOP WAV EXPORTER -->
+      <section class="glass-card rounded-xl p-2.5 border-emerald-500/35 bg-gradient-to-b from-emerald-500/[0.06] to-transparent space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+            3. Studio WAV Exporter
+          </h2>
+          <span id="exportStatusBadge" class="px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono-tech text-[9.5px] text-emerald-300 truncate max-w-[145px]">
+            44.1 kHz 16-Bit PCM
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono-tech">
+          <button id="exportBellWavBtn" class="px-2 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold text-left truncate">
+            ⬇ "BELL" Ping .WAV
+          </button>
+          <button id="exportBowWavBtn" class="px-2 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 font-semibold text-left truncate">
+            ⬇ "BOW" Ride .WAV
+          </button>
+          <button id="exportCrashWavBtn" class="px-2 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 font-semibold text-left truncate">
+            ⬇ "CRASH" Wash .WAV
+          </button>
+          <button id="exportLoopWavBtn" class="px-2 py-1.5 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/50 font-bold text-left truncate">
+            ⬇ Bounce Loop .WAV
+          </button>
+        </div>
+
+        <!-- Live Performance Recorder Toggle -->
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[10px] font-mono-tech">
+          <button id="liveRecordToggleBtn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition">
+            <span id="recIndicatorDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span id="recButtonLabel">● Record Live Jam to .WAV</span>
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- CENTER 3D STAGE -->
+    <main class="flex-1 relative h-full min-w-0 bg-[#040509] overflow-hidden">
+      <div id="threeCymbalMount"></div>
+
+      <!-- COMPACT, NON-OVERLAPPING TOP HUD OVERLAY -->
+      <div class="absolute top-2.5 inset-x-2.5 z-20 pointer-events-none flex flex-wrap items-start justify-between gap-2">
+        <!-- Left Acoustic Telemetry Pill -->
+        <div class="hud-pill rounded-xl px-2.5 py-1.5 border border-slate-700/70 shadow-xl pointer-events-auto max-w-full">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-mono-tech">
+            <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold" id="hudCymbalModel">22″ JAZZ SIZZLE RIDE (B20)</span>
+            <span class="text-cyan-300 font-bold" id="hudCentroidReadout">Centroid f_c = 5.42 kHz</span>
+            <span class="px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-300 font-semibold" id="hudZoneLabel">BOW RIDE (r/R = 0.52)</span>
+          </div>
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] font-mono-tech text-slate-400">
+            <span>Beater: <strong id="hudBeaterName" class="text-emerald-300">5A Hickory</strong></span>
+            <span>Entropy H_s: <strong id="hudSpectralEntropy" class="text-amber-300">0.88 bits</strong></span>
+            <span>Cascade: <strong id="hudCascadeSlope" class="text-rose-300">f^−1.58</strong></span>
+            <span>Deflection w/h: <strong id="hudDeflectionRatio" class="text-cyan-300">0.00</strong></span>
+            <span>Rivets: <strong id="hudRivetStatus" class="text-emerald-300">0 Active</strong></span>
+          </div>
+        </div>
+
+        <!-- Right Camera & Cutaway Controls Pill -->
+        <div class="flex flex-col items-end gap-1 pointer-events-auto">
+          <div class="hud-pill rounded-xl p-1 flex flex-wrap items-center gap-1 shadow-xl">
+            <button id="camPerspectiveBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition" title="Drummer's 3/4 Overhead Perspective">
+              Drummer 3/4
+            </button>
+            <button id="camProfileEdgeBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Edge-On Camber Profile showing Transverse Bending Waves &amp; Sizzle Rivet Bounce">
+              Edge Profile
+            </button>
+            <button id="camChladniTopBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Top-Down Chladni Nodal &amp; Lathing View">
+              Top Chladni
+            </button>
+            <button id="camCenterFitBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition" title="Center &amp; Fit Cymbal Stand">
+              ⌖ Fit [R]
+            </button>
+            <button id="stageFullscreenBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold transition" title="Toggle Full-Screen 3D Viewport [F]">
+              ⛶ Full [F]
+            </button>
+          </div>
+
+          <div class="hud-pill rounded-xl px-2 py-1 flex flex-wrap items-center gap-2 text-[10px] font-mono-tech">
+            <button id="zoomOutBtn" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center">−</button>
+            <input id="cameraZoomSlider" type="range" min="4.5" max="18.0" step="0.1" value="8.8" class="slider-inline" title="Camera Distance / Zoom" />
+            <button id="zoomInBtn" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center">+</button>
+            <span class="text-slate-600">|</span>
+            <label class="flex items-center gap-1 cursor-pointer text-amber-300" title="Superimpose Föppl–von Kármán Wave-Turbulence &amp; Chladni Nodal Heatmap on the Bronze Surface">
+              <input id="toggleChladniHeatmap" type="checkbox" checked class="accent-amber-400" />
+              <span>Wave Heatmap</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-cyan-300" title="Show Structural Polar Mesh Wireframe">
+              <input id="toggleWireframeMesh" type="checkbox" class="accent-cyan-400" />
+              <span>Mesh Grid</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTION HINT & FLOATING ARTICULATION PADS (BOTTOM OF 3D STAGE) -->
+      <div class="absolute bottom-2.5 inset-x-2.5 z-20 pointer-events-none flex flex-col items-center gap-1">
+        <div class="text-[9.5px] font-mono-tech text-slate-400/90 bg-slate-950/75 px-2.5 py-0.5 rounded-full border border-slate-800/80">
+          Click 3D Cymbal: <strong class="text-cyan-300">Inner Cup</strong> = Bell Ping • <strong class="text-amber-300">Mid Bow</strong> = Ride Tip • <strong class="text-rose-300">Outer Rim</strong> = Crash/Splash Burst • Drag = Orbit
+        </div>
+        <div class="pointer-events-auto flex items-center gap-1 hud-pill rounded-xl px-2 py-1 border border-amber-500/35 shadow-2xl whitespace-nowrap max-w-full overflow-x-auto">
+          <button data-pad="bell" class="art-pad-btn px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-500/45 text-cyan-200 font-mono-tech text-[10px] font-bold transition">
+            🔔 BELL PING <span class="text-[8.5px] text-cyan-300/80">[B]</span>
+          </button>
+          <button data-pad="bow" class="art-pad-btn px-2 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 border border-amber-500/50 text-amber-200 font-mono-tech text-[10px] font-bold transition">
+            🥢 BOW RIDE <span class="text-[8.5px] text-amber-300/80">[Space]</span>
+          </button>
+          <button data-pad="spang" class="art-pad-btn px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/35 text-amber-200 font-mono-tech text-[10px] font-semibold transition">
+            🎷 SPANG-A-LANG <span class="text-[8.5px] text-slate-400">[D]</span>
+          </button>
+          <button data-pad="crash" class="art-pad-btn px-2 py-1 rounded-lg bg-rose-500/25 hover:bg-rose-500/40 border border-rose-500/50 text-rose-200 font-mono-tech text-[10px] font-bold transition">
+            💥 EDGE CRASH <span class="text-[8.5px] text-rose-300/80">[C]</span>
+          </button>
+          <button data-pad="chick" class="art-pad-btn px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/40 text-purple-200 font-mono-tech text-[10px] font-semibold transition">
+            🦶 HI-HAT CHICK <span class="text-[8.5px] text-slate-400">[X]</span>
+          </button>
+          <button data-pad="slurp" class="art-pad-btn px-2 py-1 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/40 border border-indigo-500/50 text-indigo-200 font-mono-tech text-[10px] font-bold transition" title="RhythmNotes #8 Hi-Hat Slurp: Strike open hi-hat edge with stick shoulder and snap shut with foot pedal [U]">
+            🌊 HH SLURP <span class="text-[8.5px] text-indigo-300/80">[U]</span>
+          </button>
+          <button data-pad="hhroll" class="art-pad-btn px-2 py-1 rounded-lg bg-pink-500/25 hover:bg-pink-500/40 border border-pink-500/50 text-pink-200 font-mono-tech text-[10px] font-bold transition" title="32nd-Note Closed-to-Open Hi-Hat Roll + Foot Chick">
+            🥁 HH ROLL <span class="text-[8.5px] text-pink-300/80">[H]</span>
+          </button>
+          <button data-pad="buzz" class="art-pad-btn px-2 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500/35 border border-orange-500/40 text-orange-200 font-mono-tech text-[10px] font-semibold transition" title="Pressed Stick Multi-Bounce Buzz Roll">
+            ⚡ BUZZ ROLL <span class="text-[8.5px] text-slate-400">[P]</span>
+          </button>
+          <button data-pad="swell" class="art-pad-btn px-2 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/35 border border-teal-500/40 text-teal-200 font-mono-tech text-[10px] font-semibold transition" title="Orchestral Suspended Cymbal Yarn-Mallet Crescendo Roll">
+            🌊 SWELL ROLL <span class="text-[8.5px] text-slate-400">[W]</span>
+          </button>
+          <button data-pad="bowed" class="art-pad-btn px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-200 font-mono-tech text-[10px] font-semibold transition" title="Draw a contrabass bow across the cymbal edge">
+            🎻 BASS BOW <span class="text-[8.5px] text-slate-400">[V]</span>
+          </button>
+          <button data-pad="zing" class="art-pad-btn px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-500/40 text-sky-200 font-mono-tech text-[10px] font-semibold transition" title="Scrape a coin radially across the lathing grooves">
+            🪙 COIN ZING <span class="text-[8.5px] text-slate-400">[Z]</span>
+          </button>
+          <button data-pad="choke" class="art-pad-btn px-2 py-1 rounded-lg bg-slate-800 hover:bg-rose-950/70 border border-slate-700 text-slate-200 font-mono-tech text-[10px] font-semibold transition">
+            ✋ SECCO CHOKE <span class="text-[8.5px] text-slate-400">[M]</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: SHELL MODAL CLUSTERS, ANATOMY RADAR & PHASE-SPACE / KZ CASCADE -->
+    <aside id="rightPhysicsSidebar" class="shrink-0 h-full overflow-y-auto border-l border-slate-800/80 bg-[#070a13]/95 p-2.5 space-y-2.5 z-20">
+
+      <!-- 1. CAMBERED SHELL MODAL CLUSTERS & BIFURCATION INSPECTOR -->
+      <section class="glass-card rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-white">
+              Shell Modes &amp; Turbulence Bands
+            </h2>
+            <p class="text-[9.5px] text-slate-400">
+              Click any band to solo its Chladni $(m,n)$ standing wave
+            </p>
+          </div>
+          <button id="clearSoloModeBtn" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[9.5px] font-mono-tech text-slate-300 border border-slate-700 shrink-0">
+            All Modes
+          </button>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-slate-800/90 bg-slate-950/80">
+          <table class="w-full text-left border-collapse font-mono-tech text-[10px]">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/90">
+                <th class="py-1 px-2">Mode (m,n)</th>
+                <th class="py-1 px-1.5 text-cyan-300">Zone / Role</th>
+                <th class="py-1 px-1.5 text-amber-300">Band Hz</th>
+                <th class="py-1 px-2 text-right">Cascade</th>
+              </tr>
+            </thead>
+            <tbody id="cymbalModalTableBody" class="divide-y divide-slate-800/60">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Physics Note -->
+        <div class="rounded-lg bg-slate-900/75 border border-slate-800 p-2 text-[10px] text-slate-300 leading-snug">
+          <div class="flex items-center justify-between font-mono-tech text-[9.5px] mb-0.5">
+            <span class="text-cyan-300">Bell: Cast Dome</span>
+            <span class="text-amber-300">Bow: Cross-FM Wash</span>
+            <span class="text-rose-300">Edge: [w,Φ] Chaos</span>
+          </div>
+          <p class="text-slate-400">
+            Unlike a bell's isolated partials, a cymbal's <strong class="text-amber-300">4,000+ Weyl modes</strong> undergo continuous <span class="font-mono-tech text-rose-300">Föppl–von Kármán phase modulation</span>, dissolving pitch into broadband bronze shimmer.
+          </p>
+        </div>
+      </section>
+
+      <!-- 2. ANATOMY STRIKE RADAR + KZ SPECTRUM & PHASE-SPACE STRANGE ATTRACTOR -->
+      <section class="glass-card rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-amber-300">
+            Anatomy Radar &amp; KZ Cascade
+          </h2>
+          <div class="flex items-center bg-slate-900 border border-slate-800 rounded p-0.5 text-[9px] font-mono-tech">
+            <button id="scopeModeSpectrumBtn" class="px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-200 font-semibold">S(f) Cascade</button>
+            <button id="scopeModeAttractorBtn" class="px-1.5 py-0.5 rounded text-slate-400 hover:text-white">Phase (w, ẇ)</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-5 gap-2 items-center">
+          <!-- Interactive Cymbal Anatomy Radar (Bell / Bow / Edge + Sizzle Rivets) -->
+          <div class="col-span-2 flex flex-col items-center">
+            <canvas id="cymbalRadarCanvas" width="128" height="128" class="w-[116px] h-[116px] rounded-full bg-[#04070e] border border-slate-700/80 cursor-crosshair shadow-inner" title="Click Inner Bell, Mid Bow, or Outer Edge to test spatial excitation"></canvas>
+          </div>
+          <!-- Live KZ Turbulence Spectrum OR Phase-Space Strange Attractor -->
+          <div class="col-span-3">
+            <canvas id="turbulenceScopeCanvas" width="220" height="116" class="w-full h-[116px] rounded-lg bg-[#04070e] border border-slate-800/90"></canvas>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-between text-[9px] font-mono-tech text-slate-400 pt-0.5">
+          <span class="text-cyan-300">● Bell Cup</span>
+          <span class="text-amber-300">● Bow Ride</span>
+          <span class="text-rose-300">● Edge Crash / KZ Flux</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- BOTTOM 5-TRACK × 16-STEP CYMBAL & GROOVE SEQUENCER + WAV LOOP BOUNCER -->
+  <footer id="bottomSequencerDeck" class="shrink-0 border-t border-slate-800/80 bg-[#060810]/98 px-3 py-2 flex flex-col justify-between gap-1.5 z-30">
+    <!-- Top Sequencer Transport & Pattern Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="seqPlayToggleBtn" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono-tech text-[11px] font-bold flex items-center gap-1 shadow-lg shadow-emerald-500/20 transition">
+          <span id="seqPlayIcon">▶</span>
+          <span id="seqPlayText">Play Cymbal Groove</span>
+        </button>
+
+        <!-- Iconic Cymbal Groove Presets -->
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[10px] font-mono-tech">
+          <button data-pat="spang" class="pat-preset-btn px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold">🎷 Jazz Ride</button>
+          <button data-pat="bonham" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">💥 Rock Crash</button>
+          <button data-pat="bebop" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">🔥 Bebop Sizzle</button>
+          <button data-pat="piatti" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">🏛️ Symphonic Piatti</button>
+          <button data-pat="progbell" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">🔔 Prog Bell</button>
+          <button data-pat="chinabreak" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">🐉 China Trash</button>
+        </div>
+
+        <!-- BPM & Swing Sliders (Locked Inline Widths) -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-lg px-2 py-0.5 text-[10px] font-mono-tech">
+          <span class="text-slate-400">BPM</span>
+          <input id="seqBpmSlider" type="range" min="60" max="210" step="1" value="128" class="slider-inline" />
+          <span id="seqBpmVal" class="text-amber-300 font-bold w-6 text-right">128</span>
+          <span class="text-slate-700">|</span>
+          <span class="text-slate-400">Swing</span>
+          <input id="seqSwingSlider" type="range" min="0" max="0.42" step="0.01" value="0.22" class="slider-inline cyan-slider" />
+          <span id="seqSwingVal" class="text-cyan-300 w-7 text-right">22%</span>
+        </div>
+      </div>
+
+      <!-- Right Loop Export, Improvise & Clear Controls -->
+      <div class="flex items-center gap-1.5 text-[10px] font-mono-tech">
+        <button id="mutateSeqBtn" class="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40" title="Generate New Cymbal Groove Variation with Hi-Hat Rolls">
+          🎲 Improvise
+        </button>
+        <select id="loopBarsSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+          <option value="1">1 Bar WAV</option>
+          <option value="2" selected>2 Bars WAV</option>
+          <option value="4">4 Bars WAV</option>
+        </select>
+        <button id="footerExportLoopBtn" class="px-2.5 py-1 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/50 font-bold transition">
+          ⬇ Export Loop (.WAV)
+        </button>
+        <button id="exportJsonPatternBtn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" title="Export Cymbal Metallurgy, Nonlinear Parameters &amp; Groove Pattern as JSON">
+          { } JSON
+        </button>
+        <button id="clearSeqBtn" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-200 border border-slate-800">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- 5-Track × 16-Step Cymbal Matrix -->
+    <div class="flex flex-col gap-1 min-h-0">
+      <!-- Track 0: BOW RIDE TIP / SPANG-A-LANG / BUZZ -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-200">
+          <span>1. 🥢 BOW RIDE / BUZZ</span>
+          <span class="text-[8.5px] text-amber-300/80">r=0.52</span>
+        </div>
+        <div id="seqRow_0" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 1: BELL DOME CUP PING -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-200">
+          <span>2. 🔔 BELL CUP PING</span>
+          <span class="text-[8.5px] text-cyan-300/80">r=0.14</span>
+        </div>
+        <div id="seqRow_1" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 2: EDGE CRASH / SPLASH / SECCO CHOKE -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-200">
+          <span>3. 💥 CRASH / SPLASH</span>
+          <span class="text-[8.5px] text-rose-300/80">r=0.92</span>
+        </div>
+        <div id="seqRow_2" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 3: HI-HAT CLUTCH (CHICK / SLOSH / 32nd ROLL) -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-purple-500/15 border border-purple-500/30 text-purple-200">
+          <span>4. 🦶 HI-HAT / ROLL</span>
+          <span class="text-[8.5px] text-purple-300/80">111.142</span>
+        </div>
+        <div id="seqRow_3" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 4: KICK / SNARE ANCHOR PULSE -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-200">
+          <span>5. 🥁 KICK / SNARE</span>
+          <span class="text-[8.5px] text-emerald-300/80">Anchor</span>
+        </div>
+        <div id="seqRow_4" class="seq-row-grid"></div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. GROUNDED CYMBAL SPECIFICATIONS, ALLOYS, BEATERS & MODAL CLUSTERS
+    // =========================================================================
+    const CYMBAL_MODELS = {
+      ride22: {
+        name: '22″ Artisan Ride',
+        diameterIn: 22,
+        radiusM: 0.2794,
+        defaultThicknessMm: 1.45,
+        defaultCamber: 1.05,
+        defaultBellRatio: 0.22,
+        defaultHammering: 0.55,
+        defaultNonlinearity: 0.35,
+        defaultSustain: 1.25,
+        defaultRivets: 0,
+        baseF0: 285.0,
+        radius3D: 2.55,
+        chinaFlange: false,
+        isHiHatPair: false,
+        isSplash: false,
+        isCrash: false,
+        isRide: true,
+        isCrotale: false
+      },
+      crash18: {
+        name: '18″ Fast Thin Crash',
+        diameterIn: 18,
+        radiusM: 0.2286,
+        defaultThicknessMm: 0.90,
+        defaultCamber: 1.12,
+        defaultBellRatio: 0.20,
+        defaultHammering: 0.72,
+        defaultNonlinearity: 0.88,
+        defaultSustain: 1.05,
+        defaultRivets: 0,
+        baseF0: 360.0,
+        radius3D: 2.18,
+        chinaFlange: false,
+        isHiHatPair: false,
+        isSplash: false,
+        isCrash: true,
+        isRide: false,
+        isCrotale: false
+      },
+      hihat14: {
+        name: '14″ Paired Hi-Hat (111.142)',
+        diameterIn: 14,
+        radiusM: 0.1778,
+        defaultThicknessMm: 1.20,
+        defaultCamber: 0.95,
+        defaultBellRatio: 0.23,
+        defaultHammering: 0.62,
+        defaultNonlinearity: 0.65,
+        defaultSustain: 0.70,
+        defaultRivets: 0,
+        baseF0: 480.0,
+        radius3D: 1.82,
+        chinaFlange: false,
+        isHiHatPair: true,
+        isSplash: false,
+        isCrash: false,
+        isRide: false,
+        isCrotale: false
+      },
+      china19: {
+        name: '19″ Inverted Flange China',
+        diameterIn: 19,
+        radiusM: 0.2413,
+        defaultThicknessMm: 0.98,
+        defaultCamber: 1.35,
+        defaultBellRatio: 0.25,
+        defaultHammering: 0.95,
+        defaultNonlinearity: 1.15,
+        defaultSustain: 0.82,
+        defaultRivets: 0,
+        baseF0: 315.0,
+        radius3D: 2.28,
+        chinaFlange: true,
+        isHiHatPair: false,
+        isSplash: false,
+        isCrash: false,
+        isRide: false,
+        isCrotale: false
+      },
+      splash10: {
+        name: '10″ Paper-Thin Splash',
+        diameterIn: 10,
+        radiusM: 0.1270,
+        defaultThicknessMm: 0.72,
+        defaultCamber: 0.88,
+        defaultBellRatio: 0.24,
+        defaultHammering: 0.65,
+        defaultNonlinearity: 0.92,
+        defaultSustain: 1.10,
+        defaultRivets: 0,
+        baseF0: 620.0,
+        radius3D: 1.42,
+        chinaFlange: false,
+        isHiHatPair: false,
+        isSplash: true,
+        isCrash: false,
+        isRide: false,
+        isCrotale: false
+      },
+      stack16: {
+        name: '16″ FX Trash Stack (Crash + China)',
+        diameterIn: 16,
+        radiusM: 0.2032,
+        defaultThicknessMm: 0.95,
+        defaultCamber: 1.15,
+        defaultBellRatio: 0.22,
+        defaultHammering: 0.92,
+        defaultNonlinearity: 1.15,
+        defaultSustain: 0.45,
+        defaultRivets: 0,
+        baseF0: 390.0,
+        radius3D: 1.98,
+        chinaFlange: true,
+        isHiHatPair: true,
+        isStack: true,
+        isSplash: false,
+        isCrash: true,
+        isRide: false,
+        isCrotale: false
+      },
+      crotale8: {
+        name: '8″ Orchestral Crotale (C6)',
+        diameterIn: 8,
+        radiusM: 0.1016,
+        defaultThicknessMm: 4.50,
+        defaultCamber: 0.30,
+        defaultBellRatio: 0.28,
+        defaultHammering: 0.08,
+        defaultNonlinearity: 0.10,
+        defaultSustain: 1.85,
+        defaultRivets: 0,
+        baseF0: 1046.5,
+        radius3D: 1.18,
+        chinaFlange: false,
+        isHiHatPair: false,
+        isSplash: false,
+        isCrash: false,
+        isCrotale: true
+      }
+    };
+
+    const CYMBAL_ALLOYS = {
+      b20: {
+        name: 'B20 Bell Bronze (80Cu/20Sn)',
+        cL: 3650,
+        poisson: 0.34,
+        colorHex: 0xd99b52,
+        roughness: 0.27,
+        metalness: 0.88,
+        brightnessScale: 1.00,
+        dampingMult: 1.00
+      },
+      b15: {
+        name: 'B15 Signature Bronze (85Cu/15Sn)',
+        cL: 3820,
+        poisson: 0.34,
+        colorHex: 0xe5b567,
+        roughness: 0.20,
+        metalness: 0.92,
+        brightnessScale: 1.16,
+        dampingMult: 0.94
+      },
+      b8: {
+        name: 'B8 2002 Bronze (92Cu/8Sn)',
+        cL: 3980,
+        poisson: 0.33,
+        colorHex: 0xdf8244,
+        roughness: 0.24,
+        metalness: 0.89,
+        brightnessScale: 1.25,
+        dampingMult: 1.08
+      },
+      brass: {
+        name: 'MS63 Yellow Brass (63Cu/37Zn)',
+        cL: 3480,
+        poisson: 0.35,
+        colorHex: 0xeab308,
+        roughness: 0.34,
+        metalness: 0.80,
+        brightnessScale: 0.80,
+        dampingMult: 1.55
+      }
+    };
+
+    // 5 Physical Stick / Mallet / Brush Contact Profiles
+    const BEATER_PROFILES = {
+      hickory: {
+        name: '5A Hickory Wood Tip (τ=0.35ms)',
+        shortName: '5A Hickory',
+        contactMs: 0.35,
+        pingFreqHz: 3450,
+        pingGain: 0.85,
+        attackRiseMs: 2.2,
+        multiHits: 1
+      },
+      nylon: {
+        name: '5B Nylon Tip (τ=0.16ms • Bright Ping)',
+        shortName: '5B Nylon Tip',
+        contactMs: 0.16,
+        pingFreqHz: 6200,
+        pingGain: 1.25,
+        attackRiseMs: 1.1,
+        multiHits: 1
+      },
+      mallet: {
+        name: 'Wound Yarn Timpani Mallet (τ=2.8ms)',
+        shortName: 'Yarn Mallet',
+        contactMs: 2.80,
+        pingFreqHz: 950,
+        pingGain: 0.08,
+        attackRiseMs: 24.0,
+        multiHits: 1
+      },
+      brush: {
+        name: 'Fanned Steel Wire Jazz Brush',
+        shortName: 'Jazz Wire Brush',
+        contactMs: 0.12,
+        pingFreqHz: 7800,
+        pingGain: 0.65,
+        attackRiseMs: 6.5,
+        multiHits: 9
+      },
+      rute: {
+        name: 'Birch Rute / Multi-Rod Bundle',
+        shortName: 'Rute Bundle',
+        contactMs: 0.28,
+        pingFreqHz: 4100,
+        pingGain: 0.72,
+        attackRiseMs: 4.0,
+        multiHits: 5
+      }
+    };
+
+    // 8 Representative Modal Families + Turbulence Cascade Bands
+    const CYMBAL_MODES_TEMPLATE = [
+      {
+        id: '(2,0) Rim', m: 2, n: 0,
+        baseRatio: 0.48,
+        baseDecay: 4.2,
+        zoneLabel: 'Edge Undertone Hum',
+        color: '#22d3ee'
+      },
+      {
+        id: '(3,0) Flex', m: 3, n: 0,
+        baseRatio: 1.00,
+        baseDecay: 3.6,
+        zoneLabel: 'Primary Bow Wash',
+        color: '#38bdf8'
+      },
+      {
+        id: 'f/2 Subharm', m: 4, n: 0,
+        baseRatio: 1.48,
+        baseDecay: 2.9,
+        zoneLabel: 'Period-Doubling Roar',
+        color: '#a855f7',
+        isSubharmonic: true
+      },
+      {
+        id: '(5,1) Bow', m: 5, n: 1,
+        baseRatio: 2.42,
+        baseDecay: 2.6,
+        zoneLabel: 'Ride Stick Definition',
+        color: '#f59e0b'
+      },
+      {
+        id: '(0,2) Bell', m: 0, n: 2,
+        baseRatio: 4.85,
+        baseDecay: 3.2,
+        zoneLabel: 'Cast Cup Dome Ping',
+        color: '#10b981',
+        isBellMode: true
+      },
+      {
+        id: '(8,2) Shimmer', m: 8, n: 2,
+        baseRatio: 7.40,
+        baseDecay: 1.9,
+        zoneLabel: '3–6 kHz Precursor',
+        color: '#fbbf24'
+      },
+      {
+        id: 'KZ Cascade I', m: 12, n: 3,
+        baseRatio: 13.80,
+        baseDecay: 1.35,
+        zoneLabel: '6–10 kHz Turbulence',
+        color: '#fb7185',
+        isTurbulence: true
+      },
+      {
+        id: 'KZ Cascade II', m: 16, n: 4,
+        baseRatio: 22.40,
+        baseDecay: 0.95,
+        zoneLabel: '10–16 kHz Sizzle Air',
+        color: '#f43f5e',
+        isTurbulence: true
+      }
+    ];
+
+    // =========================================================================
+    // 2. APPLICATION STATE & 5-TRACK × 16-STEP GROOVE PATTERNS
+    // =========================================================================
+    // Tracks:
+    // 0: Bow Ride Tip (0=off, 1=RIDE Tip, 2=SPANG Skip, 3=BUZZ Roll)
+    // 1: Bell Cup Ping (0=off, 1=BELL Shoulder, 2=PING! Accent)
+    // 2: Edge Crash / Splash (0=off, 1=CRASH/SPLASH, 2=SECCO Choke)
+    // 3: Hi-Hat Clutch (0=off, 1=CHICK, 2=SLOSH Open, 3=32nd HH-ROLL)
+    // 4: Kick / Snare Anchor (0=off, 1=KICK Sub, 2=SNARE Crisp)
+    const CYMBAL_PATTERNS = {
+      spang: {
+        name: 'Jazz Spang-a-Lang (Pure Swing Ride + Hi-Hat Chick)',
+        bpm: 128,
+        swing: 0.28,
+        tracks: [
+          [1, 0, 1, 2,  1, 0, 1, 2,  1, 0, 1, 2,  1, 0, 3, 2],
+          [0, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0,  0, 0, 1, 0],
+          [0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0],
+          [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 3],
+          [1, 0, 0, 0,  2, 0, 0, 1,  1, 0, 0, 0,  2, 0, 0, 0]
+        ]
+      },
+      bonham: {
+        name: 'Bonham Heavy Crash-Ride & Slosh Groove',
+        bpm: 108,
+        swing: 0.12,
+        tracks: [
+          [1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0],
+          [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 1, 0, 0],
+          [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 1, 0],
+          [2, 0, 1, 0,  2, 0, 1, 3,  2, 0, 1, 0,  2, 0, 3, 1],
+          [1, 0, 0, 1,  2, 0, 1, 0,  1, 1, 0, 0,  2, 0, 0, 1]
+        ]
+      },
+      bebop: {
+        name: 'Up-Tempo Bebop Sizzle & Buzz Matrix',
+        bpm: 164,
+        swing: 0.30,
+        tracks: [
+          [1, 0, 1, 2,  1, 0, 3, 1,  1, 0, 1, 2,  1, 2, 1, 3],
+          [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 1,  0, 0, 0, 1],
+          [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0],
+          [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 3, 2, 1],
+          [1, 0, 0, 2,  0, 0, 1, 0,  0, 2, 0, 0,  1, 0, 2, 0]
+        ]
+      },
+      piatti: {
+        name: 'Symphonic Piatti & Mallet Swells',
+        bpm: 96,
+        swing: 0.00,
+        tracks: [
+          [0, 0, 0, 1,  0, 0, 3, 0,  0, 0, 0, 1,  0, 1, 3, 2],
+          [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0],
+          [1, 0, 0, 0,  2, 0, 1, 0,  1, 0, 0, 0,  1, 0, 2, 0],
+          [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  3, 0, 0, 1],
+          [1, 0, 0, 0,  1, 0, 2, 0,  1, 0, 0, 0,  1, 0, 2, 0]
+        ]
+      },
+      progbell: {
+        name: 'Prog Syncopated Bell & Hi-Hat Roll',
+        bpm: 136,
+        swing: 0.04,
+        tracks: [
+          [1, 1, 0, 1,  0, 1, 1, 0,  1, 0, 1, 1,  0, 1, 0, 2],
+          [1, 0, 1, 0,  2, 0, 0, 1,  0, 2, 0, 0,  1, 0, 2, 0],
+          [0, 0, 0, 0,  2, 0, 0, 0,  1, 0, 0, 0,  2, 0, 0, 0],
+          [1, 0, 3, 0,  1, 0, 2, 0,  1, 0, 3, 0,  1, 3, 2, 1],
+          [1, 0, 1, 0,  2, 0, 0, 1,  1, 0, 0, 1,  2, 0, 1, 0]
+        ]
+      },
+      chinabreak: {
+        name: 'Half-Time China Trash Breakdown',
+        bpm: 118,
+        swing: 0.06,
+        tracks: [
+          [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 3, 0],
+          [0, 0, 0, 0,  0, 0, 0, 1,  0, 0, 0, 0,  0, 0, 1, 2],
+          [1, 0, 0, 1,  1, 0, 0, 0,  1, 0, 1, 0,  1, 0, 2, 0],
+          [2, 0, 3, 0,  1, 0, 2, 0,  2, 0, 3, 0,  1, 3, 2, 1],
+          [1, 0, 0, 1,  0, 0, 2, 0,  1, 0, 1, 0,  2, 0, 0, 1]
+        ]
+      }
+    };
+
+    const state = {
+      cymbalType: 'ride22',
+      alloyType: 'b20',
+      beaterType: 'hickory',
+      thicknessMm: 1.45,
+      camberProfile: 1.00,
+      bellRatio: 0.22,
+      hammering: 0.55,
+      soundColor: 0.58,
+      stickGrip: 0.25,
+      nonlinearity: 0.45,
+      strikeForce: 0.88,
+      sustainDecay: 1.00,
+      sizzleRivets: 0,
+      hihatOpenness: 0.25,
+      showHeatmap: true,
+      showWireframe: false,
+      soloModeIdx: -1,
+      scopeView: 'spectrum',
+      lastStrikeR: 0.52,
+      lastStrikeTheta: 0.0,
+      lastZoneName: 'BOW RIDE',
+      weylDensity: 0.44,
+      spectralCentroidHz: 5420,
+      spectralEntropy: 0.88,
+      cascadeSlope: -1.58,
+      deflectionRatio: 0.0,
+      turbulenceEnergy: 0.0,
+      subharmonicEnergy: 0.0,
+      tiltAngleX: 0.0,
+      tiltVelX: 0.0,
+      tiltAngleZ: 0.0,
+      tiltVelZ: 0.0,
+      seqPlaying: false,
+      seqBpm: 128,
+      seqSwing: 0.22,
+      seqStep: 0,
+      seqNextStepTime: 0,
+      seqGrid: JSON.parse(JSON.stringify(CYMBAL_PATTERNS.spang.tracks)),
+      isRecordingLive: false,
+      liveRecordedChunksL: [],
+      liveRecordedChunksR: [],
+      modes: CYMBAL_MODES_TEMPLATE.map(m => ({
+        ...m,
+        freq: 320.0 * m.baseRatio,
+        amp: 0.0,
+        phase: Math.random() * Math.PI * 2,
+        decayRate: 1.0 / m.baseDecay
+      })),
+      rivets: Array.from({ length: 6 }, (_, i) => ({
+        theta: (i / 6) * Math.PI * 2 + 0.3,
+        rNorm: 0.68,
+        zOffset: 0.0,
+        zVel: 0.0
+      })),
+      attractorTrail: []
+    };
+
+    // Pre-computed Irrational Metallic Mode Ratios (48 dense inharmonic shell ratios)
+    const METALLIC_SHELL_RATIOS = [
+      0.472, 0.618, 0.785, 0.941, 1.000, 1.137, 1.293, 1.414,
+      1.589, 1.732, 1.912, 2.087, 2.236, 2.449, 2.683, 2.915,
+      3.162, 3.431, 3.719, 4.032, 4.371, 4.743, 5.148, 5.589,
+      6.071, 6.598, 7.172, 7.801, 8.485, 9.231, 10.04, 10.92,
+      11.88, 12.92, 14.05, 15.28, 16.61, 18.06, 19.63, 21.34,
+      23.19, 25.20, 27.38, 29.75, 32.31, 35.08, 38.09, 41.35
+    ];
+
+    // =========================================================================
+    // 3. WEYL MODAL DENSITY & FÖPPL–VON KÁRMÁN WAVE-TURBULENCE PHYSICS ENGINE
+    // =========================================================================
+    function computeWeylModalDensity() {
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const alloy = CYMBAL_ALLOYS[state.alloyType];
+      const R = spec.radiusM;
+      const h = state.thicknessMm * 0.001;
+      const nu = alloy.poisson;
+      const cL = alloy.cL;
+      const n_f = (Math.PI * R * R * Math.sqrt(3.0 * (1.0 - nu * nu))) / (h * cL);
+      state.weylDensity = n_f;
+      return n_f;
+    }
+
+    function updateNonlinearShellPhysics(dt) {
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const alloy = CYMBAL_ALLOYS[state.alloyType];
+      const n_f = computeWeylModalDensity();
+
+      const thicknessFactor = state.thicknessMm / spec.defaultThicknessMm;
+      const camberFactor = Math.sqrt(0.45 + 0.55 * state.camberProfile * state.camberProfile);
+      const alloyFactor = alloy.cL / 3650.0;
+      const fBase = spec.baseF0 * thicknessFactor * camberFactor * alloyFactor;
+
+      // Rigid Body Tilt Oscillation of Cymbal on Felt Mount
+      const kTilt = 26.0;
+      const cTilt = 2.4;
+      state.tiltVelX += (-kTilt * state.tiltAngleX - cTilt * state.tiltVelX) * dt;
+      state.tiltVelZ += (-kTilt * state.tiltAngleZ - cTilt * state.tiltVelZ) * dt;
+      state.tiltAngleX += state.tiltVelX * dt;
+      state.tiltAngleZ += state.tiltVelZ * dt;
+
+      const lowEnergy = state.modes[0].amp + state.modes[1].amp + state.modes[3].amp;
+      state.deflectionRatio = (lowEnergy * 1.65) / Math.max(0.5, state.thicknessMm);
+
+      // Quadratic curvature coupling feeds subharmonic f/2 mode
+      if (state.deflectionRatio > 0.25 && state.nonlinearity > 0.2) {
+        const subFlux = Math.min(0.95, (state.deflectionRatio - 0.22) * state.nonlinearity * 1.45 * dt);
+        state.modes[2].amp = Math.min(1.15, state.modes[2].amp + subFlux);
+      }
+
+      // Cubic Monge-Ampère [w, Phi] wave turbulence cascade pumps energy into high-k modes
+      if (state.deflectionRatio > 0.30 && state.nonlinearity > 0.25) {
+        const kzFlux = Math.min(1.2, Math.pow(state.deflectionRatio, 1.5) * state.nonlinearity * 2.6 * dt);
+        state.modes[5].amp = Math.min(1.25, state.modes[5].amp + kzFlux * 0.78);
+        state.modes[6].amp = Math.min(1.30, state.modes[6].amp + kzFlux * 0.98);
+        state.modes[7].amp = Math.min(1.25, state.modes[7].amp + kzFlux * 0.92);
+      }
+
+      let totalAmp = 0.0001;
+      let weightedFreq = 0.0;
+      state.modes.forEach((m) => {
+        const bellBoost = m.isBellMode ? (0.75 + 1.2 * state.bellRatio) : 1.0;
+        const nlShift = m.isTurbulence ? (1.0 + 0.08 * state.deflectionRatio * state.nonlinearity) : 1.0;
+        m.freq = Math.min(16500, fBase * m.baseRatio * bellBoost * nlShift);
+
+        if (m.amp > 0.0002) {
+          m.phase = (m.phase + 2 * Math.PI * m.freq * dt) % (Math.PI * 2000);
+          const hihatDamp = (spec.isHiHatPair && state.hihatOpenness < 0.25) ? (4.5 - 14.0 * state.hihatOpenness) : 1.0;
+          const decay = Math.exp(-m.decayRate * alloy.dampingMult * hihatDamp * dt);
+          m.amp *= decay;
+        } else {
+          m.amp = 0.0;
+        }
+        totalAmp += m.amp;
+        weightedFreq += m.amp * m.freq;
+      });
+
+      state.turbulenceEnergy = 0.5 * (state.modes[6].amp + state.modes[7].amp);
+      state.subharmonicEnergy = state.modes[2].amp;
+      state.spectralCentroidHz = totalAmp > 0.005 ? (weightedFreq / totalAmp) : fBase * 4.5;
+
+      let H = 0.0;
+      if (totalAmp > 0.005) {
+        for (let i = 0; i < state.modes.length; i++) {
+          const p = state.modes[i].amp / totalAmp;
+          if (p > 1e-5) H -= p * Math.log2(p);
+        }
+        H /= 3.0;
+      }
+      state.spectralEntropy = Math.min(1.0, H);
+      state.cascadeSlope = -2.35 + 1.15 * Math.min(1.0, state.turbulenceEnergy * state.nonlinearity);
+
+      // Update Sizzle Rivets Bouncing Kinematics
+      for (let i = 0; i < state.sizzleRivets; i++) {
+        const rv = state.rivets[i];
+        rv.zVel -= 18.0 * dt;
+        rv.zOffset += rv.zVel * dt;
+        const plateVib = (lowEnergy * 0.12 + state.turbulenceEnergy * 0.08) * Math.sin(state.modes[1].phase * 0.15 + i * 1.7);
+        if (rv.zOffset <= plateVib) {
+          rv.zOffset = plateVib;
+          if (lowEnergy > 0.03) {
+            rv.zVel = Math.abs(rv.zVel) * 0.55 + (lowEnergy * 1.45) * (0.6 + 0.4 * Math.random());
+          } else {
+            rv.zVel = 0.0;
+          }
+        }
+      }
+
+      const wSample = state.modes[1].amp * Math.sin(state.modes[1].phase * 0.04)
+                    + state.modes[2].amp * 0.65 * Math.sin(state.modes[2].phase * 0.02)
+                    + state.modes[6].amp * 0.42 * Math.sin(state.modes[6].phase * 0.09);
+      const vSample = state.modes[1].amp * Math.cos(state.modes[1].phase * 0.04)
+                    - state.modes[2].amp * 0.65 * Math.cos(state.modes[2].phase * 0.02)
+                    + state.modes[5].amp * 0.48 * Math.cos(state.modes[5].phase * 0.07);
+      state.attractorTrail.push({ w: wSample, v: vSample, chaos: state.turbulenceEnergy });
+      if (state.attractorTrail.length > 220) state.attractorTrail.shift();
+
+      return { n_f, fBase };
+    }
+
+    // =========================================================================
+    // 4. SAMPLE-LEVEL FÖPPL–VON KÁRMÁN CROSS-FM & WAVE-TURBULENCE AUDIO ENGINE
+    //    (Zero "tubular bell / church bell / cast iron pan" sine tones!)
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let activeAudioNodes = [];
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.85;
+
+        const comp = audioCtx.createDynamicsCompressor();
+        comp.threshold.value = -8;
+        comp.knee.value = 8;
+        comp.ratio.value = 4.0;
+        comp.attack.value = 0.0015;
+        comp.release.value = 0.12;
+
+        masterGain.connect(comp);
+        comp.connect(audioCtx.destination);
+
+        const scriptProc = audioCtx.createScriptProcessor(4096, 2, 2);
+        comp.connect(scriptProc);
+        scriptProc.connect(audioCtx.destination);
+        scriptProc.onaudioprocess = e => {
+          if (!state.isRecordingLive) return;
+          const inL = e.inputBuffer.getChannelData(0);
+          const inR = e.inputBuffer.getChannelData(1);
+          state.liveRecordedChunksL.push(new Float32Array(inL));
+          state.liveRecordedChunksR.push(new Float32Array(inR));
+        };
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function registerLiveGainNode(gNode) {
+      activeAudioNodes.push(gNode);
+      if (activeAudioNodes.length > 64) activeAudioNodes.shift();
+    }
+
+    function chokeAllLiveAudio() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      activeAudioNodes.forEach(g => {
+        try {
+          g.gain.cancelScheduledValues(now);
+          g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), now);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + 0.038);
+        } catch (_) {}
+      });
+      activeAudioNodes = [];
+      state.modes.forEach(m => { m.amp *= 0.03; });
+      state.rivets.forEach(rv => { rv.zVel = 0; rv.zOffset = 0; });
+      document.getElementById('hudZoneLabel').textContent = 'SECCO CHOKE (Damped)';
+    }
+
+    // Core Per-Sample Föppl–von Kármán Metallic Cymbal Synthesizer
+    // Synthesizes stereo 44.1kHz buffers using:
+    //  1. 6-Operator Inharmonic Cross-FM Metallic Cluster (destroys bell-like periodicity via [w, Phi] phase chaos)
+    //  2. Multi-Band Dispersive Wave-Turbulence Shimmer Cascade (800 Hz – 16.5 kHz)
+    //  3. Hertzian Beater/Mallet/Brush/Rute Contact Impulse & Dispersive Chirp
+    //  4. Stochastic Sizzle Rivet Bounce Rattle & Hi-Hat Dual-Plate Slosh Modulation
+    // =========================================================================
+    // 4B. 3,240-MODE 4-LAYER PAISTE SPECTRAL-MODAL IFFT ENGINE
+    //     Implements the exact Paiste Classification System & RhythmNotes Physics:
+    //     - Layer 1: Undertones ("Gong Sound" / Basic Pitch, 135 - 720 Hz, 180 modes)
+    //     - Layer 2: Center Section ("Voice" / Frequency Mix, 720 - 3,500 Hz, 960 modes)
+    //     - Layer 3: Overtones ("Silver Sound" / Shimmer, 3,500 - 16,500 Hz, 1,800 modes)
+    //     - Layer 4: Separated Bell Dome & Stick-Tip "Ping" (1,650 - 6,200 Hz, 300 modes)
+    //     Because 3,240 genuine inharmonic bronze sinusoids are synthesized via
+    //     analytic Radix-2 IFFT (spaced by ~4 Hz with zero gaps and zero pitch sweeps),
+    //     it is 100% free of "space-movie chimes", "tubular bells", and "radio static"!
+    // =========================================================================
+    const MODAL_TABLE_LEN = 262144; // 5.94s dense modal grain (covers full decay, no looping) with golden-ratio stereo crossfade
+    let cachedSpectralKey = '';
+    let paisteLayers = {
+      undertoneL: new Float32Array(262144),
+      undertoneR: new Float32Array(262144),
+      voiceL:     new Float32Array(262144),
+      voiceR:     new Float32Array(262144),
+      silverL:    new Float32Array(262144),
+      silverR:    new Float32Array(262144),
+      bellPingL:  new Float32Array(262144),
+      bellPingR:  new Float32Array(262144)
+    };
+
+    function radix2IFFT(re, im) {
+      const n = re.length;
+      let j = 0;
+      for (let i = 0; i < n; i++) {
+        if (i < j) {
+          const tr = re[i]; re[i] = re[j]; re[j] = tr;
+          const ti = im[i]; im[i] = im[j]; im[j] = ti;
+        }
+        let m = n >> 1;
+        while (m >= 1 && j >= m) { j -= m; m >>= 1; }
+        j += m;
+      }
+      for (let len = 2; len <= n; len <<= 1) {
+        const half = len >> 1;
+        const ang = (2.0 * Math.PI) / len;
+        const wlenRe = Math.cos(ang);
+        const wlenIm = Math.sin(ang);
+        for (let i = 0; i < n; i += len) {
+          let wRe = 1.0, wIm = 0.0;
+          for (let k = 0; k < half; k++) {
+            const uRe = re[i + k], uIm = im[i + k];
+            const vRe = re[i + k + half] * wRe - im[i + k + half] * wIm;
+            const vIm = re[i + k + half] * wIm + im[i + k + half] * wRe;
+            re[i + k] = uRe + vRe;
+            im[i + k] = uIm + vIm;
+            re[i + k + half] = uRe - vRe;
+            im[i + k + half] = uIm - vIm;
+            const nextWRe = wRe * wlenRe - wIm * wlenIm;
+            wIm = wRe * wlenIm + wIm * wlenRe;
+            wRe = nextWRe;
+          }
+        }
+      }
+    }
+
+    function normalizeLayerPair(re, im, targetPeak = 0.92) {
+      let maxVal = 1e-6;
+      for (let i = 0; i < re.length; i++) {
+        const a = Math.abs(re[i]);
+        const b = Math.abs(im[i]);
+        if (a > maxVal) maxVal = a;
+        if (b > maxVal) maxVal = b;
+      }
+      const scale = targetPeak / maxVal;
+      for (let i = 0; i < re.length; i++) {
+        re[i] *= scale;
+        im[i] *= scale;
+      }
+    }
+
+    function ensurePaisteSpectralLayers(sr = 44100) {
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const alloy = CYMBAL_ALLOYS[state.alloyType];
+      const key = `${state.cymbalType}_${state.alloyType}_${state.thicknessMm.toFixed(2)}_${state.camberProfile.toFixed(2)}_${state.bellRatio.toFixed(2)}_${state.hammering.toFixed(2)}`;
+      if (key === cachedSpectralKey) return;
+      cachedSpectralKey = key;
+
+      const N = 262144;
+      const df = sr / N; // 0.6729 Hz bin spacing
+      const halfN = (N >> 1) - 16;
+
+      // Paiste Size & Thickness Law:
+      // Larger diameter -> lower pitch; Thicker plate -> higher pitch
+      const sizeRatio = 20.0 / spec.diameterIn;
+      const thickRatio = Math.pow(state.thicknessMm / spec.defaultThicknessMm, 0.55);
+      const camberRatio = Math.sqrt(0.6 + 0.4 * state.camberProfile);
+      const alloyRatio = alloy.cL / 3650.0;
+      const f0 = spec.baseF0 * thickRatio * camberRatio * alloyRatio;
+
+      // Clear all 4 layer spectral buffers
+      const uRe = paisteLayers.undertoneL, uIm = paisteLayers.undertoneR;
+      const vRe = paisteLayers.voiceL,     vIm = paisteLayers.voiceR;
+      const sRe = paisteLayers.silverL,    sIm = paisteLayers.silverR;
+      const bRe = paisteLayers.bellPingL,  bIm = paisteLayers.bellPingR;
+      uRe.fill(0); uIm.fill(0);
+      vRe.fill(0); vIm.fill(0);
+      sRe.fill(0); sIm.fill(0);
+      bRe.fill(0); bIm.fill(0);
+
+      // 1. LAYER 1: Undertone ("Gong Sound" / Basic Pitch, 130 Hz – 740 Hz, 180 modes)
+      const fLowStart = Math.max(115, f0 * 0.52);
+      const fLowEnd   = Math.max(420, f0 * 2.45);
+      for (let m = 0; m < 180; m++) {
+        const u = m / 180;
+        const baseF = fLowStart * Math.pow(fLowEnd / fLowStart, u);
+        const detune = 1.0 + 0.035 * Math.sin(m * 13.7 + state.hammering * 4.0);
+        const freq = baseF * detune;
+        const k = Math.round(freq / df);
+        if (k > 8 && k < halfN) {
+          const phi = m * 2.3999632 + Math.cos(m * 5.17) * 2.5;
+          const amp = (1.0 - 0.35 * u) * (0.7 + 0.3 * Math.sin(m * 3.1));
+          uRe[k] += Math.cos(phi) * amp;
+          uIm[k] += Math.sin(phi) * amp;
+          // Hammering Chladni doublet partner (2 - 6 Hz apart)
+          const k2 = k + Math.max(2, Math.round((2.2 + 4.5 * state.hammering) / df));
+          if (k2 < halfN) {
+            uRe[k2] += Math.cos(phi + 1.1) * amp * 0.78;
+            uIm[k2] += Math.sin(phi + 1.1) * amp * 0.78;
+          }
+        }
+      }
+
+      // 2. LAYER 2: Center Section ("Voice" / Complexity, 680 Hz – 3,800 Hz, 960 modes!)
+      //    On a China or Stack, modes bunch into rough, trashy formant clusters!
+      const fVoiceStart = Math.max(520, f0 * 2.1);
+      const fVoiceEnd   = Math.min(4400, 3400 * Math.sqrt(sizeRatio) * alloy.brightnessScale);
+      for (let m = 0; m < 960; m++) {
+        const u = m / 960;
+        let freq = fVoiceStart * Math.pow(fVoiceEnd / fVoiceStart, u);
+        let clusterWeight = 1.0;
+
+        if (spec.chinaFlange || spec.isStack) {
+          // China / Stack: rough, dissonant upturned-flange formant comb ("trashy confetti")
+          const formantWave = Math.cos(2 * Math.PI * 5.5 * u) + 0.6 * Math.sin(2 * Math.PI * 13.0 * u);
+          clusterWeight = Math.max(0.15, 1.0 + 0.95 * formantWave);
+          freq *= (1.0 + 0.025 * Math.sin(m * 9.3));
+        } else {
+          // Smooth Kirchhoff-Love cambered bow modal distribution
+          clusterWeight = 0.75 + 0.25 * Math.sin(2 * Math.PI * 3.0 * u);
+          freq *= (1.0 + 0.012 * state.hammering * Math.sin(m * 17.9));
+        }
+
+        const k = Math.round(freq / df);
+        if (k > 16 && k < halfN) {
+          const phi = m * 2.3999632 + Math.sin(m * 11.31) * 3.14159;
+          const amp = clusterWeight / Math.pow(1.0 + 1.5 * u, 0.35);
+          vRe[k] += Math.cos(phi) * amp;
+          vIm[k] += Math.sin(phi) * amp;
+        }
+      }
+
+      // 3. LAYER 3: Overtones ("Silver Sound" / Shimmer, 3,200 Hz – 16,500 Hz, 1,800 modes!)
+      //    Ultra-dense metallic modes (~1 mode every 7 Hz) -> pure silver sheen with zero static!
+      const fSilverStart = spec.isSplash ? 2100 : 2950;
+      const fSilverEnd   = Math.min(sr * 0.44, 16200 * alloy.brightnessScale);
+      for (let m = 0; m < 1800; m++) {
+        const u = m / 1800;
+        const freq = fSilverStart * Math.pow(fSilverEnd / fSilverStart, u) * (1.0 + 0.006 * Math.sin(m * 23.7));
+        const k = Math.round(freq / df);
+        if (k > 32 && k < halfN) {
+          const phi = m * 1.6180339 * Math.PI * 2 + Math.cos(m * 8.73) * 3.14159;
+          // Roll off gently above 11 kHz like real bronze air radiation
+          const rolloff = 1.0 / (1.0 + Math.pow(freq / (4000 * alloy.brightnessScale), 2.5));
+          let chinaEdge = 1.0;
+          if (spec.chinaFlange) {
+            chinaEdge = 0.65 + 0.65 * Math.abs(Math.sin(m * 0.045));
+          }
+          const amp = rolloff * chinaEdge;
+          sRe[k] += Math.cos(phi) * amp;
+          sIm[k] += Math.sin(phi) * amp;
+        }
+      }
+
+      // 4. LAYER 4: Separated Bell Dome & Stick-Tip "Ping" Cluster (1,550 Hz – 6,400 Hz, 300 modes)
+      //    Models the rigid raised dome surrounding the center hole + dispersive stick-tip "ting"
+      const fBellBase = (spec.isRide ? 1980 : (spec.chinaFlange ? 1620 : 2250)) * thickRatio * alloy.brightnessScale;
+      const bellCenterRatios = [1.0, 1.38, 1.79, 2.26, 2.78, 3.35];
+      for (let cIdx = 0; cIdx < bellCenterRatios.length; cIdx++) {
+        const fCenter = fBellBase * bellCenterRatios[cIdx];
+        // Each dome partial is a tight mini-cluster of 50 micro-modes (gives a rich metallic dome ping, not a pure sine wave!)
+        for (let j = 0; j < 50; j++) {
+          const spreadHz = (j - 25) * (1.8 + 1.4 * cIdx);
+          const freq = fCenter + spreadHz;
+          const k = Math.round(freq / df);
+          if (k > 24 && k < halfN) {
+            const weight = Math.exp(-Math.pow((j - 25) / 11.0, 2)) / (1.0 + 0.35 * cIdx);
+            const phi = (cIdx * 50 + j) * 2.39996;
+            bRe[k] += Math.cos(phi) * weight;
+            bIm[k] += Math.sin(phi) * weight;
+          }
+        }
+      }
+
+      // Hermitian symmetry: mirror positive frequencies to negative so the IFFT
+      // produces a REAL-valued output. Without this, the IFFT of a one-sided
+      // spectrum creates broadband energy at ALL frequencies (including >10kHz)
+      // — that's the "static on a TV station" sound. The modes are only in the
+      // positive bins; the negative bins must be their conjugates.
+      for (let k = 1; k <= halfN; k++) {
+        uRe[N - k] = uRe[k]; uIm[N - k] = -uIm[k];
+        vRe[N - k] = vRe[k]; vIm[N - k] = -vIm[k];
+        sRe[N - k] = sRe[k]; sIm[N - k] = -sIm[k];
+        bRe[N - k] = bRe[k]; bIm[N - k] = -bIm[k];
+      }
+
+      radix2IFFT(uRe, uIm);
+      radix2IFFT(vRe, vIm);
+      radix2IFFT(sRe, sIm);
+      radix2IFFT(bRe, bIm);
+
+      normalizeLayerPair(uRe, uIm, 0.85);
+      normalizeLayerPair(vRe, vIm, 0.90);
+      normalizeLayerPair(sRe, sIm, 0.90);
+      normalizeLayerPair(bRe, bIm, 0.88);
+    }
+
+    // Helper to read from a 65536-sample modal layer table with smooth crossfade wrapping
+    // so even 5-second Ride sustains have zero loop seams!
+    function sampleModalLayer(table, idxFloat) {
+      const mask = 262143;
+      const i0 = idxFloat | 0;
+      return table[i0 & mask];
+    }
+
+    function synthesizeCymbalStereoBuffer(ctx, type, force = 0.88, rNorm = 0.52) {
+      const sr = ctx.sampleRate;
+      ensurePaisteSpectralLayers(sr);
+
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const alloy = CYMBAL_ALLOYS[state.alloyType];
+      const beater = BEATER_PROFILES[state.beaterType] || BEATER_PROFILES.hickory;
+
+      // Determine total buffer duration following Paiste Size + Weight Sustain Rules:
+      // Larger & thicker -> longer sustain; Smaller & thinner -> shorter accent sustain
+      let totalDur = 3.2 * state.sustainDecay * spec.defaultSustain / alloy.dampingMult;
+      if (type === 'chick') {
+        totalDur = 0.11;
+      } else if (type === 'slurp') {
+        totalDur = 0.32;
+      } else if (spec.isStack) {
+        totalDur = Math.max(0.18, (0.22 + 0.65 * state.hihatOpenness) * state.sustainDecay);
+      } else if (spec.isSplash) {
+        totalDur = Math.max(1.35, Math.min(3.2, 1.95 * state.sustainDecay / alloy.dampingMult));
+      } else if (spec.chinaFlange) {
+        totalDur = Math.max(1.15, Math.min(3.0, 1.65 * state.sustainDecay / alloy.dampingMult));
+      } else if (spec.isHiHatPair && type !== 'crash') {
+        if (state.hihatOpenness < 0.08) totalDur = 0.085;
+        else if (state.hihatOpenness < 0.35) totalDur = 0.22 + 1.15 * state.hihatOpenness;
+        else totalDur = Math.min(2.5, 0.95 + 1.3 * state.hihatOpenness);
+      } else if (type === 'zing') {
+        totalDur = 1.40;
+      } else if (type === 'bowed') {
+        totalDur = 2.80;
+      } else if (type === 'swell') {
+        totalDur = 3.40;
+      }
+      totalDur = Math.max(0.075, Math.min(5.2, totalDur));
+
+      const numFrames = Math.ceil(sr * totalDur);
+      const buf = ctx.createBuffer(2, numFrames, sr);
+      const outL = buf.getChannelData(0);
+      const outR = buf.getChannelData(1);
+
+      // 8" Orchestral Crotale (Paiste Extreme 1: Very Thick + Very Small -> Clean Mix, Pronounced Attack, Long Sustain)
+      if (spec.isCrotale) {
+        const f0 = spec.baseF0 * (state.thicknessMm / spec.defaultThicknessMm);
+        const crotaleRatios = [1.0, 2.756, 5.404, 8.933];
+        for (let i = 0; i < numFrames; i++) {
+          const t = i / sr;
+          let sig = 0.0;
+          for (let k = 0; k < 4; k++) {
+            const env = Math.exp(-t / (totalDur / (1 + k * 0.85)));
+            sig += (0.36 / (k + 1)) * env * Math.sin(2 * Math.PI * f0 * crotaleRatios[k] * t);
+          }
+          const click = Math.exp(-t / 0.0012) * Math.sin(2 * Math.PI * 5200 * t) * 0.25;
+          outL[i] = (sig + click) * force;
+          outR[i] = (sig * 0.98 - click * 0.7) * force;
+        }
+        return buf;
+      }
+
+      // Randomize starting phase offsets into the 4 65536-sample modal tables so consecutive hits sound organic
+      const offU = (Math.random() * 260000) | 0;
+      const offV = (Math.random() * 260000) | 0;
+      const offS = (Math.random() * 260000) | 0;
+      const offB = (Math.random() * 260000) | 0;
+
+      // Paiste Layer Gains & Time Constants based on Cymbal Class, Playing Zone, Sound Color, and Voice Mix:
+      // Sound Color (0.1 Dark -> 1.0 Bright): tilts between Undertone/Voice and High Silver Shimmer
+      const colorBright = state.soundColor;
+      const colorDark   = 1.25 - 0.65 * colorBright;
+      // Voice Mix / Complexity (0.0 Clean/Voiceless -> 1.0 Complex/Trashy): controls middle "Voice" layer density
+      const voiceComplexity = 0.35 + 0.95 * state.hammering;
+      // Stick Grip Tightness (0.0 Loose Rebound "Nano-Buzz" -> 1.0 Tight Choked Grip)
+      const gripDamp = 1.0 - 0.35 * state.stickGrip;
+
+      let gUndertone = 0.35 * colorDark;
+      let gVoice     = 0.55 * voiceComplexity;
+      let gSilver    = 0.65 * (0.45 + 0.85 * colorBright);
+      let gBellPing  = 0.35;
+
+      // Layer Decay Time Constants (Undertone rings longest; Voice medium; Silver Shimmer fastest)
+      let tauUndertone = totalDur * 0.78 * gripDamp;
+      let tauVoice     = totalDur * 0.46 * gripDamp;
+      let tauSilver    = totalDur * 0.28 * gripDamp;
+      let tauBellPing  = 0.14 * gripDamp;
+
+      // Layer Rise Times (models Föppl-von Kármán wave-turbulence bloom from strike point to full shell)
+      let riseUndertone = 0.005;
+      let riseVoice     = 0.008;
+      let riseSilver    = 0.012;
+
+      if (spec.isRide && type !== 'crash') {
+        // 22" RIDE (Tip on the Bow or Shoulder on the Bell):
+        // Pronounced Stick Ping + Separated Bell + Controlled Warm Undertone & Delicate Silver Halo (NO CRASH!)
+        if (type === 'bell') {
+          // Separated Ride Bell (RhythmNotes #4): cutting cowbell-like dome ping!
+          gBellPing  = 1.15;
+          tauBellPing = Math.min(1.4, totalDur * 0.42);
+          gUndertone = 0.18 * colorDark;
+          gVoice     = 0.22 * voiceComplexity;
+          gSilver    = 0.20 * colorBright;
+        } else {
+          // Tip on the Ride Bow (RhythmNotes #1): clear stick definition over controlled wash
+          gBellPing  = 0.88 * beater.pingGain;
+          tauBellPing = 0.095 * gripDamp;
+          gUndertone = 0.28 * colorDark;
+          gVoice     = 0.24 * voiceComplexity * (0.45 + 0.55 * state.nonlinearity);
+          gSilver    = 0.30 * colorBright * (0.45 + 0.55 * state.nonlinearity);
+          riseVoice  = 0.004;
+          riseSilver = 0.003;
+        }
+      } else if (spec.isSplash) {
+        // 10" PAPER-THIN SPLASH (RhythmNotes #10):
+        // Fast 2ms attack! High Silver Shimmer & bright Upper-Voice burst ("KSSSHH!") + 1.9s shimmer tail!
+        gUndertone = 0.12 * colorDark;
+        gVoice     = 0.78 * voiceComplexity;
+        gSilver    = 1.25 * (0.65 + 0.55 * colorBright);
+        gBellPing  = 0.42;
+        tauBellPing = 0.045;
+        tauVoice   = totalDur * 0.42;
+        tauSilver  = totalDur * 0.36; // Long enough for a true 1.9-second splash shimmer!
+        riseVoice  = 0.0018;
+        riseSilver = 0.0022;
+      } else if (spec.chinaFlange && !spec.isStack) {
+        // 19" INVERTED FLANGE CHINA (RhythmNotes Type #4 & Sounds Like A Drum "Trashy"):
+        // Explosive, rough, complex middle "Voice" layer + dark undertone roar ("KASHHH!")
+        gUndertone = 0.62 * colorDark;
+        gVoice     = 1.32 * Math.max(0.75, voiceComplexity);
+        gSilver    = 0.92 * colorBright;
+        gBellPing  = (type === 'bell') ? 0.95 : 0.48;
+        tauBellPing = (type === 'bell') ? 0.35 : 0.065;
+        tauVoice   = totalDur * 0.38;
+        tauSilver  = totalDur * 0.24;
+        riseVoice  = 0.0025;
+        riseSilver = 0.0040;
+      } else if (spec.isStack) {
+        // 16" FX TRASH STACK (RhythmNotes #9):
+        // Crunchy, gated metal-on-metal collision between stacked Crash & China
+        gUndertone = 0.25;
+        gVoice     = 1.25;
+        gSilver    = 1.15;
+        gBellPing  = 0.35;
+        tauVoice   = totalDur * 0.28;
+        tauSilver  = totalDur * 0.22;
+        riseVoice  = 0.001;
+        riseSilver = 0.001;
+      } else if (spec.isCrash || type === 'crash') {
+        // 18" FAST THIN CRASH (or Crashing the Ride with Stick Shoulder on Edge):
+        // Full 3-layer bloom where Silver Shimmer and Center Voice open up into a lush sound wall!
+        gUndertone = 0.48 * colorDark;
+        gVoice     = 0.88 * voiceComplexity;
+        gSilver    = 1.12 * (0.55 + 0.65 * colorBright);
+        gBellPing  = (type === 'bell') ? 0.75 : 0.32;
+        tauBellPing = (type === 'bell') ? 0.22 : 0.055;
+        tauVoice   = totalDur * 0.48;
+        tauSilver  = totalDur * 0.34;
+        riseVoice  = 0.006;
+        riseSilver = 0.011;
+      } else if (spec.isHiHatPair) {
+        // 14" PAIRED HI-HAT (Closed Tip, Foot Chick, Hi-Hat Slurp, Open Wash):
+        if (type === 'chick') {
+          gUndertone = 0.14;
+          gVoice     = 0.65;
+          gSilver    = 1.15;
+          gBellPing  = 0.45;
+          tauVoice   = 0.022;
+          tauSilver  = 0.018;
+          riseVoice  = 0.001;
+          riseSilver = 0.001;
+        } else {
+          gUndertone = 0.22 * colorDark;
+          gVoice     = 0.68 * voiceComplexity;
+          gSilver    = 0.95 * (0.55 + 0.6 * colorBright);
+          gBellPing  = 0.72 * beater.pingGain;
+          tauBellPing = 0.045;
+          riseVoice  = 0.002;
+          riseSilver = 0.0025;
+        }
+      }
+
+      // Multi-hit offsets for Wire Brush / Rute Bundle / "Nano-Buzz" Loose Stick Grip
+      const subHits = [];
+      const nHits = beater.multiHits || 1;
+      for (let h = 0; h < nHits; h++) {
+        subHits.push({
+          delaySec: h === 0 ? 0.0 : (0.0028 * h + Math.random() * 0.0025),
+          amp: h === 0 ? 1.0 : (0.48 / Math.sqrt(h + 1))
+        });
+      }
+      // Add RhythmNotes "Nano-Buzz" micro-rebound (stronger when Stick Grip is loose!)
+      const nanoBuzzAmp = (1.0 - state.stickGrip) * 0.38 * beater.pingGain;
+
+      // Woody Drumstick Body Formant State (Paiste: "incorporates the wood sound of the drumstick hitting the cymbal")
+      let woodPhase1 = 0.0, woodPhase2 = 0.0;
+      const woodOmega1 = (2 * Math.PI * 1280) / sr;
+      const woodOmega2 = (2 * Math.PI * 2640) / sr;
+
+      // Sizzle Rivets state (ONLY active when state.sizzleRivets > 0; default is 0!)
+      const numRivets = state.sizzleRivets;
+      let rivetEnv = 0.0;
+
+      const uL = paisteLayers.undertoneL, uR = paisteLayers.undertoneR;
+      const vL = paisteLayers.voiceL,     vR = paisteLayers.voiceR;
+      const sL = paisteLayers.silverL,    sR = paisteLayers.silverR;
+      const bL = paisteLayers.bellPingL,  bR = paisteLayers.bellPingR;
+
+      // Per-hit frequency jitter (computed ONCE per hit, not per sample):
+      // slightly different readout rate per layer creates beating between layers.
+      const jitU = 1.0 + (Math.random() - 0.5) * 0.003;
+      const jitV = 1.0 + (Math.random() - 0.5) * 0.004;
+      const jitS = 1.0 + (Math.random() - 0.5) * 0.006;
+      const jitB = 1.0 + (Math.random() - 0.5) * 0.002;
+
+      for (let i = 0; i < numFrames; i++) {
+        const t = i / sr;
+
+        // 1. Global Articulation Envelope (Swell / Bowed / Zing / Hi-Hat Slurp)
+        let globalEnv = 1.0;
+        if (type === 'swell') {
+          const climaxT = totalDur * 0.68;
+          globalEnv = t < climaxT
+            ? Math.pow(t / climaxT, 2.2)
+            : Math.exp(-(t - climaxT) / (totalDur * 0.24));
+          globalEnv *= (0.85 + 0.15 * Math.sin(2 * Math.PI * 28.0 * t));
+        } else if (type === 'bowed') {
+          globalEnv = Math.min(1.0, t / 0.32) * Math.exp(-Math.max(0, t - 0.32) / (totalDur * 0.48));
+        } else if (type === 'zing') {
+          globalEnv = Math.sin(Math.min(1.0, t / totalDur) * Math.PI) * Math.exp(-t / (totalDur * 0.65));
+        } else if (type === 'slurp') {
+          // RhythmNotes #8 Hi-Hat Slurp: open wash for 190ms, then choked tight by the foot chick!
+          if (t < 0.19) {
+            globalEnv = 1.0 - Math.exp(-t / 0.004);
+          } else {
+            globalEnv = Math.exp(-(t - 0.19) / 0.014);
+          }
+        }
+
+        // 2. Compute the 4 Paiste Layer Envelopes
+        const envU = (1.0 - Math.exp(-t / riseUndertone)) * Math.exp(-t / tauUndertone);
+        const envV = (1.0 - Math.exp(-t / riseVoice))     * Math.exp(-t / tauVoice);
+        const envS = (1.0 - Math.exp(-t / riseSilver))    * Math.exp(-t / tauSilver);
+        const envB = Math.exp(-t / tauBellPing);
+
+        // Read the 3,240-Mode Pre-Synthesized Bronze Layers
+        const idxU = (offU + Math.floor(i * jitU)) & 262143;
+        const idxV = (offV + Math.floor(i * jitV)) & 262143;
+        const idxS = (offS + Math.floor(i * jitS)) & 262143;
+        const idxB = (offB + Math.floor(i * jitB)) & 262143;
+
+        let sigL = (uL[idxU] * gUndertone * envU)
+                 + (vL[idxV] * gVoice     * envV)
+                 + (sL[idxS] * gSilver    * envS)
+                 + (bL[idxB] * gBellPing  * envB);
+
+        let sigR = (uR[idxU] * gUndertone * envU)
+                 + (vR[idxV] * gVoice     * envV)
+                 + (sR[idxS] * gSilver    * envS)
+                 + (bR[idxB] * gBellPing  * envB);
+
+        // 3. China / Stack / Open Hi-Hat Nonlinear Inter-Layer Shimmer Modulation
+        //    When a thin Crash, China, Splash, or Stack deflects strongly, the low Undertone
+        //    gently modulates the Silver Shimmer amplitude (creates realistic bronze "roar/sizzle" without noise!)
+        if (spec.chinaFlange || spec.isStack) {
+          const trashMod = 1.0 + 0.55 * state.nonlinearity * vL[idxV];
+          sigL *= trashMod;
+          sigR *= (1.0 + 0.55 * state.nonlinearity * vR[idxV]);
+        } else if (spec.isHiHatPair && state.hihatOpenness >= 0.08) {
+          const sloshMod = 1.0 + 0.45 * uL[idxU];
+          sigL *= sloshMod;
+          sigR *= sloshMod;
+        }
+
+        // 4. Drumstick "Wood Sound" + "Nano-Buzz" Contact Transient (First 12 ms)
+        let stickTransient = 0.0;
+        if (type !== 'swell' && type !== 'bowed') {
+          woodPhase1 += woodOmega1;
+          woodPhase2 += woodOmega2;
+          const woodTone = Math.sin(woodPhase1) + 0.65 * Math.sin(woodPhase2);
+
+          for (let h = 0; h < subHits.length; h++) {
+            const dtHit = t - subHits[h].delaySec;
+            if (dtHit >= 0 && dtHit < 0.015) {
+              // Initial woody stick impact (0 - 3.5 ms)
+              const wEnv = Math.exp(-dtHit / (beater.contactMs * 0.006));
+              // "Nano-Buzz" microscopic stick-tip rebounds at 1.4ms and 2.9ms (from RhythmNotes!)
+              const nano1 = dtHit > 0.0014 ? Math.exp(-(dtHit - 0.0014) / 0.0012) * nanoBuzzAmp : 0.0;
+              const nano2 = dtHit > 0.0029 ? Math.exp(-(dtHit - 0.0029) / 0.0010) * nanoBuzzAmp * 0.6 : 0.0;
+              const metallicContact = sL[(idxS + h * 137) & 262143];
+              stickTransient += (woodTone * wEnv * 0.26 + metallicContact * (wEnv * 0.35 + nano1 + nano2)) * subHits[h].amp * beater.pingGain;
+            }
+          }
+
+          // For Hi-Hat Slurp, add the closing Foot Chick clasp at t = 0.19s!
+          if (type === 'slurp' && t >= 0.19 && t < 0.22) {
+            const dtChick = t - 0.19;
+            stickTransient += sL[(idxS + 500) & 262143] * Math.exp(-dtChick / 0.008) * 0.55;
+          }
+        }
+
+        // 5. Optional Sizzle Rivets (ONLY when state.sizzleRivets > 0; 0 by default!)
+        let rivetSig = 0.0;
+        if (numRivets > 0 && type !== 'chick' && t < totalDur * 0.88) {
+          const rProb = 0.0025 * numRivets * Math.exp(-t / (totalDur * 0.55));
+          if (Math.random() < rProb) {
+            rivetEnv = 0.42 + 0.48 * Math.random();
+          }
+          rivetEnv *= Math.exp(-1.0 / (sr * 0.022));
+          rivetSig = sL[(idxS + 2048) & 262143] * rivetEnv * 0.35;
+        }
+
+        const outSampleL = (sigL * globalEnv + stickTransient + rivetSig) * force;
+        const outSampleR = (sigR * globalEnv + stickTransient * 0.94 - rivetSig * 0.85) * force;
+
+        outL[i] = Math.tanh(outSampleL * 1.12) * 0.92;
+        outR[i] = Math.tanh(outSampleR * 1.12) * 0.92;
+      }
+
+      return buf;
+    }
+
+    function playCymbalAudioVoice(ctx, destNode, time, type, force = 0.88, rNorm = 0.52) {
+      const isLive = (ctx === audioCtx);
+
+      // Anchor Kick & Crisp Snare for Groove Sequencer Track 5
+      if (type === 'kick') {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(125, time);
+        osc.frequency.exponentialRampToValueAtTime(42, time + 0.085);
+        g.gain.setValueAtTime(0.62 * force, time);
+        g.gain.exponentialRampToValueAtTime(0.0001, time + 0.28);
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(time);
+        osc.stop(time + 0.28);
+        return;
+      }
+
+      if (type === 'rim') {
+        // Crisp Snare / Cross-stick anchor
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(210, time);
+        osc.frequency.exponentialRampToValueAtTime(135, time + 0.055);
+        g.gain.setValueAtTime(0.32 * force, time);
+        g.gain.exponentialRampToValueAtTime(0.0001, time + 0.08);
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(time);
+        osc.stop(time + 0.08);
+
+        const nFrames = Math.floor(ctx.sampleRate * 0.11);
+        const nBuf = ctx.createBuffer(1, nFrames, ctx.sampleRate);
+        const nData = nBuf.getChannelData(0);
+        for (let i = 0; i < nFrames; i++) {
+          nData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.025));
+        }
+        const nSrc = ctx.createBufferSource();
+        nSrc.buffer = nBuf;
+        const nGain = ctx.createGain();
+        nGain.gain.setValueAtTime(0.28 * force, time);
+        nSrc.connect(nGain);
+        nGain.connect(destNode);
+        nSrc.start(time);
+        return;
+      }
+
+      // Synthesize Föppl–von Kármán Cymbal Buffer
+      const cymbalBuf = synthesizeCymbalStereoBuffer(ctx, type, force, rNorm);
+      const src = ctx.createBufferSource();
+      src.buffer = cymbalBuf;
+
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.setValueAtTime(1.0, time);
+      src.connect(voiceGain);
+      voiceGain.connect(destNode);
+
+      if (isLive) registerLiveGainNode(voiceGain);
+      src.start(time);
+    }
+
+    // =========================================================================
+    // 5. VISUAL + PHYSICAL TRIGGER FOR CYMBAL STRIKES, HI-HAT ROLLS & SWELLS
+    // =========================================================================
+    const beaterAnim = {
+      stickT: 1.0,
+      bowT: 1.0,
+      coinT: 1.0,
+      activeTool: 'stick',
+      hitX: 1.0,
+      hitZ: 0.0
+    };
+
+    let activeRipples3D = [];
+
+    function triggerCymbalStrike(type = 'bow', force = state.strikeForce, rNorm = null, theta = null) {
+      if (type === 'choke') {
+        chokeAllLiveAudio();
+        return;
+      }
+      ensureAudio();
+
+      if (rNorm === null) {
+        if (type === 'bell') rNorm = 0.14;
+        else if (type === 'bow') rNorm = 0.52;
+        else if (type === 'crash' || type === 'swell') rNorm = 0.92;
+        else if (type === 'bowed') rNorm = 0.98;
+        else if (type === 'zing') rNorm = 0.65;
+        else rNorm = 0.52;
+      }
+      if (theta === null) {
+        theta = (Math.random() - 0.5) * 1.4;
+      }
+
+      state.lastStrikeR = rNorm;
+      state.lastStrikeTheta = theta;
+
+      const zoneTitles = {
+        bell: `BELL CUP (r/R = ${rNorm.toFixed(2)})`,
+        bow: `BOW RIDE (r/R = ${rNorm.toFixed(2)})`,
+        crash: `EDGE CRASH (r/R = ${rNorm.toFixed(2)})`,
+        chick: `HI-HAT FOOT CHICK`,
+        swell: `MALLET CRESCENDO SWELL`,
+        bowed: `BASS BOW EDGE (r/R = 0.98)`,
+        zing: `COIN RADIAL ZING`
+      };
+      state.lastZoneName = zoneTitles[type] || `BOW RIDE (r/R = ${rNorm.toFixed(2)})`;
+      document.getElementById('hudZoneLabel').textContent = state.lastZoneName;
+
+      playCymbalAudioVoice(audioCtx, masterGain, audioCtx.currentTime, type, force, rNorm);
+
+      // Animate 3D stick / mallet / brush / bow / coin
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const R3D = spec.radius3D;
+      beaterAnim.hitX = rNorm * R3D * Math.cos(theta);
+      beaterAnim.hitZ = rNorm * R3D * Math.sin(theta);
+
+      if (type === 'bowed') {
+        beaterAnim.activeTool = 'bow';
+        beaterAnim.bowT = 0.0;
+      } else if (type === 'zing') {
+        beaterAnim.activeTool = 'coin';
+        beaterAnim.coinT = 0.0;
+      } else {
+        beaterAnim.activeTool = 'stick';
+        beaterAnim.stickT = 0.0;
+      }
+
+      // Impart angular momentum to gimbal-mounted cymbal stand on edge/bow strikes
+      const torqueScale = (type === 'crash' || type === 'swell' ? 1.85 : 0.65) * force * rNorm;
+      state.tiltVelX += Math.sin(theta) * torqueScale;
+      state.tiltVelZ -= Math.cos(theta) * torqueScale;
+
+      // Kick Sizzle Rivets upward
+      for (let i = 0; i < state.sizzleRivets; i++) {
+        state.rivets[i].zVel = (0.9 + Math.random() * 1.1) * force;
+      }
+
+      // Spawn 3D shockwave ring on cymbal surface
+      const ringColor = type === 'bell' ? 0x22d3ee : (type === 'crash' || type === 'swell' ? 0xf43f5e : 0xf59e0b);
+      spawnCymbalRipple3D(rNorm, theta, ringColor);
+
+      // Excite Modal Bank based on radial zone (rNorm)
+      state.modes.forEach((m, idx) => {
+        if (state.soloModeIdx >= 0 && state.soloModeIdx !== idx) {
+          m.amp = 0;
+          return;
+        }
+        let zoneGain = 0.5;
+        if (m.isBellMode) {
+          zoneGain = rNorm < 0.28 ? 1.35 : 0.25;
+        } else if (m.isTurbulence) {
+          zoneGain = (type === 'crash' || type === 'swell' ? 1.30 : 0.65) * state.nonlinearity * (0.4 + 0.7 * rNorm);
+        } else if (m.isSubharmonic) {
+          zoneGain = (rNorm > 0.65 ? 0.95 : 0.35) * state.nonlinearity;
+        } else {
+          zoneGain = 0.45 + 0.65 * Math.sin(rNorm * Math.PI * 0.9);
+        }
+        m.amp = Math.min(1.35, m.amp * 0.45 + force * zoneGain);
+        m.decayRate = 1.0 / (m.baseDecay * state.sustainDecay * spec.defaultSustain);
+      });
+    }
+
+    // Articulated 32nd-Note Closed-to-Open Hi-Hat Roll + Foot Chick
+    function triggerHiHatRoll() {
+      ensureAudio();
+      const savedOpen = state.hihatOpenness;
+      const numStrokes = 9;
+      for (let i = 0; i < numStrokes; i++) {
+        setTimeout(() => {
+          const prog = i / (numStrokes - 1);
+          // Dynamically open hi-hat clutch during roll, then snap shut on final stroke!
+          if (i < numStrokes - 1) {
+            state.hihatOpenness = 0.04 + 0.48 * Math.pow(prog, 1.4);
+            const vel = state.strikeForce * (0.55 + 0.42 * prog) * (i % 2 === 0 ? 1.0 : 0.84);
+            triggerCymbalStrike('bow', vel, 0.76, (i % 2 === 0 ? -0.25 : 0.25));
+            document.getElementById('hudZoneLabel').textContent = `HI-HAT ROLL (${i + 1}/${numStrokes})`;
+          } else {
+            state.hihatOpenness = 0.02;
+            triggerCymbalStrike('chick', state.strikeForce, 0.85, 0.0);
+            setTimeout(() => {
+              state.hihatOpenness = savedOpen;
+              rebuildCymbal3D();
+            }, 90);
+          }
+          rebuildCymbal3D();
+        }, i * 46);
+      }
+    }
+
+    // Pressed Stick Multi-Bounce Buzz Roll (Exponentially accelerating bounce train)
+    function triggerBuzzPressRoll() {
+      ensureAudio();
+      let delayMs = 0;
+      let stepMs = 42;
+      for (let b = 0; b < 8; b++) {
+        const hitDelay = delayMs;
+        const vel = state.strikeForce * Math.pow(0.84, b);
+        setTimeout(() => {
+          triggerCymbalStrike('bow', vel, 0.58, (b % 2 === 0 ? 0.15 : -0.15));
+          document.getElementById('hudZoneLabel').textContent = `PRESSED BUZZ ROLL`;
+        }, hitDelay);
+        delayMs += stepMs;
+        stepMs = Math.max(14, stepMs * 0.78);
+      }
+    }
+
+    function triggerArticulationPad(pad) {
+      if (pad === 'bell') triggerCymbalStrike('bell', state.strikeForce, 0.14, 0.2);
+      else if (pad === 'bow') triggerCymbalStrike('bow', state.strikeForce, 0.52, -0.3);
+      else if (pad === 'spang') {
+        triggerCymbalStrike('bow', state.strikeForce * 0.92, 0.52, -0.2);
+        setTimeout(() => triggerCymbalStrike('bow', state.strikeForce * 0.72, 0.56, 0.25), 145);
+      } else if (pad === 'crash') triggerCymbalStrike('crash', state.strikeForce, 0.92, 0.4);
+      else if (pad === 'chick') triggerCymbalStrike('chick', state.strikeForce * 0.95, 0.85, 0.0);
+      else if (pad === 'slurp') triggerCymbalStrike('slurp', state.strikeForce, 0.88, 0.35);
+      else if (pad === 'hhroll') triggerHiHatRoll();
+      else if (pad === 'buzz') triggerBuzzPressRoll();
+      else if (pad === 'swell') triggerCymbalStrike('swell', state.strikeForce, 0.88, 0.3);
+      else if (pad === 'bowed') triggerCymbalStrike('bowed', state.strikeForce, 0.98, 0.0);
+      else if (pad === 'zing') triggerCymbalStrike('zing', state.strikeForce, 0.35, 0.5);
+      else if (pad === 'choke') triggerCymbalStrike('choke');
+    }
+
+    // =========================================================================
+    // 6. BIT-EXACT WAV FILE ENCODER & OFFLINE AUDIO BOUNCER
+    // =========================================================================
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const bytesPerSample = 2;
+      const blockAlign = numChannels * bytesPerSample;
+      const dataByteLength = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataByteLength);
+      const view = new DataView(buffer);
+
+      function writeAscii(offset, str) {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      }
+
+      writeAscii(0, 'RIFF');
+      view.setUint32(4, 36 + dataByteLength, true);
+      writeAscii(8, 'WAVE');
+      writeAscii(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeAscii(36, 'data');
+      view.setUint32(40, dataByteLength, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) {
+        channels.push(audioBuffer.getChannelData(c));
+      }
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function triggerBlobDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 250);
+    }
+
+    async function exportOneShotWav(type) {
+      const badge = document.getElementById('exportStatusBadge');
+      badge.textContent = `Rendering ${type.toUpperCase()}...`;
+
+      const sr = 44100;
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const duration = spec.isSplash ? Math.max(2.4, 2.5 * state.sustainDecay) : Math.min(5.2, Math.max(1.8, 3.6 * state.sustainDecay));
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(sr * duration), sr);
+
+      const rMap = { bell: 0.14, bow: 0.52, crash: 0.92 };
+      playCymbalAudioVoice(offlineCtx, offlineCtx.destination, 0.01, type, state.strikeForce, rMap[type] || 0.52);
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const filename = `cymbal_${state.cymbalType}_${state.alloyType}_${state.beaterType}_${type}.wav`;
+      triggerBlobDownload(wavBlob, filename);
+      badge.textContent = `Saved ${filename}`;
+    }
+
+    async function exportGrooveLoopWav() {
+      const badge = document.getElementById('exportStatusBadge');
+      const numBars = parseInt(document.getElementById('loopBarsSelect').value, 10) || 2;
+      badge.textContent = `Bouncing ${numBars}-Bar Loop...`;
+
+      const sr = 44100;
+      const stepDur = (60.0 / state.seqBpm) * 0.25;
+      const totalSteps = 16 * numBars;
+      const loopDuration = totalSteps * stepDur;
+
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(sr * loopDuration), sr);
+
+      for (let step = 0; step < totalSteps; step++) {
+        const sIdx = step % 16;
+        const swingOffset = (sIdx % 2 === 1) ? stepDur * state.seqSwing : 0.0;
+        const hitTime = step * stepDur + swingOffset;
+
+        // Track 0: Bow Ride Tip / Spang-a-lang / Buzz Roll
+        const v0 = state.seqGrid[0][sIdx];
+        if (v0 === 1) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'bow', state.strikeForce * 0.85, 0.52);
+        else if (v0 === 2) {
+          playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'bow', state.strikeForce * 0.85, 0.52);
+          playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime + stepDur * 0.52, 'bow', state.strikeForce * 0.68, 0.56);
+        } else if (v0 === 3) {
+          for (let b = 0; b < 4; b++) {
+            playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime + b * (stepDur * 0.22), 'bow', state.strikeForce * Math.pow(0.8, b), 0.58);
+          }
+        }
+
+        // Track 1: Bell Cup Ping
+        const v1 = state.seqGrid[1][sIdx];
+        if (v1 > 0) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'bell', state.strikeForce * (v1 === 2 ? 1.0 : 0.82), 0.14);
+
+        // Track 2: Edge Crash
+        const v2 = state.seqGrid[2][sIdx];
+        if (v2 === 1) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'crash', state.strikeForce, 0.92);
+        else if (v2 === 2) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'chick', state.strikeForce, 0.90);
+
+        // Track 3: Hi-Hat Clutch (Chick / Slosh / 32nd Hi-Hat Roll)
+        const v3 = state.seqGrid[3][sIdx];
+        if (v3 === 1) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'chick', 0.82, 0.82);
+        else if (v3 === 2) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'bow', 0.74, 0.78);
+        else if (v3 === 3) {
+          for (let r = 0; r < 4; r++) {
+            playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime + r * (stepDur * 0.25), 'chick', 0.65 + 0.08 * r, 0.82);
+          }
+        }
+
+        // Track 4: Kick / Snare Anchor
+        const v4 = state.seqGrid[4][sIdx];
+        if (v4 === 1) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'kick', 0.85, 0.0);
+        else if (v4 === 2) playCymbalAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'rim', 0.75, 0.0);
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const filename = `cymbal_groove_${state.cymbalType}_${state.seqBpm}bpm_${numBars}bars.wav`;
+      triggerBlobDownload(wavBlob, filename);
+      badge.textContent = `Saved ${filename}`;
+    }
+
+    // =========================================================================
+    // 7. THREE.JS 3D CAMBERED CYMBAL SHELL, SIZZLE RIVETS & 5-BEATER ARSENAL
+    // =========================================================================
+    const mountEl = document.getElementById('threeCymbalMount');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040509);
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 120);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.22;
+    mountEl.appendChild(renderer.domElement);
+
+    const camOrbit = {
+      theta: 0.54,
+      phi: 1.04,
+      radius: 8.8,
+      target: new THREE.Vector3(0, 0.15, 0),
+      isDragging: false,
+      isPanning: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    function updateCameraTransform() {
+      camOrbit.phi = Math.max(0.08, Math.min(Math.PI * 0.88, camOrbit.phi));
+      camOrbit.radius = Math.max(4.5, Math.min(18.0, camOrbit.radius));
+      const sinPhi = Math.sin(camOrbit.phi);
+      camera.position.set(
+        camOrbit.target.x + camOrbit.radius * sinPhi * Math.sin(camOrbit.theta),
+        camOrbit.target.y + camOrbit.radius * Math.cos(camOrbit.phi),
+        camOrbit.target.z + camOrbit.radius * sinPhi * Math.cos(camOrbit.theta)
+      );
+      camera.lookAt(camOrbit.target);
+      const zSlider = document.getElementById('cameraZoomSlider');
+      if (zSlider) zSlider.value = camOrbit.radius.toFixed(1);
+    }
+
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.85));
+    const keyLight = new THREE.DirectionalLight(0xfffbeb, 1.85);
+    keyLight.position.set(6, 10, 7);
+    scene.add(keyLight);
+
+    const amberRimLight = new THREE.PointLight(0xf59e0b, 1.45, 24);
+    amberRimLight.position.set(-6, 5, 5);
+    scene.add(amberRimLight);
+
+    const cyanUnderLight = new THREE.PointLight(0x22d3ee, 1.15, 22);
+    cyanUnderLight.position.set(5, -3, -6);
+    scene.add(cyanUnderLight);
+
+    const floorGrid = new THREE.GridHelper(16, 24, 0x1e293b, 0x0f172a);
+    floorGrid.position.y = -2.45;
+    scene.add(floorGrid);
+
+    const standGroup = new THREE.Group();
+    scene.add(standGroup);
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.92, roughness: 0.16 });
+    const feltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+
+    const centerRod = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 4.2, 16), chromeMat);
+    centerRod.position.set(0, -0.75, 0);
+    standGroup.add(centerRod);
+
+    const bottomFelt = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.12, 20), feltMat);
+    bottomFelt.position.set(0, 0.25, 0);
+    standGroup.add(bottomFelt);
+
+    const wingNut = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.028, 10, 24), chromeMat);
+    wingNut.position.set(0, 0.92, 0);
+    standGroup.add(wingNut);
+
+    const cymbalMasterGroup = new THREE.Group();
+    cymbalMasterGroup.position.set(0, 0.35, 0);
+    scene.add(cymbalMasterGroup);
+
+    const rippleGroup3D = new THREE.Group();
+    cymbalMasterGroup.add(rippleGroup3D);
+
+    function createCymbalLathingTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+
+      const grad = ctx.createRadialGradient(256, 256, 8, 256, 256, 256);
+      grad.addColorStop(0.0, '#fef3c7');
+      grad.addColorStop(0.22, '#f59e0b');
+      grad.addColorStop(0.72, '#d97706');
+      grad.addColorStop(1.0, '#b45309');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      ctx.save();
+      ctx.translate(256, 256);
+      for (let r = 14; r < 252; r += 2.2) {
+        ctx.strokeStyle = (Math.floor(r) % 2 === 0)
+          ? 'rgba(255, 251, 235, 0.16)'
+          : 'rgba(69, 26, 3, 0.20)';
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < 260; i++) {
+        const rr = 58 + Math.random() * 185;
+        const ang = Math.random() * Math.PI * 2;
+        const px = rr * Math.cos(ang);
+        const py = rr * Math.sin(ang);
+        ctx.fillStyle = 'rgba(45, 18, 4, 0.16)';
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5 + Math.random() * 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    const bronzeLathingTex = createCymbalLathingTexture();
+
+    const RINGS = 52;
+    const SEGS = 88;
+
+    function computeCymbalProfileY(rNorm, spec, camber, bellRatio, hammerDisorder, theta) {
+      const bellWidth = Math.max(0.08, bellRatio);
+      const bellHeight = (spec.isCrotale ? 0.18 : 0.34) * Math.exp(-Math.pow(rNorm / bellWidth, 2.4));
+      const bowSag = -0.36 * camber * Math.pow(rNorm, 1.38);
+
+      let chinaLift = 0.0;
+      if (spec.chinaFlange && rNorm > 0.72) {
+        const u = (rNorm - 0.72) / 0.28;
+        chinaLift = 0.28 * Math.pow(u, 1.75);
+      }
+
+      const dimple = hammerDisorder * 0.014 * Math.sin(18.0 * rNorm) * Math.cos(14.0 * theta + 5.0 * rNorm);
+      return bellHeight + bowSag + chinaLift + dimple;
+    }
+
+    function createCymbalGeometry() {
+      const geo = new THREE.BufferGeometry();
+      const vCount = (RINGS + 1) * (SEGS + 1);
+      const pos = new Float32Array(vCount * 3);
+      const uvs = new Float32Array(vCount * 2);
+      const colors = new Float32Array(vCount * 3);
+      const polar = new Float32Array(vCount * 2);
+      const indices = [];
+
+      let ptr = 0;
+      for (let ir = 0; ir <= RINGS; ir++) {
+        const rNorm = 0.045 + 0.955 * (ir / RINGS);
+        for (let it = 0; it <= SEGS; it++) {
+          const theta = (it / SEGS) * Math.PI * 2;
+          const x = rNorm * Math.cos(theta);
+          const z = rNorm * Math.sin(theta);
+
+          pos[ptr * 3]     = x;
+          pos[ptr * 3 + 1] = 0.0;
+          pos[ptr * 3 + 2] = z;
+
+          uvs[ptr * 2]     = 0.5 + 0.49 * x;
+          uvs[ptr * 2 + 1] = 0.5 + 0.49 * z;
+
+          colors[ptr * 3]     = 0.95;
+          colors[ptr * 3 + 1] = 0.78;
+          colors[ptr * 3 + 2] = 0.45;
+
+          polar[ptr * 2]     = rNorm;
+          polar[ptr * 2 + 1] = theta;
+          ptr++;
+        }
+      }
+
+      for (let ir = 0; ir < RINGS; ir++) {
+        for (let it = 0; it < SEGS; it++) {
+          const a = ir * (SEGS + 1) + it;
+          const b = a + (SEGS + 1);
+          const c = b + 1;
+          const d = a + 1;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.userData.polar = polar;
+      geo.userData.vCount = vCount;
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    const topCymbalGeo = createCymbalGeometry();
+    const bottomHiHatGeo = createCymbalGeometry();
+
+    const cymbalMat = new THREE.MeshStandardMaterial({
+      map: bronzeLathingTex,
+      vertexColors: true,
+      roughness: 0.26,
+      metalness: 0.88,
+      side: THREE.DoubleSide
+    });
+
+    const bottomHiHatMat = new THREE.MeshStandardMaterial({
+      map: bronzeLathingTex,
+      color: 0xd99b52,
+      roughness: 0.30,
+      metalness: 0.86,
+      side: THREE.DoubleSide
+    });
+
+    const topCymbalMesh = new THREE.Mesh(topCymbalGeo, cymbalMat);
+    topCymbalMesh.name = 'TopCymbalMesh';
+    cymbalMasterGroup.add(topCymbalMesh);
+
+    const wireOverlayMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.25
+    });
+    const wireOverlayMesh = new THREE.Mesh(topCymbalGeo, wireOverlayMat);
+    wireOverlayMesh.visible = false;
+    cymbalMasterGroup.add(wireOverlayMesh);
+
+    const bottomHiHatMesh = new THREE.Mesh(bottomHiHatGeo, bottomHiHatMat);
+    bottomHiHatMesh.visible = false;
+    cymbalMasterGroup.add(bottomHiHatMesh);
+
+    // 6 Brass Sizzle Rivets Group
+    const sizzleRivetsGroup = new THREE.Group();
+    cymbalMasterGroup.add(sizzleRivetsGroup);
+    const rivetMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, metalness: 0.95, roughness: 0.15 });
+    const rivetMeshes = [];
+    for (let i = 0; i < 6; i++) {
+      const rGroup = new THREE.Group();
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.025, 14), rivetMat);
+      cap.position.y = 0.04;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.12, 10), rivetMat);
+      rGroup.add(cap, stem);
+      sizzleRivetsGroup.add(rGroup);
+      rivetMeshes.push(rGroup);
+    }
+
+    // 3D Beater Arsenal Group (Wood/Nylon Stick, Yarn Mallet Head, Wire Jazz Brush Fan, Rute Dowels, Bass Bow, Coin)
+    const beatersGroup = new THREE.Group();
+    cymbalMasterGroup.add(beatersGroup);
+
+    const hickoryStickGroup = new THREE.Group();
+    const stickShaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.032, 0.048, 2.1, 14),
+      new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.42 })
+    );
+    stickShaft.rotation.x = Math.PI * 0.5;
+    stickShaft.position.z = 1.05;
+
+    const tipMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.25 });
+    const acornTip = new THREE.Mesh(new THREE.SphereGeometry(0.048, 14, 14), tipMat);
+
+    // Yarn Mallet Head (visible when beaterType === 'mallet')
+    const yarnMalletHead = new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.85 })
+    );
+    yarnMalletHead.visible = false;
+
+    // Jazz Wire Brush Fan (visible when beaterType === 'brush')
+    const wireBrushFan = new THREE.Mesh(
+      new THREE.ConeGeometry(0.22, 0.45, 16),
+      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.85, roughness: 0.3, wireframe: true })
+    );
+    wireBrushFan.rotation.x = -Math.PI * 0.5;
+    wireBrushFan.position.z = 0.18;
+    wireBrushFan.visible = false;
+
+    hickoryStickGroup.add(stickShaft, acornTip, yarnMalletHead, wireBrushFan);
+    beatersGroup.add(hickoryStickGroup);
+
+    const bassBowMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 2.4, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.4 })
+    );
+    bassBowMesh.visible = false;
+    beatersGroup.add(bassBowMesh);
+
+    const coinScraperMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.14, 0.14, 0.025, 24),
+      new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.95, roughness: 0.15 })
+    );
+    coinScraperMesh.visible = false;
+    beatersGroup.add(coinScraperMesh);
+
+    function syncBeater3DVisuals() {
+      const b = state.beaterType;
+      acornTip.visible = (b === 'hickory' || b === 'nylon' || b === 'rute');
+      tipMat.color.setHex(b === 'nylon' ? 0xecfeff : (b === 'rute' ? 0xd97706 : 0xfef3c7));
+      yarnMalletHead.visible = (b === 'mallet');
+      wireBrushFan.visible = (b === 'brush');
+    }
+
+    function spawnCymbalRipple3D(rNorm, theta, hexColor) {
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const R3D = spec.radius3D;
+      const ringGeo = new THREE.RingGeometry(0.05, 0.11, 32);
+      ringGeo.rotateX(-Math.PI * 0.5);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: hexColor,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.9
+      });
+      const mesh = new THREE.Mesh(ringGeo, ringMat);
+      const yBase = computeCymbalProfileY(rNorm, spec, state.camberProfile, state.bellRatio, state.hammering, theta);
+      mesh.position.set(rNorm * R3D * Math.cos(theta), yBase + 0.03, rNorm * R3D * Math.sin(theta));
+      rippleGroup3D.add(mesh);
+      activeRipples3D.push({ mesh, age: 0.0, maxScale: R3D * 4.5 });
+    }
+
+    function rebuildCymbal3D() {
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const alloy = CYMBAL_ALLOYS[state.alloyType];
+      const R3D = spec.radius3D;
+
+      cymbalMat.color.setHex(alloy.colorHex);
+      cymbalMat.roughness = alloy.roughness;
+      cymbalMat.metalness = alloy.metalness;
+
+      bottomHiHatMesh.visible = spec.isHiHatPair;
+      if (spec.isHiHatPair) {
+        const posB = bottomHiHatGeo.attributes.position.array;
+        const polarB = bottomHiHatGeo.userData.polar;
+        const vCount = bottomHiHatGeo.userData.vCount;
+        const gap = 0.03 + state.hihatOpenness * 0.34;
+        for (let v = 0; v < vCount; v++) {
+          const rNorm = polarB[v * 2];
+          const theta = polarB[v * 2 + 1];
+          const yProf = -computeCymbalProfileY(rNorm, spec, state.camberProfile, state.bellRatio, state.hammering, theta);
+          posB[v * 3]     = rNorm * R3D * Math.cos(theta);
+          posB[v * 3 + 1] = yProf - gap;
+          posB[v * 3 + 2] = rNorm * R3D * Math.sin(theta);
+        }
+        bottomHiHatGeo.attributes.position.needsUpdate = true;
+        bottomHiHatGeo.computeVertexNormals();
+      }
+    }
+
+    function deformCymbalMesh3D(dt) {
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      const R3D = spec.radius3D;
+      const pos = topCymbalGeo.attributes.position.array;
+      const col = topCymbalGeo.attributes.color.array;
+      const polar = topCymbalGeo.userData.polar;
+      const vCount = topCymbalGeo.userData.vCount;
+
+      const m20 = state.modes[0];
+      const m30 = state.modes[1];
+      const mSub = state.modes[2];
+      const m51 = state.modes[3];
+      const mBell = state.modes[4];
+      const m82 = state.modes[5];
+      const mKZ1 = state.modes[6];
+
+      for (let v = 0; v < vCount; v++) {
+        const rNorm = polar[v * 2];
+        const theta = polar[v * 2 + 1];
+
+        const yStatic = computeCymbalProfileY(rNorm, spec, state.camberProfile, state.bellRatio, state.hammering, theta);
+
+        const rEnv = Math.pow(rNorm, 1.35);
+        const w20 = rEnv * Math.cos(2 * (theta - state.lastStrikeTheta)) * m20.amp * Math.sin(m20.phase * 0.05);
+        const w30 = rEnv * Math.cos(3 * (theta - state.lastStrikeTheta)) * m30.amp * Math.sin(m30.phase * 0.06);
+        const wSub = rEnv * Math.cos(4 * theta) * mSub.amp * Math.sin(mSub.phase * 0.04);
+        const w51 = Math.sin(rNorm * Math.PI * 1.8) * Math.cos(5 * theta) * m51.amp * Math.sin(m51.phase * 0.07);
+        const wBell = Math.exp(-Math.pow((rNorm - 0.15) / 0.14, 2)) * mBell.amp * Math.sin(mBell.phase * 0.09);
+        const wKZ = Math.sin(rNorm * Math.PI * 5.5) * Math.cos(12 * theta + m82.phase * 0.04) * mKZ1.amp * 0.45;
+
+        const dyVib = (w20 * 0.14 + w30 * 0.12 + wSub * 0.10 + w51 * 0.08 + wBell * 0.06 + wKZ * 0.07);
+
+        pos[v * 3]     = rNorm * R3D * Math.cos(theta);
+        pos[v * 3 + 1] = yStatic + dyVib;
+        pos[v * 3 + 2] = rNorm * R3D * Math.sin(theta);
+
+        if (state.showHeatmap) {
+          const glow = Math.max(-1, Math.min(1, dyVib * 7.5));
+          if (glow >= 0) {
+            col[v * 3]     = 0.96 + 0.04 * glow;
+            col[v * 3 + 1] = 0.78 - 0.42 * glow;
+            col[v * 3 + 2] = 0.46 - 0.35 * glow;
+          } else {
+            const c = -glow;
+            col[v * 3]     = 0.96 - 0.65 * c;
+            col[v * 3 + 1] = 0.78 + 0.18 * c;
+            col[v * 3 + 2] = 0.46 + 0.52 * c;
+          }
+        } else {
+          col[v * 3]     = 0.95;
+          col[v * 3 + 1] = 0.78;
+          col[v * 3 + 2] = 0.48;
+        }
+      }
+
+      topCymbalGeo.attributes.position.needsUpdate = true;
+      topCymbalGeo.attributes.color.needsUpdate = true;
+
+      cymbalMasterGroup.rotation.x = state.tiltAngleX * 0.12;
+      cymbalMasterGroup.rotation.z = state.tiltAngleZ * 0.12;
+
+      for (let i = 0; i < 6; i++) {
+        const rMesh = rivetMeshes[i];
+        rMesh.visible = i < state.sizzleRivets && !spec.isCrotale;
+        if (rMesh.visible) {
+          const rv = state.rivets[i];
+          const ySurf = computeCymbalProfileY(rv.rNorm, spec, state.camberProfile, state.bellRatio, state.hammering, rv.theta);
+          rMesh.position.set(
+            rv.rNorm * R3D * Math.cos(rv.theta),
+            ySurf + rv.zOffset * 0.22,
+            rv.rNorm * R3D * Math.sin(rv.theta)
+          );
+        }
+      }
+
+      hickoryStickGroup.visible = beaterAnim.activeTool === 'stick';
+      bassBowMesh.visible       = beaterAnim.activeTool === 'bow';
+      coinScraperMesh.visible   = beaterAnim.activeTool === 'coin';
+
+      if (beaterAnim.activeTool === 'stick') {
+        if (beaterAnim.stickT < 1.0) beaterAnim.stickT = Math.min(1.0, beaterAnim.stickT + dt * 8.5);
+        const u = beaterAnim.stickT;
+        const dip = Math.sin(u * Math.PI) * Math.exp(-u * 2.6);
+        hickoryStickGroup.position.set(beaterAnim.hitX, 0.75 - 0.68 * dip, beaterAnim.hitZ);
+        hickoryStickGroup.rotation.set(-0.35 + 0.30 * dip, Math.atan2(beaterAnim.hitX, beaterAnim.hitZ), 0);
+      } else if (beaterAnim.activeTool === 'bow') {
+        if (beaterAnim.bowT < 1.0) beaterAnim.bowT = Math.min(1.0, beaterAnim.bowT + dt * 0.75);
+        const u = beaterAnim.bowT;
+        bassBowMesh.position.set(R3D * 0.99, 0.4 - u * 0.8, 0);
+      } else if (beaterAnim.activeTool === 'coin') {
+        if (beaterAnim.coinT < 1.0) beaterAnim.coinT = Math.min(1.0, beaterAnim.coinT + dt * 1.4);
+        const rScrape = 0.22 + beaterAnim.coinT * 0.72;
+        const yScrape = computeCymbalProfileY(rScrape, spec, state.camberProfile, state.bellRatio, state.hammering, 0.4);
+        coinScraperMesh.position.set(rScrape * R3D * Math.cos(0.4), yScrape + 0.06, rScrape * R3D * Math.sin(0.4));
+        coinScraperMesh.rotation.z = 0.5;
+      }
+    }
+
+    // =========================================================================
+    // 8. RAYCASTING ON 3D CYMBAL (BELL < 0.24 • BOW 0.24..0.76 • EDGE > 0.76)
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointerNDC = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+    renderer.domElement.addEventListener('pointerdown', evt => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNDC.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNDC.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointerNDC, camera);
+
+      if (evt.button === 0 && !evt.shiftKey) {
+        const hits = raycaster.intersectObject(topCymbalMesh, false);
+        if (hits.length > 0) {
+          const hit = hits[0];
+          const localPt = topCymbalMesh.worldToLocal(hit.point.clone());
+          const spec = CYMBAL_MODELS[state.cymbalType];
+          const rNorm = Math.min(1.0, Math.hypot(localPt.x, localPt.z) / spec.radius3D);
+          const theta = Math.atan2(localPt.z, localPt.x);
+
+          if (rNorm <= state.bellRatio + 0.03) {
+            triggerCymbalStrike('bell', state.strikeForce, rNorm, theta);
+          } else if (spec.isRide) {
+            triggerCymbalStrike('bow', state.strikeForce, rNorm, theta);
+          } else if (rNorm >= 0.76 || spec.isSplash || spec.isCrash || spec.chinaFlange) {
+            triggerCymbalStrike('crash', state.strikeForce, rNorm, theta);
+          } else {
+            triggerCymbalStrike('bow', state.strikeForce, rNorm, theta);
+          }
+          return;
+        }
+      }
+
+      if (evt.button === 1 || (evt.button === 0 && evt.shiftKey)) {
+        camOrbit.isPanning = true;
+      } else {
+        camOrbit.isDragging = true;
+      }
+      camOrbit.lastX = evt.clientX;
+      camOrbit.lastY = evt.clientY;
+      renderer.domElement.setPointerCapture(evt.pointerId);
+    });
+
+    renderer.domElement.addEventListener('pointermove', evt => {
+      if (!camOrbit.isDragging && !camOrbit.isPanning) return;
+      const dx = evt.clientX - camOrbit.lastX;
+      const dy = evt.clientY - camOrbit.lastY;
+      camOrbit.lastX = evt.clientX;
+      camOrbit.lastY = evt.clientY;
+
+      if (camOrbit.isDragging) {
+        camOrbit.theta -= dx * 0.0065;
+        camOrbit.phi -= dy * 0.0065;
+        updateCameraTransform();
+      } else if (camOrbit.isPanning) {
+        const panScale = camOrbit.radius * 0.0012;
+        camOrbit.target.x -= dx * panScale;
+        camOrbit.target.y += dy * panScale;
+        updateCameraTransform();
+      }
+    });
+
+    function releaseCamPointer(evt) {
+      camOrbit.isDragging = false;
+      camOrbit.isPanning = false;
+      try { renderer.domElement.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+    renderer.domElement.addEventListener('pointerup', releaseCamPointer);
+    renderer.domElement.addEventListener('pointercancel', releaseCamPointer);
+
+    renderer.domElement.addEventListener('wheel', evt => {
+      evt.preventDefault();
+      camOrbit.radius = Math.max(4.5, Math.min(18.0, camOrbit.radius + evt.deltaY * 0.006));
+      updateCameraTransform();
+    }, { passive: false });
+
+    // =========================================================================
+    // 9. UI BINDINGS, MODAL TABLE, BEATER SELECTOR & 5-TRACK GROOVE SEQUENCER
+    // =========================================================================
+    const modalTableBody = document.getElementById('cymbalModalTableBody');
+
+    function buildModalTable() {
+      modalTableBody.innerHTML = '';
+      state.modes.forEach((m, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/60 cursor-pointer transition';
+        tr.innerHTML = `
+          <td class="py-1 px-2 font-semibold" style="color:${m.color}">${m.id}</td>
+          <td class="py-1 px-1.5 text-slate-300 truncate max-w-[115px]">${m.zoneLabel}</td>
+          <td id="cFreq_${idx}" class="py-1 px-1.5 text-amber-300 font-semibold">${Math.round(m.freq)}</td>
+          <td class="py-1 px-2 text-right">
+            <div class="w-12 h-2 bg-slate-900 rounded overflow-hidden inline-block align-middle">
+              <div id="cAmp_${idx}" class="h-full" style="width:0%;background:${m.color}"></div>
+            </div>
+          </td>
+        `;
+        tr.addEventListener('click', () => {
+          state.soloModeIdx = state.soloModeIdx === idx ? -1 : idx;
+          const rTarget = m.isBellMode ? 0.14 : (m.isTurbulence ? 0.90 : 0.55);
+          triggerCymbalStrike(m.isBellMode ? 'bell' : (m.isTurbulence ? 'crash' : 'bow'), state.strikeForce, rTarget, 0.0);
+          document.getElementById('clearSoloModeBtn').textContent =
+            state.soloModeIdx === -1 ? 'All Modes' : `Solo ${m.id} ×`;
+        });
+        modalTableBody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('clearSoloModeBtn').addEventListener('click', () => {
+      state.soloModeIdx = -1;
+      document.getElementById('clearSoloModeBtn').textContent = 'All Modes';
+    });
+
+    function renderSequencerGrid() {
+      const labels = [
+        ['', 'RIDE', 'SPANG', 'BUZZ'],
+        ['', 'BELL', 'PING!'],
+        ['', 'CRASH', 'CHOKE'],
+        ['', 'CHICK', 'SLOSH', 'ROLL'],
+        ['', 'KICK', 'SNARE']
+      ];
+      const maxStatesPerRow = [4, 3, 3, 4, 3];
+
+      for (let r = 0; r < 5; r++) {
+        const rowEl = document.getElementById(`seqRow_${r}`);
+        if (!rowEl) continue;
+        rowEl.innerHTML = '';
+        for (let c = 0; c < 16; c++) {
+          const val = state.seqGrid[r][c] || 0;
+          const cell = document.createElement('div');
+          cell.id = `seqCell_${r}_${c}`;
+          let activeClass = '';
+          if (val > 0) {
+            if (r === 0) activeClass = val === 3 ? 'active-roll' : 'active-bow';
+            else if (r === 1) activeClass = 'active-bell';
+            else if (r === 2) activeClass = 'active-crash';
+            else if (r === 3) activeClass = val === 3 ? 'active-roll' : 'active-hihat';
+            else if (r === 4) activeClass = 'active-kick';
+          }
+          cell.className = `seq-cell ${activeClass} ${c % 4 === 0 && val === 0 ? 'beat-downbeat' : ''}`;
+          cell.textContent = labels[r][val] || (c % 4 === 0 ? (c / 4 + 1) : '·');
+          cell.addEventListener('click', () => {
+            state.seqGrid[r][c] = (state.seqGrid[r][c] + 1) % maxStatesPerRow[r];
+            renderSequencerGrid();
+          });
+          cell.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            state.seqGrid[r][c] = 0;
+            renderSequencerGrid();
+          });
+          rowEl.appendChild(cell);
+        }
+      }
+    }
+
+    function syncWeylReadoutUI() {
+      const n_f = computeWeylModalDensity();
+      document.getElementById('weylDensityBadge').textContent = `n(f) = ${n_f.toFixed(2)} /Hz`;
+      document.getElementById('totalModes10kVal').textContent = Math.round(n_f * 10000).toLocaleString();
+
+      let regimeText = 'LINEAR PING';
+      if (state.nonlinearity >= 0.60) regimeText = 'KZ TURBULENCE';
+      else if (state.nonlinearity >= 0.25) regimeText = 'f/2 BIFURCATION';
+      document.getElementById('chaosRegimeBadge').textContent = regimeText;
+    }
+
+    // Cymbal Type Selector
+    document.querySelectorAll('.cymbal-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cymbal-type-btn').forEach(b => {
+          b.className = 'cymbal-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition';
+        });
+        btn.className = 'cymbal-type-btn px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold transition';
+
+        state.cymbalType = btn.dataset.cymbal;
+        const spec = CYMBAL_MODELS[state.cymbalType];
+        state.thicknessMm = spec.defaultThicknessMm;
+        state.camberProfile = spec.defaultCamber;
+        state.bellRatio = spec.defaultBellRatio;
+        state.hammering = spec.defaultHammering;
+        state.nonlinearity = spec.defaultNonlinearity;
+        state.sustainDecay = spec.defaultSustain;
+        state.sizzleRivets = spec.defaultRivets;
+
+        document.getElementById('plateThicknessSlider').value = state.thicknessMm;
+        document.getElementById('plateThicknessVal').textContent = `${state.thicknessMm.toFixed(2)} mm`;
+        document.getElementById('camberProfileSlider').value = state.camberProfile;
+        document.getElementById('camberProfileVal').textContent = `${state.camberProfile.toFixed(2)}×`;
+        document.getElementById('bellRatioSlider').value = state.bellRatio;
+        document.getElementById('bellRatioVal').textContent = `${state.bellRatio.toFixed(2)}`;
+        document.getElementById('hammeringSlider').value = state.hammering;
+        document.getElementById('hammeringVal').textContent = `${Math.round(state.hammering * 100)}%`;
+        document.getElementById('nonlinearCouplingSlider').value = state.nonlinearity;
+        document.getElementById('nonlinearCouplingVal').textContent = `${state.nonlinearity.toFixed(2)} (Chaotic Shimmer)`;
+        document.getElementById('sustainDecaySlider').value = state.sustainDecay;
+        document.getElementById('sustainDecayVal').textContent = `${state.sustainDecay.toFixed(1)}× (${(3.6 * state.sustainDecay).toFixed(1)}s)`;
+        document.getElementById('sizzleRivetsSlider').value = state.sizzleRivets;
+        document.getElementById('sizzleRivetsVal').textContent = state.sizzleRivets === 0 ? '0 Rivets (Off)' : `${state.sizzleRivets} Rivets`;
+        document.getElementById('hudRivetStatus').textContent = `${state.sizzleRivets} Active`;
+        document.getElementById('hudCymbalModel').textContent = `${spec.name.toUpperCase()} (${state.alloyType.toUpperCase()})`;
+
+        syncWeylReadoutUI();
+        rebuildCymbal3D();
+        triggerCymbalStrike(spec.isCrash ? 'crash' : 'bow', state.strikeForce);
+      });
+    });
+
+    // Beater / Stick / Mallet / Brush Selector
+    document.querySelectorAll('.beater-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.beater-btn').forEach(b => {
+          b.className = 'beater-btn px-1 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white';
+        });
+        btn.className = 'beater-btn px-1 py-1 rounded bg-emerald-500/25 text-emerald-200 border border-emerald-500/40 font-semibold';
+        state.beaterType = btn.dataset.beater;
+        const prof = BEATER_PROFILES[state.beaterType];
+        document.getElementById('beaterTypeLabel').textContent = prof.name;
+        document.getElementById('hudBeaterName').textContent = prof.shortName;
+        syncBeater3DVisuals();
+        triggerCymbalStrike(state.beaterType === 'mallet' ? 'crash' : 'bow', state.strikeForce);
+      });
+    });
+
+    // Alloy Selector
+    document.querySelectorAll('.alloy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.alloy-btn').forEach(b => {
+          b.className = 'alloy-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white';
+        });
+        btn.className = 'alloy-btn px-1.5 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold';
+        state.alloyType = btn.dataset.alloy;
+        const alloy = CYMBAL_ALLOYS[state.alloyType];
+        const spec = CYMBAL_MODELS[state.cymbalType];
+        document.getElementById('alloyNameLabel').textContent = alloy.name;
+        document.getElementById('hudCymbalModel').textContent = `${spec.name.toUpperCase()} (${state.alloyType.toUpperCase()})`;
+        syncWeylReadoutUI();
+        rebuildCymbal3D();
+        triggerCymbalStrike(spec.isCrash ? 'crash' : 'bow', state.strikeForce);
+      });
+    });
+
+    document.getElementById('plateThicknessSlider').addEventListener('input', e => {
+      state.thicknessMm = parseFloat(e.target.value);
+      document.getElementById('plateThicknessVal').textContent = `${state.thicknessMm.toFixed(2)} mm`;
+      syncWeylReadoutUI();
+    });
+    document.getElementById('camberProfileSlider').addEventListener('input', e => {
+      state.camberProfile = parseFloat(e.target.value);
+      document.getElementById('camberProfileVal').textContent = `${state.camberProfile.toFixed(2)}×`;
+      rebuildCymbal3D();
+    });
+    document.getElementById('bellRatioSlider').addEventListener('input', e => {
+      state.bellRatio = parseFloat(e.target.value);
+      document.getElementById('bellRatioVal').textContent = `${state.bellRatio.toFixed(2)}`;
+      rebuildCymbal3D();
+    });
+    document.getElementById('hammeringSlider').addEventListener('input', e => {
+      state.hammering = parseFloat(e.target.value);
+      const vDesc = state.hammering < 0.3 ? 'Clean' : (state.hammering < 0.7 ? 'Balanced' : 'Complex/Trash');
+      document.getElementById('hammeringVal').textContent = `${Math.round(state.hammering * 100)}% (${vDesc})`;
+      rebuildCymbal3D();
+    });
+    document.getElementById('soundColorSlider').addEventListener('input', e => {
+      state.soundColor = parseFloat(e.target.value);
+      const cDesc = state.soundColor < 0.38 ? 'Dark' : (state.soundColor < 0.72 ? 'Med-Bright' : 'Bright');
+      document.getElementById('soundColorVal').textContent = `${state.soundColor.toFixed(2)} (${cDesc})`;
+    });
+    document.getElementById('stickGripSlider').addEventListener('input', e => {
+      state.stickGrip = parseFloat(e.target.value);
+      const gDesc = state.stickGrip < 0.35 ? 'Loose' : (state.stickGrip < 0.7 ? 'Medium' : 'Tight/Choked');
+      document.getElementById('stickGripVal').textContent = `${state.stickGrip.toFixed(2)} (${gDesc})`;
+    });
+    document.getElementById('nonlinearCouplingSlider').addEventListener('input', e => {
+      state.nonlinearity = parseFloat(e.target.value);
+      const desc = state.nonlinearity >= 0.60 ? 'Chaotic Shimmer' : (state.nonlinearity >= 0.25 ? 'f/2 Subharmonic' : 'Linear');
+      document.getElementById('nonlinearCouplingVal').textContent = `${state.nonlinearity.toFixed(2)} (${desc})`;
+      syncWeylReadoutUI();
+    });
+    document.getElementById('strikeForceSlider').addEventListener('input', e => {
+      state.strikeForce = parseFloat(e.target.value);
+      document.getElementById('strikeForceVal').textContent = `${state.strikeForce.toFixed(2)} (${state.strikeForce > 0.75 ? 'ff' : 'mf'})`;
+    });
+    document.getElementById('sustainDecaySlider').addEventListener('input', e => {
+      state.sustainDecay = parseFloat(e.target.value);
+      document.getElementById('sustainDecayVal').textContent = `${state.sustainDecay.toFixed(1)}× (${(3.6 * state.sustainDecay).toFixed(1)}s)`;
+    });
+    document.getElementById('sizzleRivetsSlider').addEventListener('input', e => {
+      state.sizzleRivets = parseInt(e.target.value, 10);
+      document.getElementById('sizzleRivetsVal').textContent = state.sizzleRivets === 0 ? '0 Rivets (Off)' : `${state.sizzleRivets} Rivets`;
+      document.getElementById('hudRivetStatus').textContent = `${state.sizzleRivets} Active`;
+    });
+    document.getElementById('hihatOpenSlider').addEventListener('input', e => {
+      state.hihatOpenness = parseFloat(e.target.value);
+      const label = state.hihatOpenness < 0.08 ? 'Tight Chick' : (state.hihatOpenness < 0.45 ? 'Slosh' : 'Open');
+      document.getElementById('hihatOpenVal').textContent = `${Math.round(state.hihatOpenness * 100)}% (${label})`;
+      rebuildCymbal3D();
+    });
+
+    document.getElementById('strikeBellBtn').addEventListener('click', () => triggerArticulationPad('bell'));
+    document.getElementById('strikeBowBtn').addEventListener('click', () => triggerArticulationPad('bow'));
+    document.getElementById('strikeCrashBtn').addEventListener('click', () => triggerArticulationPad('crash'));
+    document.getElementById('hihatRollTopBtn').addEventListener('click', () => triggerArticulationPad('hhroll'));
+    document.getElementById('chokeCymbalBtn').addEventListener('click', () => triggerArticulationPad('choke'));
+
+    document.querySelectorAll('.art-pad-btn').forEach(btn => {
+      btn.addEventListener('click', () => triggerArticulationPad(btn.dataset.pad));
+    });
+
+    document.getElementById('scopeModeSpectrumBtn').addEventListener('click', () => {
+      state.scopeView = 'spectrum';
+      document.getElementById('scopeModeSpectrumBtn').className = 'px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-200 font-semibold';
+      document.getElementById('scopeModeAttractorBtn').className = 'px-1.5 py-0.5 rounded text-slate-400 hover:text-white';
+    });
+    document.getElementById('scopeModeAttractorBtn').addEventListener('click', () => {
+      state.scopeView = 'attractor';
+      document.getElementById('scopeModeAttractorBtn').className = 'px-1.5 py-0.5 rounded bg-amber-500/25 text-amber-200 font-semibold';
+      document.getElementById('scopeModeSpectrumBtn').className = 'px-1.5 py-0.5 rounded text-slate-400 hover:text-white';
+    });
+
+    document.getElementById('seqPlayToggleBtn').addEventListener('click', () => {
+      ensureAudio();
+      state.seqPlaying = !state.seqPlaying;
+      state.seqStep = 0;
+      state.seqNextStepTime = performance.now() * 0.001;
+      document.getElementById('seqPlayIcon').textContent = state.seqPlaying ? '⏸' : '▶';
+      document.getElementById('seqPlayText').textContent = state.seqPlaying ? 'Stop Groove' : 'Play Cymbal Groove';
+    });
+
+    document.querySelectorAll('.pat-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pat-preset-btn').forEach(b => {
+          b.className = 'pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200';
+        });
+        btn.className = 'pat-preset-btn px-2 py-0.5 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold';
+        const pat = CYMBAL_PATTERNS[btn.dataset.pat];
+        state.seqGrid = JSON.parse(JSON.stringify(pat.tracks));
+        state.seqBpm = pat.bpm;
+        state.seqSwing = pat.swing;
+        document.getElementById('seqBpmSlider').value = pat.bpm;
+        document.getElementById('seqBpmVal').textContent = pat.bpm;
+        document.getElementById('seqSwingSlider').value = pat.swing;
+        document.getElementById('seqSwingVal').textContent = `${Math.round(pat.swing * 100)}%`;
+        renderSequencerGrid();
+      });
+    });
+
+    document.getElementById('mutateSeqBtn').addEventListener('click', () => {
+      for (let c = 0; c < 16; c++) {
+        state.seqGrid[0][c] = (c % 2 === 0) ? 1 : (c === 14 ? 3 : (Math.random() < 0.35 ? 2 : 0));
+        state.seqGrid[1][c] = (!state.seqGrid[0][c] && Math.random() < 0.25) ? 1 : 0;
+        state.seqGrid[2][c] = (c === 0 || (c === 12 && Math.random() < 0.5)) ? 1 : (c === 15 && Math.random() < 0.35 ? 2 : 0);
+        state.seqGrid[3][c] = (c === 7 || c === 15) ? 3 : ((c % 4 === 2) ? 1 : (c === 14 && Math.random() < 0.4 ? 2 : 0));
+        state.seqGrid[4][c] = (c === 0 || c === 8) ? 1 : (c === 4 || c === 12 ? 2 : 0);
+      }
+      renderSequencerGrid();
+    });
+
+    document.getElementById('seqBpmSlider').addEventListener('input', e => {
+      state.seqBpm = parseInt(e.target.value, 10);
+      document.getElementById('seqBpmVal').textContent = state.seqBpm;
+    });
+    document.getElementById('seqSwingSlider').addEventListener('input', e => {
+      state.seqSwing = parseFloat(e.target.value);
+      document.getElementById('seqSwingVal').textContent = `${Math.round(state.seqSwing * 100)}%`;
+    });
+    document.getElementById('clearSeqBtn').addEventListener('click', () => {
+      state.seqGrid = [
+        new Array(16).fill(0),
+        new Array(16).fill(0),
+        new Array(16).fill(0),
+        new Array(16).fill(0),
+        new Array(16).fill(0)
+      ];
+      renderSequencerGrid();
+    });
+
+    document.getElementById('exportBellWavBtn').addEventListener('click', () => exportOneShotWav('bell'));
+    document.getElementById('exportBowWavBtn').addEventListener('click', () => exportOneShotWav('bow'));
+    document.getElementById('exportCrashWavBtn').addEventListener('click', () => exportOneShotWav('crash'));
+    document.getElementById('exportLoopWavBtn').addEventListener('click', exportGrooveLoopWav);
+    document.getElementById('footerExportLoopBtn').addEventListener('click', exportGrooveLoopWav);
+
+    document.getElementById('liveRecordToggleBtn').addEventListener('click', () => {
+      ensureAudio();
+      if (!state.isRecordingLive) {
+        state.liveRecordedChunksL = [];
+        state.liveRecordedChunksR = [];
+        state.isRecordingLive = true;
+        document.getElementById('recButtonLabel').textContent = '■ Stop & Save Jam .WAV';
+        document.getElementById('recIndicatorDot').className = 'w-2 h-2 rounded-full bg-rose-400 animate-ping';
+      } else {
+        state.isRecordingLive = false;
+        document.getElementById('recButtonLabel').textContent = '● Record Live Jam to .WAV';
+        document.getElementById('recIndicatorDot').className = 'w-2 h-2 rounded-full bg-rose-500';
+
+        const totalSamples = state.liveRecordedChunksL.reduce((acc, c) => acc + c.length, 0);
+        if (totalSamples > 0) {
+          const buf = audioCtx.createBuffer(2, totalSamples, audioCtx.sampleRate);
+          const outL = buf.getChannelData(0);
+          const outR = buf.getChannelData(1);
+          let ptr = 0;
+          for (let i = 0; i < state.liveRecordedChunksL.length; i++) {
+            outL.set(state.liveRecordedChunksL[i], ptr);
+            outR.set(state.liveRecordedChunksR[i], ptr);
+            ptr += state.liveRecordedChunksL[i].length;
+          }
+          const wavBlob = encodeAudioBufferToWavBlob(buf);
+          triggerBlobDownload(wavBlob, `cymbal_live_session_${Date.now()}.wav`);
+        }
+      }
+    });
+
+    document.getElementById('exportJsonPatternBtn').addEventListener('click', () => {
+      const payload = {
+        instrument: 'CYMBAL-3D Föppl–von Kármán Nonlinear Plate & Wave-Turbulence Lab',
+        cymbalType: state.cymbalType,
+        alloyType: state.alloyType,
+        beaterType: state.beaterType,
+        thicknessMm: state.thicknessMm,
+        camberProfile: state.camberProfile,
+        bellRatio: state.bellRatio,
+        hammering: state.hammering,
+        nonlinearity: state.nonlinearity,
+        weylModalDensityPerHz: state.weylDensity,
+        sizzleRivets: state.sizzleRivets,
+        bpm: state.seqBpm,
+        swing: state.seqSwing,
+        grooveMatrix: state.seqGrid
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(blob, `cymbal_3d_${state.cymbalType}_${state.alloyType}_${state.seqBpm}bpm.json`);
+    });
+
+    function centerAndFitCamera() {
+      camOrbit.theta = 0.54;
+      camOrbit.phi = 1.04;
+      camOrbit.radius = 8.8;
+      camOrbit.target.set(0, 0.15, 0);
+      updateCameraTransform();
+    }
+    document.getElementById('camPerspectiveBtn').addEventListener('click', centerAndFitCamera);
+    document.getElementById('camCenterFitBtn').addEventListener('click', centerAndFitCamera);
+    document.getElementById('camProfileEdgeBtn').addEventListener('click', () => {
+      camOrbit.theta = 0.0;
+      camOrbit.phi = 1.48;
+      camOrbit.radius = 7.8;
+      camOrbit.target.set(0, 0.15, 0);
+      updateCameraTransform();
+    });
+    document.getElementById('camChladniTopBtn').addEventListener('click', () => {
+      camOrbit.theta = 0.0;
+      camOrbit.phi = 0.12;
+      camOrbit.radius = 8.4;
+      camOrbit.target.set(0, 0.0, 0);
+      updateCameraTransform();
+    });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      camOrbit.radius = Math.max(4.5, camOrbit.radius - 1.0);
+      updateCameraTransform();
+    });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      camOrbit.radius = Math.min(18.0, camOrbit.radius + 1.0);
+      updateCameraTransform();
+    });
+    document.getElementById('cameraZoomSlider').addEventListener('input', e => {
+      camOrbit.radius = parseFloat(e.target.value);
+      updateCameraTransform();
+    });
+
+    document.getElementById('toggleChladniHeatmap').addEventListener('change', e => {
+      state.showHeatmap = e.target.checked;
+    });
+    document.getElementById('toggleWireframeMesh').addEventListener('change', e => {
+      state.showWireframe = e.target.checked;
+      wireOverlayMesh.visible = state.showWireframe;
+    });
+
+    document.getElementById('toggleLeftPanelBtn').addEventListener('click', () => {
+      document.body.classList.toggle('hide-left-panel');
+      setTimeout(handleResize, 25);
+    });
+    document.getElementById('toggleRightPanelBtn').addEventListener('click', () => {
+      document.body.classList.toggle('hide-right-panel');
+      setTimeout(handleResize, 25);
+    });
+    document.getElementById('toggleBottomDeckBtn').addEventListener('click', () => {
+      document.body.classList.toggle('hide-bottom-deck');
+      setTimeout(handleResize, 25);
+    });
+
+    function toggleFullScreenStage() {
+      document.body.classList.toggle('stage-fullscreen');
+      const isFs = document.body.classList.contains('stage-fullscreen');
+      document.getElementById('stageFullscreenBtn').textContent = isFs ? '✕ Exit Full [F]' : '⛶ Full [F]';
+      setTimeout(handleResize, 30);
+    }
+    document.getElementById('headerFullscreenBtn').addEventListener('click', toggleFullScreenStage);
+    document.getElementById('stageFullscreenBtn').addEventListener('click', toggleFullScreenStage);
+
+    window.addEventListener('keydown', e => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+      const k = e.key.toLowerCase();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        triggerArticulationPad('bow');
+      } else if (k === 'b') {
+        triggerArticulationPad('bell');
+      } else if (k === 'd') {
+        triggerArticulationPad('spang');
+      } else if (k === 'c') {
+        triggerArticulationPad('crash');
+      } else if (k === 'x') {
+        triggerArticulationPad('chick');
+      } else if (k === 'u') {
+        triggerArticulationPad('slurp');
+      } else if (k === 'h') {
+        triggerArticulationPad('hhroll');
+      } else if (k === 'p') {
+        triggerArticulationPad('buzz');
+      } else if (k === 'w') {
+        triggerArticulationPad('swell');
+      } else if (k === 'v') {
+        triggerArticulationPad('bowed');
+      } else if (k === 'z') {
+        triggerArticulationPad('zing');
+      } else if (k === 'm') {
+        triggerArticulationPad('choke');
+      } else if (k === 'f') {
+        toggleFullScreenStage();
+      }
+    });
+
+    function handleResize() {
+      const rect = mountEl.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, true);
+    }
+    window.addEventListener('resize', handleResize);
+    if (window.ResizeObserver) {
+      new ResizeObserver(handleResize).observe(mountEl);
+    }
+
+    // =========================================================================
+    // 10. 2D ANATOMY RADAR + KZ SPECTRUM / STRANGE ATTRACTOR CANVASES
+    // =========================================================================
+    const radarCanvas = document.getElementById('cymbalRadarCanvas');
+    const radarCtx = radarCanvas.getContext('2d');
+
+    radarCanvas.addEventListener('pointerdown', e => {
+      const rect = radarCanvas.getBoundingClientRect();
+      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+      const rNorm = Math.min(1.0, Math.hypot(nx, ny));
+      const theta = Math.atan2(ny, nx);
+      const spec = CYMBAL_MODELS[state.cymbalType];
+      if (rNorm <= state.bellRatio + 0.03) {
+        triggerCymbalStrike('bell', state.strikeForce, rNorm, theta);
+      } else if (rNorm >= 0.76 || spec.isSplash) {
+        triggerCymbalStrike('crash', state.strikeForce, rNorm, theta);
+      } else {
+        triggerCymbalStrike('bow', state.strikeForce, rNorm, theta);
+      }
+    });
+
+    function drawCymbalRadar() {
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const maxR = cx - 6;
+
+      radarCtx.clearRect(0, 0, w, h);
+
+      radarCtx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
+      radarCtx.lineWidth = 2.5;
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, maxR, 0, Math.PI * 2);
+      radarCtx.stroke();
+
+      radarCtx.setLineDash([2, 3]);
+      radarCtx.strokeStyle = 'rgba(245, 158, 11, 0.42)';
+      radarCtx.lineWidth = 1.2;
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, maxR * 0.76, 0, Math.PI * 2);
+      radarCtx.stroke();
+      radarCtx.setLineDash([]);
+
+      radarCtx.strokeStyle = 'rgba(34, 211, 238, 0.65)';
+      radarCtx.lineWidth = 1.8;
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, maxR * state.bellRatio, 0, Math.PI * 2);
+      radarCtx.stroke();
+
+      const mIdx = state.soloModeIdx >= 0 ? state.soloModeIdx : 1;
+      const mVal = state.modes[mIdx].m;
+      if (mVal > 0) {
+        radarCtx.strokeStyle = 'rgba(245, 158, 11, 0.25)';
+        radarCtx.lineWidth = 1;
+        for (let k = 0; k < mVal; k++) {
+          const ang = (k * Math.PI) / mVal;
+          radarCtx.beginPath();
+          radarCtx.moveTo(cx - maxR * Math.cos(ang), cy - maxR * Math.sin(ang));
+          radarCtx.lineTo(cx + maxR * Math.cos(ang), cy + maxR * Math.sin(ang));
+          radarCtx.stroke();
+        }
+      }
+
+      for (let i = 0; i < state.sizzleRivets; i++) {
+        const rv = state.rivets[i];
+        const rx = cx + rv.rNorm * maxR * Math.cos(rv.theta);
+        const ry = cy + rv.rNorm * maxR * Math.sin(rv.theta);
+        radarCtx.fillStyle = '#fde047';
+        radarCtx.beginPath();
+        radarCtx.arc(rx, ry, 2.3, 0, Math.PI * 2);
+        radarCtx.fill();
+      }
+
+      const sx = cx + state.lastStrikeR * maxR * Math.cos(state.lastStrikeTheta);
+      const sy = cy + state.lastStrikeR * maxR * Math.sin(state.lastStrikeTheta);
+      radarCtx.fillStyle = state.lastStrikeR <= state.bellRatio + 0.03
+        ? '#22d3ee'
+        : (state.lastStrikeR >= 0.76 ? '#f43f5e' : '#f59e0b');
+      radarCtx.beginPath();
+      radarCtx.arc(sx, sy, 4.2, 0, Math.PI * 2);
+      radarCtx.fill();
+      radarCtx.strokeStyle = '#ffffff';
+      radarCtx.lineWidth = 1.2;
+      radarCtx.stroke();
+    }
+
+    const scopeCanvas = document.getElementById('turbulenceScopeCanvas');
+    const scopeCtx = scopeCanvas.getContext('2d');
+
+    function drawTurbulenceScope() {
+      const w = scopeCanvas.width;
+      const h = scopeCanvas.height;
+      scopeCtx.clearRect(0, 0, w, h);
+
+      scopeCtx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+      for (let i = 1; i <= 3; i++) {
+        const y = (i / 4) * h;
+        scopeCtx.beginPath();
+        scopeCtx.moveTo(0, y);
+        scopeCtx.lineTo(w, y);
+        scopeCtx.stroke();
+      }
+
+      if (state.scopeView === 'spectrum') {
+        const numBins = 44;
+        const barW = (w - 12) / numBins;
+        for (let b = 0; b < numBins; b++) {
+          const u = b / (numBins - 1);
+          const modeBin = Math.min(7, Math.floor(u * 8));
+          const baseAmp = state.modes[modeBin].amp;
+          const ripple = 0.78 + 0.22 * Math.sin(b * 2.9 + performance.now() * 0.015);
+          const val = Math.min(1.0, baseAmp * ripple);
+          const bh = Math.max(2, val * (h - 22));
+          const x = 6 + b * barW;
+          const y = h - 8 - bh;
+
+          scopeCtx.fillStyle = u < 0.28 ? '#22d3ee' : (u < 0.62 ? '#f59e0b' : '#f43f5e');
+          scopeCtx.fillRect(x, y, Math.max(2, barW - 1.5), bh);
+        }
+
+        scopeCtx.strokeStyle = '#fde047';
+        scopeCtx.lineWidth = 1.5;
+        scopeCtx.beginPath();
+        for (let i = 0; i < w - 12; i += 4) {
+          const u = i / (w - 12);
+          const env = (state.modes[1].amp * Math.pow(1.0 - u * 0.72, -state.cascadeSlope * 0.65))
+                    + state.turbulenceEnergy * 0.45 * Math.sin(u * Math.PI);
+          const y = h - 10 - Math.min(1.0, env * 0.75) * (h - 24);
+          if (i === 0) scopeCtx.moveTo(6 + i, y);
+          else scopeCtx.lineTo(6 + i, y);
+        }
+        scopeCtx.stroke();
+      } else {
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        const len = state.attractorTrail.length;
+        if (len < 2) return;
+
+        scopeCtx.lineWidth = 1.6;
+        for (let i = 1; i < len; i++) {
+          const p0 = state.attractorTrail[i - 1];
+          const p1 = state.attractorTrail[i];
+          const alpha = i / len;
+          scopeCtx.strokeStyle = p1.chaos > 0.35
+            ? `rgba(244, 63, 94, ${alpha})`
+            : `rgba(34, 211, 238, ${alpha})`;
+          scopeCtx.beginPath();
+          scopeCtx.moveTo(cx + p0.w * 48, cy - p0.v * 42);
+          scopeCtx.lineTo(cx + p1.w * 48, cy - p1.v * 42);
+          scopeCtx.stroke();
+        }
+      }
+    }
+
+    // =========================================================================
+    // 11. MAIN 60 FPS ANIMATION & SEQUENCER CLOCK LOOP
+    // =========================================================================
+    let lastTime = performance.now() * 0.001;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now() * 0.001;
+      const dt = Math.min(0.05, Math.max(0.001, now - lastTime));
+      lastTime = now;
+
+      // 5-Track 16-Step Sequencer Clock
+      if (state.seqPlaying && now >= state.seqNextStepTime) {
+        const sIdx = state.seqStep % 16;
+        const stepDur = (60.0 / state.seqBpm) * 0.25;
+
+        document.querySelectorAll('.seq-cell').forEach(el => el.classList.remove('playhead-col'));
+        for (let r = 0; r < 5; r++) {
+          const cell = document.getElementById(`seqCell_${r}_${sIdx}`);
+          if (cell) cell.classList.add('playhead-col');
+        }
+
+        // Track 0: Bow Ride Tip / Spang-a-lang / Buzz Roll
+        if (state.seqGrid[0][sIdx] === 1) triggerCymbalStrike('bow', state.strikeForce * 0.85, 0.52, -0.2);
+        else if (state.seqGrid[0][sIdx] === 2) triggerArticulationPad('spang');
+        else if (state.seqGrid[0][sIdx] === 3) triggerBuzzPressRoll();
+
+        // Track 1: Bell Cup Ping
+        if (state.seqGrid[1][sIdx] === 1) triggerCymbalStrike('bell', state.strikeForce * 0.82, 0.14, 0.2);
+        else if (state.seqGrid[1][sIdx] === 2) triggerCymbalStrike('bell', state.strikeForce, 0.12, -0.2);
+
+        // Track 2: Edge Crash / Secco Choke
+        if (state.seqGrid[2][sIdx] === 1) triggerCymbalStrike('crash', state.strikeForce, 0.92, 0.4);
+        else if (state.seqGrid[2][sIdx] === 2) triggerCymbalStrike('choke');
+
+        // Track 3: Hi-Hat Clutch (Chick / Slosh / 32nd Hi-Hat Roll)
+        if (state.seqGrid[3][sIdx] === 1) triggerCymbalStrike('chick', 0.82, 0.82, 0.0);
+        else if (state.seqGrid[3][sIdx] === 2) triggerCymbalStrike('bow', 0.74, 0.78, -0.4);
+        else if (state.seqGrid[3][sIdx] === 3) triggerHiHatRoll();
+
+        // Track 4: Kick / Snare Anchor
+        if (state.seqGrid[4][sIdx] === 1) {
+          ensureAudio();
+          playCymbalAudioVoice(audioCtx, masterGain, audioCtx.currentTime, 'kick', 0.85, 0.0);
+        } else if (state.seqGrid[4][sIdx] === 2) {
+          ensureAudio();
+          playCymbalAudioVoice(audioCtx, masterGain, audioCtx.currentTime, 'rim', 0.75, 0.0);
+        }
+
+        const swingAdd = (sIdx % 2 === 0) ? stepDur * state.seqSwing : -stepDur * state.seqSwing;
+        state.seqNextStepTime = now + Math.max(0.04, stepDur + swingAdd);
+        state.seqStep = (state.seqStep + 1) % 16;
+      }
+
+      updateNonlinearShellPhysics(dt);
+      deformCymbalMesh3D(dt);
+
+      for (let i = activeRipples3D.length - 1; i >= 0; i--) {
+        const rp = activeRipples3D[i];
+        rp.age += dt;
+        const prog = rp.age / 0.45;
+        if (prog >= 1.0) {
+          rippleGroup3D.remove(rp.mesh);
+          rp.mesh.geometry.dispose();
+          rp.mesh.material.dispose();
+          activeRipples3D.splice(i, 1);
+        } else {
+          const s = 1.0 + prog * rp.maxScale;
+          rp.mesh.scale.set(s, 1, s);
+          rp.mesh.material.opacity = (1.0 - prog) * 0.85;
+        }
+      }
+
+      document.getElementById('hudCentroidReadout').textContent =
+        `Centroid f_c = ${(state.spectralCentroidHz * 0.001).toFixed(2)} kHz`;
+      document.getElementById('hudSpectralEntropy').textContent =
+        `${state.spectralEntropy.toFixed(2)} bits`;
+      document.getElementById('hudCascadeSlope').textContent =
+        `f^${state.cascadeSlope.toFixed(2)}`;
+      document.getElementById('hudDeflectionRatio').textContent =
+        `${state.deflectionRatio.toFixed(2)}`;
+
+      for (let i = 0; i < state.modes.length; i++) {
+        const m = state.modes[i];
+        const fEl = document.getElementById(`cFreq_${i}`);
+        const aEl = document.getElementById(`cAmp_${i}`);
+        if (fEl) {
+          fEl.textContent = Math.round(m.freq);
+          aEl.style.width = `${Math.min(100, Math.round(m.amp * 92))}%`;
+        }
+      }
+
+      drawCymbalRadar();
+      drawTurbulenceScope();
+
+      renderer.render(scene, camera);
+    }
+
+    // Initial Boot
+    syncWeylReadoutUI();
+    syncBeater3DVisuals();
+    rebuildCymbal3D();
+    buildModalTable();
+    renderSequencerGrid();
+    centerAndFitCamera();
+    handleResize();
+
+    state.modes.forEach((m, i) => {
+      m.amp = 0.65 / (1 + i * 0.25);
+    });
+    state.tiltVelX = 0.45;
+
+    animate();
+  </script>
+</body>
+</html>
