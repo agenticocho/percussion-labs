@@ -1,0 +1,2735 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAN-3D — Steelpan &amp; Handpan 1:2:3 Orthogonal Mode-Coupling &amp; Loop Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#04060a',
+              900: '#090d16',
+              800: '#111827',
+              700: '#1e293b',
+              600: '#334155'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #04060a;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(9, 13, 22, 0.6); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060a;
+      margin-top: -5px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+      transition: transform 0.1s ease, background-color 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 8px rgba(192, 132, 252, 0.6) !important;
+    }
+
+    .hud-glass {
+      background: linear-gradient(180deg, rgba(13, 18, 30, 0.88) 0%, rgba(7, 10, 18, 0.94) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 73, 107, 0.48);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+    }
+
+    @keyframes pulseEmerald {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+      50% { box-shadow: 0 0 16px 3px rgba(16, 185, 129, 0.3); }
+    }
+    .playing-glow { animation: pulseEmerald 1.5s infinite; }
+
+    .step-active {
+      transform: translateY(-2px);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.55);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden select-none flex flex-col p-2.5 gap-2">
+
+  <!-- FULL-SCREEN 3D WEBGL STEELPAN / HANDPAN VIEWPORT -->
+  <div id="webglContainer" class="fixed inset-0 w-full h-full z-0 cursor-pointer"></div>
+
+  <!-- 2D FLOATING PITCH / INTERVAL LABELS OVERLAY (PROJECTED FROM 3D NOTE FIELDS) -->
+  <div id="noteLabelsOverlay" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- TOP STUDIO HEADER & TRANSPORT BAR (Flex child 1: Non-overlapping) -->
+  <header class="relative z-30 hud-glass rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <!-- Left: Brand Identity & Hornbostel-Sachs Classification -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/25 via-sky-500/20 to-purple-500/25 border border-amber-500/50 flex items-center justify-center shadow-inner shrink-0">
+        <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="9"></circle>
+          <ellipse cx="12" cy="12" rx="3" ry="2.2" stroke="#38bdf8"></ellipse>
+          <circle cx="12" cy="6.2" r="1.4"></circle>
+          <circle cx="17" cy="9" r="1.4"></circle>
+          <circle cx="17" cy="15" r="1.4"></circle>
+          <circle cx="12" cy="17.8" r="1.4"></circle>
+          <circle cx="7" cy="15" r="1.4"></circle>
+          <circle cx="7" cy="9" r="1.4"></circle>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">PAN-3D // STEELPAN &amp; HANDPAN LAB</h1>
+          <span class="hidden xl:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">111.241.12 • 1:2:3 Orthogonal Modes + Gu Helmholtz</span>
+        </div>
+        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+          <span id="hdrActiveInstrument" class="text-sky-300 font-semibold">Trinidad C-Lead Tenor Steelpan (29-Note 4ths &amp; 5ths)</span>
+          <span>•</span>
+          <span id="hdrActiveModes">Partials: f0 : 2.00f0 (Oct) : 3.00f0 (12th)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Camera Presets, Labels Toggle & Harmonic Mode Isolation -->
+    <div class="flex flex-wrap items-center gap-1.5 bg-obsidian-950/85 border border-slate-800 rounded-xl px-2 py-1">
+      <span class="text-[10px] font-mono uppercase text-slate-400 px-1 hidden sm:inline">Cam:</span>
+      <button type="button" data-cam="player" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono font-semibold bg-amber-500 text-slate-950 transition">Player Top</button>
+      <button type="button" data-cam="iso" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition">Studio Iso</button>
+      <button type="button" data-cam="side" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition">Skirt / Profile</button>
+      <button type="button" data-cam="bottom" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition">Gu / Bowl Under</button>
+
+      <div class="h-4 w-[1px] bg-slate-800 mx-0.5"></div>
+
+      <button id="btnToggleLabels" type="button" class="px-2 py-1 rounded-lg text-[11px] font-mono bg-sky-500/20 text-sky-300 border border-sky-500/40 transition" title="Toggle 3D Note Pitch & Circle-of-Fifths Labels">
+        Note Labels: ON
+      </button>
+      <button id="btnToggleChladni" type="button" class="px-2 py-1 rounded-lg text-[11px] font-mono bg-purple-500/20 text-purple-300 border border-purple-500/40 transition" title="Show 1:2:3 Orthogonal Nodal Heatmap on Struck Tone Fields">
+        1:2:3 Heatmap: ON
+      </button>
+    </div>
+
+    <!-- Right: Master Sequencer Transport & Quick WAV Export -->
+    <div class="flex flex-wrap items-center gap-1.5 bg-obsidian-950/85 border border-slate-800 rounded-xl px-2.5 py-1">
+      <button id="btnPlayToggle" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-md shadow-emerald-500/20">
+        <svg id="iconPlay" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+        <svg id="iconStop" class="w-3.5 h-3.5 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+        <span id="labelPlayToggle">PLAY</span>
+      </button>
+
+      <button id="btnStepOnce" type="button" class="px-2 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700 text-[11px] font-mono transition" title="Step 1 Groove Event">
+        STEP &rarr;
+      </button>
+
+      <div class="flex items-center gap-2 px-1.5 border-l border-r border-slate-800">
+        <div class="text-right min-w-[52px]">
+          <div class="flex items-baseline justify-end gap-0.5">
+            <span id="bpmReadout" class="font-mono text-sm font-extrabold text-amber-400">118</span>
+            <span class="text-[9px] font-mono text-slate-400">BPM</span>
+          </div>
+          <div id="tempoMarkingLabel" class="text-[9px] text-slate-400 leading-none">Calypso Flow</div>
+        </div>
+        <input id="sliderBpm" type="range" min="48" max="210" value="118" class="w-20 sm:w-24" />
+      </div>
+
+      <button id="btnTapTempo" type="button" class="px-2 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 border border-slate-700 text-[10px] font-mono transition">TAP</button>
+
+      <button id="btnQuickExportWav" type="button" class="px-2.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-[11px] font-bold transition">
+        💾 WAV
+      </button>
+    </div>
+  </header>
+
+  <!-- MIDDLE WORKSPACE STAGE (Flex child 2: Guaranteed below header & above footer) -->
+  <div class="relative flex-1 min-h-0 w-full z-20 pointer-events-none">
+
+    <!-- Dock Collapse Toggle Bar -->
+    <div class="absolute top-0 left-0 right-0 flex items-center justify-between pointer-events-none z-30">
+      <button id="btnToggleLeftDock" type="button" class="pointer-events-auto hud-glass px-2.5 py-1 rounded-lg text-[10px] font-mono text-amber-300 hover:text-white border border-amber-500/40 transition">
+        ◀ Pan Models &amp; 1:2:3 Physics
+      </button>
+      <button id="btnToggleRightDock" type="button" class="pointer-events-auto hud-glass px-2.5 py-1 rounded-lg text-[10px] font-mono text-sky-300 hover:text-white border border-sky-500/40 transition">
+        Panorama / Handpan Sequencer &amp; WAV ▶
+      </button>
+    </div>
+
+    <!-- LEFT FLOATING DOCK: 8 STEELPAN & HANDPAN INSTRUMENTS, STEEL ALLOYS & 1:2:3 MODAL COUPLING -->
+    <aside id="leftDock" class="pointer-events-auto absolute top-8 bottom-0 left-0 w-[345px] sm:w-[385px] hud-glass rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto transition-transform duration-200">
+      <!-- Left Dock Sub-Tabs -->
+      <div class="grid grid-cols-3 gap-1 bg-obsidian-950/90 p-1 rounded-xl border border-slate-800 shrink-0">
+        <button type="button" data-left-tab="instruments" class="left-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 transition">1. Pan Models</button>
+        <button type="button" data-left-tab="modes" class="left-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">2. 1:2:3 Tuning</button>
+        <button type="button" data-left-tab="shell" class="left-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">3. Alloy &amp; Gu</button>
+      </div>
+
+      <!-- LEFT TAB 1: 4 CARIBBEAN STEELPANS + 4 NITRIDED/STAINLESS HANDPANS -->
+      <div id="leftTabInstruments" class="flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">Caribbean Steelpans vs. Handpans</h2>
+            <p class="text-[10px] text-slate-400">Concave 4ths/5ths oil-drum bowls &amp; convex Ding/Gu shells</p>
+          </div>
+          <button id="btnWildcardPan" type="button" class="px-2 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[10px] font-mono text-amber-300 transition">
+            🎲 Wildcard
+          </button>
+        </div>
+
+        <!-- 8 Instrument Cards -->
+        <div id="instrumentGrid" class="grid grid-cols-2 gap-1.5">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Strike Zone / Harmonic Isolation Mode -->
+        <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Note-Field Strike Articulation</span>
+            <span id="lblActiveArticulation" class="text-[10px] font-mono text-sky-300">Full Triadic (1:2:3)</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1">
+            <button type="button" data-hitmode="full" class="hitmode-btn py-1.5 rounded-lg border text-[10px] font-bold bg-sky-500/20 border-sky-400 text-white transition">
+              Full 1:2:3
+            </button>
+            <button type="button" data-hitmode="octave" class="hitmode-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-slate-300 transition" title="Isolate Longitudinal (0,1) Octave Harmonic (2f0)">
+              2:1 Octave Edge
+            </button>
+            <button type="button" data-hitmode="twelfth" class="hitmode-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-slate-300 transition" title="Isolate Transverse (1,0) Twelfth Harmonic (3f0)">
+              3:1 Twelfth Edge
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
+            <div>
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Beater / Hand Touch</label>
+              <select id="selectExciter" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 outline-none">
+                <option value="rubber_soft">Soft Rubber Tenor Pansticks</option>
+                <option value="rubber_firm">Firm Panorama Lead Sticks</option>
+                <option value="fingertip">Handpan Warm Index Pad</option>
+                <option value="thumb_edge">Handpan Crisp Thumb Split</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Roll / Chording Mode</label>
+              <select id="selectPlayAssist" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 outline-none">
+                <option value="single">Single Note Strike</option>
+                <option value="pan_roll">Panorama Tremolo Roll</option>
+                <option value="dyad_fifth">Auto Perfect-5th Dyad</option>
+                <option value="triad_chord">Auto Major/Minor Triad</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Core Quick Acoustic Sliders -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Nonlinear Shimmer</span>
+              <span id="valShimmer" class="font-mono text-amber-400 font-bold">76%</span>
+            </div>
+            <input id="sliderShimmer" type="range" min="0" max="100" value="76" class="w-full" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Sympathetic Matrix</span>
+              <span id="valSympathetic" class="font-mono text-sky-400 font-bold">58%</span>
+            </div>
+            <input id="sliderSympathetic" type="range" min="0" max="100" value="58" class="w-full slider-cyan" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Shell Sustain (T60)</span>
+              <span id="valSustain" class="font-mono text-emerald-400 font-bold">65%</span>
+            </div>
+            <input id="sliderSustain" type="range" min="15" max="100" value="65" class="w-full slider-emerald" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Chorus Beating (Δf)</span>
+              <span id="valChorusBeat" class="font-mono text-purple-300 font-bold">1.3 Hz</span>
+            </div>
+            <input id="sliderChorusBeat" type="range" min="0" max="45" value="13" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LEFT TAB 2: 1:2:3 ORTHOGONAL HARMONIC STROBE TUNER & DELAYED BLOOM -->
+      <div id="leftTabModes" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-300">1:2:3 Orthogonal Dome Strobe Tuner</span>
+            <span class="text-[10px] font-mono text-slate-400">Marshall / Gervais / PANArt</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            Every elliptical note dome is hammered so its fundamental <code class="text-amber-300">(0,0) = f0</code>, longitudinal axis <code class="text-sky-300">(0,1) = 2f0</code> (octave), and transverse axis <code class="text-purple-300">(1,0) = 3f0</code> (compound fifth) lock into a 1:2:3 harmonic triad.
+          </p>
+
+          <!-- Live Struck Note Strobe Readout -->
+          <div class="grid grid-cols-3 gap-1.5 text-center font-mono pt-1">
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">(0,0) Fund f0</div>
+              <div id="readoutMode1" class="text-xs font-bold text-amber-400">261.6 Hz</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">(0,1) Oct 2f0</div>
+              <div id="readoutMode2" class="text-xs font-bold text-sky-400">523.3 Hz</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">(1,0) 12th 3f0</div>
+              <div id="readoutMode3" class="text-xs font-bold text-purple-400">784.9 Hz</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Individual Harmonic Partial Balance Sliders -->
+        <div class="space-y-2">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">2nd Partial (2f0 Longitudinal Octave)</span>
+              <span id="valGain2f" class="font-mono text-sky-400 font-bold">78%</span>
+            </div>
+            <input id="sliderGain2f" type="range" min="0" max="100" value="78" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">3rd Partial (3f0 Transverse Twelfth)</span>
+              <span id="valGain3f" class="font-mono text-purple-300 font-bold">56%</span>
+            </div>
+            <input id="sliderGain3f" type="range" min="0" max="100" value="56" class="w-full slider-purple" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">KTH Nonlinear Bloom Delay (5–28 ms)</span>
+              <span id="valBloomDelay" class="font-mono text-amber-400 font-bold">14 ms</span>
+            </div>
+            <input id="sliderBloomDelay" type="range" min="2" max="32" value="14" class="w-full" />
+            <div class="text-[9px] font-mono text-slate-500 mt-0.5">Convective shell energy transfer from f0 → 2f0, 3f0, 4f0, 5f0</div>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Strobe Detune Drift ("Honky" Carnival ↔ Pure)</span>
+              <span id="valStrobeDrift" class="font-mono text-emerald-400 font-bold">4 cents</span>
+            </div>
+            <input id="sliderStrobeDrift" type="range" min="0" max="45" value="4" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LEFT TAB 3: STEEL METALLURGY, SKIRT LENGTH & GU HELMHOLTZ CAVITY -->
+      <div id="leftTabShell" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <label class="block text-[10px] font-mono uppercase text-slate-400">Steel Metallurgy &amp; Surface Finish</label>
+          <select id="selectMetallurgy" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 outline-none">
+            <option value="chrome_carbon">Chromed 55-Gallon Low-Carbon Steel (Bright Pan Sparkle)</option>
+            <option value="nitrided">Thermochemical Nitrided Steel (Warm Ceramic Percussive)</option>
+            <option value="stainless">Austenitic Stainless Steel (Long 6.5s Ethereal Sustain)</option>
+            <option value="ember">Heat-Treated Ember Steel (Rich 3f0 Twelfth Bloom)</option>
+          </select>
+        </div>
+
+        <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">Gu Helmholtz Port / Skirt Freq</span>
+            <span id="valGuFreq" class="font-mono text-sky-400 font-bold">84 Hz</span>
+          </div>
+          <input id="sliderGuFreq" type="range" min="62" max="135" value="84" class="w-full slider-cyan" />
+          <div class="flex justify-between text-[9px] font-mono text-slate-500">
+            <span>Deep Cello Skirt / 62Hz Gu</span>
+            <span>84Hz D2 Cavity</span>
+            <span>Soprano Rim</span>
+          </div>
+        </div>
+
+        <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="text-slate-300">Concert Hall / Panorama Reverb</span>
+            <span id="valReverb" class="font-mono text-emerald-400 font-bold">38%</span>
+          </div>
+          <input id="sliderReverb" type="range" min="0" max="90" value="38" class="w-full slider-emerald" />
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT FLOATING DOCK: 16 PANORAMA & HANDPAN GROOVES, INTERACTIVE STEP GRID & WAV EXPORTER -->
+    <aside id="rightDock" class="pointer-events-auto absolute top-8 bottom-0 right-0 w-[355px] sm:w-[415px] hud-glass rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto transition-transform duration-200">
+      <!-- Right Dock Navigation Tabs -->
+      <div class="grid grid-cols-3 gap-1 bg-obsidian-950/90 p-1 rounded-xl border border-slate-800 shrink-0">
+        <button type="button" data-right-tab="sequencer" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 transition">1. Groove Sequencer</button>
+        <button type="button" data-right-tab="patterns" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">2. 16 Repertoire</button>
+        <button type="button" data-right-tab="export" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">3. Spectrum &amp; WAV</button>
+      </div>
+
+      <!-- RIGHT TAB 1: ACTIVE PATTERN SEQUENCER & SCALE CHORD PADS -->
+      <div id="rightTabSequencer" class="flex flex-col gap-2.5">
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span id="activePatternBadge" class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 font-mono text-[10px] font-bold text-amber-300">PAN #1</span>
+                <span id="activePatternFamily" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">Trinidad Panorama Calypso</span>
+              </div>
+              <h2 id="activePatternTitle" class="text-base font-extrabold text-white mt-1">Panorama Calypso Syncopated Lead</h2>
+              <p id="activePatternDesc" class="text-[11px] text-slate-400 leading-snug">Syncopated Caribbean lead melody over Perfect-5th outer-ring harmony and brake-hub iron pulse.</p>
+            </div>
+            <button id="btnRandomPattern" type="button" class="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-[10px] font-mono text-amber-300 shrink-0 transition">
+              🎲 Groove
+            </button>
+          </div>
+
+          <!-- SVG Melodic & Harmonic Contour Visualizer -->
+          <div class="bg-obsidian-900/90 border border-slate-800 rounded-xl p-1.5">
+            <div class="flex items-center justify-between text-[9px] font-mono text-slate-400 px-1 mb-0.5">
+              <span>Melodic &amp; Percussive Contour (Click step to audition)</span>
+              <span class="text-amber-300">Gold=Lead • <span class="text-sky-300">Cyan=Harm/Oct</span> • <span class="text-purple-300">Tak/Gu</span></span>
+            </div>
+            <div class="w-full overflow-x-auto">
+              <svg id="patternSvg" viewBox="0 0 680 108" class="w-full h-24 min-w-[420px]"></svg>
+            </div>
+          </div>
+
+          <!-- Interactive 16-Step Sequencer Grid -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Interactive Step Grid (Click to Audition / Cycle Note)</span>
+              <button id="btnResetGroove" type="button" class="text-[10px] font-mono text-sky-400 hover:underline">Reset Groove</button>
+            </div>
+            <div id="stepGridContainer" class="grid grid-cols-4 gap-1.5 max-h-[210px] overflow-y-auto pr-0.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Scale Note Quick-Audition Strip -->
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Active Scale Tone-Field Keyboard</span>
+            <span class="text-[9px] font-mono text-slate-400">Keys [1–9, 0] or Click 3D Dome</span>
+          </div>
+          <div id="scalePadGrid" class="flex flex-wrap gap-1">
+            <!-- Populated dynamically with current instrument's notes -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT TAB 2: 16 AUTHENTIC STEELPAN & HANDPAN REPERTOIRE BROWSER -->
+      <div id="rightTabPatterns" class="hidden flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">16 Steelpan &amp; Handpan Grooves</span>
+          <div class="flex gap-1">
+            <button type="button" data-pat-filter="ALL" class="pat-pill px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-slate-950">All (16)</button>
+            <button type="button" data-pat-filter="Steelpan" class="pat-pill px-2 py-0.5 rounded text-[10px] font-medium bg-obsidian-800 text-slate-300 border border-slate-700">Steelpan (8)</button>
+            <button type="button" data-pat-filter="Handpan" class="pat-pill px-2 py-0.5 rounded text-[10px] font-medium bg-obsidian-800 text-slate-300 border border-slate-700">Handpan (8)</button>
+          </div>
+        </div>
+
+        <div id="patternListContainer" class="space-y-1.5 max-h-[360px] overflow-y-auto pr-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- RIGHT TAB 3: REAL-TIME 1:2:3 HARMONIC SPECTRUM & 44.1kHz WAV EXPORTER -->
+      <div id="rightTabExport" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-300">1:2:3 Harmonic Spectrum &amp; Shimmer Scope</span>
+            <span class="text-[9px] font-mono text-emerald-400">44.1 kHz FFT</span>
+          </div>
+          <div class="relative h-28 w-full bg-obsidian-900 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="spectrumCanvas" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Lossless WAV Loop & Sample Pack Exporter -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">44.1 kHz 16-Bit Stereo WAV Exporter</h3>
+              <p class="text-[10px] text-slate-400">OfflineAudioContext 1:2:3 modal + nonlinear shimmer bounce</p>
+            </div>
+            <button id="btnExportJsonPreset" type="button" class="px-2 py-1 rounded bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[10px] font-mono text-slate-300">
+              .JSON Patch
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btnExportLoopWav" type="button" class="px-2.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md">
+              💾 Export Groove Loop (.WAV)
+            </button>
+            <button id="btnExportScaleRunWav" type="button" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md">
+              🎵 Export Full Scale Arpeggio
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">Export Custom Pan One-Shot Samples (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-oneshot="ding_root" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-amber-300 transition">Ding_Root.wav</button>
+              <button type="button" data-oneshot="octave_harmonic" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-sky-300 transition">Octave_2f0.wav</button>
+              <button type="button" data-oneshot="twelfth_harmonic" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-purple-300 transition">Twelfth_3f0.wav</button>
+              <button type="button" data-oneshot="pan_roll_chord" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-emerald-300 transition">PanRollChord.wav</button>
+              <button type="button" data-oneshot="tak_slap" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-rose-300 transition">Tak_Slap.wav</button>
+              <button type="button" data-oneshot="gu_helmholtz" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-cyan-300 transition">Gu_BassPort.wav</button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 pt-1 border-t border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase text-slate-400">Rendered Sample Vault</span>
+              <span id="vaultCountLabel" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="sampleVaultList" class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+              <div class="text-[11px] text-slate-500 bg-obsidian-900/60 border border-slate-800/80 rounded-lg p-2 text-center">
+                Click any WAV export button above to synthesize a 44.1 kHz stereo file for instant preview &amp; download.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- BOTTOM FLOATING ARTICULATION DECK & LIVE TELEMETRY (Flex child 3) -->
+  <footer class="relative z-30 hud-glass rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <!-- Left: Direct Performance Articulation Pads -->
+    <div class="flex flex-wrap items-center gap-1.5">
+      <button id="btnTrigDing" type="button" class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-xs font-mono font-bold transition">
+        Ding / Root <span class="text-[10px] opacity-75">[Space/D]</span>
+      </button>
+      <button id="btnTrigOctaveIso" type="button" class="px-2.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-mono font-semibold transition">
+        2:1 Octave Harm <span class="text-[10px] opacity-75">[O]</span>
+      </button>
+      <button id="btnTrigTwelfthIso" type="button" class="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/50 text-purple-200 text-xs font-mono font-semibold transition">
+        3:1 Twelfth Harm <span class="text-[10px] opacity-75">[P]</span>
+      </button>
+      <button id="btnTrigPanRoll" type="button" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-xs font-mono font-bold transition">
+        Panorama Roll <span class="text-[10px] opacity-75">[R]</span>
+      </button>
+      <button id="btnTrigChord" type="button" class="px-2.5 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/35 border border-teal-400/50 text-teal-200 text-xs font-mono font-semibold transition">
+        4ths/5ths Dyad <span class="text-[10px] opacity-75">[C]</span>
+      </button>
+      <button id="btnTrigTak" type="button" class="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-xs font-mono font-bold transition">
+        Tak / Iron Knock <span class="text-[10px] opacity-75">[T]</span>
+      </button>
+      <button id="btnTrigGu" type="button" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/50 text-cyan-200 text-xs font-mono font-semibold transition">
+        Gu Helmholtz Bass <span class="text-[10px] opacity-75">[G]</span>
+      </button>
+    </div>
+
+    <!-- Right: Live Note Telemetry -->
+    <div class="flex items-center gap-3 bg-obsidian-950/90 border border-slate-800 px-3 py-1 rounded-xl">
+      <div id="lastStrikeTelemetry" class="text-[11px] font-mono text-slate-300">
+        Note: D3 (146.8 Hz) • 2f0: 293.7 Hz • 3f0: 440.5 Hz
+      </div>
+      <div class="h-4 w-[1px] bg-slate-800 hidden sm:block"></div>
+      <div class="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-amber-300">
+        <span>Click any 3D Oval Facet or Keys [1–9, 0]</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST NOTIFICATION BANNER -->
+  <div id="toastBanner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-xl bg-obsidian-900/95 border border-amber-500/60 text-xs font-mono font-semibold text-amber-200 shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Loaded instrument</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC: 1:2:3 ORTHOGONAL STEELPAN & HANDPAN ENGINE + 3D WEBGL + WAV -->
+  <script>
+    // =========================================================================
+    // 1. PITCH UTILITIES & ANTHONY WILLIAMS CIRCLE-OF-FIFTHS / HANDPAN SCALES
+    // =========================================================================
+    const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+    function midiToFreq(midi) {
+      return 440 * Math.pow(2, (midi - 69) / 12);
+    }
+
+    function midiToName(midi) {
+      const name = NOTE_NAMES[midi % 12];
+      const oct = Math.floor(midi / 12) - 1;
+      return `${name}${oct}`;
+    }
+
+    // Circle of Fifths pitch classes starting from C clockwise: C, G, D, A, E, B, F#, C#, Ab, Eb, Bb, F
+    const CIRCLE_OF_FIFTHS_SEMITONES = [0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+
+    /**
+     * Generates the 29-note Circle of Fourths & Fifths layout for a Caribbean Lead/Tenor Steelpan
+     * Outer Ring (12 large oval facets), Middle Octave Ring (12 medium facets), Inner Ring (5 small high facets)
+     */
+    function buildTenorPanNotes(lowestMidi = 60) {
+      const notes = [];
+      // Outer Ring: 12 notes arranged around the bowl perimeter in the Circle of Fifths
+      CIRCLE_OF_FIFTHS_SEMITONES.forEach((semi, idx) => {
+        const midi = 60 + semi < lowestMidi ? 72 + semi : 60 + semi;
+        const angle = (idx / 12) * Math.PI * 2 - Math.PI / 2;
+        notes.push({
+          idx: notes.length,
+          midi,
+          name: midiToName(midi),
+          freq: midiToFreq(midi),
+          ring: 'outer',
+          rNorm: 0.76,
+          angle,
+          rx: 0.44,
+          rz: 0.30
+        });
+      });
+
+      // Middle Ring: 12 octave notes directly inside their outer-ring counterparts
+      CIRCLE_OF_FIFTHS_SEMITONES.forEach((semi, idx) => {
+        const outerMidi = notes[idx].midi;
+        const midi = outerMidi + 12;
+        const angle = (idx / 12) * Math.PI * 2 - Math.PI / 2;
+        notes.push({
+          idx: notes.length,
+          midi,
+          name: midiToName(midi),
+          freq: midiToFreq(midi),
+          ring: 'middle',
+          rNorm: 0.45,
+          angle,
+          rx: 0.28,
+          rz: 0.20
+        });
+      });
+
+      // Inner Central Ring: 5 soprano notes (C6, D6, E6, C#6,Eb6)
+      const innerSemis = [0, 2, 4, 1, 3];
+      innerSemis.forEach((semi, i) => {
+        const midi = 84 + semi;
+        const angle = (i / 5) * Math.PI * 2 - Math.PI / 2;
+        notes.push({
+          idx: notes.length,
+          midi,
+          name: midiToName(midi),
+          freq: midiToFreq(midi),
+          ring: 'inner',
+          rNorm: 0.18,
+          angle,
+          rx: 0.19,
+          rz: 0.15
+        });
+      });
+      return notes;
+    }
+
+    /**
+     * Generates a Handpan / Pantam note layout: Central Apex 'Ding' Dome + 8 or 9 Chorused Tone Fields
+     */
+    function buildHandpanNotes(dingMidi, ringMidis) {
+      const notes = [];
+      // Note 0: Central Apex Ding Dome
+      notes.push({
+        idx: 0,
+        midi: dingMidi,
+        name: `${midiToName(dingMidi)} Ding`,
+        shortName: midiToName(dingMidi),
+        freq: midiToFreq(dingMidi),
+        ring: 'ding',
+        rNorm: 0.0,
+        angle: 0,
+        rx: 0.62,
+        rz: 0.62
+      });
+
+      // Surrounding Tone Fields arranged in alternating left/right zig-zag ascending order around the Ding
+      const count = ringMidis.length;
+      ringMidis.forEach((midi, i) => {
+        // Classic Handpan layout: lowest note at bottom (player side, +Z), alternating L/R towards top (-Z)
+        const stepOrder = i === 0 ? 0 : (i % 2 === 1 ? -Math.ceil(i / 2) : Math.ceil(i / 2));
+        const angle = Math.PI / 2 + (stepOrder / count) * Math.PI * 2;
+        const scaleSize = Math.max(0.72, 1.0 - i * 0.032);
+        notes.push({
+          idx: i + 1,
+          midi,
+          name: midiToName(midi),
+          shortName: midiToName(midi),
+          freq: midiToFreq(midi),
+          ring: 'chorus',
+          rNorm: 0.62,
+          angle,
+          rx: 0.44 * scaleSize,
+          rz: 0.33 * scaleSize
+        });
+      });
+      return notes;
+    }
+
+    // =========================================================================
+    // 2. 8 GROUNDED STEELPAN & HANDPAN INSTRUMENT ARCHETYPES
+    // =========================================================================
+    const PAN_INSTRUMENTS = {
+      tenor_c_lead: {
+        name: "Trinidad C-Lead Tenor Steelpan (29-Note 4ths & 5ths)",
+        short: "C-Lead Tenor Pan",
+        family: "Steelpan",
+        metallurgy: "chrome_carbon",
+        skirtDepthIn: 5.5,
+        guFreq: 112,
+        shimmer: 82,
+        sympathetic: 62,
+        sustain: 58,
+        chorusBeat: 18,
+        bloomDelayMs: 14,
+        exciter: "rubber_soft",
+        shellHex: 0xe2e8f0,
+        skirtHex: 0x0284c7,
+        notes: buildTenorPanNotes(60)
+      },
+      tenor_d_panorama: {
+        name: "Trinidad D-Tenor Panorama Lead Pan (Carnival Voicing)",
+        short: "D-Tenor Panorama",
+        family: "Steelpan",
+        metallurgy: "chrome_carbon",
+        skirtDepthIn: 6.0,
+        guFreq: 118,
+        shimmer: 90,
+        sympathetic: 68,
+        sustain: 62,
+        chorusBeat: 22,
+        bloomDelayMs: 16,
+        exciter: "rubber_firm",
+        shellHex: 0xf8fafc,
+        skirtHex: 0xd97706,
+        notes: buildTenorPanNotes(62)
+      },
+      double_second_alto: {
+        name: "Ellie Mannette Double Second Alto Pan (Warm Mid-Range)",
+        short: "Double Second Alto",
+        family: "Steelpan",
+        metallurgy: "chrome_carbon",
+        skirtDepthIn: 9.0,
+        guFreq: 96,
+        shimmer: 72,
+        sympathetic: 64,
+        sustain: 68,
+        chorusBeat: 15,
+        bloomDelayMs: 18,
+        exciter: "rubber_soft",
+        shellHex: 0xcbd5e1,
+        skirtHex: 0x10b981,
+        notes: buildTenorPanNotes(54)
+      },
+      cello_baritone_pan: {
+        name: "Baritone Cello / Guitar Steelpan (15\" Deep Skirt)",
+        short: "Baritone Cello Pan",
+        family: "Steelpan",
+        metallurgy: "chrome_carbon",
+        skirtDepthIn: 15.0,
+        guFreq: 74,
+        shimmer: 68,
+        sympathetic: 70,
+        sustain: 74,
+        chorusBeat: 12,
+        bloomDelayMs: 21,
+        exciter: "rubber_soft",
+        shellHex: 0x94a3b8,
+        skirtHex: 0x7c3aed,
+        notes: buildTenorPanNotes(48)
+      },
+      handpan_d_kurd: {
+        name: "D Kurd 10 Nitrided Steel Handpan (D3 + 9 Notes)",
+        short: "D Kurd 10 Handpan",
+        family: "Handpan",
+        metallurgy: "nitrided",
+        skirtDepthIn: 9.5,
+        guFreq: 84,
+        shimmer: 48,
+        sympathetic: 74,
+        sustain: 76,
+        chorusBeat: 12,
+        bloomDelayMs: 6,
+        exciter: "fingertip",
+        shellHex: 0x334155,
+        skirtHex: 0x1e293b,
+        // D3 (50) Ding + A3(57), Bb3(58), C4(60), D4(62), E4(64), F4(65), G4(67), A4(69), C5(72)
+        notes: buildHandpanNotes(50, [57, 58, 60, 62, 64, 65, 67, 69, 72])
+      },
+      handpan_pygmy_stainless: {
+        name: "F# Low Pygmy 9 Stainless Steel Handpan (6.5s Sustain)",
+        short: "F# Pygmy Stainless",
+        family: "Handpan",
+        metallurgy: "stainless",
+        skirtDepthIn: 10.0,
+        guFreq: 78,
+        shimmer: 54,
+        sympathetic: 82,
+        sustain: 92,
+        chorusBeat: 14,
+        bloomDelayMs: 8,
+        exciter: "fingertip",
+        shellHex: 0xb45309,
+        skirtHex: 0x78350f,
+        // F#3 (54) Ding + G#3(56), A3(57), C#4(61), E4(64), F#4(66), G#4(68), A4(69), C#5(73)
+        notes: buildHandpanNotes(54, [56, 57, 61, 64, 66, 68, 69, 73])
+      },
+      handpan_celtic_ember: {
+        name: "D Celtic Minor / Amara 9 Ember Steel Handpan",
+        short: "Celtic Minor Ember",
+        family: "Handpan",
+        metallurgy: "ember",
+        skirtDepthIn: 9.5,
+        guFreq: 86,
+        shimmer: 62,
+        sympathetic: 78,
+        sustain: 86,
+        chorusBeat: 11,
+        bloomDelayMs: 7,
+        exciter: "thumb_edge",
+        shellHex: 0x92400e,
+        skirtHex: 0x451a03,
+        // D3 (50) Ding + A3(57), C4(60), D4(62), E4(64), F4(65), G4(67), A4(69), C5(72)
+        notes: buildHandpanNotes(50, [57, 60, 62, 64, 65, 67, 69, 72])
+      },
+      handpan_hijaz_mystic: {
+        name: "D Hijaz Phrygian-Dominant 9 Nitrided Handpan",
+        short: "D Hijaz Mystic",
+        family: "Handpan",
+        metallurgy: "nitrided",
+        skirtDepthIn: 9.5,
+        guFreq: 82,
+        shimmer: 58,
+        sympathetic: 76,
+        sustain: 78,
+        chorusBeat: 15,
+        bloomDelayMs: 6,
+        exciter: "thumb_edge",
+        shellHex: 0x1e293b,
+        skirtHex: 0x0f172a,
+        // D3 (50) Ding + A3(57), Bb3(58), C#4(61), D4(62), E4(64), F4(65), G4(67), A4(69)
+        notes: buildHandpanNotes(50, [57, 58, 61, 62, 64, 65, 67, 69])
+      }
+    };
+
+    // =========================================================================
+    // 3. 16 AUTHENTIC STEELPAN & HANDPAN REPERTOIRE GROOVES
+    //    Step properties:
+    //      deg: index into current instrument's primary scale notes (or 'tak' / 'gu')
+    //      harm: null | 'dyad5' | 'oct' | 'oct_iso' | 'twelfth_iso' | 'roll'
+    //      vel: 0.25 to 1.0
+    //      dur: duration in 16th-note units
+    // =========================================================================
+    const REPERTOIRE_PATTERNS = [
+      // 8 CARIBBEAN STEELPAN GROOVES
+      {
+        id: 1, name: "Panorama Calypso Syncopated Lead", family: "Steelpan", sub: "Trinidad Carnival Lead",
+        desc: "Classic 3-3-2 Caribbean calypso syncopation with Perfect-5th double-stops and brake-hub iron pulse.",
+        steps: [
+          {deg:0,harm:'dyad5',vel:0.95,dur:1.5},{deg:2,harm:null,vel:0.78,dur:1.5},{deg:4,harm:'oct',vel:0.90,dur:1.0},
+          {deg:5,harm:null,vel:0.72,dur:1.0},{deg:4,harm:null,vel:0.80,dur:1.0},{deg:2,harm:'dyad5',vel:0.88,dur:1.0},{deg:1,harm:null,vel:0.74,dur:1.0},
+          {deg:0,harm:'dyad5',vel:0.94,dur:1.5},{deg:4,harm:null,vel:0.82,dur:1.5},{deg:7,harm:'roll',vel:0.96,dur:2.0},
+          {deg:5,harm:null,vel:0.78,dur:1.0},{deg:4,harm:null,vel:0.75,dur:1.0},{deg:2,harm:'dyad5',vel:0.85,dur:2.0}
+        ]
+      },
+      {
+        id: 2, name: "Soca Engine-Room & Lead Party Groove", family: "Steelpan", sub: "Up-Tempo Soca",
+        desc: "Driving 16th-note soca lead pattern alternating bright upper-octave inner-ring hits with rhythmic skirt knocks.",
+        steps: [
+          {deg:0,harm:'oct',vel:0.96,dur:1.0},{deg:'tak',harm:null,vel:0.55,dur:0.5},{deg:2,harm:null,vel:0.82,dur:0.5},{deg:4,harm:'dyad5',vel:0.92,dur:1.0},{deg:0,harm:null,vel:0.70,dur:1.0},
+          {deg:5,harm:'oct',vel:0.94,dur:1.0},{deg:'tak',harm:null,vel:0.55,dur:0.5},{deg:4,harm:null,vel:0.80,dur:0.5},{deg:2,harm:'dyad5',vel:0.90,dur:1.0},{deg:1,harm:null,vel:0.74,dur:1.0},
+          {deg:2,harm:'oct',vel:0.92,dur:1.0},{deg:4,harm:null,vel:0.84,dur:1.0},{deg:7,harm:'roll',vel:0.98,dur:2.0}
+        ]
+      },
+      {
+        id: 3, name: "Circle-of-Fifths Double-Stop Roll", family: "Steelpan", sub: "Anthony Williams 4ths/5ths",
+        desc: "Walks clockwise around Anthony Williams's Circle-of-Fifths ring using adjacent Perfect-5th double-stick rolls.",
+        steps: [
+          {deg:0,harm:'roll',vel:0.90,dur:2.0},{deg:1,harm:'roll',vel:0.88,dur:2.0},{deg:2,harm:'roll',vel:0.92,dur:2.0},{deg:3,harm:'roll',vel:0.86,dur:2.0},
+          {deg:4,harm:'roll',vel:0.94,dur:2.0},{deg:5,harm:'roll',vel:0.88,dur:2.0},{deg:6,harm:'roll',vel:0.92,dur:2.0},{deg:0,harm:'dyad5',vel:0.98,dur:2.0}
+        ]
+      },
+      {
+        id: 4, name: "Port-of-Spain 'The Bomb' Classical Calypso", family: "Steelpan", sub: "Panorama 'Bomb' Arrangement",
+        desc: "Rapid neo-classical arpeggiated figures played in calypso tempo ('Dropping the Bomb' Carnival tradition).",
+        steps: [
+          {deg:0,harm:null,vel:0.92,dur:0.75},{deg:2,harm:null,vel:0.74,dur:0.75},{deg:4,harm:null,vel:0.78,dur:0.75},{deg:7,harm:'oct',vel:0.94,dur:0.75},
+          {deg:6,harm:null,vel:0.80,dur:0.75},{deg:4,harm:null,vel:0.76,dur:0.75},{deg:2,harm:null,vel:0.74,dur:0.75},{deg:1,harm:'dyad5',vel:0.90,dur:0.75},
+          {deg:0,harm:'roll',vel:0.96,dur:2.0},{deg:4,harm:'dyad5',vel:0.88,dur:1.0},{deg:0,harm:'oct',vel:0.95,dur:2.0}
+        ]
+      },
+      {
+        id: 5, name: "Island Tremolo Sustained Ballad", family: "Steelpan", sub: "Lyrical Tenor Roll",
+        desc: "Expressive single-note and dyad sustained hand-to-hand panstick rolls showcasing the 14 ms KTH upper-partial shimmer.",
+        steps: [
+          {deg:0,harm:'roll',vel:0.86,dur:3.0},{deg:2,harm:'roll',vel:0.82,dur:3.0},{deg:4,harm:'roll',vel:0.92,dur:3.0},{deg:3,harm:'roll',vel:0.84,dur:3.0},
+          {deg:2,harm:'roll',vel:0.88,dur:2.0},{deg:1,harm:'roll',vel:0.80,dur:2.0}
+        ]
+      },
+      {
+        id: 6, name: "Double-Second Calypso Strumming Comp", family: "Steelpan", sub: "Ellie Mannette Accompaniment",
+        desc: "Off-beat rhythmic chordal 'strumming' pattern played by the Double Second and Double Guitar section in a steelband.",
+        steps: [
+          {deg:'gu',harm:null,vel:0.80,dur:1.0},{deg:0,harm:'dyad5',vel:0.92,dur:1.5},{deg:2,harm:'dyad5',vel:0.88,dur:1.5},
+          {deg:'tak',harm:null,vel:0.68,dur:1.0},{deg:3,harm:'dyad5',vel:0.94,dur:1.5},{deg:4,harm:'dyad5',vel:0.90,dur:1.5},
+          {deg:'gu',harm:null,vel:0.82,dur:1.0},{deg:5,harm:'dyad5',vel:0.92,dur:1.5},{deg:4,harm:'dyad5',vel:0.88,dur:1.5},{deg:0,harm:'roll',vel:0.95,dur:2.0}
+        ]
+      },
+      {
+        id: 7, name: "Cello Pan Walking Bass & Iron Groove", family: "Steelpan", sub: "Low Baritone Section",
+        desc: "Deep resonant walking bass line punctuated by metallic skirt/iron clicks and octave chord stabs.",
+        steps: [
+          {deg:0,harm:'oct',vel:0.98,dur:1.5},{deg:2,harm:null,vel:0.82,dur:1.5},{deg:4,harm:null,vel:0.86,dur:1.0},
+          {deg:'tak',harm:null,vel:0.72,dur:1.0},{deg:5,harm:'oct',vel:0.94,dur:1.5},{deg:4,harm:null,vel:0.84,dur:1.5},
+          {deg:2,harm:null,vel:0.80,dur:1.0},{deg:1,harm:null,vel:0.78,dur:1.0},{deg:0,harm:'dyad5',vel:0.96,dur:2.0}
+        ]
+      },
+      {
+        id: 8, name: "Strobe-Tuner 1:2:3 Harmonic Inspection Run", family: "Steelpan", sub: "Acoustic Calibration",
+        desc: "Auditions a tone field first as a Full Strike (1:2:3), then isolated 2:1 Longitudinal Octave, then isolated 3:1 Transverse Twelfth.",
+        steps: [
+          {deg:0,harm:null,vel:0.95,dur:2.2},{deg:0,harm:'oct_iso',vel:0.92,dur:2.2},{deg:0,harm:'twelfth_iso',vel:0.92,dur:2.2},
+          {deg:2,harm:null,vel:0.95,dur:2.2},{deg:2,harm:'oct_iso',vel:0.92,dur:2.2},{deg:2,harm:'twelfth_iso',vel:0.92,dur:2.2}
+        ]
+      },
+
+      // 8 CONVEX HANDPAN / PANTAM GROOVES
+      {
+        id: 9, name: "D-Kurd Apex Ding & Tak Flow", family: "Handpan", sub: "Classic Nitrided Pantam",
+        desc: "Hypnotic handpan flow alternating the central D3 Ding dome with crisp shoulder Tak slaps and cascading minor tone fields.",
+        steps: [
+          {deg:0,harm:null,vel:0.98,dur:1.5},{deg:1,harm:null,vel:0.72,dur:0.75},{deg:2,harm:null,vel:0.76,dur:0.75},{deg:'tak',harm:null,vel:0.88,dur:1.0},
+          {deg:3,harm:'oct_iso',vel:0.84,dur:1.0},{deg:4,harm:null,vel:0.78,dur:1.0},{deg:2,harm:null,vel:0.72,dur:1.0},{deg:1,harm:null,vel:0.68,dur:1.0},
+          {deg:0,harm:null,vel:0.95,dur:1.5},{deg:5,harm:null,vel:0.82,dur:0.75},{deg:6,harm:null,vel:0.86,dur:0.75},{deg:'tak',harm:null,vel:0.90,dur:1.0},
+          {deg:7,harm:'dyad5',vel:0.92,dur:2.0},{deg:4,harm:null,vel:0.76,dur:1.0},{deg:3,harm:null,vel:0.80,dur:1.0}
+        ]
+      },
+      {
+        id: 10, name: "Polyrhythmic 3-Against-4 Handpan Pulse", family: "Handpan", sub: "Cross-Rhythm Meditation",
+        desc: "Interlocking 3-note melodic ostinato cycling over a 4-beat Ding and Gu Helmholtz bass pulse.",
+        steps: [
+          {deg:0,harm:null,vel:0.96,dur:1.0},{deg:2,harm:null,vel:0.74,dur:1.0},{deg:4,harm:null,vel:0.80,dur:1.0},
+          {deg:1,harm:'oct_iso',vel:0.86,dur:1.0},{deg:'gu',harm:null,vel:0.92,dur:1.0},{deg:3,harm:null,vel:0.78,dur:1.0},
+          {deg:5,harm:null,vel:0.88,dur:1.0},{deg:2,harm:null,vel:0.74,dur:1.0},{deg:'tak',harm:null,vel:0.85,dur:1.0},
+          {deg:6,harm:'dyad5',vel:0.92,dur:1.0},{deg:4,harm:null,vel:0.78,dur:1.0},{deg:1,harm:null,vel:0.72,dur:1.0}
+        ]
+      },
+      {
+        id: 11, name: "Harmonic 1:2:3 Shoulder Isolation Etude", family: "Handpan", sub: "2f0 Octave & 3f0 Twelfth Harmonics",
+        desc: "Demonstrates thumb-edge harmonic isolation, alternating fundamental dome hits with pure 2:1 Octave and 3:1 Twelfth overtones.",
+        steps: [
+          {deg:0,harm:null,vel:0.96,dur:1.5},{deg:0,harm:'oct_iso',vel:0.88,dur:1.5},{deg:0,harm:'twelfth_iso',vel:0.88,dur:1.5},
+          {deg:1,harm:null,vel:0.90,dur:1.5},{deg:1,harm:'oct_iso',vel:0.86,dur:1.5},{deg:1,harm:'twelfth_iso',vel:0.86,dur:1.5},
+          {deg:3,harm:null,vel:0.92,dur:1.5},{deg:3,harm:'oct_iso',vel:0.88,dur:1.5},{deg:3,harm:'twelfth_iso',vel:0.88,dur:1.5}
+        ]
+      },
+      {
+        id: 12, name: "Gu Helmholtz Bass Port & Ghost Groove", family: "Handpan", sub: "84 Hz Cavity Resonance",
+        desc: "Focuses on the lower shell's Gu Helmholtz air-port bass resonance (84 Hz) paired with delicate ghost finger taps and Tak accents.",
+        steps: [
+          {deg:'gu',harm:null,vel:0.98,dur:1.5},{deg:1,harm:null,vel:0.48,dur:0.75},{deg:2,harm:null,vel:0.52,dur:0.75},{deg:'tak',harm:null,vel:0.90,dur:1.0},
+          {deg:'gu',harm:null,vel:0.94,dur:1.0},{deg:3,harm:'oct_iso',vel:0.84,dur:1.0},{deg:'tak',harm:null,vel:0.88,dur:1.0},{deg:1,harm:null,vel:0.50,dur:1.0},
+          {deg:0,harm:null,vel:0.96,dur:2.0},{deg:'gu',harm:null,vel:0.92,dur:1.0},{deg:4,harm:'dyad5',vel:0.90,dur:2.0}
+        ]
+      },
+      {
+        id: 13, name: "Low Pygmy Floating Stainless Arpeggio", family: "Handpan", sub: "Long-Sustain Ambient",
+        desc: "Spacious, blooming pentatonic/hexatonic arpeggios designed to let stainless steel's 6.5-second sustain weave sympathetic chords.",
+        steps: [
+          {deg:0,harm:null,vel:0.94,dur:2.0},{deg:2,harm:null,vel:0.78,dur:1.5},{deg:4,harm:'oct_iso',vel:0.84,dur:1.5},
+          {deg:6,harm:'dyad5',vel:0.92,dur:2.5},{deg:5,harm:null,vel:0.80,dur:1.5},{deg:3,harm:null,vel:0.76,dur:1.5},
+          {deg:1,harm:null,vel:0.82,dur:2.0},{deg:7,harm:'twelfth_iso',vel:0.88,dur:2.5}
+        ]
+      },
+      {
+        id: 14, name: "Celtic Minor Split-Hand Roll", family: "Handpan", sub: "Ember Steel Fast Flow",
+        desc: "Rapid alternating index-and-thumb rolls across the Amara / Celtic Minor tone circle with soaring top-note resolution.",
+        steps: [
+          {deg:0,harm:null,vel:0.96,dur:1.0},{deg:1,harm:null,vel:0.72,dur:0.66},{deg:2,harm:null,vel:0.76,dur:0.66},{deg:3,harm:null,vel:0.80,dur:0.68},
+          {deg:4,harm:'dyad5',vel:0.92,dur:1.0},{deg:5,harm:null,vel:0.78,dur:0.66},{deg:6,harm:null,vel:0.82,dur:0.66},{deg:7,harm:null,vel:0.86,dur:0.68},
+          {deg:8,harm:'oct',vel:0.96,dur:2.0},{deg:6,harm:null,vel:0.80,dur:1.0},{deg:3,harm:'dyad5',vel:0.88,dur:2.0}
+        ]
+      },
+      {
+        id: 15, name: "Hijaz Mystic Phrygian-Dominant Dance", family: "Handpan", sub: "Middle-Eastern Hijaz",
+        desc: "Highlights the exotic augmented-2nd interval (Bb3 to C#4) of the Hijaz scale over a 7/8 asymmetric rhythmic pulse.",
+        steps: [
+          {deg:0,harm:null,vel:0.98,dur:1.5},{deg:1,harm:null,vel:0.78,dur:1.5},{deg:2,harm:null,vel:0.86,dur:1.0},
+          {deg:3,harm:'dyad5',vel:0.94,dur:1.5},{deg:'tak',harm:null,vel:0.88,dur:1.5},
+          {deg:4,harm:null,vel:0.84,dur:1.0},{deg:3,harm:null,vel:0.88,dur:1.0},{deg:2,harm:null,vel:0.82,dur:1.0},{deg:1,harm:'oct_iso',vel:0.90,dur:2.0}
+        ]
+      },
+      {
+        id: 16, name: "Percussive Tak, Gu & Harmonic Workout", family: "Handpan", sub: "Virtuoso Hybrid Percussion",
+        desc: "High-energy contemporary handpan solo combining Gu bass slaps, Tak shoulder rim hits, and isolated 2f0/3f0 harmonics.",
+        steps: [
+          {deg:0,harm:null,vel:0.98,dur:1.0},{deg:'tak',harm:null,vel:0.85,dur:0.5},{deg:1,harm:'oct_iso',vel:0.82,dur:0.5},{deg:'gu',harm:null,vel:0.94,dur:1.0},{deg:3,harm:null,vel:0.88,dur:1.0},
+          {deg:'tak',harm:null,vel:0.92,dur:1.0},{deg:2,harm:'twelfth_iso',vel:0.86,dur:1.0},{deg:'gu',harm:null,vel:0.90,dur:0.5},{deg:4,harm:null,vel:0.84,dur:0.5},{deg:6,harm:'dyad5',vel:0.96,dur:2.0}
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 4. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      instrumentKey: "tenor_c_lead",
+      metallurgy: "chrome_carbon",
+      hitMode: "full",         // 'full' | 'octave' | 'twelfth'
+      exciter: "rubber_soft",  // 'rubber_soft' | 'rubber_firm' | 'fingertip' | 'thumb_edge'
+      playAssist: "single",    // 'single' | 'pan_roll' | 'dyad_fifth' | 'triad_chord'
+
+      // 1:2:3 Acoustic Physics Parameters
+      shimmer: 76,             // 0 - 100% (Nonlinear upper partial energy)
+      sympathetic: 58,         // 0 - 100% (Cross-note matrix coupling)
+      sustain: 65,             // 15 - 100%
+      chorusBeat: 1.3,         // 0 - 4.5 Hz twin-mode beating
+      gain2f: 78,              // 2nd partial (2f0 longitudinal octave)
+      gain3f: 56,              // 3rd partial (3f0 transverse twelfth)
+      bloomDelayMs: 14,        // 2 - 32 ms KTH delayed upper-partial swell
+      strobeDriftCents: 4,     // 0 - 45 cents
+      guFreq: 84,              // 62 - 135 Hz
+      reverbAmt: 38,           // 0 - 90%
+
+      // Sequencer & Repertoire
+      selectedPatternId: 1,
+      patternFilter: "ALL",
+      customSteps: [],
+      isPlaying: false,
+      bpm: 118,
+      currentStepIndex: -1,
+
+      // 3D Scene & Visual Overlay
+      cameraPreset: "player",
+      showNoteLabels: true,
+      showChladni: true,
+      activeNoteExcitations: {}, // noteIdx -> { startTime, vel, modeType }
+      guExcitationTime: -999,
+      leftMalletAnim: { hitTime: -999, x: -1.2, y: 0.6, z: 1.2 },
+      rightMalletAnim: { hitTime: -999, x: 1.2, y: 0.6, z: 1.2 },
+
+      // WAV Sample Vault
+      renderedVault: []
+    };
+
+    // =========================================================================
+    // 5. WEB AUDIO API 1:2:3 ORTHOGONAL MODAL + NONLINEAR BLOOM SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let analyserNode = null;
+    let masterOutNode = null;
+    let convolverNode = null;
+    let reverbWetGain = null;
+    let noiseBufferCache = null;
+
+    function createImpulseResponse(ctx, durationSec = 2.1, decay = 2.8) {
+      const sr = ctx.sampleRate;
+      const len = Math.floor(sr * durationSec);
+      const buf = ctx.createBuffer(2, len, sr);
+      for (let c = 0; c < 2; c++) {
+        const d = buf.getChannelData(c);
+        for (let i = 0; i < len; i++) {
+          d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+        }
+      }
+      return buf;
+    }
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 512;
+        analyserNode.smoothingTimeConstant = 0.76;
+
+        masterOutNode = audioCtx.createGain();
+        masterOutNode.gain.value = 0.85;
+
+        convolverNode = audioCtx.createConvolver();
+        convolverNode.buffer = createImpulseResponse(audioCtx, 2.2, 2.7);
+        reverbWetGain = audioCtx.createGain();
+        reverbWetGain.gain.value = (state.reverbAmt / 100) * 0.42;
+
+        masterOutNode.connect(analyserNode);
+        masterOutNode.connect(convolverNode);
+        convolverNode.connect(reverbWetGain);
+        reverbWetGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function getNoiseBuffer(ctx) {
+      if (noiseBufferCache && noiseBufferCache.sampleRate === ctx.sampleRate) return noiseBufferCache;
+      const sr = ctx.sampleRate;
+      const buf = ctx.createBuffer(1, Math.floor(sr * 1.0), sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      noiseBufferCache = buf;
+      return buf;
+    }
+
+    /**
+     * Synthesizes a single Steelpan or Handpan note-field excitation (or Tak / Gu percussion)
+     * on any AudioContext or OfflineAudioContext.
+     * Models:
+     *   - (0,0) Fundamental f0 + twin-mode chorus beating (f0 + deltaF)
+     *   - (0,1) Longitudinal Octave 2.000 * f0
+     *   - (1,0) Transverse Twelfth / Compound Fifth 3.000 * f0
+     *   - Higher Caribbean Steelpan partials (4f0, 5f0, 6f0) with KTH 5-25 ms Delayed Nonlinear Bloom
+     *   - Sympathetic inter-note matrix excitation (1.5f0 & 2f0 sibling rings)
+     *   - Gu Helmholtz air-cavity port resonance (62-135 Hz) and Cylindrical Skirt ring
+     */
+    function synthesizePanVoice(ctx, destNode, when, options = {}) {
+      const {
+        freq = 261.63,
+        velocity = 0.85,
+        modeIso = 'full', // 'full' | 'octave' | 'twelfth' | 'tak' | 'gu'
+        panPos = 0.0
+      } = options;
+
+      const safeWhen = Math.max(ctx.currentTime || 0, when);
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      const isHandpan = inst.family === 'Handpan';
+
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.setValueAtTime(Math.max(0.04, Math.min(1.2, velocity * 0.58)), safeWhen);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(Math.max(-0.85, Math.min(0.85, panPos)), safeWhen);
+        voiceGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        voiceGain.connect(destNode);
+      }
+
+      // SPECIAL PERCUSSIVE ARTICULATION 1: GU HELMHOLTZ CAVITY BASS PORT SLAP
+      if (modeIso === 'gu') {
+        const guF = state.guFreq;
+        const oscGu = ctx.createOscillator();
+        const gGu = ctx.createGain();
+        oscGu.type = 'sine';
+        // Helmholtz air-cavity pitch-drop thump
+        oscGu.frequency.setValueAtTime(guF * 1.48, safeWhen);
+        oscGu.frequency.exponentialRampToValueAtTime(guF, safeWhen + 0.038);
+        oscGu.frequency.exponentialRampToValueAtTime(guF * 0.94, safeWhen + 0.48);
+
+        gGu.gain.setValueAtTime(0.001, safeWhen);
+        gGu.gain.linearRampToValueAtTime(0.95, safeWhen + 0.004);
+        gGu.gain.exponentialRampToValueAtTime(0.0008, safeWhen + 0.52);
+
+        oscGu.connect(gGu);
+        gGu.connect(voiceGain);
+        oscGu.start(safeWhen);
+        oscGu.stop(safeWhen + 0.55);
+
+        // Palm air-puff transient
+        const nSrc = ctx.createBufferSource();
+        nSrc.buffer = getNoiseBuffer(ctx);
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'bandpass';
+        lp.frequency.setValueAtTime(380, safeWhen);
+        lp.Q.setValueAtTime(1.8, safeWhen);
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(0.42, safeWhen);
+        ng.gain.exponentialRampToValueAtTime(0.001, safeWhen + 0.045);
+        nSrc.connect(lp);
+        lp.connect(ng);
+        ng.connect(voiceGain);
+        nSrc.start(safeWhen);
+        nSrc.stop(safeWhen + 0.05);
+        return;
+      }
+
+      // SPECIAL PERCUSSIVE ARTICULATION 2: TAK SHOULDER SLAP (HANDPAN) OR IRON/SKIRT KNOCK (STEELPAN)
+      if (modeIso === 'tak') {
+        const knockFreqs = isHandpan ? [490, 920, 1680, 2740] : [820, 1640, 2890, 4320];
+        const knockDecays = isHandpan ? [0.085, 0.065, 0.045, 0.032] : [0.11, 0.08, 0.06, 0.04];
+        knockFreqs.forEach((kf, i) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = i === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(kf * 1.05, safeWhen);
+          osc.frequency.exponentialRampToValueAtTime(kf, safeWhen + 0.008);
+          g.gain.setValueAtTime(0.48 / (i + 1), safeWhen);
+          g.gain.exponentialRampToValueAtTime(0.0008, safeWhen + knockDecays[i]);
+          osc.connect(g);
+          g.connect(voiceGain);
+          osc.start(safeWhen);
+          osc.stop(safeWhen + knockDecays[i] + 0.01);
+        });
+
+        const clickSrc = ctx.createBufferSource();
+        clickSrc.buffer = getNoiseBuffer(ctx);
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(isHandpan ? 2600 : 3800, safeWhen);
+        bp.Q.setValueAtTime(2.0, safeWhen);
+        const cg = ctx.createGain();
+        cg.gain.setValueAtTime(0.65, safeWhen);
+        cg.gain.exponentialRampToValueAtTime(0.001, safeWhen + 0.022);
+        clickSrc.connect(bp);
+        bp.connect(cg);
+        cg.connect(voiceGain);
+        clickSrc.start(safeWhen);
+        clickSrc.stop(safeWhen + 0.028);
+        return;
+      }
+
+      // METALLURGY & SUSTAIN CALCULATION
+      const metalDecayMap = { chrome_carbon: 1.0, nitrided: 1.25, stainless: 1.95, ember: 1.65 };
+      const metalFactor = metalDecayMap[state.metallurgy] || 1.0;
+      // High notes decay faster than low bass/Ding notes
+      const pitchDecayScale = Math.max(0.35, Math.min(1.65, 280 / freq));
+      const baseT60 = (0.65 + (state.sustain / 100) * 2.8) * metalFactor * pitchDecayScale;
+
+      const shimmerNorm = state.shimmer / 100;
+      const g2Norm = state.gain2f / 100;
+      const g3Norm = state.gain3f / 100;
+      const bloomSec = (state.bloomDelayMs / 1000);
+      const driftRatio = Math.pow(2, (state.strobeDriftCents / 1200));
+
+      // 1. ORTHOGONAL PARTIAL SERIES: 1f0, 2f0 (Longitudinal Octave), 3f0 (Transverse Twelfth), + Caribbean 4f0, 5f0, 6f0
+      const partials = [
+        { mult: 1.000, amp: modeIso === 'full' ? 0.85 : 0.08, delay: 0.0015, decayMult: 1.00 },
+        { mult: 2.000 * driftRatio, amp: modeIso === 'octave' ? 0.95 : (modeIso === 'twelfth' ? 0.12 : 0.62 * g2Norm), delay: modeIso === 'octave' ? 0.002 : bloomSec * 0.65, decayMult: 0.78 },
+        { mult: 3.000 / driftRatio, amp: modeIso === 'twelfth' ? 0.95 : (modeIso === 'octave' ? 0.10 : 0.44 * g3Norm), delay: modeIso === 'twelfth' ? 0.002 : bloomSec * 1.0, decayMult: 0.62 },
+        { mult: 3.992 * driftRatio, amp: modeIso === 'full' ? 0.28 * shimmerNorm : 0.05, delay: bloomSec * 1.35, decayMult: 0.45 },
+        { mult: 4.985, amp: modeIso === 'full' ? 0.18 * shimmerNorm * (isHandpan ? 0.45 : 1.1) : 0.0, delay: bloomSec * 1.65, decayMult: 0.34 },
+        { mult: 6.025 * driftRatio, amp: modeIso === 'full' ? 0.12 * shimmerNorm * (isHandpan ? 0.25 : 1.0) : 0.0, delay: bloomSec * 1.95, decayMult: 0.26 }
+      ];
+
+      partials.forEach((p, idx) => {
+        if (p.amp < 0.006 || freq * p.mult > 14000) return;
+        const pFreq = freq * p.mult;
+        const pDecay = Math.max(0.08, baseT60 * p.decayMult);
+
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+
+        // Nonlinear tension pitch-swell on hard strikes (characteristic steelpan chirp)
+        const chirp = idx === 0 ? (1.0 + 0.006 * velocity * shimmerNorm) : 1.0;
+        osc.frequency.setValueAtTime(pFreq * chirp, safeWhen);
+        if (chirp > 1.0005) {
+          osc.frequency.exponentialRampToValueAtTime(pFreq, safeWhen + 0.025);
+        }
+
+        // KTH Delayed Upper-Partial Bloom Envelope!
+        g.gain.setValueAtTime(0.0005, safeWhen);
+        g.gain.linearRampToValueAtTime(p.amp, safeWhen + p.delay);
+        g.gain.exponentialRampToValueAtTime(0.0006, safeWhen + p.delay + pDecay);
+
+        osc.connect(g);
+        g.connect(voiceGain);
+        osc.start(safeWhen);
+        osc.stop(safeWhen + p.delay + pDecay + 0.02);
+      });
+
+      // 2. TWIN-MODE CHORUS BEATING OSCILLATOR (Gives Handpans & Steelpans their warm spatial shimmer)
+      if (state.chorusBeat > 0.05) {
+        const targetMult = modeIso === 'octave' ? 2.0 : (modeIso === 'twelfth' ? 3.0 : 1.0);
+        const beatOsc = ctx.createOscillator();
+        const beatGain = ctx.createGain();
+        beatOsc.type = 'sine';
+        beatOsc.frequency.setValueAtTime(freq * targetMult + state.chorusBeat, safeWhen);
+        const beatDecay = Math.max(0.12, baseT60 * 0.85);
+        beatGain.gain.setValueAtTime(0.001, safeWhen);
+        beatGain.gain.linearRampToValueAtTime(0.24, safeWhen + 0.012);
+        beatGain.gain.exponentialRampToValueAtTime(0.0006, safeWhen + beatDecay);
+        beatOsc.connect(beatGain);
+        beatGain.connect(voiceGain);
+        beatOsc.start(safeWhen);
+        beatOsc.stop(safeWhen + beatDecay + 0.02);
+      }
+
+      // 3. SYMPATHETIC INTER-NOTE MATRIX COUPLING & GU / SKIRT RESONANCE
+      const sympNorm = state.sympathetic / 100;
+      if (sympNorm > 0.05) {
+        const sympOsc = ctx.createOscillator();
+        const sympGain = ctx.createGain();
+        sympOsc.type = 'sine';
+        // Sympathetic Fifth (1.5 * f0) + Gu/Skirt cavity sub-hum
+        sympOsc.frequency.setValueAtTime(freq * 1.498, safeWhen);
+        const sympDecay = Math.max(0.2, baseT60 * 1.15);
+        sympGain.gain.setValueAtTime(0.0005, safeWhen);
+        sympGain.gain.linearRampToValueAtTime(0.11 * sympNorm, safeWhen + 0.045);
+        sympGain.gain.exponentialRampToValueAtTime(0.0005, safeWhen + sympDecay);
+        sympOsc.connect(sympGain);
+        sympGain.connect(voiceGain);
+        sympOsc.start(safeWhen);
+        sympOsc.stop(safeWhen + sympDecay + 0.02);
+      }
+
+      // 4. EXCITER TRANSIENT (Soft Rubber Mallet vs. Firm Stick vs. Flesh Fingertip vs. Thumb Edge)
+      const exciterProfiles = {
+        rubber_soft: { freq: 1450, q: 1.4, gain: 0.28, dur: 0.014 },
+        rubber_firm: { freq: 2450, q: 1.8, gain: 0.42, dur: 0.011 },
+        fingertip:   { freq: 980,  q: 1.1, gain: 0.24, dur: 0.018 },
+        thumb_edge:  { freq: 1950, q: 1.6, gain: 0.35, dur: 0.012 }
+      };
+      const ex = exciterProfiles[state.exciter] || exciterProfiles.rubber_soft;
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = getNoiseBuffer(ctx);
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(ex.freq, safeWhen);
+      bp.Q.setValueAtTime(ex.q, safeWhen);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(ex.gain, safeWhen);
+      ng.gain.exponentialRampToValueAtTime(0.001, safeWhen + ex.dur);
+      nSrc.connect(bp);
+      bp.connect(ng);
+      ng.connect(voiceGain);
+      nSrc.start(safeWhen);
+      nSrc.stop(safeWhen + ex.dur + 0.01);
+    }
+
+    // =========================================================================
+    // 6. FULL-SCREEN 3D WEBGL STEELPAN & HANDPAN ENGINE (THREE.JS r128)
+    // =========================================================================
+    let scene, camera, renderer, raycaster, mouseVec;
+    let panGroup, noteFacetMeshes = [], noteRingMeshes = [], guWaveRings = [];
+    let leftMalletGroup, rightMalletGroup;
+
+    const camOrbit = {
+      theta: 0.0,
+      phi: 0.42,
+      radius: 9.2,
+      targetTheta: 0.0,
+      targetPhi: 0.42,
+      targetRadius: 9.2,
+      lookY: 0.0,
+      isDragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    const PAN_RADIUS = 3.55;
+
+    function initThreeJsScene() {
+      const container = document.getElementById('webglContainer');
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04060a);
+      scene.fog = new THREE.FogExp2(0x04060a, 0.024);
+
+      camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      // Studio 4-Point Metallic Reflection Lighting
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.72));
+
+      const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.25);
+      sunLight.position.set(5, 11, 6);
+      scene.add(sunLight);
+
+      const cyanRim = new THREE.PointLight(0x38bdf8, 1.0, 24);
+      cyanRim.position.set(-7, 5, -5);
+      scene.add(cyanRim);
+
+      const amberRim = new THREE.PointLight(0xf59e0b, 0.9, 20);
+      amberRim.position.set(6, -5, 4);
+      scene.add(amberRim);
+
+      const floorGrid = new THREE.GridHelper(28, 28, 0x1e293b, 0x090d16);
+      floorGrid.position.y = -3.8;
+      scene.add(floorGrid);
+
+      panGroup = new THREE.Group();
+      scene.add(panGroup);
+
+      buildPan3DModel();
+      buildMallets3D();
+      initViewportPointerControls();
+    }
+
+    function getSurfaceY(rNorm, isHandpan) {
+      if (isHandpan) {
+        // Convex lenticular dome: highest in center (+0.85), curving down to equatorial rim (0.0)
+        return Math.cos(rNorm * Math.PI * 0.48) * 0.88;
+      } else {
+        // Concave sunken steelpan bowl: lowest in center (-0.78), rising to outer rim (+0.35)
+        return -0.78 + Math.pow(rNorm, 1.75) * 1.13;
+      }
+    }
+
+    function buildPan3DModel() {
+      while (panGroup.children.length > 0) {
+        panGroup.remove(panGroup.children[0]);
+      }
+      noteFacetMeshes = [];
+      noteRingMeshes = [];
+      guWaveRings = [];
+
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      const isHandpan = inst.family === 'Handpan';
+
+      const metalColors = {
+        chrome_carbon: { color: 0xe2e8f0, metalness: 0.88, roughness: 0.16 },
+        nitrided:      { color: 0x334155, metalness: 0.72, roughness: 0.32 },
+        stainless:     { color: 0xd97706, metalness: 0.85, roughness: 0.20 },
+        ember:         { color: 0x92400e, metalness: 0.80, roughness: 0.24 }
+      };
+      const surfSpec = metalColors[state.metallurgy] || metalColors.chrome_carbon;
+
+      if (isHandpan) {
+        // 1A. CONVEX HANDPAN DOUBLE-HEMISPHERE LENTICULAR SHELL + BOTTOM GU PORT
+        const topLathePts = [];
+        for (let i = 0; i <= 24; i++) {
+          const rNorm = i / 24;
+          topLathePts.push(new THREE.Vector2(rNorm * PAN_RADIUS, getSurfaceY(rNorm, true)));
+        }
+        const topShellGeo = new THREE.LatheGeometry(topLathePts, 64);
+        const topShellMat = new THREE.MeshStandardMaterial({
+          color: surfSpec.color,
+          metalness: surfSpec.metalness,
+          roughness: surfSpec.roughness,
+          side: THREE.DoubleSide
+        });
+        panGroup.add(new THREE.Mesh(topShellGeo, topShellMat));
+
+        // Bottom Saraz / PANArt Hemisphere with open Central Gu Helmholtz Port (r = 0.24 * PAN_RADIUS)
+        const botLathePts = [];
+        for (let i = 6; i <= 24; i++) {
+          const rNorm = i / 24;
+          const yBot = -Math.cos(rNorm * Math.PI * 0.48) * 0.82;
+          botLathePts.push(new THREE.Vector2(rNorm * PAN_RADIUS, yBot));
+        }
+        const botShellGeo = new THREE.LatheGeometry(botLathePts, 64);
+        const botMesh = new THREE.Mesh(botShellGeo, topShellMat);
+        botMesh.name = "guPort";
+        panGroup.add(botMesh);
+
+        // Gu Helmholtz Rolled Neck Collar at bottom center
+        const guCollarGeo = new THREE.TorusGeometry(PAN_RADIUS * 0.25, 0.06, 16, 48);
+        guCollarGeo.rotateX(Math.PI / 2);
+        const guCollarMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.8, roughness: 0.2 });
+        const guCollar = new THREE.Mesh(guCollarGeo, guCollarMat);
+        guCollar.position.y = -0.76;
+        guCollar.name = "guPort";
+        panGroup.add(guCollar);
+
+        // Equatorial Rope / Brass Trim Ring
+        const ropeGeo = new THREE.TorusGeometry(PAN_RADIUS * 1.005, 0.095, 16, 64);
+        ropeGeo.rotateX(Math.PI / 2);
+        const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.55, metalness: 0.35 });
+        panGroup.add(new THREE.Mesh(ropeGeo, ropeMat));
+      } else {
+        // 1B. CONCAVE CARIBBEAN STEELPAN BOWL + CYLINDRICAL OIL-DRUM SKIRT + CHROME STAND
+        const bowlLathePts = [];
+        for (let i = 0; i <= 28; i++) {
+          const rNorm = i / 28;
+          bowlLathePts.push(new THREE.Vector2(rNorm * PAN_RADIUS, getSurfaceY(rNorm, false)));
+        }
+        const bowlGeo = new THREE.LatheGeometry(bowlLathePts, 64);
+        const bowlMat = new THREE.MeshStandardMaterial({
+          color: surfSpec.color,
+          metalness: surfSpec.metalness,
+          roughness: surfSpec.roughness,
+          side: THREE.DoubleSide
+        });
+        panGroup.add(new THREE.Mesh(bowlGeo, bowlMat));
+
+        // Cylindrical Oil-Drum Skirt (Depth scales from 5.5" Soprano to 15" Cello!)
+        const skirtH = (inst.skirtDepthIn / 5.5) * 1.35;
+        const skirtGeo = new THREE.CylinderGeometry(PAN_RADIUS, PAN_RADIUS, skirtH, 64, 1, true);
+        const skirtMat = new THREE.MeshStandardMaterial({
+          color: inst.skirtHex,
+          metalness: 0.72,
+          roughness: 0.25,
+          side: THREE.DoubleSide
+        });
+        const skirtMesh = new THREE.Mesh(skirtGeo, skirtMat);
+        skirtMesh.position.y = 0.35 - skirtH / 2;
+        skirtMesh.name = "skirtBody";
+        panGroup.add(skirtMesh);
+
+        // Top Rolled Drum Rim & Chrome U-Stand Arms
+        const rimGeo = new THREE.TorusGeometry(PAN_RADIUS, 0.08, 16, 64);
+        rimGeo.rotateX(Math.PI / 2);
+        const rimMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.92, roughness: 0.12 });
+        const rimMesh = new THREE.Mesh(rimGeo, rimMat);
+        rimMesh.position.y = 0.35;
+        panGroup.add(rimMesh);
+
+        const standArmGeo = new THREE.CylinderGeometry(0.07, 0.07, 3.6, 12);
+        const standL = new THREE.Mesh(standArmGeo, rimMat);
+        standL.position.set(-PAN_RADIUS - 0.28, -1.2, 0);
+        const standR = new THREE.Mesh(standArmGeo, rimMat);
+        standR.position.set(PAN_RADIUS + 0.28, -1.2, 0);
+        panGroup.add(standL, standR);
+      }
+
+      // 2. BUILD 3D INTERACTIVE ELLIPTICAL NOTE FACETS & 1:2:3 NODAL CHLADNI RINGS
+      inst.notes.forEach((n, idx) => {
+        const cx = Math.cos(n.angle) * (n.rNorm * PAN_RADIUS);
+        const cz = Math.sin(n.angle) * (n.rNorm * PAN_RADIUS);
+        const cy = getSurfaceY(n.rNorm, isHandpan) + (isHandpan ? 0.025 : 0.022);
+
+        const facetGroup = new THREE.Group();
+        facetGroup.position.set(cx, cy, cz);
+
+        // Orient facet radially toward pan center and tilt along the local bowl/dome slope
+        const radialTilt = isHandpan ? (n.rNorm * 0.42) : -(n.rNorm * 0.46);
+        facetGroup.rotation.y = -n.angle;
+        facetGroup.rotation.z = radialTilt;
+
+        // Elliptical Note Dome Mesh
+        const domeGeo = new THREE.SphereGeometry(1.0, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.42);
+        domeGeo.scale(n.rx, isHandpan ? 0.11 : 0.065, n.rz);
+        const ringColor = n.ring === 'ding' ? 0xf59e0b : (n.ring === 'outer' || n.ring === 'chorus' ? 0x38bdf8 : (n.ring === 'middle' ? 0x10b981 : 0xc084fc));
+
+        const domeMat = new THREE.MeshStandardMaterial({
+          color: surfSpec.color,
+          emissive: ringColor,
+          emissiveIntensity: 0.14,
+          metalness: 0.85,
+          roughness: 0.22,
+          side: THREE.DoubleSide
+        });
+        const domeMesh = new THREE.Mesh(domeGeo, domeMat);
+        domeMesh.name = "noteFacet";
+        domeMesh.userData = { noteIdx: idx, baseColor: ringColor };
+        facetGroup.add(domeMesh);
+
+        // Grooved Elliptical Boundary Outline + Central Handpan Dimple
+        const borderCurve = new THREE.EllipseCurve(0, 0, n.rx * 1.02, n.rz * 1.02, 0, Math.PI * 2, false, 0);
+        const borderPts = borderCurve.getPoints(36).map(p => new THREE.Vector3(p.x, 0.02, p.y));
+        const borderGeo = new THREE.BufferGeometry().setFromPoints(borderPts);
+        const borderMat = new THREE.LineBasicMaterial({ color: ringColor, transparent: true, opacity: 0.68 });
+        const borderLine = new THREE.Line(borderGeo, borderMat);
+        facetGroup.add(borderLine);
+
+        if (isHandpan && n.ring !== 'ding') {
+          // Central acoustic stiffening dimple on handpan tone fields
+          const dimpleGeo = new THREE.SphereGeometry(n.rx * 0.26, 14, 10);
+          dimpleGeo.scale(1.0, 0.32, 0.85);
+          const dimpleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+          const dimple = new THREE.Mesh(dimpleGeo, dimpleMat);
+          dimple.position.y = 0.05;
+          facetGroup.add(dimple);
+        }
+
+        panGroup.add(facetGroup);
+        noteFacetMeshes.push(domeMesh);
+        noteRingMeshes.push(borderLine);
+      });
+
+      // 3. Gu Helmholtz Bass Air-Wave Rings underneath the Pan
+      for (let g = 0; g < 4; g++) {
+        const rg = new THREE.RingGeometry(0.4 + g * 0.35, 0.46 + g * 0.35, 40);
+        rg.rotateX(-Math.PI / 2);
+        const rm = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.0, side: THREE.DoubleSide });
+        const rMesh = new THREE.Mesh(rg, rm);
+        rMesh.position.y = -0.95 - g * 0.28;
+        panGroup.add(rMesh);
+        guWaveRings.push(rMesh);
+      }
+
+      buildNoteLabelsDOM();
+    }
+
+    function buildMallets3D() {
+      if (leftMalletGroup) scene.remove(leftMalletGroup);
+      if (rightMalletGroup) scene.remove(rightMalletGroup);
+
+      const createMallet = (tipHex) => {
+        const grp = new THREE.Group();
+        const shaftGeo = new THREE.CylinderGeometry(0.035, 0.045, 2.6, 12);
+        shaftGeo.rotateX(Math.PI / 2);
+        shaftGeo.translate(0, 0, 1.3);
+        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.6, roughness: 0.3 });
+        grp.add(new THREE.Mesh(shaftGeo, shaftMat));
+
+        const tipGeo = new THREE.SphereGeometry(0.11, 16, 16);
+        const tipMat = new THREE.MeshStandardMaterial({ color: tipHex, emissive: tipHex, emissiveIntensity: 0.45 });
+        grp.add(new THREE.Mesh(tipGeo, tipMat));
+        return grp;
+      };
+
+      leftMalletGroup = createMallet(0x38bdf8);
+      rightMalletGroup = createMallet(0xf59e0b);
+      scene.add(leftMalletGroup, rightMalletGroup);
+    }
+
+    function buildNoteLabelsDOM() {
+      const overlay = document.getElementById('noteLabelsOverlay');
+      if (!overlay) return;
+      overlay.innerHTML = '';
+
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      inst.notes.forEach((n, idx) => {
+        const badge = document.createElement('div');
+        badge.id = `noteLabel_${idx}`;
+        const colorCls = n.ring === 'ding'
+          ? 'bg-amber-500/90 text-slate-950 font-extrabold border-amber-300'
+          : (n.ring === 'outer' || n.ring === 'chorus'
+              ? 'bg-obsidian-950/85 text-sky-300 border-sky-500/50'
+              : (n.ring === 'middle' ? 'bg-obsidian-950/80 text-emerald-300 border-emerald-500/40' : 'bg-obsidian-950/80 text-purple-300 border-purple-500/40'));
+        badge.className = `absolute -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md border text-[9px] font-mono transition-transform duration-75 ${colorCls}`;
+        badge.textContent = n.shortName || n.name;
+        overlay.appendChild(badge);
+      });
+    }
+
+    function updateNoteLabelsAnd3DAnimations(nowSec) {
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      const overlay = document.getElementById('noteLabelsOverlay');
+      if (overlay) {
+        overlay.style.display = state.showNoteLabels ? 'block' : 'none';
+      }
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const tempVec = new THREE.Vector3();
+
+      noteFacetMeshes.forEach((mesh, idx) => {
+        const exc = state.activeNoteExcitations[idx];
+        let glow = 0.14;
+        let yBounce = 0;
+
+        if (exc) {
+          const dt = nowSec - exc.startTime;
+          if (dt >= 0 && dt < 1.2) {
+            const env = Math.exp(-dt * 4.2) * exc.vel;
+            glow = 0.14 + env * 1.45;
+            yBounce = Math.sin(dt * 55) * env * 0.045;
+          } else if (dt >= 1.2) {
+            delete state.activeNoteExcitations[idx];
+          }
+        }
+
+        mesh.position.y = yBounce;
+        if (state.showChladni) {
+          mesh.material.emissiveIntensity = glow;
+        } else {
+          mesh.material.emissiveIntensity = 0.08;
+        }
+
+        // Update 2D projected label position
+        if (state.showNoteLabels) {
+          const lbl = document.getElementById(`noteLabel_${idx}`);
+          if (lbl && mesh.parent) {
+            mesh.parent.getWorldPosition(tempVec);
+            tempVec.y += 0.08;
+            tempVec.project(camera);
+            if (tempVec.z < 1.0) {
+              const px = (tempVec.x * 0.5 + 0.5) * w;
+              const py = (-(tempVec.y * 0.5) + 0.5) * h;
+              lbl.style.left = `${px}px`;
+              lbl.style.top = `${py}px`;
+              lbl.style.transform = glow > 0.35 ? 'translate(-50%, -50%) scale(1.22)' : 'translate(-50%, -50%) scale(1.0)';
+            }
+          }
+        }
+      });
+
+      // Animate Gu Helmholtz Air-Wave Rings
+      const guDt = nowSec - state.guExcitationTime;
+      guWaveRings.forEach((ring, i) => {
+        if (guDt >= 0 && guDt < 0.65) {
+          const prog = (guDt * 2.2 + i * 0.18) % 1.0;
+          ring.position.y = -0.85 - prog * 1.65;
+          ring.material.opacity = (1 - prog) * (1 - guDt / 0.65) * 0.65;
+        } else {
+          ring.material.opacity = 0;
+        }
+      });
+
+      // Position Animated 3D Pansticks / Exciters
+      const updateMallet = (grp, anim, isLeft) => {
+        if (!grp) return;
+        const dt = nowSec - anim.hitTime;
+        const lift = (dt >= 0 && dt < 0.15) ? Math.sin((dt / 0.15) * Math.PI * 0.5) * 0.45 : 0.48;
+        grp.position.set(anim.x, anim.y + lift, anim.z);
+        grp.rotation.set(-0.32 - lift * 0.35, isLeft ? -0.45 : 0.45, 0);
+      };
+      updateMallet(leftMalletGroup, state.leftMalletAnim, true);
+      updateMallet(rightMalletGroup, state.rightMalletAnim, false);
+    }
+
+    function triggerNoteByIndex(noteIdx, options = {}) {
+      const ctx = ensureAudioContext();
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      const notes = inst.notes;
+
+      if (noteIdx === 'gu') {
+        synthesizePanVoice(ctx, masterOutNode, ctx.currentTime, { modeIso: 'gu', velocity: options.vel || 0.95 });
+        state.guExcitationTime = performance.now() / 1000;
+        updateNoteTelemetryDisplay("Gu Helmholtz Port", state.guFreq, "Air Cavity");
+        return;
+      }
+
+      if (noteIdx === 'tak') {
+        synthesizePanVoice(ctx, masterOutNode, ctx.currentTime, { modeIso: 'tak', velocity: options.vel || 0.90 });
+        updateNoteTelemetryDisplay(inst.family === 'Handpan' ? "Tak Shoulder Slap" : "Skirt / Iron Knock", 920, "Metallic Transient");
+        return;
+      }
+
+      const safeIdx = ((noteIdx % notes.length) + notes.length) % notes.length;
+      const note = notes[safeIdx];
+      const modeIso = options.modeIso || state.hitMode;
+      const vel = options.vel || 0.88;
+      const now = ctx.currentTime;
+      const panPos = Math.cos(note.angle) * 0.45;
+
+      // Primary Note Voice
+      synthesizePanVoice(ctx, masterOutNode, now, {
+        freq: note.freq,
+        velocity: vel,
+        modeIso,
+        panPos
+      });
+
+      // Handle Play-Assist or Sequencer Harmony (Panorama Roll, Perfect-5th Dyad, Octave, Triad)
+      const harmMode = options.harm || (state.playAssist !== 'single' ? state.playAssist : null);
+      if (harmMode === 'pan_roll' || harmMode === 'roll') {
+        const rollHits = [0.055, 0.11, 0.165, 0.22];
+        rollHits.forEach((dt, rIdx) => {
+          synthesizePanVoice(ctx, masterOutNode, now + dt, {
+            freq: note.freq,
+            velocity: vel * (rIdx % 2 === 0 ? 0.78 : 0.84),
+            modeIso: 'full',
+            panPos: -panPos * 0.5
+          });
+        });
+      } else if (harmMode === 'dyad_fifth' || harmMode === 'dyad5') {
+        synthesizePanVoice(ctx, masterOutNode, now + 0.012, {
+          freq: note.freq * 1.4983,
+          velocity: vel * 0.76,
+          modeIso: 'full',
+          panPos: -panPos
+        });
+      } else if (harmMode === 'oct') {
+        synthesizePanVoice(ctx, masterOutNode, now + 0.008, {
+          freq: note.freq * 2.0,
+          velocity: vel * 0.78,
+          modeIso: 'full',
+          panPos: -panPos * 0.6
+        });
+      } else if (harmMode === 'triad_chord') {
+        synthesizePanVoice(ctx, masterOutNode, now + 0.012, { freq: note.freq * 1.2599, velocity: vel * 0.72, modeIso: 'full', panPos: 0 });
+        synthesizePanVoice(ctx, masterOutNode, now + 0.024, { freq: note.freq * 1.4983, velocity: vel * 0.74, modeIso: 'full', panPos: -panPos });
+      }
+
+      // Register 3D Facet Glow, Sympathetic Neighbour Glow & Mallet Animation
+      const nowSec = performance.now() / 1000;
+      state.activeNoteExcitations[safeIdx] = { startTime: nowSec, vel, modeType: modeIso };
+      if (state.sympathetic > 25 && notes.length > 1) {
+        const sympIdx = (safeIdx + 1) % notes.length;
+        state.activeNoteExcitations[sympIdx] = { startTime: nowSec + 0.03, vel: vel * 0.35, modeType: 'full' };
+      }
+
+      const mesh = noteFacetMeshes[safeIdx];
+      if (mesh && mesh.parent) {
+        const wp = mesh.parent.position;
+        if (wp.x < 0) state.leftMalletAnim = { hitTime: nowSec, x: wp.x, y: wp.y, z: wp.z };
+        else state.rightMalletAnim = { hitTime: nowSec, x: wp.x, y: wp.y, z: wp.z };
+      }
+
+      updateNoteTelemetryDisplay(note.name, note.freq, modeIso);
+    }
+
+    function updateNoteTelemetryDisplay(noteName, f0, modeIso) {
+      const f2 = f0 * 2.0;
+      const f3 = f0 * 3.0;
+      const m1 = document.getElementById('readoutMode1');
+      const m2 = document.getElementById('readoutMode2');
+      const m3 = document.getElementById('readoutMode3');
+      if (m1) m1.textContent = `${f0.toFixed(1)} Hz`;
+      if (m2) m2.textContent = `${f2.toFixed(1)} Hz`;
+      if (m3) m3.textContent = `${f3.toFixed(1)} Hz`;
+
+      const tele = document.getElementById('lastStrikeTelemetry');
+      if (tele) {
+        tele.textContent = `Note: ${noteName} (${f0.toFixed(1)} Hz) • 2f0: ${Math.round(f2)} Hz • 3f0: ${Math.round(f3)} Hz [${modeIso.toUpperCase()}]`;
+      }
+    }
+
+    function initViewportPointerControls() {
+      const container = document.getElementById('webglContainer');
+
+      container.addEventListener('pointerdown', (e) => {
+        const rect = container.getBoundingClientRect();
+        mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouseVec, camera);
+        const hits = raycaster.intersectObjects(panGroup.children, true);
+
+        if (hits.length > 0) {
+          for (let h = 0; h < hits.length; h++) {
+            const obj = hits[h].object;
+            if (obj.name === 'noteFacet' && obj.userData.noteIdx !== undefined) {
+              // Check local hit coordinates on the oval facet to allow natural edge harmonic isolation!
+              const localPt = obj.worldToLocal(hits[h].point.clone());
+              let hitIso = state.hitMode;
+              if (e.shiftKey) hitIso = 'octave';
+              else if (e.altKey) hitIso = 'twelfth';
+              else if (Math.abs(localPt.x) > 0.72) hitIso = 'octave';
+              else if (Math.abs(localPt.z) > 0.72) hitIso = 'twelfth';
+
+              triggerNoteByIndex(obj.userData.noteIdx, { modeIso: hitIso, vel: 0.92 });
+              return;
+            }
+            if (obj.name === 'guPort') {
+              triggerNoteByIndex('gu', { vel: 0.95 });
+              return;
+            }
+            if (obj.name === 'skirtBody') {
+              triggerNoteByIndex('tak', { vel: 0.88 });
+              return;
+            }
+          }
+        }
+
+        camOrbit.isDragging = true;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!camOrbit.isDragging) return;
+        const dx = e.clientX - camOrbit.lastX;
+        const dy = e.clientY - camOrbit.lastY;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+
+        camOrbit.targetTheta -= dx * 0.0075;
+        camOrbit.targetPhi = Math.max(0.12, Math.min(Math.PI - 0.15, camOrbit.targetPhi - dy * 0.0075));
+      });
+
+      window.addEventListener('pointerup', () => {
+        camOrbit.isDragging = false;
+      });
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camOrbit.targetRadius = Math.max(5.5, Math.min(16.0, camOrbit.targetRadius + e.deltaY * 0.005));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        if (!renderer || !camera) return;
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    function setCameraPreset(preset) {
+      state.cameraPreset = preset;
+      if (preset === 'player') {
+        camOrbit.targetTheta = 0.0;
+        camOrbit.targetPhi = 0.34;
+        camOrbit.targetRadius = 9.0;
+      } else if (preset === 'iso') {
+        camOrbit.targetTheta = 0.54;
+        camOrbit.targetPhi = 0.88;
+        camOrbit.targetRadius = 10.2;
+      } else if (preset === 'side') {
+        camOrbit.targetTheta = 1.25;
+        camOrbit.targetPhi = 1.42;
+        camOrbit.targetRadius = 9.6;
+      } else if (preset === 'bottom') {
+        camOrbit.targetTheta = 0.25;
+        camOrbit.targetPhi = 2.48;
+        camOrbit.targetRadius = 9.2;
+      }
+
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        const active = btn.getAttribute('data-cam') === preset;
+        btn.className = active
+          ? 'cam-btn px-2 py-1 rounded-lg text-[11px] font-mono font-semibold bg-amber-500 text-slate-950 transition'
+          : 'cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition';
+      });
+    }
+
+    // =========================================================================
+    // 7. REAL-TIME SPECTRUM & 3D RENDER LOOP
+    // =========================================================================
+    const specCanvas = document.getElementById('spectrumCanvas');
+    const specCtx = specCanvas.getContext('2d');
+    const fftBins = new Uint8Array(128);
+    const timeBins = new Uint8Array(128);
+
+    function renderLoop(nowMs) {
+      const nowSec = nowMs / 1000;
+
+      camOrbit.theta += (camOrbit.targetTheta - camOrbit.theta) * 0.12;
+      camOrbit.phi += (camOrbit.targetPhi - camOrbit.phi) * 0.12;
+      camOrbit.radius += (camOrbit.targetRadius - camOrbit.radius) * 0.12;
+
+      if (camera) {
+        camera.position.x = camOrbit.radius * Math.sin(camOrbit.phi) * Math.sin(camOrbit.theta);
+        camera.position.y = camOrbit.radius * Math.cos(camOrbit.phi);
+        camera.position.z = camOrbit.radius * Math.sin(camOrbit.phi) * Math.cos(camOrbit.theta);
+        camera.lookAt(0, camOrbit.lookY, 0);
+      }
+
+      updateNoteLabelsAnd3DAnimations(nowSec);
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+
+      if (specCanvas && specCanvas.offsetParent !== null) {
+        const w = specCanvas.clientWidth || 320;
+        const h = specCanvas.clientHeight || 110;
+        if (specCanvas.width !== w) specCanvas.width = w;
+        if (specCanvas.height !== h) specCanvas.height = h;
+
+        specCtx.clearRect(0, 0, w, h);
+        if (analyserNode) {
+          analyserNode.getByteFrequencyData(fftBins);
+          analyserNode.getByteTimeDomainData(timeBins);
+
+          const barW = w / 48;
+          for (let i = 0; i < 48; i++) {
+            const v = fftBins[i] / 255;
+            const bh = v * (h * 0.80);
+            specCtx.fillStyle = i % 3 === 0 ? 'rgba(245, 158, 11, 0.78)' : (i % 3 === 1 ? 'rgba(56, 189, 248, 0.72)' : 'rgba(192, 132, 252, 0.72)');
+            specCtx.fillRect(i * barW, h - bh, barW - 1.5, bh);
+          }
+
+          specCtx.beginPath();
+          specCtx.strokeStyle = '#10b981';
+          specCtx.lineWidth = 1.5;
+          for (let i = 0; i < 64; i++) {
+            const x = (i / 63) * w;
+            const y = (timeBins[i] / 255) * h;
+            if (i === 0) specCtx.moveTo(x, y);
+            else specCtx.lineTo(x, y);
+          }
+          specCtx.stroke();
+        }
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // =========================================================================
+    // 8. GROOVE SEQUENCER, SVG CONTOUR & TRANSPORT SCHEDULER
+    // =========================================================================
+    let transportTimerId = null;
+
+    function selectPatternById(id) {
+      const pat = REPERTOIRE_PATTERNS.find(p => p.id === id) || REPERTOIRE_PATTERNS[0];
+      state.selectedPatternId = pat.id;
+      state.customSteps = pat.steps.map(s => ({ ...s }));
+      state.currentStepIndex = -1;
+
+      document.getElementById('activePatternBadge').textContent = `GROOVE #${pat.id}`;
+      document.getElementById('activePatternFamily').textContent = `${pat.family} • ${pat.sub}`;
+      document.getElementById('activePatternTitle').textContent = pat.name;
+      document.getElementById('activePatternDesc').textContent = pat.desc;
+
+      renderPatternList();
+      renderSequencerSvgAndGrid();
+    }
+
+    function renderSequencerSvgAndGrid() {
+      const steps = state.customSteps;
+      const svg = document.getElementById('patternSvg');
+      const grid = document.getElementById('stepGridContainer');
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      if (!svg || !grid) return;
+
+      const W = 680;
+      const padX = 38;
+      const usableW = W - padX * 2;
+      const n = steps.length;
+
+      let svgHtml = `
+        <line x1="16" y1="26" x2="${W - 16}" y2="26" stroke="#1e293b" stroke-width="1" />
+        <line x1="16" y1="52" x2="${W - 16}" y2="52" stroke="#1e293b" stroke-width="1" />
+        <line x1="16" y1="78" x2="${W - 16}" y2="78" stroke="#1e293b" stroke-width="1" />
+      `;
+
+      steps.forEach((st, idx) => {
+        const x = n === 1 ? W / 2 : padX + (idx / (n - 1)) * usableW;
+        const isCurrent = state.currentStepIndex === idx;
+        const isPerc = st.deg === 'tak' || st.deg === 'gu';
+        const degNum = isPerc ? 0 : (st.deg % inst.notes.length);
+        const y = isPerc ? 82 : Math.max(18, 76 - degNum * 6.5);
+
+        const col = isCurrent ? '#10b981' : (isPerc ? '#c084fc' : (st.harm ? '#38bdf8' : '#f59e0b'));
+        if (isCurrent) {
+          svgHtml += `<rect x="${x - 14}" y="4" width="28" height="100" rx="5" fill="rgba(16, 185, 129, 0.18)" stroke="#10b981" stroke-width="1" />`;
+        }
+
+        const labelText = st.deg === 'tak' ? 'TAK' : (st.deg === 'gu' ? 'GU' : (inst.notes[degNum]?.shortName || inst.notes[degNum]?.name || 'N'));
+        svgHtml += `
+          <g class="cursor-pointer step-svg-node" data-idx="${idx}">
+            <line x1="${x}" y1="${y}" x2="${x}" y2="88" stroke="${col}" stroke-width="1.5" stroke-dasharray="${isPerc ? '2,2' : 'none'}" />
+            <circle cx="${x}" cy="${y}" r="6" fill="${col}" />
+            <text x="${x}" y="101" text-anchor="middle" fill="${col}" font-size="9.5" font-family="JetBrains Mono" font-weight="bold">${labelText}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+      svg.querySelectorAll('.step-svg-node').forEach(el => {
+        el.addEventListener('click', () => auditionSequencerStep(parseInt(el.getAttribute('data-idx'), 10)));
+      });
+
+      grid.innerHTML = '';
+      steps.forEach((st, idx) => {
+        const isCurrent = state.currentStepIndex === idx;
+        const isPerc = st.deg === 'tak' || st.deg === 'gu';
+        const degNum = isPerc ? 0 : (st.deg % inst.notes.length);
+        const noteLabel = st.deg === 'tak' ? 'TAK' : (st.deg === 'gu' ? 'GU' : (inst.notes[degNum]?.shortName || inst.notes[degNum]?.name));
+        const harmLabel = st.harm ? st.harm.toUpperCase().slice(0, 5) : '1:2:3';
+
+        const card = document.createElement('div');
+        card.className = `rounded-xl border p-1.5 transition flex flex-col justify-between gap-1 ${
+          isCurrent ? 'step-active bg-emerald-500/20 border-emerald-400 text-white' : 'bg-obsidian-900/90 border-slate-800 text-slate-200'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-[9px] font-mono text-slate-400">
+            <span>#${idx + 1}</span>
+            <span class="text-sky-300">${harmLabel}</span>
+          </div>
+          <button type="button" data-step-play="${idx}" class="py-0.5 text-center font-mono text-sm font-extrabold text-amber-300 hover:text-white">
+            ${noteLabel}
+          </button>
+          <div class="flex gap-1">
+            <button type="button" data-step-note="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-950 text-[8px] font-mono text-slate-300 border border-slate-700">Note+</button>
+            <button type="button" data-step-harm="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-950 text-[8px] font-mono text-purple-300 border border-slate-700">Mode</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll('button[data-step-play]').forEach(btn => {
+        btn.addEventListener('click', () => auditionSequencerStep(parseInt(btn.getAttribute('data-step-play'), 10)));
+      });
+      grid.querySelectorAll('button[data-step-note]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-step-note'), 10);
+          const st = state.customSteps[idx];
+          if (st.deg === 'tak') st.deg = 'gu';
+          else if (st.deg === 'gu') st.deg = 0;
+          else if (st.deg >= Math.min(8, inst.notes.length - 1)) st.deg = 'tak';
+          else st.deg++;
+          auditionSequencerStep(idx);
+          renderSequencerSvgAndGrid();
+        });
+      });
+      grid.querySelectorAll('button[data-step-harm]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-step-harm'), 10);
+          const st = state.customSteps[idx];
+          const order = [null, 'dyad5', 'oct', 'oct_iso', 'twelfth_iso', 'roll'];
+          st.harm = order[(order.indexOf(st.harm) + 1) % order.length];
+          auditionSequencerStep(idx);
+          renderSequencerSvgAndGrid();
+        });
+      });
+    }
+
+    function auditionSequencerStep(idx) {
+      const st = state.customSteps[idx];
+      if (!st) return;
+      state.currentStepIndex = idx;
+      const modeIso = st.harm === 'oct_iso' ? 'octave' : (st.harm === 'twelfth_iso' ? 'twelfth' : 'full');
+      triggerNoteByIndex(st.deg, { modeIso, harm: st.harm, vel: st.vel || 0.88 });
+      renderSequencerSvgAndGrid();
+    }
+
+    function startTransport() {
+      ensureAudioContext();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.currentStepIndex = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('playing-glow');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP';
+
+      scheduleNextGrooveStep();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (transportTimerId) {
+        clearTimeout(transportTimerId);
+        transportTimerId = null;
+      }
+      state.currentStepIndex = -1;
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('playing-glow');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'PLAY';
+      renderSequencerSvgAndGrid();
+    }
+
+    function scheduleNextGrooveStep() {
+      if (!state.isPlaying) return;
+      state.currentStepIndex = (state.currentStepIndex + 1) % state.customSteps.length;
+      const step = state.customSteps[state.currentStepIndex];
+      const baseStepSec = (60 / state.bpm) * 0.25;
+      const stepDurSec = baseStepSec * (step.dur || 1.0);
+
+      auditionSequencerStep(state.currentStepIndex);
+      transportTimerId = setTimeout(scheduleNextGrooveStep, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 9. INSTRUMENT SELECTION, SCALE PADS & LOSSLESS 44.1kHz WAV EXPORTER
+    // =========================================================================
+    function applyPanInstrument(key, triggerRoot = true) {
+      const inst = PAN_INSTRUMENTS[key];
+      if (!inst) return;
+      state.instrumentKey = key;
+      state.metallurgy = inst.metallurgy;
+      state.guFreq = inst.guFreq;
+      state.shimmer = inst.shimmer;
+      state.sympathetic = inst.sympathetic;
+      state.sustain = inst.sustain;
+      state.chorusBeat = inst.chorusBeat / 10;
+      state.bloomDelayMs = inst.bloomDelayMs;
+      state.exciter = inst.exciter;
+
+      // Sync UI Sliders & Dropdowns
+      document.getElementById('hdrActiveInstrument').textContent = inst.name;
+      document.getElementById('selectMetallurgy').value = state.metallurgy;
+      document.getElementById('selectExciter').value = state.exciter;
+      document.getElementById('sliderShimmer').value = state.shimmer;
+      document.getElementById('valShimmer').textContent = `${state.shimmer}%`;
+      document.getElementById('sliderSympathetic').value = state.sympathetic;
+      document.getElementById('valSympathetic').textContent = `${state.sympathetic}%`;
+      document.getElementById('sliderSustain').value = state.sustain;
+      document.getElementById('valSustain').textContent = `${state.sustain}%`;
+      document.getElementById('sliderChorusBeat').value = inst.chorusBeat;
+      document.getElementById('valChorusBeat').textContent = `${state.chorusBeat.toFixed(1)} Hz`;
+      document.getElementById('sliderBloomDelay').value = state.bloomDelayMs;
+      document.getElementById('valBloomDelay').textContent = `${state.bloomDelayMs} ms`;
+      document.getElementById('sliderGuFreq').value = state.guFreq;
+      document.getElementById('valGuFreq').textContent = `${state.guFreq} Hz`;
+
+      renderInstrumentGrid();
+      renderScalePadStrip();
+      buildPan3DModel();
+      renderSequencerSvgAndGrid();
+
+      if (triggerRoot) {
+        triggerNoteByIndex(0, { vel: 0.92 });
+        showToast(`Loaded ${inst.short}`);
+      }
+    }
+
+    function renderInstrumentGrid() {
+      const grid = document.getElementById('instrumentGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      Object.entries(PAN_INSTRUMENTS).forEach(([key, inst]) => {
+        const active = state.instrumentKey === key;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2 rounded-xl border text-left transition ${
+          active ? 'bg-amber-500/20 border-amber-400 text-white shadow-sm' : 'bg-obsidian-950/80 hover:bg-obsidian-900 border-slate-800 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold truncate">${inst.short}</span>
+            <span class="text-[8px] font-mono px-1 rounded ${inst.family === 'Handpan' ? 'bg-purple-500/20 text-purple-300' : 'bg-sky-500/20 text-sky-300'}">${inst.family}</span>
+          </div>
+          <div class="text-[9px] font-mono text-slate-400 truncate mt-0.5">${inst.notes.length} Notes • ${inst.metallurgy}</div>
+        `;
+        btn.addEventListener('click', () => applyPanInstrument(key, true));
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderScalePadStrip() {
+      const strip = document.getElementById('scalePadGrid');
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      if (!strip) return;
+      strip.innerHTML = '';
+
+      inst.notes.slice(0, 12).forEach((n, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-2 py-1 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-amber-300 transition';
+        btn.textContent = `${idx + 1}:${n.shortName || n.name}`;
+        btn.addEventListener('click', () => triggerNoteByIndex(idx, { vel: 0.90 }));
+        strip.appendChild(btn);
+      });
+    }
+
+    function renderPatternList() {
+      const container = document.getElementById('patternListContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const filtered = REPERTOIRE_PATTERNS.filter(p => state.patternFilter === 'ALL' || p.family === state.patternFilter);
+      filtered.forEach(pat => {
+        const active = pat.id === state.selectedPatternId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition flex items-center justify-between gap-2 ${
+          active ? 'bg-amber-500/20 border-amber-400 text-white' : 'bg-obsidian-950/75 hover:bg-obsidian-800 border-slate-800 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[10px] font-bold text-amber-400">#${pat.id}</span>
+              <span class="text-xs font-bold truncate">${pat.name}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 truncate">${pat.sub}</div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-obsidian-900 text-sky-300 border border-slate-800 shrink-0">${pat.family}</span>
+        `;
+        btn.addEventListener('click', () => {
+          selectPatternById(pat.id);
+          auditionSequencerStep(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const blockAlign = numChannels * 2;
+      const dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      };
+
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) channels.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function renderAndDownloadWav({ title, mode = 'loop', oneShotType = 'ding_root' }) {
+      const sampleRate = 44100;
+      const inst = PAN_INSTRUMENTS[state.instrumentKey] || PAN_INSTRUMENTS.tenor_c_lead;
+      const notes = inst.notes;
+      const baseStepSec = (60 / state.bpm) * 0.25;
+
+      let totalDurationSec = 2.6;
+      if (mode === 'loop') {
+        let barSec = 0;
+        state.customSteps.forEach(s => { barSec += baseStepSec * (s.dur || 1); });
+        totalDurationSec = Math.max(2.2, barSec * 2 + 1.8);
+      } else if (mode === 'scale') {
+        totalDurationSec = Math.min(12, notes.slice(0, 10).length * 0.42 + 2.2);
+      }
+
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offlineCtx = new OfflineCtx(2, Math.ceil(totalDurationSec * sampleRate), sampleRate);
+
+      if (mode === 'oneshot') {
+        const t0 = 0.05;
+        const rootF = notes[0].freq;
+        if (oneShotType === 'ding_root') {
+          synthesizePanVoice(offlineCtx, offlineCtx.destination, t0, { freq: rootF, velocity: 0.95, modeIso: 'full' });
+        } else if (oneShotType === 'octave_harmonic') {
+          synthesizePanVoice(offlineCtx, offlineCtx.destination, t0, { freq: rootF, velocity: 0.95, modeIso: 'octave' });
+        } else if (oneShotType === 'twelfth_harmonic') {
+          synthesizePanVoice(offlineCtx, offlineCtx.destination, t0, { freq: rootF, velocity: 0.95, modeIso: 'twelfth' });
+        } else if (oneShotType === 'pan_roll_chord') {
+          for (let r = 0; r < 6; r++) {
+            synthesizePanVoice(offlineCtx, offlineCtx.destination, t0 + r * 0.055, { freq: rootF, velocity: 0.85, modeIso: 'full', panPos: -0.3 });
+            synthesizePanVoice(offlineCtx, offlineCtx.destination, t0 + r * 0.055 + 0.027, { freq: rootF * 1.498, velocity: 0.82, modeIso: 'full', panPos: 0.3 });
+          }
+        } else if (oneShotType === 'tak_slap') {
+          synthesizePanVoice(offlineCtx, offlineCtx.destination, t0, { modeIso: 'tak', velocity: 0.95 });
+        } else if (oneShotType === 'gu_helmholtz') {
+          synthesizePanVoice(offlineCtx, offlineCtx.destination, t0, { modeIso: 'gu', velocity: 0.98 });
+        }
+      } else if (mode === 'scale') {
+        let cursor = 0.06;
+        notes.slice(0, 10).forEach((n, idx) => {
+          synthesizePanVoice(offlineCtx, offlineCtx.destination, cursor, {
+            freq: n.freq,
+            velocity: 0.88,
+            modeIso: 'full',
+            panPos: Math.cos(n.angle) * 0.45
+          });
+          cursor += 0.38;
+        });
+      } else {
+        let cursor = 0.06;
+        for (let b = 0; b < 2; b++) {
+          state.customSteps.forEach((st) => {
+            const dur = baseStepSec * (st.dur || 1);
+            if (st.deg === 'tak' || st.deg === 'gu') {
+              synthesizePanVoice(offlineCtx, offlineCtx.destination, cursor, { modeIso: st.deg, velocity: st.vel || 0.9 });
+            } else {
+              const n = notes[st.deg % notes.length];
+              const mIso = st.harm === 'oct_iso' ? 'octave' : (st.harm === 'twelfth_iso' ? 'twelfth' : 'full');
+              synthesizePanVoice(offlineCtx, offlineCtx.destination, cursor, {
+                freq: n.freq,
+                velocity: st.vel || 0.88,
+                modeIso: mIso,
+                panPos: Math.cos(n.angle) * 0.45
+              });
+              if (st.harm === 'dyad5') {
+                synthesizePanVoice(offlineCtx, offlineCtx.destination, cursor + 0.012, {
+                  freq: n.freq * 1.4983,
+                  velocity: (st.vel || 0.88) * 0.75,
+                  modeIso: 'full',
+                  panPos: -Math.cos(n.angle) * 0.45
+                });
+              } else if (st.harm === 'oct') {
+                synthesizePanVoice(offlineCtx, offlineCtx.destination, cursor + 0.01, {
+                  freq: n.freq * 2.0,
+                  velocity: (st.vel || 0.88) * 0.78,
+                  modeIso: 'full'
+                });
+              }
+            }
+            cursor += dur;
+          });
+        }
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.renderedVault.unshift({ name: safeFilename, url });
+      renderSampleVaultUI();
+      showToast(`Exported 44.1kHz WAV: ${safeFilename}`);
+    }
+
+    function renderSampleVaultUI() {
+      const container = document.getElementById('sampleVaultList');
+      document.getElementById('vaultCountLabel').textContent = `${state.renderedVault.length} files`;
+      if (state.renderedVault.length === 0) return;
+
+      container.innerHTML = '';
+      state.renderedVault.slice(0, 6).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'bg-obsidian-900 border border-slate-800 rounded-lg p-1.5 space-y-1';
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[9px] font-mono shrink-0">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastText');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._hideTimer);
+      banner._hideTimer = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 10. EVENT LISTENERS & KEYBOARD SHORTCUTS
+    // =========================================================================
+    function initAllListeners() {
+      // Left Dock Tabs
+      document.querySelectorAll('.left-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-left-tab');
+          document.getElementById('leftTabInstruments').classList.toggle('hidden', target !== 'instruments');
+          document.getElementById('leftTabInstruments').classList.toggle('flex', target === 'instruments');
+          document.getElementById('leftTabModes').classList.toggle('hidden', target !== 'modes');
+          document.getElementById('leftTabModes').classList.toggle('flex', target === 'modes');
+          document.getElementById('leftTabShell').classList.toggle('hidden', target !== 'shell');
+          document.getElementById('leftTabShell').classList.toggle('flex', target === 'shell');
+
+          document.querySelectorAll('.left-tab-btn').forEach(b => {
+            const active = b.getAttribute('data-left-tab') === target;
+            b.className = active
+              ? 'left-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 transition'
+              : 'left-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition';
+          });
+        });
+      });
+
+      // Right Dock Tabs
+      document.querySelectorAll('.right-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-right-tab');
+          document.getElementById('rightTabSequencer').classList.toggle('hidden', target !== 'sequencer');
+          document.getElementById('rightTabSequencer').classList.toggle('flex', target === 'sequencer');
+          document.getElementById('rightTabPatterns').classList.toggle('hidden', target !== 'patterns');
+          document.getElementById('rightTabPatterns').classList.toggle('flex', target === 'patterns');
+          document.getElementById('rightTabExport').classList.toggle('hidden', target !== 'export');
+          document.getElementById('rightTabExport').classList.toggle('flex', target === 'export');
+
+          document.querySelectorAll('.right-tab-btn').forEach(b => {
+            const active = b.getAttribute('data-right-tab') === target;
+            b.className = active
+              ? 'right-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 transition'
+              : 'right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition';
+          });
+        });
+      });
+
+      // Dock Collapse Toggles
+      let leftOpen = true, rightOpen = true;
+      document.getElementById('btnToggleLeftDock').addEventListener('click', () => {
+        leftOpen = !leftOpen;
+        document.getElementById('leftDock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-108%)';
+      });
+      document.getElementById('btnToggleRightDock').addEventListener('click', () => {
+        rightOpen = !rightOpen;
+        document.getElementById('rightDock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(108%)';
+      });
+
+      // Camera Presets & Toggles
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        btn.addEventListener('click', () => setCameraPreset(btn.getAttribute('data-cam')));
+      });
+
+      document.getElementById('btnToggleLabels').addEventListener('click', (e) => {
+        state.showNoteLabels = !state.showNoteLabels;
+        e.currentTarget.textContent = `Note Labels: ${state.showNoteLabels ? 'ON' : 'OFF'}`;
+      });
+
+      document.getElementById('btnToggleChladni').addEventListener('click', (e) => {
+        state.showChladni = !state.showChladni;
+        e.currentTarget.textContent = `1:2:3 Heatmap: ${state.showChladni ? 'ON' : 'OFF'}`;
+      });
+
+      // Hit Mode Isolation Buttons
+      document.querySelectorAll('.hitmode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.hitMode = btn.getAttribute('data-hitmode');
+          const lblMap = { full: 'Full Triadic (1:2:3)', octave: '2:1 Longitudinal Octave', twelfth: '3:1 Transverse Twelfth' };
+          document.getElementById('lblActiveArticulation').textContent = lblMap[state.hitMode];
+          document.querySelectorAll('.hitmode-btn').forEach(b => {
+            const active = b.getAttribute('data-hitmode') === state.hitMode;
+            b.className = active
+              ? 'hitmode-btn py-1.5 rounded-lg border text-[10px] font-bold bg-sky-500/20 border-sky-400 text-white transition'
+              : 'hitmode-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-slate-300 transition';
+          });
+          triggerNoteByIndex(0, { modeIso: state.hitMode, vel: 0.92 });
+        });
+      });
+
+      document.getElementById('selectExciter').addEventListener('change', (e) => {
+        state.exciter = e.target.value;
+        triggerNoteByIndex(0, { vel: 0.90 });
+      });
+
+      document.getElementById('selectPlayAssist').addEventListener('change', (e) => {
+        state.playAssist = e.target.value;
+        triggerNoteByIndex(0, { vel: 0.90 });
+      });
+
+      document.getElementById('selectMetallurgy').addEventListener('change', (e) => {
+        state.metallurgy = e.target.value;
+        buildPan3DModel();
+        triggerNoteByIndex(0, { vel: 0.92 });
+      });
+
+      document.getElementById('btnWildcardPan').addEventListener('click', () => {
+        const keys = Object.keys(PAN_INSTRUMENTS);
+        applyPanInstrument(keys[Math.floor(Math.random() * keys.length)], true);
+      });
+
+      // Physics Sliders
+      document.getElementById('sliderShimmer').addEventListener('input', (e) => {
+        state.shimmer = parseInt(e.target.value, 10);
+        document.getElementById('valShimmer').textContent = `${state.shimmer}%`;
+      });
+      document.getElementById('sliderSympathetic').addEventListener('input', (e) => {
+        state.sympathetic = parseInt(e.target.value, 10);
+        document.getElementById('valSympathetic').textContent = `${state.sympathetic}%`;
+      });
+      document.getElementById('sliderSustain').addEventListener('input', (e) => {
+        state.sustain = parseInt(e.target.value, 10);
+        document.getElementById('valSustain').textContent = `${state.sustain}%`;
+      });
+      document.getElementById('sliderChorusBeat').addEventListener('input', (e) => {
+        state.chorusBeat = parseInt(e.target.value, 10) / 10;
+        document.getElementById('valChorusBeat').textContent = `${state.chorusBeat.toFixed(1)} Hz`;
+      });
+      document.getElementById('sliderGain2f').addEventListener('input', (e) => {
+        state.gain2f = parseInt(e.target.value, 10);
+        document.getElementById('valGain2f').textContent = `${state.gain2f}%`;
+      });
+      document.getElementById('sliderGain3f').addEventListener('input', (e) => {
+        state.gain3f = parseInt(e.target.value, 10);
+        document.getElementById('valGain3f').textContent = `${state.gain3f}%`;
+      });
+      document.getElementById('sliderBloomDelay').addEventListener('input', (e) => {
+        state.bloomDelayMs = parseInt(e.target.value, 10);
+        document.getElementById('valBloomDelay').textContent = `${state.bloomDelayMs} ms`;
+      });
+      document.getElementById('sliderStrobeDrift').addEventListener('input', (e) => {
+        state.strobeDriftCents = parseInt(e.target.value, 10);
+        document.getElementById('valStrobeDrift').textContent = `${state.strobeDriftCents} cents`;
+      });
+      document.getElementById('sliderGuFreq').addEventListener('input', (e) => {
+        state.guFreq = parseInt(e.target.value, 10);
+        document.getElementById('valGuFreq').textContent = `${state.guFreq} Hz`;
+      });
+      document.getElementById('sliderReverb').addEventListener('input', (e) => {
+        state.reverbAmt = parseInt(e.target.value, 10);
+        document.getElementById('valReverb').textContent = `${state.reverbAmt}%`;
+        if (reverbWetGain && audioCtx) {
+          reverbWetGain.gain.setValueAtTime((state.reverbAmt / 100) * 0.42, audioCtx.currentTime);
+        }
+      });
+
+      // Transport Controls
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+      document.getElementById('btnStepOnce').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        auditionSequencerStep((state.currentStepIndex + 1) % state.customSteps.length);
+      });
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+        document.getElementById('tempoMarkingLabel').textContent = state.bpm < 85 ? 'Ambient Flow' : (state.bpm < 135 ? 'Calypso Flow' : 'Panorama Soca');
+      });
+
+      let tapTimes = [];
+      document.getElementById('btnTapTempo').addEventListener('click', () => {
+        const now = performance.now();
+        tapTimes = tapTimes.filter(t => now - t < 2500);
+        tapTimes.push(now);
+        if (tapTimes.length >= 2) {
+          let sum = 0;
+          for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i - 1]);
+          state.bpm = Math.max(48, Math.min(210, Math.round(60000 / (sum / (tapTimes.length - 1)))));
+          document.getElementById('bpmReadout').textContent = state.bpm;
+          document.getElementById('sliderBpm').value = state.bpm;
+        }
+        triggerNoteByIndex(0, { vel: 0.90 });
+      });
+
+      document.getElementById('btnRandomPattern').addEventListener('click', () => {
+        const pick = REPERTOIRE_PATTERNS[Math.floor(Math.random() * REPERTOIRE_PATTERNS.length)];
+        selectPatternById(pick.id);
+        auditionSequencerStep(0);
+        showToast(`Groove: #${pick.id} ${pick.name}`);
+      });
+
+      document.getElementById('btnResetGroove').addEventListener('click', () => {
+        selectPatternById(state.selectedPatternId);
+        showToast('Restored canonical groove');
+      });
+
+      document.querySelectorAll('.pat-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.patternFilter = btn.getAttribute('data-pat-filter');
+          document.querySelectorAll('.pat-pill').forEach(p => {
+            const active = p.getAttribute('data-pat-filter') === state.patternFilter;
+            p.className = active
+              ? 'pat-pill px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-slate-950'
+              : 'pat-pill px-2 py-0.5 rounded text-[10px] font-medium bg-obsidian-800 text-slate-300 border border-slate-700';
+          });
+          renderPatternList();
+        });
+      });
+
+      // Bottom Articulation Deck Buttons
+      document.getElementById('btnTrigDing').addEventListener('click', () => triggerNoteByIndex(0, { modeIso: 'full', vel: 0.96 }));
+      document.getElementById('btnTrigOctaveIso').addEventListener('click', () => triggerNoteByIndex(0, { modeIso: 'octave', vel: 0.94 }));
+      document.getElementById('btnTrigTwelfthIso').addEventListener('click', () => triggerNoteByIndex(0, { modeIso: 'twelfth', vel: 0.94 }));
+      document.getElementById('btnTrigPanRoll').addEventListener('click', () => triggerNoteByIndex(0, { harm: 'roll', vel: 0.92 }));
+      document.getElementById('btnTrigChord').addEventListener('click', () => triggerNoteByIndex(0, { harm: 'dyad5', vel: 0.92 }));
+      document.getElementById('btnTrigTak').addEventListener('click', () => triggerNoteByIndex('tak', { vel: 0.92 }));
+      document.getElementById('btnTrigGu').addEventListener('click', () => triggerNoteByIndex('gu', { vel: 0.96 }));
+
+      // Keyboard Shortcuts: 1-9, 0 = Scale Notes, D = Ding/Root, O = Octave Harm, P = Twelfth Harm, R = Roll, C = Dyad, T = Tak, G = Gu
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        const k = e.key.toLowerCase();
+        if (k === ' ') {
+          e.preventDefault();
+          if (state.isPlaying) stopTransport();
+          else startTransport();
+        } else if (k >= '1' && k <= '9') {
+          triggerNoteByIndex(parseInt(k, 10) - 1, { vel: 0.90 });
+        } else if (k === '0') {
+          triggerNoteByIndex(9, { vel: 0.90 });
+        } else if (k === 'd') {
+          triggerNoteByIndex(0, { modeIso: 'full', vel: 0.96 });
+        } else if (k === 'o') {
+          triggerNoteByIndex(0, { modeIso: 'octave', vel: 0.94 });
+        } else if (k === 'p') {
+          triggerNoteByIndex(0, { modeIso: 'twelfth', vel: 0.94 });
+        } else if (k === 'r') {
+          triggerNoteByIndex(0, { harm: 'roll', vel: 0.92 });
+        } else if (k === 'c') {
+          triggerNoteByIndex(0, { harm: 'dyad5', vel: 0.92 });
+        } else if (k === 't') {
+          triggerNoteByIndex('tak', { vel: 0.92 });
+        } else if (k === 'g') {
+          triggerNoteByIndex('gu', { vel: 0.96 });
+        }
+      });
+
+      // WAV Exporters
+      const exportLoopHandler = () => {
+        const pat = REPERTOIRE_PATTERNS.find(p => p.id === state.selectedPatternId) || REPERTOIRE_PATTERNS[0];
+        renderAndDownloadWav({ title: `pan3d_${state.instrumentKey}_${pat.name}`, mode: 'loop' });
+      };
+      document.getElementById('btnQuickExportWav').addEventListener('click', exportLoopHandler);
+      document.getElementById('btnExportLoopWav').addEventListener('click', exportLoopHandler);
+      document.getElementById('btnExportScaleRunWav').addEventListener('click', () => {
+        renderAndDownloadWav({ title: `pan3d_${state.instrumentKey}_scale_arpeggio`, mode: 'scale' });
+      });
+
+      document.querySelectorAll('.oneshot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const shot = btn.getAttribute('data-oneshot');
+          renderAndDownloadWav({ title: `pan3d_${state.instrumentKey}_${shot}`, mode: 'oneshot', oneShotType: shot });
+        });
+      });
+
+      document.getElementById('btnExportJsonPreset').addEventListener('click', () => {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          lab: "PAN-3D Steelpan & Handpan 1:2:3 Orthogonal Mode-Coupling Lab",
+          instrumentKey: state.instrumentKey,
+          metallurgy: state.metallurgy,
+          physics: {
+            shimmer: state.shimmer,
+            sympathetic: state.sympathetic,
+            sustain: state.sustain,
+            chorusBeatHz: state.chorusBeat,
+            gain2f: state.gain2f,
+            gain3f: state.gain3f,
+            bloomDelayMs: state.bloomDelayMs,
+            guFreqHz: state.guFreq
+          },
+          patternId: state.selectedPatternId,
+          bpm: state.bpm,
+          customSteps: state.customSteps
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pan3d_patch_${state.instrumentKey}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Exported JSON Pan Patch');
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initThreeJsScene();
+      applyPanInstrument('tenor_c_lead', false);
+      selectPatternById(1);
+      initAllListeners();
+      requestAnimationFrame(renderLoop);
+    });
+  </script>
+</body>
+</html>
