@@ -1,0 +1,3055 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TAIKO-3D // Coupled Dual-Membrane Wadaiko, Nonlinear Pitch-Glide &amp; Kuchi-Shōga WAV Loop Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #040509;
+      --bg-panel: rgba(10, 13, 22, 0.94);
+      --border-subtle: rgba(148, 163, 184, 0.16);
+      --accent-crimson: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-cyan: #22d3ee;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+    }
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-void);
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(7, 10, 18, 0.7); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.28); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(244, 63, 94, 0.65); }
+
+    /* Scoped Range Sliders — prevents inline toolbar sliders from expanding to 100% width */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      background: rgba(30, 41, 59, 0.95);
+      border-radius: 999px;
+      outline: none;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      cursor: pointer;
+    }
+    .slider-full {
+      width: 100% !important;
+      display: block;
+    }
+    .slider-inline {
+      width: 72px !important;
+      flex-shrink: 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #f43f5e;
+      border: 2px solid #05060a;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.75);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fb7185;
+    }
+    input[type="range"].amber-slider::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.75);
+    }
+    input[type="range"].cyan-slider::-webkit-slider-thumb {
+      background: #22d3ee;
+      box-shadow: 0 0 8px rgba(34, 211, 238, 0.75);
+    }
+    input[type="range"].emerald-slider::-webkit-slider-thumb {
+      background: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.75);
+    }
+    input[type="range"].violet-slider::-webkit-slider-thumb {
+      background: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.75);
+    }
+
+    .glass-card {
+      background: rgba(11, 15, 25, 0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+    .hud-pill {
+      background: rgba(5, 8, 15, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+
+    /* Locked Sidebar Dimensions (replaces invalid Tailwind w-76 / w-84 / w-92 classes) */
+    #leftControlSidebar {
+      width: 304px;
+      min-width: 304px;
+      max-width: 304px;
+      transition: margin-left 0.22s ease, opacity 0.18s ease;
+    }
+    #rightPhysicsSidebar {
+      width: 332px;
+      min-width: 332px;
+      max-width: 332px;
+      transition: margin-right 0.22s ease, opacity 0.18s ease;
+    }
+    @media (min-width: 1440px) {
+      #leftControlSidebar {
+        width: 320px;
+        min-width: 320px;
+        max-width: 320px;
+      }
+      #rightPhysicsSidebar {
+        width: 356px;
+        min-width: 356px;
+        max-width: 356px;
+      }
+    }
+    @media (max-width: 1120px) {
+      #leftControlSidebar {
+        width: 268px;
+        min-width: 268px;
+        max-width: 268px;
+      }
+      #rightPhysicsSidebar {
+        width: 284px;
+        min-width: 284px;
+        max-width: 284px;
+      }
+    }
+
+    /* Individual Panel Collapse States */
+    body.hide-left-panel #leftControlSidebar {
+      display: none !important;
+    }
+    body.hide-right-panel #rightPhysicsSidebar {
+      display: none !important;
+    }
+    body.hide-bottom-deck #bottomSequencerDeck {
+      display: none !important;
+    }
+
+    /* Fullscreen 3D Stage Mode */
+    body.stage-fullscreen #topHeaderBar,
+    body.stage-fullscreen #leftControlSidebar,
+    body.stage-fullscreen #rightPhysicsSidebar,
+    body.stage-fullscreen #bottomSequencerDeck {
+      display: none !important;
+    }
+    body.stage-fullscreen #mainWorkspaceGrid {
+      height: 100vh !important;
+    }
+
+    /* CRITICAL HiDPI / Fullscreen Canvas Lock */
+    #threeTaikoMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeTaikoMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+
+    /* 16-Column CSS Grid for Kuchi-Shōga Sequencer */
+    .seq-row-grid {
+      display: grid !important;
+      grid-template-columns: repeat(16, minmax(0, 1fr)) !important;
+      gap: 3px !important;
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+    }
+
+    .seq-cell {
+      height: 22px;
+      min-width: 0;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      background: rgba(15, 23, 42, 0.84);
+      transition: all 0.08s ease;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+    }
+    .seq-cell.beat-downbeat {
+      border-color: rgba(148, 163, 184, 0.34);
+      background: rgba(22, 32, 56, 0.88);
+    }
+    .seq-cell:hover {
+      border-color: rgba(244, 63, 94, 0.65);
+      transform: translateY(-1px);
+    }
+    .seq-cell.active-don {
+      background: linear-gradient(180deg, rgba(244,63,94,0.92), rgba(190,18,60,0.92));
+      border-color: #fda4af;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.45);
+    }
+    .seq-cell.active-tsu {
+      background: linear-gradient(180deg, rgba(168,85,247,0.90), rgba(107,33,168,0.90));
+      border-color: #d8b4fe;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.40);
+    }
+    .seq-cell.active-ura {
+      background: linear-gradient(180deg, rgba(56,189,248,0.90), rgba(3,105,161,0.90));
+      border-color: #bae6fd;
+      color: #04070e;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.42);
+    }
+    .seq-cell.active-ka {
+      background: linear-gradient(180deg, rgba(245,158,11,0.92), rgba(180,83,9,0.92));
+      border-color: #fde68a;
+      color: #05060a;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+    }
+    .seq-cell.active-shime {
+      background: linear-gradient(180deg, rgba(34,211,238,0.90), rgba(14,116,144,0.90));
+      border-color: #a5f3fc;
+      color: #05060a;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(34, 211, 238, 0.45);
+    }
+    .seq-cell.active-kiai {
+      background: linear-gradient(180deg, rgba(16,185,129,0.90), rgba(4,120,87,0.90));
+      border-color: #a7f3d0;
+      color: #05060a;
+      font-weight: 700;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.45);
+    }
+    .seq-cell.playhead-col {
+      outline: 2px solid #f8fafc;
+      outline-offset: -1px;
+      filter: brightness(1.22);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden bg-[#040509] text-slate-100">
+
+  <!-- TOP HEADER BAR (Clean, Non-Overflowing Responsive Toolbar) -->
+  <header id="topHeaderBar" class="min-h-[50px] shrink-0 px-3 py-1.5 border-b border-slate-800/80 bg-[#070911]/95 flex flex-wrap items-center justify-between gap-2 z-30">
+    <!-- Brand & Title -->
+    <div class="flex items-center gap-2.5 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500/35 via-amber-500/25 to-cyan-500/25 border border-rose-400/50 flex items-center justify-center shadow-inner shrink-0">
+        <span class="font-display text-sm font-bold text-rose-300">太</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h1 class="font-display text-xs sm:text-sm font-bold tracking-tight text-white truncate">
+            TAIKO-3D <span class="text-rose-400 font-normal">//</span> <span class="text-slate-200 font-medium">Coupled Dual-Membrane Wadaiko, Pitch-Glide &amp; Kuchi-Shōga Lab</span>
+          </h1>
+          <span class="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono-tech uppercase tracking-wider bg-rose-500/15 text-rose-300 border border-rose-500/30 shrink-0">
+            Omote ↔ Keyaki Cavity ↔ Ura
+          </span>
+        </div>
+        <p class="text-[10px] text-slate-400 truncate hidden sm:block">
+          Doublet Splitting <span class="font-mono-tech text-cyan-300">(0,1)− / (0,1)+</span> • High-Amplitude Tension Drop <span class="font-mono-tech text-amber-300">Δf_NL(t)</span> • 5-Track Kumi-Daiko WAV Bouncer
+        </p>
+      </div>
+    </div>
+
+    <!-- Center-Right Drum Class Selector (6 Authentic Wikipedia Wadaiko Types) -->
+    <div class="flex items-center flex-wrap gap-1.5 shrink-0">
+      <div class="flex items-center bg-slate-900/95 border border-slate-700/75 rounded-lg p-0.5 text-[10px] font-mono-tech">
+        <button data-drum="odaiko" class="taiko-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="Ō-daiko (大太鼓 • 6 Shaku / 180 cm Monumental Temple &amp; Kodo Concert Drum on Yagura-dai)">Ō-daiko 6尺</button>
+        <button data-drum="nagado" class="taiko-type-btn px-2 py-1 rounded bg-rose-500/25 text-rose-200 border border-rose-500/40 font-semibold transition" title="Nagadō-daiko / Chū-daiko (長胴太鼓 • 2.0 Shaku / 60 cm Keyaki Barrel Drum with 300 Byō Tacks)">Nagadō 2尺</button>
+        <button data-drum="okedo" class="taiko-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="Okedō-daiko (桶胴太鼓 • 1.6 Shaku Rope-Tensioned Stave Barrel Drum)">Okedō 桶</button>
+        <button data-drum="shime" class="taiko-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="Tsukeshime-daiko Gochō-gake (附締太鼓 五丁掛 • High-Tension Rope-Tuned Jiuchi Drum)">Shime 締</button>
+        <button data-drum="hira" class="taiko-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="Hira-daiko (平太鼓 • 3.0 Shaku / 90×36 cm Wide Shallow Byō-uchi Drum)">Hira 平</button>
+        <button data-drum="uchiwa" class="taiko-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="Uchiwa-daiko (団扇太鼓 • Single-Membrane Fan Drum with Zero Cavity Coupling κ=0)">Uchiwa 団扇</button>
+      </div>
+
+      <!-- Quick Action Triggers -->
+      <button id="strikeDonBtn" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-400 hover:to-amber-400 text-slate-950 font-bold text-[11px] shadow-lg shadow-rose-500/20 flex items-center gap-1 transition" title="Strike Omote Center [Space]">
+        <span>🥁 DON</span>
+        <span class="font-mono-tech text-[9px] bg-black/20 px-1 rounded">[Space]</span>
+      </button>
+
+      <button id="strikeUraBtn" class="px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/40 text-[11px] font-mono-tech font-semibold transition" title="Strike Rear Ura Head (Hachijō / Miyake Dual-Drummer Backside Strike) [U]">
+        裏 URA [U]
+      </button>
+
+      <button id="strikeKaBtn" class="px-2 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 text-[11px] font-mono-tech font-semibold transition" title="Strike Keyaki Wooden Fuchi Rim &amp; Iron Byō Tacks [K]">
+        🪵 KA [K]
+      </button>
+
+      <button id="oroshiRollBtn" class="px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700/80 text-cyan-300 border border-slate-700 text-[11px] font-mono-tech transition" title="Trigger Traditional 'Oroshi' (颪 • Wind Blowing Down Mountains) Accelerating Roll [O]">
+        🌪️ Oroshi [O]
+      </button>
+
+      <!-- Workspace Panel & Fullscreen Toggles -->
+      <div class="flex items-center bg-slate-900/90 border border-slate-700/70 rounded-lg p-0.5 text-[10px] font-mono-tech">
+        <button id="toggleLeftPanelBtn" class="px-1.5 py-1 rounded bg-slate-800 text-slate-200 hover:text-white transition" title="Show/Hide Left Acoustics Panel">◧</button>
+        <button id="toggleBottomDeckBtn" class="px-1.5 py-1 rounded bg-slate-800 text-slate-200 hover:text-white transition mx-0.5" title="Show/Hide Bottom Kuchi-Shōga Sequencer">⬓</button>
+        <button id="toggleRightPanelBtn" class="px-1.5 py-1 rounded bg-slate-800 text-slate-200 hover:text-white transition" title="Show/Hide Right Modal Telemetry Panel">◨</button>
+        <button id="headerFullscreenBtn" class="ml-0.5 px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold transition" title="Toggle Full-Screen 3D Stage [F]">
+          ⛶ [F]
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div id="mainWorkspaceGrid" class="flex-1 flex min-h-0 relative overflow-hidden">
+
+    <!-- LEFT SIDEBAR: DUAL-MEMBRANE COUPLING, NONLINEAR PITCH-DROP, STAND KATA & WAV EXPORTER -->
+    <aside id="leftControlSidebar" class="shrink-0 h-full overflow-y-auto border-r border-slate-800/80 bg-[#070a13]/95 p-2.5 space-y-2.5 z-20">
+
+      <!-- 1. DUAL-HEAD BARREL CAVITY COUPLING (OMOTE ↔ URA DOUBLET SPLITTING) -->
+      <section class="glass-card rounded-xl p-2.5 border-rose-500/35 bg-gradient-to-b from-rose-500/[0.07] to-transparent space-y-2">
+        <div class="flex items-center justify-between gap-1.5">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse shrink-0"></span>
+            <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-rose-300 truncate">
+              1. Dual-Head Cavity Coupling
+            </h2>
+          </div>
+          <span id="doubletBeatBadge" class="px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-400/40 font-mono-tech text-[10px] font-bold text-rose-200 shrink-0">
+            Δf_± = 19.4 Hz
+          </span>
+        </div>
+
+        <p class="text-[10.5px] text-slate-300 leading-snug">
+          A sealed <strong class="text-amber-300">Keyaki (欅)</strong> barrel couples front <span class="font-mono-tech text-rose-200">Omote (表)</span> and rear <span class="font-mono-tech text-cyan-200">Ura (裏)</span> cowhide skins, splitting <span class="font-mono-tech">(0,1)</span> into a <span class="font-mono-tech text-cyan-300">sloshing f_−</span> and <span class="font-mono-tech text-amber-300">breathing f_+</span> doublet that beats at <span class="font-mono-tech text-emerald-300">Δf_±</span>.
+        </p>
+
+        <!-- Omote (Front Head) Fundamental Pitch -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10.5px] font-mono-tech">
+            <span class="text-slate-300">Omote Head Pitch f_(0,1)</span>
+            <span id="omotePitchVal" class="text-rose-300 font-bold">92.5 Hz (F#2)</span>
+          </div>
+          <input id="omotePitchSlider" type="range" min="40" max="280" step="0.5" value="92.5" class="slider-full" />
+        </div>
+
+        <!-- Ura (Rear Sympathetic Head) Detuning Ratio -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10.5px] font-mono-tech">
+            <span class="text-slate-300">Ura / Omote Tension Ratio</span>
+            <span id="uraRatioVal" class="text-cyan-300 font-semibold">0.96× (Warm Growl)</span>
+          </div>
+          <input id="uraRatioSlider" type="range" min="0.78" max="1.22" step="0.01" value="0.96" class="slider-full cyan-slider" />
+          <div class="flex justify-between text-[9px] font-mono-tech text-slate-500">
+            <span>0.78× Loose Ura</span>
+            <span>1.00× Matched</span>
+            <span>1.22× Tight Ura</span>
+          </div>
+        </div>
+
+        <!-- Sealed Barrel Cavity Coupling Strength + Uroko Chisel Diffusion -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300">Air Coupling κ</span>
+              <span id="barrelCouplingVal" class="text-amber-300">100%</span>
+            </div>
+            <input id="barrelCouplingSlider" type="range" min="0.0" max="1.5" step="0.01" value="1.0" class="slider-full amber-slider" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech mb-1">
+              <span class="text-slate-300" title="Internal hand-carved Uroko (scale) chisel grooves warm high overtones">Uroko Carve 鱗</span>
+              <span id="urokoDampVal" class="text-emerald-300">65%</span>
+            </div>
+            <input id="urokoDampSlider" type="range" min="0.0" max="1.0" step="0.02" value="0.65" class="slider-full emerald-slider" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. NONLINEAR HIGH-AMPLITUDE TENSION GLIDE, BACHI & STAND KATA -->
+      <section class="glass-card rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-amber-300 truncate">
+            2. Nonlinear Tension &amp; Bachi
+          </h2>
+          <span id="pitchGlideBadge" class="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 font-mono-tech text-[10px] text-amber-300 shrink-0">
+            +24 Hz Boom Drop
+          </span>
+        </div>
+
+        <p class="text-[10.5px] text-slate-400 leading-snug">
+          Hydraulic-stretched Holstein cowhide (<span class="font-mono-tech text-slate-200">E ≈ 3.5 GPa</span>) spikes in tension <span class="font-mono-tech text-rose-300">T(t) = T_0 + α_NL w²</span> on heavy <strong class="text-amber-300">Bachi (撥)</strong> strikes, producing the downward <strong class="text-amber-200">"DOOO-oon"</strong> pitch glide.
+        </p>
+
+        <!-- Nonlinear Pitch Glide Depth -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10.5px] font-mono-tech">
+            <span class="text-slate-300">Nonlinear Pitch-Drop α_NL</span>
+            <span id="nonlinearGlideVal" class="text-amber-300 font-semibold">0.68 (+24 Hz Glide)</span>
+          </div>
+          <input id="nonlinearGlideSlider" type="range" min="0.0" max="1.35" step="0.01" value="0.68" class="slider-full amber-slider" />
+        </div>
+
+        <!-- Bachi Wood Species Selector -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[10px] font-mono-tech text-slate-400">
+            <span>BACHI WOOD (撥材質)</span>
+            <span id="bachiTypeLabel" class="text-emerald-300">Kashi (White Oak • Heavy)</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1 text-[10px] font-mono-tech">
+            <button data-bachi="kashi" class="bachi-btn px-1.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-semibold" title="Heavy Japanese White Oak (樫) — maximum fundamental punch &amp; nonlinear pitch drop">
+              樫 Oak
+            </button>
+            <button data-bachi="ho" class="bachi-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Ho (朴 • Japanese Magnolia) — soft, lightweight stick with warm mid-harmonics">
+              朴 Ho
+            </button>
+            <button data-bachi="kaede" class="bachi-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Kaede (楓 • Japanese Maple) — balanced concert bachi">
+              楓 Maple
+            </button>
+            <button data-bachi="take" class="bachi-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Take (竹 • Bamboo) — sharp, articulate attack for Shime/Okedō rolls">
+              竹 Bamboo
+            </button>
+          </div>
+        </div>
+
+        <!-- Stand Kata Orientation Selector -->
+        <div class="space-y-1 pt-1 border-t border-slate-800/80">
+          <div class="flex justify-between text-[10px] font-mono-tech text-slate-400">
+            <span>STAND KATA (台座型)</span>
+            <span id="standKataLabel" class="text-cyan-300">Naname-dai (Slant Stand)</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 text-[10px] font-mono-tech">
+            <button data-stand="naname" class="stand-btn px-1.5 py-1 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-semibold" title="Naname-dai (斜め台 • Sukeroku angled slant stand)">
+              斜 Naname
+            </button>
+            <button data-stand="miyake" class="stand-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Miyake / Hachijō Horizontal Stand for Simultaneous Omote + Ura Dual Drumming">
+              三宅 Miyake
+            </button>
+            <button data-stand="yagura" class="stand-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white" title="Yagura-dai (櫓台 • Elevated Festival Frame)">
+              櫓 Yagura
+            </button>
+          </div>
+        </div>
+
+        <!-- Strike Force & Shell Sustain -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Kata Force</span>
+              <span id="strikeForceVal" class="text-rose-300">0.90 (O-Don)</span>
+            </div>
+            <input id="strikeForceSlider" type="range" min="0.15" max="1.0" step="0.01" value="0.90" class="slider-full" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Shell Sustain</span>
+              <span id="shellSustainVal" class="text-cyan-300">1.0× (2.8s)</span>
+            </div>
+            <input id="shellSustainSlider" type="range" min="0.35" max="2.4" step="0.05" value="1.0" class="slider-full cyan-slider" />
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. STUDIO SAMPLE & LOOP WAV EXPORTER -->
+      <section class="glass-card rounded-xl p-2.5 border-emerald-500/35 bg-gradient-to-b from-emerald-500/[0.06] to-transparent space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+            3. Studio WAV Exporter
+          </h2>
+          <span id="exportStatusBadge" class="px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono-tech text-[9.5px] text-emerald-300 truncate max-w-[145px]">
+            44.1 kHz 16-Bit PCM
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono-tech">
+          <button id="exportDonWavBtn" class="px-2 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 font-semibold text-left truncate">
+            ⬇ "DON" One-Shot .WAV
+          </button>
+          <button id="exportKaWavBtn" class="px-2 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 font-semibold text-left truncate">
+            ⬇ "KA" Rim Click .WAV
+          </button>
+          <button id="exportOroshiWavBtn" class="px-2 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold text-left truncate">
+            ⬇ "OROSHI" Roll .WAV
+          </button>
+          <button id="exportLoopWavBtn" class="px-2 py-1.5 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/50 font-bold text-left truncate">
+            ⬇ Bounce Loop .WAV
+          </button>
+        </div>
+
+        <!-- Live Performance Recorder Toggle -->
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[10px] font-mono-tech">
+          <button id="liveRecordToggleBtn" class="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 flex items-center justify-center gap-2 transition">
+            <span id="recIndicatorDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span id="recButtonLabel">● Record Live Jam to .WAV</span>
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <!-- CENTER 3D STAGE -->
+    <main class="flex-1 relative h-full min-w-0 bg-[#040509] overflow-hidden">
+      <div id="threeTaikoMount"></div>
+
+      <!-- COMPACT, NON-OVERLAPPING TOP HUD OVERLAY -->
+      <div class="absolute top-2.5 inset-x-2.5 z-20 pointer-events-none flex flex-wrap items-start justify-between gap-2">
+        <!-- Left Acoustic Telemetry Pill -->
+        <div class="hud-pill rounded-xl px-2.5 py-1.5 border border-slate-700/70 shadow-xl pointer-events-auto max-w-full">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-mono-tech">
+            <span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold" id="hudTaikoModel">NAGADŌ-DAIKO (2.0 SHAKU)</span>
+            <span class="text-amber-300 font-bold" id="hudDoubletFreqs">f_− = 84.1 Hz • f_+ = 103.5 Hz</span>
+            <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-semibold" id="hudKuchiSyllable">DON (どん)</span>
+          </div>
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] font-mono-tech text-slate-400">
+            <span>Pitch: <strong id="hudInstantFreq" class="text-rose-300">92.5 Hz</strong></span>
+            <span>ΔP_cav: <strong id="hudBarrelPressure" class="text-cyan-300">+0.0 Pa</strong></span>
+            <span>Omote: <strong id="hudOmoteEnergy" class="text-rose-300">0%</strong></span>
+            <span>Ura: <strong id="hudUraEnergy" class="text-cyan-300">0%</strong></span>
+            <span>Hit r/a: <strong id="hudStrikeRadius" class="text-amber-300">0.08</strong></span>
+          </div>
+        </div>
+
+        <!-- Right Camera & Cutaway Controls Pill -->
+        <div class="flex flex-col items-end gap-1 pointer-events-auto">
+          <div class="hud-pill rounded-xl p-1 flex flex-wrap items-center gap-1 shadow-xl">
+            <button id="camNanameBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-rose-500/20 text-rose-200 border border-rose-500/40 hover:bg-rose-500/30 transition" title="Naname-dachi (3/4 Angled View showing Omote Head &amp; Keyaki Barrel)">
+              Naname 3/4
+            </button>
+            <button id="camDualHeadBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Miyake / Hachijō Side Profile showing Simultaneous Omote &amp; Ura Coupled Vibration">
+              Dual-Head Side
+            </button>
+            <button id="camTomoeFrontBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Front Mitsudomoe Head &amp; 300 Byō Tack Ring View">
+              Omote Front
+            </button>
+            <button id="camUraRearBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Rear Ura Sympathetic Drumhead View">
+              Ura Rear
+            </button>
+            <button id="camCenterFitBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition" title="Center &amp; Fit Entire Taiko &amp; Stand [C]">
+              ⌖ Fit [C]
+            </button>
+            <button id="stageFullscreenBtn" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold transition" title="Toggle Full-Screen 3D Viewport [F]">
+              ⛶ Full [F]
+            </button>
+          </div>
+
+          <div class="hud-pill rounded-xl px-2 py-1 flex flex-wrap items-center gap-2 text-[10px] font-mono-tech">
+            <button id="zoomOutBtn" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center">−</button>
+            <input id="cameraZoomSlider" type="range" min="4.8" max="20.0" step="0.1" value="10.8" class="slider-inline" title="Camera Distance / Zoom" />
+            <button id="zoomInBtn" class="w-4 h-4 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center">+</button>
+            <span class="text-slate-600">|</span>
+            <label class="flex items-center gap-1 cursor-pointer text-amber-300" title="Cutaway Keyaki wood staves to reveal internal Uroko chisel grooves &amp; acoustic pressure waves between Omote and Ura heads">
+              <input id="toggleBarrelXray" type="checkbox" checked class="accent-amber-400" />
+              <span>Keyaki X-Ray</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer text-rose-300" title="Display Traditional Mitsudomoe Crest &amp; Nodal Heatmap">
+              <input id="toggleTomoeCrest" type="checkbox" checked class="accent-rose-400" />
+              <span>Mitsudomoe</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTERACTION HINT & FLOATING KUCHI-SHŌGA PADS (BOTTOM OF 3D STAGE) -->
+      <div class="absolute bottom-2.5 inset-x-2.5 z-20 pointer-events-none flex flex-col items-center gap-1">
+        <div class="text-[9.5px] font-mono-tech text-slate-400/90 bg-slate-950/75 px-2.5 py-0.5 rounded-full border border-slate-800/80">
+          Click <strong class="text-rose-300">Head Center</strong> = DON • <strong class="text-purple-300">Mid-Zone</strong> = TSU/Dipole • <strong class="text-amber-300">Fuchi Rim / Byō Tacks</strong> = KA • Drag = Orbit • Scroll = Zoom
+        </div>
+        <div class="pointer-events-auto flex items-center gap-1 hud-pill rounded-xl px-2 py-1 border border-rose-500/35 shadow-2xl whitespace-nowrap max-w-full overflow-x-auto">
+          <button data-pad="don" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-rose-500/25 hover:bg-rose-500/40 border border-rose-500/50 text-rose-200 font-mono-tech text-[10.5px] font-bold transition">
+            どん DON <span class="text-[9px] text-rose-300/80">[Space]</span>
+          </button>
+          <button data-pad="doko" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 border border-rose-500/35 text-rose-200 font-mono-tech text-[10.5px] font-semibold transition">
+            どこ DO-KO <span class="text-[9px] text-slate-400">[D]</span>
+          </button>
+          <button data-pad="tsu" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/40 text-purple-200 font-mono-tech text-[10.5px] font-semibold transition">
+            つ TSU <span class="text-[9px] text-slate-400">[T]</span>
+          </button>
+          <button data-pad="ura" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-500/40 text-sky-200 font-mono-tech text-[10.5px] font-semibold transition">
+            裏 URA-DON <span class="text-[9px] text-slate-400">[U]</span>
+          </button>
+          <button data-pad="ka" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 border border-amber-500/50 text-amber-200 font-mono-tech text-[10.5px] font-bold transition">
+            か KA Rim <span class="text-[9px] text-amber-300/80">[K]</span>
+          </button>
+          <button data-pad="kara" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/35 text-amber-200 font-mono-tech text-[10.5px] font-semibold transition">
+            から KA-RA <span class="text-[9px] text-slate-400">[L]</span>
+          </button>
+          <button data-pad="shime" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-500/40 text-cyan-200 font-mono-tech text-[10.5px] font-semibold transition">
+            締 SHIME <span class="text-[9px] text-slate-400">[S]</span>
+          </button>
+          <button data-pad="kiai" class="kuchi-pad-btn px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-500/40 text-emerald-200 font-mono-tech text-[10.5px] font-semibold transition">
+            鉦 KANE/KIAI <span class="text-[9px] text-slate-400">[H]</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: COUPLED OMOTE/URA MODAL INSPECTOR, CHLADNI RADAR & ENERGY TRACE -->
+    <aside id="rightPhysicsSidebar" class="shrink-0 h-full overflow-y-auto border-l border-slate-800/80 bg-[#070a13]/95 p-2.5 space-y-2.5 z-20">
+
+      <!-- 1. COUPLED DUAL-MEMBRANE & KEYAKI SHELL MODAL TABLE -->
+      <section class="glass-card rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-white">
+              Coupled Dual-Membrane &amp; Keyaki Modes
+            </h2>
+            <p class="text-[9.5px] text-slate-400">
+              Click any mode to solo its 3D Omote ↔ Ura phase symmetry
+            </p>
+          </div>
+          <button id="clearSoloModeBtn" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[9.5px] font-mono-tech text-slate-300 border border-slate-700 shrink-0">
+            All Modes
+          </button>
+        </div>
+
+        <div class="overflow-hidden rounded-lg border border-slate-800/90 bg-slate-950/80">
+          <table class="w-full text-left border-collapse font-mono-tech text-[10px]">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/90">
+                <th class="py-1 px-2">Mode</th>
+                <th class="py-1 px-1.5 text-cyan-300">Symmetry</th>
+                <th class="py-1 px-1.5 text-amber-300">Ratio</th>
+                <th class="py-1 px-1.5 text-rose-300">Live Hz</th>
+                <th class="py-1 px-2 text-right">Energy</th>
+              </tr>
+            </thead>
+            <tbody id="taikoModalTableBody" class="divide-y divide-slate-800/60">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Doublet Physics Explanation -->
+        <div class="rounded-lg bg-slate-900/75 border border-slate-800 p-2 text-[10px] text-slate-300 leading-snug">
+          <div class="flex items-center justify-between font-mono-tech text-[9.5px] mb-0.5">
+            <span class="text-cyan-300">(0,1)− Sloshing (↑↑)</span>
+            <span class="text-rose-300">(0,1)+ Breathing (↑↓)</span>
+          </div>
+          <p class="text-slate-400">
+            Striking <strong class="text-rose-300">Omote</strong> excites both <span class="font-mono-tech text-cyan-300">(0,1)−</span> and <span class="font-mono-tech text-rose-300">(0,1)+</span>. As they beat at <span class="font-mono-tech text-emerald-300">Δf_± = f_+ − f_−</span>, vibrational energy sloshes between front and rear <strong class="text-cyan-300">Ura</strong> heads across the enclosed air column.
+          </p>
+        </div>
+      </section>
+
+      <!-- 2. INTERACTIVE STRIKE-ZONE & BESSEL NODAL CHLADNI RADAR + OSCILLOSCOPE -->
+      <section class="glass-card rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+            Nodal Radar &amp; Energy Exchange
+          </h2>
+          <span id="activeModeRadarLabel" class="font-mono-tech text-[9.5px] text-amber-300">
+            Click Radar to Strike (r, θ)
+          </span>
+        </div>
+
+        <div class="grid grid-cols-5 gap-2 items-center">
+          <!-- Interactive Polar Nodal / Strike Pad (2 cols) -->
+          <div class="col-span-2 flex flex-col items-center">
+            <canvas id="chladniRadarCanvas" width="128" height="128" class="w-[116px] h-[116px] rounded-full bg-[#04070e] border border-slate-700/80 cursor-crosshair shadow-inner" title="Click anywhere on the cowhide head radar to test Center (DON), Off-Center (TSU/Dipole), or Fuchi Rim (KA) excitation"></canvas>
+          </div>
+          <!-- Dual-Head Energy Beating & Nonlinear Pitch Trace (3 cols) -->
+          <div class="col-span-3">
+            <canvas id="dualHeadTraceCanvas" width="220" height="116" class="w-full h-[116px] rounded-lg bg-[#04070e] border border-slate-800/90"></canvas>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap justify-between text-[9px] font-mono-tech text-slate-400 pt-0.5">
+          <span class="text-rose-300">■ Omote Energy</span>
+          <span class="text-cyan-300">■ Ura Sympathetic</span>
+          <span class="text-amber-300">━ Pitch Glide f(t)</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- BOTTOM KUCHI-SHŌGA & KUMI-DAIKO 5-TRACK × 16-STEP SEQUENCER + WAV LOOP BOUNCER -->
+  <footer id="bottomSequencerDeck" class="shrink-0 border-t border-slate-800/80 bg-[#060810]/98 px-3 py-2 flex flex-col justify-between gap-1.5 z-30">
+    <!-- Top Sequencer Transport & Pattern Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="seqPlayToggleBtn" class="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono-tech text-[11px] font-bold flex items-center gap-1 shadow-lg shadow-emerald-500/20 transition">
+          <span id="seqPlayIcon">▶</span>
+          <span id="seqPlayText">Play Kumi-Daiko</span>
+        </button>
+
+        <!-- Traditional Kumi-Daiko Pattern Presets -->
+        <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[10px] font-mono-tech">
+          <button data-pat="matsuri" class="pat-preset-btn px-2 py-0.5 rounded bg-rose-500/25 text-rose-200 border border-rose-500/40 font-semibold">祭 Matsuri</button>
+          <button data-pat="yatai" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">屋台 Yatai</button>
+          <button data-pat="miyake" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">三宅 Miyake</button>
+          <button data-pat="isami" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">勇駒 Isami-goma</button>
+          <button data-pat="hachijo" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">八丈 Hachijō</button>
+          <button data-pat="zoku" class="pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">族 Zoku</button>
+        </div>
+
+        <!-- BPM & Ma/Swing Sliders (Fixed Inline Widths!) -->
+        <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-lg px-2 py-0.5 text-[10px] font-mono-tech">
+          <span class="text-slate-400">BPM</span>
+          <input id="seqBpmSlider" type="range" min="60" max="195" step="1" value="124" class="slider-inline amber-slider" />
+          <span id="seqBpmVal" class="text-amber-300 font-bold w-6 text-right">124</span>
+          <span class="text-slate-700">|</span>
+          <span class="text-slate-400" title="Ma (間) rhythmic space / swing">Ma</span>
+          <input id="seqSwingSlider" type="range" min="0" max="0.38" step="0.01" value="0.08" class="slider-inline cyan-slider" />
+          <span id="seqSwingVal" class="text-cyan-300 w-7 text-right">8%</span>
+        </div>
+      </div>
+
+      <!-- Right Loop Export, Mutate & Clear Controls -->
+      <div class="flex items-center gap-1.5 text-[10px] font-mono-tech">
+        <button id="mutateSeqBtn" class="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/40" title="Generate Kuchi-Shōga Variation">
+          🎲 Improvise
+        </button>
+        <select id="loopBarsSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+          <option value="1">1 Bar WAV</option>
+          <option value="2" selected>2 Bars WAV</option>
+          <option value="4">4 Bars WAV</option>
+        </select>
+        <button id="footerExportLoopBtn" class="px-2.5 py-1 rounded-lg bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-200 border border-emerald-500/50 font-bold transition">
+          ⬇ Export Loop (.WAV)
+        </button>
+        <button id="exportJsonPatternBtn" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700" title="Export Kuchi-Shōga Sequencer Pattern &amp; Drum Tuning as JSON">
+          { } JSON
+        </button>
+        <button id="clearSeqBtn" class="px-2 py-1 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-200 border border-slate-800">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- 5-Track × 16-Step Kuchi-Shōga Grid (Zero Vertical Clipping!) -->
+    <div class="flex flex-col gap-1 min-h-0">
+      <!-- Track 0: OMOTE DON / TSU (Front Head Center / Muted) -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-rose-500/15 border border-rose-500/30 text-rose-200">
+          <span>1. どん OMOTE DON/TSU</span>
+          <span class="text-[8.5px] text-rose-300/80">Front</span>
+        </div>
+        <div id="seqRow_0" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 1: URA SHITA-BYŌSHI (Rear Head Sympathetic / Dual-Player Base Beat) -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-sky-500/15 border border-sky-500/30 text-sky-200">
+          <span>2. 裏 URA / DOKO</span>
+          <span class="text-[8.5px] text-sky-300/80">Rear</span>
+        </div>
+        <div id="seqRow_1" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 2: KA / KARA (Keyaki Fuchi Rim & Byō Tacks) -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-200">
+          <span>3. か KA / FUCHI</span>
+          <span class="text-[8.5px] text-amber-300/80">Rim</span>
+        </div>
+        <div id="seqRow_2" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 3: SHIME-DAIKO JIUCHI (High-Tension Rope Drum) -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-200">
+          <span>4. 締 SHIME JIUCHI</span>
+          <span class="text-[8.5px] text-cyan-300/80">Rope</span>
+        </div>
+        <div id="seqRow_3" class="seq-row-grid"></div>
+      </div>
+
+      <!-- Track 4: ATARIGANE & KAKEGOE KIAI -->
+      <div class="flex items-center gap-2 min-w-0">
+        <div class="w-40 shrink-0 flex items-center justify-between text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-200">
+          <span>5. 鉦 KANE / KAKEGOE</span>
+          <span class="text-[8.5px] text-emerald-300/80">Kiai</span>
+        </div>
+        <div id="seqRow_4" class="seq-row-grid"></div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. TRADITIONAL WADAIKO ACOUSTIC SPECIFICATIONS & COUPLED MODES
+    // =========================================================================
+    const TAIKO_MODELS = {
+      odaiko: {
+        name: 'Ō-daiko (大太鼓 • 6 Shaku / 180 cm)',
+        diameterCm: 180,
+        lengthCm: 215,
+        defaultF0: 52.0,
+        defaultUraRatio: 0.95,
+        defaultCoupling: 1.18,
+        defaultNonlinear: 0.88,
+        defaultStand: 'yagura',
+        shellRadius3D: 2.28,
+        shellHalfLen3D: 2.25,
+        bulgeFactor: 1.24,
+        ropeTensioned: false,
+        singleHeaded: false,
+        staveCount: 0
+      },
+      nagado: {
+        name: 'Nagadō-daiko (長胴太鼓 • 2 Shaku / 60 cm)',
+        diameterCm: 60,
+        lengthCm: 76,
+        defaultF0: 92.5,
+        defaultUraRatio: 0.96,
+        defaultCoupling: 1.00,
+        defaultNonlinear: 0.68,
+        defaultStand: 'naname',
+        shellRadius3D: 1.82,
+        shellHalfLen3D: 1.92,
+        bulgeFactor: 1.22,
+        ropeTensioned: false,
+        singleHeaded: false,
+        staveCount: 0
+      },
+      okedo: {
+        name: 'Okedō-daiko (桶胴太鼓 • 1.6 Shaku Stave)',
+        diameterCm: 48,
+        lengthCm: 65,
+        defaultF0: 118.0,
+        defaultUraRatio: 0.92,
+        defaultCoupling: 0.85,
+        defaultNonlinear: 0.54,
+        defaultStand: 'miyake',
+        shellRadius3D: 1.64,
+        shellHalfLen3D: 1.88,
+        bulgeFactor: 1.02,
+        ropeTensioned: true,
+        singleHeaded: false,
+        staveCount: 24
+      },
+      shime: {
+        name: 'Tsukeshime-daiko Gochō-gake (附締太鼓 五丁掛)',
+        diameterCm: 27,
+        lengthCm: 21,
+        defaultF0: 235.0,
+        defaultUraRatio: 1.00,
+        defaultCoupling: 1.22,
+        defaultNonlinear: 0.25,
+        defaultStand: 'naname',
+        shellRadius3D: 1.44,
+        shellHalfLen3D: 0.72,
+        bulgeFactor: 1.06,
+        ropeTensioned: true,
+        singleHeaded: false,
+        staveCount: 0
+      },
+      hira: {
+        name: 'Hira-daiko (平太鼓 • 3 Shaku Flat Body)',
+        diameterCm: 90,
+        lengthCm: 36,
+        defaultF0: 78.0,
+        defaultUraRatio: 0.98,
+        defaultCoupling: 1.32,
+        defaultNonlinear: 0.62,
+        defaultStand: 'yagura',
+        shellRadius3D: 2.08,
+        shellHalfLen3D: 0.78,
+        bulgeFactor: 1.14,
+        ropeTensioned: false,
+        singleHeaded: false,
+        staveCount: 0
+      },
+      uchiwa: {
+        name: 'Uchiwa-daiko (団扇太鼓 • Single-Skin Fan Drum)',
+        diameterCm: 30,
+        lengthCm: 4,
+        defaultF0: 165.0,
+        defaultUraRatio: 1.00,
+        defaultCoupling: 0.00,
+        defaultNonlinear: 0.42,
+        defaultStand: 'naname',
+        shellRadius3D: 1.56,
+        shellHalfLen3D: 0.08,
+        bulgeFactor: 1.00,
+        ropeTensioned: false,
+        singleHeaded: true,
+        staveCount: 0
+      }
+    };
+
+    // 8 Coupled Dual-Membrane + Keyaki Shell Modes
+    const COUPLED_MODES_TEMPLATE = [
+      {
+        id: '(0,1)−', m: 0, n: 1, parity: -1,
+        j_mn: 2.4048,
+        baseRatio: 0.910,
+        baseDecay: 2.85,
+        symmetryLabel: '↑↑ Sloshing',
+        color: '#22d3ee'
+      },
+      {
+        id: '(0,1)+', m: 0, n: 1, parity: +1,
+        j_mn: 2.4048,
+        baseRatio: 1.120,
+        baseDecay: 2.10,
+        symmetryLabel: '↑↓ Breathing',
+        color: '#f43f5e'
+      },
+      {
+        id: '(1,1)−', m: 1, n: 1, parity: -1,
+        j_mn: 3.8317,
+        baseRatio: 1.565,
+        baseDecay: 2.25,
+        symmetryLabel: 'Dipole Out-Phase',
+        color: '#f59e0b'
+      },
+      {
+        id: '(1,1)+', m: 1, n: 1, parity: +1,
+        j_mn: 3.8317,
+        baseRatio: 1.625,
+        baseDecay: 1.95,
+        symmetryLabel: 'Dipole In-Phase',
+        color: '#fbbf24'
+      },
+      {
+        id: '(2,1)', m: 2, n: 1, parity: 1,
+        j_mn: 5.1356,
+        baseRatio: 2.135,
+        baseDecay: 1.75,
+        symmetryLabel: 'Quadrupole Head',
+        color: '#10b981'
+      },
+      {
+        id: '(0,2)+', m: 0, n: 2, parity: +1,
+        j_mn: 5.5201,
+        baseRatio: 2.340,
+        baseDecay: 1.45,
+        symmetryLabel: '2nd Radial Circle',
+        color: '#a855f7'
+      },
+      {
+        id: '(3,1)', m: 3, n: 1, parity: 1,
+        j_mn: 6.3802,
+        baseRatio: 2.680,
+        baseDecay: 1.30,
+        symmetryLabel: 'Hexapole Ring',
+        color: '#38bdf8'
+      },
+      {
+        id: 'Fuchi (2,0)', m: 2, n: 0, parity: 0,
+        j_mn: 7.0156,
+        baseRatio: 3.850,
+        baseDecay: 0.42,
+        symmetryLabel: 'Keyaki Rim Shell',
+        color: '#fde047',
+        isRimMode: true
+      }
+    ];
+
+    function besselJ(m, x) {
+      if (x <= 1e-8) return m === 0 ? 1.0 : 0.0;
+      let sum = 0.0;
+      const halfX = 0.5 * x;
+      let term = Math.pow(halfX, m);
+      for (let i = 2; i <= m; i++) term /= i;
+      sum += term;
+      const halfX2 = -halfX * halfX;
+      for (let k = 1; k <= 16; k++) {
+        term *= halfX2 / (k * (m + k));
+        sum += term;
+        if (Math.abs(term) < 1e-11) break;
+      }
+      return sum;
+    }
+
+    function freqToNoteName(freq) {
+      if (!freq || freq <= 0) return '';
+      const midi = Math.round(69 + 12 * Math.log2(freq / 440.0));
+      const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const note = names[((midi % 12) + 12) % 12];
+      const oct = Math.floor(midi / 12) - 1;
+      return `${note}${oct}`;
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & 5-TRACK × 16-STEP KUCHI-SHŌGA PATTERNS
+    // =========================================================================
+    // Tracks:
+    // 0: Omote Center (0=off, 1=DON, 2=TSU)
+    // 1: Ura Rear / Double (0=off, 1=URA-DON, 2=DO-KO)
+    // 2: Fuchi Rim (0=off, 1=KA, 2=KA-RA)
+    // 3: Shime Jiuchi (0=off, 1=TEN, 2=TE-RE)
+    // 4: Atarigane / Kakegoe (0=off, 1=KANE, 2=KIAI "SO-RE!")
+    const KUCHI_PATTERNS = {
+      matsuri: {
+        name: 'Matsuri (祭 • Festival Pulse)',
+        bpm: 124,
+        tracks: [
+          [1, 0, 0, 1,  0, 0, 1, 0,  1, 0, 2, 1,  0, 1, 1, 0],
+          [0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 2],
+          [0, 0, 1, 0,  1, 1, 0, 1,  0, 0, 1, 0,  1, 0, 0, 2],
+          [1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1],
+          [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 2, 0]
+        ]
+      },
+      yatai: {
+        name: 'Yatai-bayashi (屋台囃子 • Ondekoza)',
+        bpm: 146,
+        tracks: [
+          [1, 1, 0, 1,  1, 0, 1, 1,  0, 1, 1, 0,  1, 1, 1, 0],
+          [0, 0, 2, 0,  0, 0, 0, 0,  2, 0, 0, 0,  0, 0, 0, 2],
+          [0, 0, 1, 0,  0, 1, 0, 0,  1, 0, 0, 1,  0, 0, 0, 1],
+          [1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 2],
+          [1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 0, 0,  1, 0, 0, 2]
+        ]
+      },
+      miyake: {
+        name: 'Miyake-daiko (三宅太鼓 • Low Stance Dual)',
+        bpm: 112,
+        tracks: [
+          [1, 0, 0, 0,  1, 0, 0, 1,  1, 0, 0, 0,  1, 0, 1, 1],
+          [0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 1, 0, 2],
+          [0, 1, 1, 1,  0, 1, 1, 0,  0, 1, 1, 1,  0, 1, 0, 0],
+          [1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 1],
+          [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 2, 0]
+        ]
+      },
+      isami: {
+        name: 'Isami-goma (勇み駒 • Osuwa Galloping Horse)',
+        bpm: 138,
+        tracks: [
+          [1, 0, 1, 1,  0, 1, 1, 0,  1, 0, 1, 1,  1, 1, 0, 1],
+          [0, 0, 0, 0,  1, 0, 0, 1,  0, 0, 0, 0,  0, 0, 2, 0],
+          [0, 1, 0, 0,  1, 0, 0, 1,  0, 1, 0, 0,  0, 0, 2, 0],
+          [1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1],
+          [1, 0, 0, 0,  0, 0, 0, 1,  1, 0, 0, 0,  0, 2, 0, 0]
+        ]
+      },
+      hachijo: {
+        name: 'Hachijō-daiko (八丈太鼓 • Uwa & Shita-byōshi)',
+        bpm: 120,
+        tracks: [
+          [1, 0, 2, 1,  0, 2, 1, 0,  1, 0, 2, 1,  1, 0, 1, 0],
+          [1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 1,  1, 0, 1, 2],
+          [0, 1, 0, 0,  1, 0, 0, 1,  0, 1, 0, 0,  0, 1, 0, 2],
+          [1, 0, 1, 1,  0, 1, 1, 0,  1, 0, 1, 1,  0, 1, 1, 1],
+          [1, 0, 0, 0,  0, 0, 1, 0,  0, 0, 1, 0,  0, 0, 0, 2]
+        ]
+      },
+      zoku: {
+        name: 'Zoku (族 • Kodo Syncopated Drive)',
+        bpm: 132,
+        tracks: [
+          [1, 0, 0, 1,  0, 1, 0, 0,  1, 0, 1, 0,  1, 1, 0, 2],
+          [0, 0, 1, 0,  0, 0, 1, 1,  0, 1, 0, 0,  0, 0, 1, 0],
+          [0, 1, 0, 0,  1, 0, 0, 1,  0, 0, 0, 1,  0, 0, 2, 0],
+          [1, 1, 0, 1,  1, 1, 0, 1,  1, 1, 0, 1,  1, 2, 1, 1],
+          [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 2]
+        ]
+      }
+    };
+
+    const state = {
+      drumType: 'nagado',
+      standType: 'naname',
+      omoteF0: 92.5,
+      uraRatio: 0.96,
+      barrelCoupling: 1.00,
+      urokoDamping: 0.65,
+      nonlinearGlide: 0.68,
+      bachiType: 'kashi',
+      strikeForce: 0.90,
+      shellSustain: 1.00,
+      barrelXray: true,
+      tomoeCrest: true,
+      soloModeIdx: -1,
+      lastStrikeR: 0.08,
+      lastStrikeTheta: 0.0,
+      lastStrikeHead: 'omote',
+      nonlinearEnv: 0.0,
+      instantPitchHz: 92.5,
+      barrelPressurePa: 0.0,
+      omoteEnergy: 0.0,
+      uraEnergy: 0.0,
+      oroshiActive: false,
+      oroshiStartTime: 0,
+      oroshiNextHitTime: 0,
+      oroshiInterval: 0.42,
+      seqPlaying: false,
+      seqBpm: 124,
+      seqSwing: 0.08,
+      seqStep: 0,
+      seqNextStepTime: 0,
+      seqGrid: JSON.parse(JSON.stringify(KUCHI_PATTERNS.matsuri.tracks)),
+      isRecordingLive: false,
+      liveRecordedChunksL: [],
+      liveRecordedChunksR: [],
+      modes: COUPLED_MODES_TEMPLATE.map(m => ({
+        ...m,
+        freq: 92.5 * m.baseRatio,
+        ratio: m.baseRatio,
+        ampOmote: 0.0,
+        ampUra: 0.0,
+        phase: 0.0,
+        decayRate: 1.0 / m.baseDecay
+      })),
+      traceHistory: []
+    };
+
+    // =========================================================================
+    // 3. COUPLED DUAL-MEMBRANE & NONLINEAR TENSION PHYSICS ENGINE
+    // =========================================================================
+    function updateCoupledPhysics(dt) {
+      state.nonlinearEnv *= Math.exp(-dt * 6.8);
+
+      const spec = TAIKO_MODELS[state.drumType];
+      const fOmote = state.omoteF0;
+      const fUra = fOmote * state.uraRatio;
+      const effCoupling = spec.singleHeaded ? 0.0 : state.barrelCoupling;
+      const kappa = effCoupling * 0.24;
+      const nlBoostHz = state.nonlinearEnv * state.nonlinearGlide * (fOmote * 0.38);
+
+      let fMinus, fPlus;
+      if (effCoupling <= 0.005) {
+        fMinus = fOmote + nlBoostHz;
+        fPlus  = fOmote + nlBoostHz;
+      } else {
+        const w1Sq = fOmote * fOmote * (1 + kappa);
+        const w2Sq = fUra * fUra * (1 + kappa);
+        const couplingTerm = fOmote * fUra * kappa;
+        const avgSq = 0.5 * (w1Sq + w2Sq);
+        const diffSq = Math.sqrt(Math.pow(0.5 * (w1Sq - w2Sq), 2) + couplingTerm * couplingTerm);
+
+        fMinus = Math.sqrt(Math.max(100, avgSq - diffSq)) + nlBoostHz * 0.85;
+        fPlus  = Math.sqrt(Math.max(100, avgSq + diffSq)) + nlBoostHz * 1.12;
+      }
+
+      state.instantPitchHz = 0.5 * (fMinus + fPlus);
+
+      state.modes.forEach((m, idx) => {
+        if (idx === 0) {
+          m.freq = fMinus;
+          m.ratio = fMinus / fOmote;
+        } else if (idx === 1) {
+          m.freq = fPlus;
+          m.ratio = fPlus / fOmote;
+        } else if (idx === 2) {
+          m.freq = fOmote * (1.565 - 0.03 * effCoupling) + nlBoostHz * 1.25;
+          m.ratio = m.freq / fOmote;
+        } else if (idx === 3) {
+          m.freq = fOmote * (1.605 + 0.04 * effCoupling) + nlBoostHz * 1.30;
+          m.ratio = m.freq / fOmote;
+        } else {
+          m.freq = fOmote * m.baseRatio + (m.isRimMode ? 0 : nlBoostHz * 1.4);
+          m.ratio = m.freq / fOmote;
+        }
+      });
+
+      for (let i = 0; i < state.modes.length; i++) {
+        const m = state.modes[i];
+        if (m.ampOmote > 0.0002 || m.ampUra > 0.0002) {
+          m.phase = (m.phase + 2 * Math.PI * m.freq * dt) % (Math.PI * 2000);
+          const urokoExtra = (i >= 4 && !m.isRimMode) ? (1.0 + 0.55 * state.urokoDamping) : 1.0;
+          const decay = Math.exp(-m.decayRate * urokoExtra * dt);
+          m.ampOmote *= decay;
+          m.ampUra *= decay;
+        } else {
+          m.ampOmote = 0;
+          m.ampUra = 0;
+        }
+      }
+
+      const m0Minus = state.modes[0];
+      const m0Plus  = state.modes[1];
+      const phaseDiff01 = m0Plus.phase - m0Minus.phase;
+      const beatFactorOmote = effCoupling <= 0.01 ? 1.0 : 0.5 * (1.0 + Math.cos(phaseDiff01));
+      const beatFactorUra   = effCoupling <= 0.01 ? 0.0 : 0.5 * (1.0 - Math.cos(phaseDiff01)) * Math.min(1.0, effCoupling);
+
+      const base01Amp = 0.5 * (m0Minus.ampOmote + m0Plus.ampOmote);
+      state.omoteEnergy = Math.min(1.0, base01Amp * (0.35 + 0.65 * beatFactorOmote) + state.modes[2].ampOmote * 0.4);
+      state.uraEnergy   = spec.singleHeaded ? 0.0 : Math.min(1.0, base01Amp * beatFactorUra + state.modes[3].ampUra * 0.42);
+
+      const netBreathingDisp = m0Plus.ampOmote * Math.sin(m0Plus.phase);
+      state.barrelPressurePa = -netBreathingDisp * 240.0 * effCoupling;
+
+      return { fMinus, fPlus };
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO LIVE ENGINE + OFFLINE WAV SAMPLE & LOOP EXPORTER
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.82;
+
+        const comp = audioCtx.createDynamicsCompressor();
+        comp.threshold.value = -8;
+        comp.knee.value = 10;
+        comp.ratio.value = 4.5;
+        comp.attack.value = 0.002;
+        comp.release.value = 0.12;
+
+        masterGain.connect(comp);
+        comp.connect(audioCtx.destination);
+
+        const scriptProc = audioCtx.createScriptProcessor(4096, 2, 2);
+        comp.connect(scriptProc);
+        scriptProc.connect(audioCtx.destination);
+        scriptProc.onaudioprocess = e => {
+          if (!state.isRecordingLive) return;
+          const inL = e.inputBuffer.getChannelData(0);
+          const inR = e.inputBuffer.getChannelData(1);
+          state.liveRecordedChunksL.push(new Float32Array(inL));
+          state.liveRecordedChunksR.push(new Float32Array(inR));
+        };
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTaikoAudioVoice(ctx, destNode, time, type, force = 0.9, rNorm = 0.08) {
+      const spec = TAIKO_MODELS[state.drumType];
+      const f0 = type === 'ura' ? state.omoteF0 * state.uraRatio : state.omoteF0;
+      const effCoupling = spec.singleHeaded ? 0.0 : state.barrelCoupling;
+      const kappa = effCoupling * 0.24;
+      const fMinus = f0 * Math.sqrt(Math.max(0.5, 1.0 - 0.16 * effCoupling));
+      const fPlus  = f0 * Math.sqrt(1.0 + 2 * kappa);
+      const bachiHardMap = { kashi: 0.68, ho: 0.34, kaede: 0.56, take: 0.92 };
+      const bachiHardness = bachiHardMap[state.bachiType] || 0.65;
+      const urokoWarmth = 1.0 - 0.35 * state.urokoDamping;
+      const sustain = state.shellSustain;
+
+      if (type === 'don' || type === 'tsu' || type === 'ura') {
+        const vel = type === 'tsu' ? force * 0.42 : force;
+        const nlShift = type === 'tsu' ? f0 * 0.05 : f0 * 0.38 * state.nonlinearGlide * vel;
+        const decayDur = (type === 'tsu' ? 1.15 : 2.65) * sustain;
+
+        // Radial Bessel weighting based on strike radius rNorm
+        const j01Weight = Math.max(0.18, Math.abs(besselJ(0, 2.4048 * Math.min(0.92, rNorm))));
+        const dipoleBoost = 0.35 + 1.35 * Math.sin(Math.min(1.0, rNorm) * Math.PI * 0.85);
+
+        // 1. Antisymmetric Sloshing Mode (0,1)-
+        const oscMinus = ctx.createOscillator();
+        const gainMinus = ctx.createGain();
+        oscMinus.type = 'sine';
+        oscMinus.frequency.setValueAtTime(fMinus + nlShift * 0.85, time);
+        oscMinus.frequency.exponentialRampToValueAtTime(Math.max(22, fMinus), time + 0.16);
+        gainMinus.gain.setValueAtTime(0.48 * vel * j01Weight, time);
+        gainMinus.gain.exponentialRampToValueAtTime(0.0001, time + decayDur);
+        oscMinus.connect(gainMinus);
+        gainMinus.connect(destNode);
+        oscMinus.start(time);
+        oscMinus.stop(time + decayDur);
+
+        // 2. Symmetric Breathing Mode (0,1)+
+        const oscPlus = ctx.createOscillator();
+        const gainPlus = ctx.createGain();
+        oscPlus.type = 'sine';
+        oscPlus.frequency.setValueAtTime(fPlus + nlShift * 1.12, time);
+        oscPlus.frequency.exponentialRampToValueAtTime(Math.max(25, fPlus), time + 0.14);
+        gainPlus.gain.setValueAtTime(0.36 * vel * j01Weight, time);
+        gainPlus.gain.exponentialRampToValueAtTime(0.0001, time + decayDur * 0.82);
+        oscPlus.connect(gainPlus);
+        gainPlus.connect(destNode);
+        oscPlus.start(time);
+        oscPlus.stop(time + decayDur * 0.82);
+
+        // 3. Coupled (1,1), (2,1), and (3,1) Overtones
+        [1.58, 2.13, 2.66].forEach((ratio, idx) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = idx === 0 ? 'triangle' : 'sine';
+          const fTarget = f0 * ratio;
+          osc.frequency.setValueAtTime(fTarget + nlShift * 1.3, time);
+          osc.frequency.exponentialRampToValueAtTime(fTarget, time + 0.11);
+          const amp = (0.22 / (idx + 1)) * vel * (0.45 + 0.55 * bachiHardness) * dipoleBoost * urokoWarmth;
+          const d = decayDur * (0.55 / (idx + 1));
+          g.gain.setValueAtTime(Math.max(0.001, amp), time);
+          g.gain.exponentialRampToValueAtTime(0.0001, time + d);
+          osc.connect(g);
+          g.connect(destNode);
+          osc.start(time);
+          osc.stop(time + d);
+        });
+
+        // 4. Bachi Skin-Slap Impulse Burst
+        const noiseLen = Math.floor(ctx.sampleRate * 0.055);
+        const nBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+        const nData = nBuf.getChannelData(0);
+        for (let i = 0; i < noiseLen; i++) {
+          nData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.009));
+        }
+        const nSrc = ctx.createBufferSource();
+        nSrc.buffer = nBuf;
+        const nFilt = ctx.createBiquadFilter();
+        nFilt.type = 'bandpass';
+        nFilt.frequency.value = f0 * (2.5 + bachiHardness * 4.5);
+        nFilt.Q.value = 1.4;
+        const nGain = ctx.createGain();
+        nGain.gain.setValueAtTime(0.38 * vel, time);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.055);
+        nSrc.connect(nFilt);
+        nFilt.connect(nGain);
+        nGain.connect(destNode);
+        nSrc.start(time);
+      } else if (type === 'ka') {
+        const rimFreqs = [680, 1140, 1890, 2760];
+        rimFreqs.forEach((rf, idx) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(rf * (0.95 + 0.1 * bachiHardness), time);
+          const dur = 0.085 / (1 + idx * 0.35);
+          g.gain.setValueAtTime((0.28 / (idx + 1)) * force, time);
+          g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+          osc.connect(g);
+          g.connect(destNode);
+          osc.start(time);
+          osc.stop(time + dur);
+        });
+        const nLen = Math.floor(ctx.sampleRate * 0.025);
+        const nBuf = ctx.createBuffer(1, nLen, ctx.sampleRate);
+        const nData = nBuf.getChannelData(0);
+        for (let i = 0; i < nLen; i++) {
+          nData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.0035));
+        }
+        const nSrc = ctx.createBufferSource();
+        nSrc.buffer = nBuf;
+        const nFilt = ctx.createBiquadFilter();
+        nFilt.type = 'highpass';
+        nFilt.frequency.value = 950;
+        const nGain = ctx.createGain();
+        nGain.gain.setValueAtTime(0.45 * force, time);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.025);
+        nSrc.connect(nFilt);
+        nFilt.connect(nGain);
+        nGain.connect(destNode);
+        nSrc.start(time);
+      } else if (type === 'shime') {
+        const fShime = 245.0;
+        [1.0, 1.59, 2.14, 2.65].forEach((r, idx) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = idx === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(fShime * r * 1.08, time);
+          osc.frequency.exponentialRampToValueAtTime(fShime * r, time + 0.035);
+          const dur = 0.24 / (1 + idx * 0.4);
+          g.gain.setValueAtTime((0.28 / (idx + 1)) * force, time);
+          g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+          osc.connect(g);
+          g.connect(destNode);
+          osc.start(time);
+          osc.stop(time + dur);
+        });
+      } else if (type === 'kiai' || type === 'kakegoe') {
+        // Atarigane bronze hand-gong + formant Kakegoe shout
+        [1420, 2260, 3310, 4180].forEach((af, idx) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(af, time);
+          const dur = 0.22 / (1 + idx * 0.25);
+          g.gain.setValueAtTime((0.17 / (idx + 1)) * force, time);
+          g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
+          osc.connect(g);
+          g.connect(destNode);
+          osc.start(time);
+          osc.stop(time + dur);
+        });
+        if (type === 'kakegoe') {
+          const vOsc = ctx.createOscillator();
+          const vFilt = ctx.createBiquadFilter();
+          const vGain = ctx.createGain();
+          vOsc.type = 'sawtooth';
+          vOsc.frequency.setValueAtTime(195, time);
+          vOsc.frequency.exponentialRampToValueAtTime(248, time + 0.09);
+          vOsc.frequency.exponentialRampToValueAtTime(175, time + 0.24);
+          vFilt.type = 'bandpass';
+          vFilt.frequency.setValueAtTime(780, time);
+          vFilt.Q.value = 3.5;
+          vGain.gain.setValueAtTime(0.18 * force, time);
+          vGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.25);
+          vOsc.connect(vFilt);
+          vFilt.connect(vGain);
+          vGain.connect(destNode);
+          vOsc.start(time);
+          vOsc.stop(time + 0.25);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 5. VISUAL + PHYSICAL TRIGGER FOR STRIKES (OMOTE, URA, TSU, KA, SHIME)
+    // =========================================================================
+    const bachiAnim = {
+      rightT: 1.0,
+      leftT: 1.0,
+      uraRightT: 1.0,
+      uraLeftT: 1.0,
+      nextHand: 0,
+      nextUraHand: 0,
+      isRimHit: false
+    };
+
+    let activeShockwaves = [];
+
+    function triggerTaikoStrike(type = 'don', force = state.strikeForce, rNorm = 0.08, theta = 0.0) {
+      ensureAudio();
+      playTaikoAudioVoice(audioCtx, masterGain, audioCtx.currentTime, type, force, rNorm);
+
+      state.lastStrikeR = rNorm;
+      state.lastStrikeTheta = theta;
+      state.lastStrikeHead = type === 'ura' ? 'ura' : 'omote';
+
+      const labelMap = {
+        don: 'DON (どん • Omote Center)',
+        tsu: 'TSU (つ • Off-Center/Muted)',
+        ura: 'URA-DON (裏どん • Rear Head)',
+        ka: 'KA (か • Keyaki Fuchi Rim)',
+        shime: 'TEN (締 • Shime Jiuchi)',
+        kiai: 'KANE (鉦 • Atarigane)',
+        kakegoe: 'SO-RE! (掛け声 • Kakegoe)'
+      };
+      document.getElementById('hudKuchiSyllable').textContent = labelMap[type] || 'DON (どん)';
+      document.getElementById('hudStrikeRadius').textContent = `${rNorm.toFixed(2)}`;
+
+      if (type === 'ura') {
+        if (bachiAnim.nextUraHand === 0) bachiAnim.uraRightT = 0.0;
+        else bachiAnim.uraLeftT = 0.0;
+        bachiAnim.nextUraHand = 1 - bachiAnim.nextUraHand;
+      } else {
+        if (bachiAnim.nextHand === 0) bachiAnim.rightT = 0.0;
+        else bachiAnim.leftT = 0.0;
+        bachiAnim.nextHand = 1 - bachiAnim.nextHand;
+        bachiAnim.isRimHit = (type === 'ka');
+      }
+
+      // Spawn 3D visual shockwave ring on the struck drumhead
+      spawnImpactShockwave(type === 'ura' ? -1 : 1, rNorm, theta, type === 'ka' ? 0xf59e0b : (type === 'ura' ? 0x38bdf8 : 0xf43f5e));
+
+      const bachiHardMap = { kashi: 0.68, ho: 0.34, kaede: 0.56, take: 0.92 };
+      const bachiHard = bachiHardMap[state.bachiType] || 0.65;
+
+      if (type === 'don' || type === 'tsu' || type === 'ura') {
+        const effForce = type === 'tsu' ? force * 0.42 : force;
+        if (type === 'don' || type === 'ura') {
+          state.nonlinearEnv = Math.min(1.25, state.nonlinearEnv * 0.3 + effForce);
+        }
+        state.modes.forEach((m, idx) => {
+          if (state.soloModeIdx >= 0 && state.soloModeIdx !== idx) {
+            m.ampOmote = 0;
+            m.ampUra = 0;
+            return;
+          }
+          if (m.isRimMode) {
+            m.ampOmote *= 0.5;
+            return;
+          }
+          // Spatial Bessel coupling factor at strike location (rNorm, theta)
+          const spatialBessel = Math.max(0.22, Math.abs(besselJ(m.m, m.j_mn * Math.min(0.92, rNorm))));
+          const modeWeight = (idx <= 1 ? 1.0 : (0.75 / idx) * (0.45 + 0.55 * bachiHard)) * spatialBessel;
+          if (type === 'ura') {
+            m.ampUra   = Math.min(1.35, m.ampUra * 0.35 + effForce * modeWeight);
+            m.ampOmote = Math.min(1.25, m.ampOmote * 0.35 + effForce * modeWeight * Math.min(1.0, state.barrelCoupling));
+          } else {
+            m.ampOmote = Math.min(1.35, m.ampOmote * 0.35 + effForce * modeWeight);
+            m.ampUra   = Math.min(1.25, m.ampUra * 0.35 + effForce * modeWeight * Math.min(1.0, state.barrelCoupling));
+          }
+          m.decayRate = 1.0 / (m.baseDecay * state.shellSustain);
+        });
+      } else if (type === 'ka') {
+        state.modes.forEach((m) => {
+          if (m.isRimMode || m.m >= 2) {
+            m.ampOmote = Math.min(1.2, m.ampOmote * 0.3 + force * 0.85);
+            m.decayRate = 1.0 / (m.baseDecay * state.shellSustain);
+          }
+        });
+      }
+    }
+
+    function triggerCompoundKuchi(syllable) {
+      if (syllable === 'don') {
+        triggerTaikoStrike('don', state.strikeForce, 0.06, 0.0);
+      } else if (syllable === 'doko') {
+        triggerTaikoStrike('don', state.strikeForce * 0.95, 0.12, 0.3);
+        setTimeout(() => triggerTaikoStrike('don', state.strikeForce * 0.82, 0.14, -0.4), 112);
+      } else if (syllable === 'tsu') {
+        triggerTaikoStrike('tsu', state.strikeForce * 0.62, 0.62, 0.5);
+      } else if (syllable === 'ura') {
+        triggerTaikoStrike('ura', state.strikeForce * 0.92, 0.10, 0.0);
+      } else if (syllable === 'ka') {
+        triggerTaikoStrike('ka', state.strikeForce, 0.94, 0.6);
+      } else if (syllable === 'kara') {
+        triggerTaikoStrike('ka', state.strikeForce * 0.95, 0.94, 0.6);
+        setTimeout(() => triggerTaikoStrike('ka', state.strikeForce * 0.78, 0.94, -0.6), 102);
+      } else if (syllable === 'shime') {
+        triggerTaikoStrike('shime', state.strikeForce * 0.9, 0.15, 0.0);
+      } else if (syllable === 'kiai') {
+        triggerTaikoStrike('kakegoe', state.strikeForce * 0.9, 0.0, 0.0);
+      }
+    }
+
+    // =========================================================================
+    // 6. BIT-EXACT WAV FILE ENCODER & OFFLINE AUDIO RENDERER
+    // =========================================================================
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const bytesPerSample = 2;
+      const blockAlign = numChannels * bytesPerSample;
+      const dataByteLength = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataByteLength);
+      const view = new DataView(buffer);
+
+      function writeAscii(offset, str) {
+        for (let i = 0; i < str.length; i++) {
+          view.setUint8(offset + i, str.charCodeAt(i));
+        }
+      }
+
+      writeAscii(0, 'RIFF');
+      view.setUint32(4, 36 + dataByteLength, true);
+      writeAscii(8, 'WAVE');
+      writeAscii(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeAscii(36, 'data');
+      view.setUint32(40, dataByteLength, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) {
+        channels.push(audioBuffer.getChannelData(c));
+      }
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function triggerBlobDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 250);
+    }
+
+    async function exportOneShotWav(type) {
+      const badge = document.getElementById('exportStatusBadge');
+      badge.textContent = `Rendering ${type.toUpperCase()}...`;
+
+      const sr = 44100;
+      const duration = type === 'oroshi' ? 4.2 : (type === 'ka' ? 0.65 : 2.8 * state.shellSustain);
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(sr * duration), sr);
+
+      if (type === 'oroshi') {
+        let t = 0.05;
+        let dtHit = 0.42;
+        while (t < duration - 0.85) {
+          const prog = t / (duration - 0.85);
+          const vel = 0.38 + 0.58 * prog;
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, t, 'don', vel, 0.08);
+          dtHit = Math.max(0.048, dtHit * 0.84);
+          t += dtHit;
+        }
+        playTaikoAudioVoice(offlineCtx, offlineCtx.destination, duration - 0.8, 'don', 1.0, 0.05);
+      } else {
+        playTaikoAudioVoice(offlineCtx, offlineCtx.destination, 0.02, type, state.strikeForce, state.lastStrikeR);
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const filename = `taiko_${state.drumType}_${type}_${Math.round(state.omoteF0)}Hz.wav`;
+      triggerBlobDownload(wavBlob, filename);
+      badge.textContent = `Saved ${filename}`;
+    }
+
+    async function exportKumiDaikoLoopWav() {
+      const badge = document.getElementById('exportStatusBadge');
+      const numBars = parseInt(document.getElementById('loopBarsSelect').value, 10) || 2;
+      badge.textContent = `Bouncing ${numBars}-Bar Loop...`;
+
+      const sr = 44100;
+      const stepDur = (60.0 / state.seqBpm) * 0.25;
+      const totalSteps = 16 * numBars;
+      const loopDuration = totalSteps * stepDur;
+
+      const offlineCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, Math.ceil(sr * loopDuration), sr);
+
+      for (let step = 0; step < totalSteps; step++) {
+        const sIdx = step % 16;
+        const swingOffset = (sIdx % 2 === 1) ? stepDur * state.seqSwing : 0.0;
+        const hitTime = step * stepDur + swingOffset;
+
+        // Track 0: Omote Center (DON / TSU)
+        const v0 = state.seqGrid[0][sIdx];
+        if (v0 === 1) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'don', state.strikeForce, 0.08);
+        else if (v0 === 2) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'tsu', state.strikeForce * 0.6, 0.58);
+
+        // Track 1: Ura Rear / Doko Double
+        const v1 = state.seqGrid[1][sIdx];
+        if (v1 === 1) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'ura', state.strikeForce * 0.88, 0.12);
+        else if (v1 === 2) {
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'don', state.strikeForce * 0.85, 0.12);
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime + stepDur * 0.48, 'ura', state.strikeForce * 0.78, 0.15);
+        }
+
+        // Track 2: Fuchi Rim (KA / KARA)
+        const v2 = state.seqGrid[2][sIdx];
+        if (v2 === 1) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'ka', state.strikeForce * 0.88, 0.94);
+        else if (v2 === 2) {
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'ka', state.strikeForce * 0.85, 0.94);
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime + stepDur * 0.48, 'ka', state.strikeForce * 0.72, 0.94);
+        }
+
+        // Track 3: Shime Jiuchi
+        const v3 = state.seqGrid[3][sIdx];
+        if (v3 === 1) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'shime', 0.75, 0.15);
+        else if (v3 === 2) {
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'shime', 0.78, 0.15);
+          playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime + stepDur * 0.48, 'shime', 0.65, 0.15);
+        }
+
+        // Track 4: Atarigane / Kakegoe
+        const v4 = state.seqGrid[4][sIdx];
+        if (v4 === 1) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'kiai', 0.8, 0.0);
+        else if (v4 === 2) playTaikoAudioVoice(offlineCtx, offlineCtx.destination, hitTime, 'kakegoe', 0.88, 0.0);
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const filename = `taiko_kumi_loop_${state.seqBpm}bpm_${numBars}bars.wav`;
+      triggerBlobDownload(wavBlob, filename);
+      badge.textContent = `Saved ${filename}`;
+    }
+
+    // =========================================================================
+    // 7. THREE.JS 3D WADAIKO SCENE (OMOTE & URA HEADS, KEYAKI BARREL, STANDS)
+    // =========================================================================
+    const mountEl = document.getElementById('threeTaikoMount');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x040509);
+
+    const camera = new THREE.PerspectiveCamera(39, 1, 0.1, 120);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.18;
+    mountEl.appendChild(renderer.domElement);
+
+    const camOrbit = {
+      theta: 0.62,
+      phi: 1.16,
+      radius: 10.8,
+      target: new THREE.Vector3(0, 0.05, 0),
+      isDragging: false,
+      isPanning: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    function updateCameraTransform() {
+      camOrbit.phi = Math.max(0.12, Math.min(Math.PI * 0.88, camOrbit.phi));
+      camOrbit.radius = Math.max(4.8, Math.min(20.0, camOrbit.radius));
+      const sinPhi = Math.sin(camOrbit.phi);
+      camera.position.set(
+        camOrbit.target.x + camOrbit.radius * sinPhi * Math.sin(camOrbit.theta),
+        camOrbit.target.y + camOrbit.radius * Math.cos(camOrbit.phi),
+        camOrbit.target.z + camOrbit.radius * sinPhi * Math.cos(camOrbit.theta)
+      );
+      camera.lookAt(camOrbit.target);
+      const zSlider = document.getElementById('cameraZoomSlider');
+      if (zSlider) zSlider.value = camOrbit.radius.toFixed(1);
+    }
+
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.82));
+    const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.65);
+    keyLight.position.set(7, 9, 8);
+    scene.add(keyLight);
+
+    const crimsonLight = new THREE.PointLight(0xf43f5e, 1.35, 24);
+    crimsonLight.position.set(-6, 4, 6);
+    scene.add(crimsonLight);
+
+    const cyanBackLight = new THREE.PointLight(0x22d3ee, 1.25, 24);
+    cyanBackLight.position.set(5, -2, -7);
+    scene.add(cyanBackLight);
+
+    const floorGrid = new THREE.GridHelper(18, 24, 0x1e293b, 0x0f172a);
+    floorGrid.position.y = -2.85;
+    scene.add(floorGrid);
+
+    const taikoMasterGroup = new THREE.Group();
+    taikoMasterGroup.rotation.x = -0.22;
+    scene.add(taikoMasterGroup);
+
+    const shockwaveGroup = new THREE.Group();
+    taikoMasterGroup.add(shockwaveGroup);
+
+    function spawnImpactShockwave(endSign, rNorm, theta, hexColor) {
+      const spec = TAIKO_MODELS[state.drumType];
+      const R = spec.shellRadius3D;
+      const halfL = spec.shellHalfLen3D;
+      const ringGeo = new THREE.RingGeometry(0.06, 0.13, 36);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: hexColor,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.92
+      });
+      const mesh = new THREE.Mesh(ringGeo, ringMat);
+      const hitX = (rNorm * R) * Math.cos(theta);
+      const hitY = (rNorm * R) * Math.sin(theta);
+      mesh.position.set(hitX, hitY, endSign * (halfL + 0.04));
+      shockwaveGroup.add(mesh);
+      activeShockwaves.push({ mesh, age: 0.0, maxRadius: R * 0.95 });
+    }
+
+    function createTaikoHeadTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+
+      const grad = ctx.createRadialGradient(256, 256, 12, 256, 256, 256);
+      grad.addColorStop(0.0, '#f8f0dc');
+      grad.addColorStop(0.65, '#ebd9b4');
+      grad.addColorStop(0.92, '#cbb082');
+      grad.addColorStop(1.0, '#7c5832');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // Subtle concentric grain rings
+      ctx.save();
+      ctx.translate(256, 256);
+      ctx.strokeStyle = 'rgba(120, 83, 45, 0.12)';
+      ctx.lineWidth = 2;
+      for (let r = 36; r < 240; r += 28) {
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Traditional Mitsudomoe (三つ巴) Crest
+      ctx.strokeStyle = 'rgba(20, 16, 15, 0.85)';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.arc(0, 0, 125, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let k = 0; k < 3; k++) {
+        ctx.save();
+        ctx.rotate((k * Math.PI * 2) / 3);
+        ctx.fillStyle = 'rgba(20, 16, 15, 0.88)';
+        ctx.beginPath();
+        ctx.arc(0, -48, 36, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0, 0, 84, -Math.PI * 0.5, Math.PI * 0.12, false);
+        ctx.arc(14, -18, 54, Math.PI * 0.12, -Math.PI * 0.5, true);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    const headCowhideTex = createTaikoHeadTexture();
+
+    const RINGS = 42;
+    const SEGS = 72;
+
+    function createPolarMembraneGeometry() {
+      const geo = new THREE.BufferGeometry();
+      const vCount = (RINGS + 1) * (SEGS + 1);
+      const pos = new Float32Array(vCount * 3);
+      const uvs = new Float32Array(vCount * 2);
+      const colors = new Float32Array(vCount * 3);
+      const polar = new Float32Array(vCount * 2);
+      const indices = [];
+
+      let ptr = 0;
+      for (let ir = 0; ir <= RINGS; ir++) {
+        const rNorm = ir / RINGS;
+        for (let it = 0; it <= SEGS; it++) {
+          const theta = (it / SEGS) * Math.PI * 2;
+          const x = rNorm * Math.cos(theta);
+          const y = rNorm * Math.sin(theta);
+          pos[ptr * 3]     = x;
+          pos[ptr * 3 + 1] = y;
+          pos[ptr * 3 + 2] = 0.0;
+
+          uvs[ptr * 2]     = 0.5 + 0.48 * x;
+          uvs[ptr * 2 + 1] = 0.5 + 0.48 * y;
+
+          colors[ptr * 3]     = 0.95;
+          colors[ptr * 3 + 1] = 0.88;
+          colors[ptr * 3 + 2] = 0.74;
+
+          polar[ptr * 2]     = rNorm;
+          polar[ptr * 2 + 1] = theta;
+          ptr++;
+        }
+      }
+
+      for (let ir = 0; ir < RINGS; ir++) {
+        for (let it = 0; it < SEGS; it++) {
+          const a = ir * (SEGS + 1) + it;
+          const b = a + (SEGS + 1);
+          const c = b + 1;
+          const d = a + 1;
+          indices.push(a, b, d);
+          indices.push(b, c, d);
+        }
+      }
+
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.userData.polar = polar;
+      geo.userData.vCount = vCount;
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    const omoteGeo = createPolarMembraneGeometry();
+    const uraGeo   = createPolarMembraneGeometry();
+
+    const headMat = new THREE.MeshStandardMaterial({
+      map: headCowhideTex,
+      vertexColors: true,
+      roughness: 0.48,
+      metalness: 0.06,
+      side: THREE.DoubleSide
+    });
+
+    const omoteMesh = new THREE.Mesh(omoteGeo, headMat);
+    omoteMesh.name = 'OmoteHead';
+    taikoMasterGroup.add(omoteMesh);
+
+    const uraMesh = new THREE.Mesh(uraGeo, headMat);
+    uraMesh.name = 'UraHead';
+    taikoMasterGroup.add(uraMesh);
+
+    const barrelShellGroup = new THREE.Group();
+    taikoMasterGroup.add(barrelShellGroup);
+
+    const keyakiWoodMat = new THREE.MeshStandardMaterial({
+      color: 0x9a3412,
+      roughness: 0.30,
+      metalness: 0.14,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.56
+    });
+
+    const keyakiWireMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.24
+    });
+
+    let barrelMesh = null;
+    let barrelWireMesh = null;
+    const byoTacksGroup = new THREE.Group();
+    barrelShellGroup.add(byoTacksGroup);
+
+    const ropeLacingGroup = new THREE.Group();
+    barrelShellGroup.add(ropeLacingGroup);
+
+    const kanHandlesGroup = new THREE.Group();
+    barrelShellGroup.add(kanHandlesGroup);
+
+    const internalWaveGroup = new THREE.Group();
+    barrelShellGroup.add(internalWaveGroup);
+    const internalPressureRings = [];
+    for (let i = 0; i < 7; i++) {
+      const u = (i / 6) * 2 - 1;
+      const ringGeo = new THREE.TorusGeometry(1.35, 0.028, 12, 48);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        transparent: true,
+        opacity: 0.38
+      });
+      const rMesh = new THREE.Mesh(ringGeo, ringMat);
+      internalWaveGroup.add(rMesh);
+      internalPressureRings.push({ mesh: rMesh, uNorm: u });
+    }
+
+    const standGroup = new THREE.Group();
+    scene.add(standGroup);
+
+    function rebuildStand3D() {
+      while (standGroup.children.length > 0) {
+        standGroup.remove(standGroup.children[0]);
+      }
+      const spec = TAIKO_MODELS[state.drumType];
+      const R = spec.shellRadius3D;
+      const woodMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.52 });
+      const darkIronMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8, roughness: 0.25 });
+
+      if (spec.singleHeaded) {
+        // Uchiwa-daiko wooden fan handle
+        taikoMasterGroup.rotation.set(0, 0, 0);
+        taikoMasterGroup.position.set(0, 0.4, 0);
+        const handleMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 2.3, 16), woodMat);
+        handleMesh.position.set(0, -R - 0.75, 0);
+        standGroup.add(handleMesh);
+        return;
+      }
+
+      if (state.standType === 'naname') {
+        taikoMasterGroup.rotation.set(-0.26, 0, 0);
+        taikoMasterGroup.position.set(0, 0.08, 0);
+        [-1.22, 1.22].forEach(xOff => {
+          const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.6, 0.22), woodMat);
+          leg1.position.set(xOff, -1.72, 0.65);
+          leg1.rotation.x = 0.42;
+          standGroup.add(leg1);
+
+          const leg2 = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.6, 0.22), woodMat);
+          leg2.position.set(xOff, -1.72, -0.65);
+          leg2.rotation.x = -0.42;
+          standGroup.add(leg2);
+        });
+      } else if (state.standType === 'miyake') {
+        // Horizontal low Miyake / Hachijō stand for simultaneous Omote & Ura drumming
+        taikoMasterGroup.rotation.set(0.0, 0, 0);
+        taikoMasterGroup.position.set(0, -0.15, 0);
+        [-1.15, 1.15].forEach(xOff => {
+          const base = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 3.2), woodMat);
+          base.position.set(xOff, -2.65, 0);
+          standGroup.add(base);
+          [-0.95, 0.95].forEach(zOff => {
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 1.35, 0.22), woodMat);
+            post.position.set(xOff, -2.0, zOff);
+            post.rotation.z = xOff > 0 ? 0.22 : -0.22;
+            standGroup.add(post);
+          });
+        });
+      } else if (state.standType === 'yagura') {
+        // Elevated Yagura-dai festival tower frame
+        taikoMasterGroup.rotation.set(0.0, 0, 0);
+        taikoMasterGroup.position.set(0, 0.25, 0);
+        const frameW = R + 0.55;
+        [-frameW, frameW].forEach(xOff => {
+          [-1.2, 1.2].forEach(zOff => {
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.22, 5.2, 0.22), woodMat);
+            pillar.position.set(xOff, -0.25, zOff);
+            standGroup.add(pillar);
+          });
+          const topBeam = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 3.0), woodMat);
+          topBeam.position.set(xOff, 2.35, 0);
+          standGroup.add(topBeam);
+        });
+        const crossTop = new THREE.Mesh(new THREE.BoxGeometry(frameW * 2 + 0.5, 0.26, 0.26), darkIronMat);
+        crossTop.position.set(0, 2.48, 0);
+        standGroup.add(crossTop);
+      }
+    }
+
+    function rebuildTaikoDrum3D() {
+      const spec = TAIKO_MODELS[state.drumType];
+      const R = spec.shellRadius3D;
+      const halfL = spec.shellHalfLen3D;
+      const bulge = spec.bulgeFactor;
+
+      omoteMesh.scale.set(R, R, 1);
+      omoteMesh.position.set(0, 0, halfL);
+
+      uraMesh.visible = !spec.singleHeaded;
+      uraMesh.scale.set(R, R, 1);
+      uraMesh.position.set(0, 0, -halfL);
+
+      const pts = [];
+      const steps = 32;
+      for (let i = 0; i <= steps; i++) {
+        const u = (i / steps) * 2 - 1;
+        const r = R * (1.0 + (bulge - 1.0) * (1.0 - u * u));
+        const y = u * halfL;
+        pts.push(new THREE.Vector2(r, y));
+      }
+      const latheSegs = spec.staveCount > 0 ? spec.staveCount : 48;
+      const latheGeo = new THREE.LatheGeometry(pts, latheSegs);
+      latheGeo.rotateX(Math.PI / 2);
+
+      if (barrelMesh) {
+        barrelShellGroup.remove(barrelMesh);
+        barrelMesh.geometry.dispose();
+      }
+      if (barrelWireMesh) {
+        barrelShellGroup.remove(barrelWireMesh);
+        barrelWireMesh.geometry.dispose();
+      }
+
+      keyakiWoodMat.color.setHex(spec.ropeTensioned ? 0xb45309 : 0x9a3412);
+      keyakiWoodMat.opacity = state.barrelXray ? 0.45 : 0.96;
+      barrelMesh = new THREE.Mesh(latheGeo, keyakiWoodMat);
+      barrelMesh.name = 'KeyakiBarrelRim';
+      barrelShellGroup.add(barrelMesh);
+
+      barrelWireMesh = new THREE.Mesh(latheGeo, keyakiWireMat);
+      barrelWireMesh.visible = state.barrelXray;
+      barrelShellGroup.add(barrelWireMesh);
+
+      // Iron Byō Tacks (鋲)
+      while (byoTacksGroup.children.length > 0) {
+        byoTacksGroup.remove(byoTacksGroup.children[0]);
+      }
+      if (!spec.ropeTensioned && !spec.singleHeaded) {
+        const tackGeo = new THREE.SphereGeometry(0.052, 10, 10);
+        const tackMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.88, roughness: 0.22 });
+        const numTacks = 36;
+        [-1, 1].forEach(endSign => {
+          [0.07, 0.16].forEach(zInset => {
+            const zPos = endSign * (halfL - zInset);
+            const u = zPos / halfL;
+            const rRing = R * (1.0 + (bulge - 1.0) * (1.0 - u * u)) + 0.015;
+            for (let k = 0; k < numTacks; k++) {
+              const ang = (k / numTacks) * Math.PI * 2 + (zInset > 0.1 ? Math.PI / numTacks : 0);
+              const tMesh = new THREE.Mesh(tackGeo, tackMat);
+              tMesh.position.set(rRing * Math.cos(ang), rRing * Math.sin(ang), zPos);
+              tMesh.name = 'KeyakiBarrelRim';
+              byoTacksGroup.add(tMesh);
+            }
+          });
+        });
+      }
+
+      // Forged Iron Kan (鐶) Ring Handles on Byō-uchi-daiko
+      while (kanHandlesGroup.children.length > 0) {
+        kanHandlesGroup.remove(kanHandlesGroup.children[0]);
+      }
+      if (!spec.ropeTensioned && !spec.singleHeaded) {
+        const kanMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.25 });
+        const midR = R * bulge;
+        [-1, 1].forEach(sideSign => {
+          const boss = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.08, 16), kanMat);
+          boss.rotation.z = Math.PI * 0.5;
+          boss.position.set(sideSign * (midR + 0.02), 0.15, 0);
+          kanHandlesGroup.add(boss);
+
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.035, 10, 24), kanMat);
+          ring.rotation.y = Math.PI * 0.5;
+          ring.position.set(sideSign * (midR + 0.08), -0.02, 0);
+          kanHandlesGroup.add(ring);
+        });
+      }
+
+      // Rope Lacing for Okedō-daiko & Tsukeshime-daiko
+      while (ropeLacingGroup.children.length > 0) {
+        ropeLacingGroup.remove(ropeLacingGroup.children[0]);
+      }
+      if (spec.ropeTensioned) {
+        const ropeMat = new THREE.MeshStandardMaterial({
+          color: state.drumType === 'okedo' ? 0xa855f7 : 0xd6b370,
+          roughness: 0.65
+        });
+        const hoopMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
+        [-halfL, halfL].forEach(zEnd => {
+          const hoop = new THREE.Mesh(new THREE.TorusGeometry(R + 0.06, 0.045, 12, 48), hoopMat);
+          hoop.position.z = zEnd;
+          ropeLacingGroup.add(hoop);
+        });
+        const numRopes = 22;
+        for (let i = 0; i < numRopes; i++) {
+          const a1 = (i / numRopes) * Math.PI * 2;
+          const a2 = ((i + 0.5) / numRopes) * Math.PI * 2;
+          const p1 = new THREE.Vector3((R + 0.07) * Math.cos(a1), (R + 0.07) * Math.sin(a1), halfL);
+          const p2 = new THREE.Vector3((R + 0.07) * Math.cos(a2), (R + 0.07) * Math.sin(a2), -halfL);
+          const curve = new THREE.LineCurve3(p1, p2);
+          const rGeo = new THREE.TubeGeometry(curve, 8, 0.028, 8, false);
+          ropeLacingGroup.add(new THREE.Mesh(rGeo, ropeMat));
+
+          const p3 = new THREE.Vector3((R + 0.07) * Math.cos(a2), (R + 0.07) * Math.sin(a2), halfL);
+          const curve2 = new THREE.LineCurve3(p2, p3);
+          const rGeo2 = new THREE.TubeGeometry(curve2, 8, 0.028, 8, false);
+          ropeLacingGroup.add(new THREE.Mesh(rGeo2, ropeMat));
+        }
+      }
+
+      internalWaveGroup.visible = state.barrelXray && !spec.singleHeaded;
+      internalPressureRings.forEach(item => {
+        item.mesh.position.z = item.uNorm * (halfL * 0.85);
+        const s = (R / 1.85);
+        item.mesh.scale.set(s, s, 1);
+      });
+
+      rebuildStand3D();
+    }
+
+    // Dual-Sided Bachi (Front Omote Pair + Rear Ura Pair for Hachijō/Miyake)
+    const bachiGroup = new THREE.Group();
+    taikoMasterGroup.add(bachiGroup);
+    const bachiMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.38 });
+    const uraBachiMat = new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.38 });
+    const bachiGeo = new THREE.CylinderGeometry(0.066, 0.072, 1.82, 16);
+    bachiGeo.rotateX(Math.PI / 2);
+
+    const rightBachiMesh = new THREE.Mesh(bachiGeo, bachiMat);
+    const leftBachiMesh  = new THREE.Mesh(bachiGeo, bachiMat);
+    const uraRightBachiMesh = new THREE.Mesh(bachiGeo, uraBachiMat);
+    const uraLeftBachiMesh  = new THREE.Mesh(bachiGeo, uraBachiMat);
+    bachiGroup.add(rightBachiMesh, leftBachiMesh, uraRightBachiMesh, uraLeftBachiMesh);
+
+    function updateBachi3DAnimation(dt) {
+      const spec = TAIKO_MODELS[state.drumType];
+      const halfL = spec.shellHalfLen3D;
+      const R = spec.shellRadius3D;
+
+      // Front Omote Bachi Pair
+      ['rightT', 'leftT'].forEach((key, idx) => {
+        if (bachiAnim[key] < 1.0) {
+          bachiAnim[key] = Math.min(1.0, bachiAnim[key] + dt * 8.4);
+        }
+        const u = bachiAnim[key];
+        const strokeDip = Math.sin(u * Math.PI) * Math.exp(-u * 2.5);
+        const mesh = idx === 0 ? rightBachiMesh : leftBachiMesh;
+        const sideSign = idx === 0 ? 1 : -1;
+
+        if (bachiAnim.isRimHit) {
+          mesh.position.set(sideSign * (R * 0.72), R * 0.68, halfL + 1.05 - 0.82 * strokeDip);
+          mesh.rotation.set(-0.28 + 0.25 * strokeDip, -sideSign * 0.35, 0);
+        } else {
+          mesh.position.set(sideSign * 0.38, -0.18, halfL + 1.12 - 0.92 * strokeDip);
+          mesh.rotation.set(-0.18 + 0.22 * strokeDip, -sideSign * 0.22, 0);
+        }
+      });
+
+      // Rear Ura Bachi Pair (Shita-byōshi)
+      const showUraBachi = !spec.singleHeaded;
+      uraRightBachiMesh.visible = showUraBachi;
+      uraLeftBachiMesh.visible  = showUraBachi;
+      if (showUraBachi) {
+        ['uraRightT', 'uraLeftT'].forEach((key, idx) => {
+          if (bachiAnim[key] < 1.0) {
+            bachiAnim[key] = Math.min(1.0, bachiAnim[key] + dt * 8.4);
+          }
+          const u = bachiAnim[key];
+          const strokeDip = Math.sin(u * Math.PI) * Math.exp(-u * 2.5);
+          const mesh = idx === 0 ? uraRightBachiMesh : uraLeftBachiMesh;
+          const sideSign = idx === 0 ? 1 : -1;
+          mesh.position.set(sideSign * 0.38, -0.18, -halfL - 1.12 + 0.92 * strokeDip);
+          mesh.rotation.set(0.18 - 0.22 * strokeDip, sideSign * 0.22, 0);
+        });
+      }
+    }
+
+    // =========================================================================
+    // 8. RAYCASTING (CLICK OMOTE/URA HEAD = RADIAL BESSEL EXCITATION • RIM = KA)
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointerNDC = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+    renderer.domElement.addEventListener('pointerdown', evt => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNDC.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNDC.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointerNDC, camera);
+
+      if (evt.button === 0 && !evt.shiftKey) {
+        const targets = [omoteMesh];
+        if (uraMesh.visible) targets.push(uraMesh);
+        const headHits = raycaster.intersectObjects(targets, false);
+        if (headHits.length > 0) {
+          const hit = headHits[0];
+          const localPt = hit.object.worldToLocal(hit.point.clone());
+          const rNorm = Math.min(1.0, Math.hypot(localPt.x, localPt.y));
+          const theta = Math.atan2(localPt.y, localPt.x);
+          const isUra = hit.object === uraMesh;
+          if (rNorm > 0.84) {
+            triggerTaikoStrike('ka', state.strikeForce, rNorm, theta);
+          } else if (isUra) {
+            triggerTaikoStrike('ura', state.strikeForce, rNorm, theta);
+          } else if (rNorm > 0.52) {
+            triggerTaikoStrike('tsu', state.strikeForce * 0.78, rNorm, theta);
+          } else {
+            triggerTaikoStrike('don', state.strikeForce, rNorm, theta);
+          }
+          return;
+        }
+
+        const rimHits = raycaster.intersectObjects([barrelMesh, ...byoTacksGroup.children].filter(Boolean), false);
+        if (rimHits.length > 0) {
+          triggerTaikoStrike('ka', state.strikeForce, 0.96, 0.4);
+          return;
+        }
+      }
+
+      if (evt.button === 1 || (evt.button === 0 && evt.shiftKey)) {
+        camOrbit.isPanning = true;
+      } else {
+        camOrbit.isDragging = true;
+      }
+      camOrbit.lastX = evt.clientX;
+      camOrbit.lastY = evt.clientY;
+      renderer.domElement.setPointerCapture(evt.pointerId);
+    });
+
+    renderer.domElement.addEventListener('pointermove', evt => {
+      if (!camOrbit.isDragging && !camOrbit.isPanning) return;
+      const dx = evt.clientX - camOrbit.lastX;
+      const dy = evt.clientY - camOrbit.lastY;
+      camOrbit.lastX = evt.clientX;
+      camOrbit.lastY = evt.clientY;
+
+      if (camOrbit.isDragging) {
+        camOrbit.theta -= dx * 0.0065;
+        camOrbit.phi -= dy * 0.0065;
+        updateCameraTransform();
+      } else if (camOrbit.isPanning) {
+        const panScale = camOrbit.radius * 0.0012;
+        camOrbit.target.x -= dx * panScale;
+        camOrbit.target.y += dy * panScale;
+        updateCameraTransform();
+      }
+    });
+
+    function releaseCamPointer(evt) {
+      camOrbit.isDragging = false;
+      camOrbit.isPanning = false;
+      try { renderer.domElement.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+    renderer.domElement.addEventListener('pointerup', releaseCamPointer);
+    renderer.domElement.addEventListener('pointercancel', releaseCamPointer);
+
+    renderer.domElement.addEventListener('wheel', evt => {
+      evt.preventDefault();
+      camOrbit.radius = Math.max(4.8, Math.min(20.0, camOrbit.radius + evt.deltaY * 0.006));
+      updateCameraTransform();
+    }, { passive: false });
+
+    // =========================================================================
+    // 9. UI BINDINGS, MODAL INSPECTOR TABLE & 5-TRACK SEQUENCER
+    // =========================================================================
+    const modalTableBody = document.getElementById('taikoModalTableBody');
+
+    function buildModalTable() {
+      modalTableBody.innerHTML = '';
+      state.modes.forEach((m, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/60 cursor-pointer transition';
+        tr.innerHTML = `
+          <td class="py-1 px-2 font-semibold" style="color:${m.color}">${m.id}</td>
+          <td class="py-1 px-1.5 text-slate-300">${m.symmetryLabel}</td>
+          <td id="tRatio_${idx}" class="py-1 px-1.5 text-amber-300">${m.ratio.toFixed(2)}×</td>
+          <td id="tFreq_${idx}" class="py-1 px-1.5 text-rose-300 font-semibold">${m.freq.toFixed(1)}</td>
+          <td class="py-1 px-2 text-right">
+            <div class="w-11 h-2 bg-slate-900 rounded overflow-hidden inline-block align-middle">
+              <div id="tAmp_${idx}" class="h-full" style="width:0%;background:${m.color}"></div>
+            </div>
+          </td>
+        `;
+        tr.addEventListener('click', () => {
+          state.soloModeIdx = state.soloModeIdx === idx ? -1 : idx;
+          const rExcite = m.m === 0 ? 0.05 : 0.48;
+          triggerTaikoStrike(m.isRimMode ? 'ka' : 'don', state.strikeForce, rExcite, 0.0);
+          const btn = document.getElementById('clearSoloModeBtn');
+          btn.textContent = state.soloModeIdx === -1 ? 'All Modes' : `Solo ${m.id} ×`;
+          document.getElementById('activeModeRadarLabel').textContent =
+            state.soloModeIdx === -1 ? 'Click Radar to Strike (r, θ)' : `Solo Mode: ${m.id}`;
+        });
+        modalTableBody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('clearSoloModeBtn').addEventListener('click', () => {
+      state.soloModeIdx = -1;
+      document.getElementById('clearSoloModeBtn').textContent = 'All Modes';
+      document.getElementById('activeModeRadarLabel').textContent = 'Click Radar to Strike (r, θ)';
+    });
+
+    function renderSequencerGrid() {
+      const labels = [
+        ['', 'DON', 'TSU'],
+        ['', 'URA', 'DOKO'],
+        ['', 'KA', 'KARA'],
+        ['', 'TEN', 'TERE'],
+        ['', 'KANE', 'KIAI']
+      ];
+
+      for (let r = 0; r < 5; r++) {
+        const rowEl = document.getElementById(`seqRow_${r}`);
+        if (!rowEl) continue;
+        rowEl.innerHTML = '';
+        for (let c = 0; c < 16; c++) {
+          const val = state.seqGrid[r][c] || 0;
+          const cell = document.createElement('div');
+          cell.id = `seqCell_${r}_${c}`;
+          let activeClass = '';
+          if (val > 0) {
+            if (r === 0) activeClass = val === 2 ? 'active-tsu' : 'active-don';
+            else if (r === 1) activeClass = 'active-ura';
+            else if (r === 2) activeClass = 'active-ka';
+            else if (r === 3) activeClass = 'active-shime';
+            else if (r === 4) activeClass = 'active-kiai';
+          }
+          cell.className = `seq-cell ${activeClass} ${c % 4 === 0 && val === 0 ? 'beat-downbeat' : ''}`;
+          cell.textContent = labels[r][val] || (c % 4 === 0 ? (c / 4 + 1) : '·');
+          cell.addEventListener('click', () => {
+            state.seqGrid[r][c] = (state.seqGrid[r][c] + 1) % 3;
+            renderSequencerGrid();
+          });
+          cell.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            state.seqGrid[r][c] = 0;
+            renderSequencerGrid();
+          });
+          rowEl.appendChild(cell);
+        }
+      }
+    }
+
+    // Drum Model Selector
+    document.querySelectorAll('.taiko-type-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.taiko-type-btn').forEach(b => {
+          b.className = 'taiko-type-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition';
+        });
+        btn.className = 'taiko-type-btn px-2 py-1 rounded bg-rose-500/25 text-rose-200 border border-rose-500/40 font-semibold transition';
+
+        state.drumType = btn.dataset.drum;
+        const spec = TAIKO_MODELS[state.drumType];
+        state.omoteF0 = spec.defaultF0;
+        state.uraRatio = spec.defaultUraRatio;
+        state.barrelCoupling = spec.defaultCoupling;
+        state.nonlinearGlide = spec.defaultNonlinear;
+        state.standType = spec.defaultStand;
+
+        document.getElementById('omotePitchSlider').value = state.omoteF0;
+        document.getElementById('omotePitchVal').textContent = `${state.omoteF0.toFixed(1)} Hz (${freqToNoteName(state.omoteF0)})`;
+        document.getElementById('uraRatioSlider').value = state.uraRatio;
+        document.getElementById('uraRatioVal').textContent = `${state.uraRatio.toFixed(2)}×`;
+        document.getElementById('barrelCouplingSlider').value = state.barrelCoupling;
+        document.getElementById('barrelCouplingVal').textContent = `${Math.round(state.barrelCoupling * 100)}%`;
+        document.getElementById('nonlinearGlideSlider').value = state.nonlinearGlide;
+        const hzDrop = Math.round(state.nonlinearGlide * state.omoteF0 * 0.38);
+        document.getElementById('nonlinearGlideVal').textContent = `${state.nonlinearGlide.toFixed(2)} (+${hzDrop} Hz Glide)`;
+        document.getElementById('pitchGlideBadge').textContent = `+${hzDrop} Hz Boom Drop`;
+        document.getElementById('hudTaikoModel').textContent = spec.name.toUpperCase();
+
+        // Sync Stand button UI
+        document.querySelectorAll('.stand-btn').forEach(sb => {
+          sb.className = sb.dataset.stand === state.standType
+            ? 'stand-btn px-1.5 py-1 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-semibold'
+            : 'stand-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white';
+        });
+
+        rebuildTaikoDrum3D();
+        triggerTaikoStrike('don', state.strikeForce, 0.08, 0.0);
+      });
+    });
+
+    // Stand Kata Selector
+    document.querySelectorAll('.stand-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.stand-btn').forEach(b => {
+          b.className = 'stand-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white';
+        });
+        btn.className = 'stand-btn px-1.5 py-1 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-semibold';
+        state.standType = btn.dataset.stand;
+        const standLabels = {
+          naname: 'Naname-dai (Slant Stand)',
+          miyake: 'Miyake / Hachijō Horizontal',
+          yagura: 'Yagura-dai (Elevated Frame)'
+        };
+        document.getElementById('standKataLabel').textContent = standLabels[state.standType];
+        rebuildStand3D();
+      });
+    });
+
+    document.getElementById('omotePitchSlider').addEventListener('input', e => {
+      state.omoteF0 = parseFloat(e.target.value);
+      document.getElementById('omotePitchVal').textContent = `${state.omoteF0.toFixed(1)} Hz (${freqToNoteName(state.omoteF0)})`;
+    });
+
+    document.getElementById('uraRatioSlider').addEventListener('input', e => {
+      state.uraRatio = parseFloat(e.target.value);
+      const desc = Math.abs(state.uraRatio - 1.0) < 0.02 ? 'Matched Doublet' : (state.uraRatio < 1.0 ? 'Warm Growl' : 'Bright Ura');
+      document.getElementById('uraRatioVal').textContent = `${state.uraRatio.toFixed(2)}× (${desc})`;
+    });
+
+    document.getElementById('barrelCouplingSlider').addEventListener('input', e => {
+      state.barrelCoupling = parseFloat(e.target.value);
+      document.getElementById('barrelCouplingVal').textContent = `${Math.round(state.barrelCoupling * 100)}%`;
+    });
+
+    document.getElementById('urokoDampSlider').addEventListener('input', e => {
+      state.urokoDamping = parseFloat(e.target.value);
+      document.getElementById('urokoDampVal').textContent = `${Math.round(state.urokoDamping * 100)}%`;
+    });
+
+    document.getElementById('nonlinearGlideSlider').addEventListener('input', e => {
+      state.nonlinearGlide = parseFloat(e.target.value);
+      const hzDrop = Math.round(state.nonlinearGlide * state.omoteF0 * 0.38);
+      document.getElementById('nonlinearGlideVal').textContent = `${state.nonlinearGlide.toFixed(2)} (+${hzDrop} Hz Glide)`;
+      document.getElementById('pitchGlideBadge').textContent = `+${hzDrop} Hz Boom Drop`;
+    });
+
+    document.querySelectorAll('.bachi-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.bachi-btn').forEach(b => {
+          b.className = 'bachi-btn px-1.5 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:text-white';
+        });
+        btn.className = 'bachi-btn px-1.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-semibold';
+        state.bachiType = btn.dataset.bachi;
+        const labels = {
+          kashi: 'Kashi (White Oak • Heavy)',
+          ho: 'Ho (Magnolia • Warm/Soft)',
+          kaede: 'Kaede (Maple • Balanced)',
+          take: 'Take (Bamboo • Articulate)'
+        };
+        document.getElementById('bachiTypeLabel').textContent = labels[state.bachiType];
+        triggerTaikoStrike('don', state.strikeForce, 0.08, 0.0);
+      });
+    });
+
+    document.getElementById('strikeForceSlider').addEventListener('input', e => {
+      state.strikeForce = parseFloat(e.target.value);
+      document.getElementById('strikeForceVal').textContent = `${state.strikeForce.toFixed(2)} (${state.strikeForce > 0.75 ? 'O-Don' : 'Chū-Don'})`;
+    });
+
+    document.getElementById('shellSustainSlider').addEventListener('input', e => {
+      state.shellSustain = parseFloat(e.target.value);
+      document.getElementById('shellSustainVal').textContent = `${state.shellSustain.toFixed(1)}× (${(2.8 * state.shellSustain).toFixed(1)}s)`;
+    });
+
+    document.getElementById('strikeDonBtn').addEventListener('click', () => triggerCompoundKuchi('don'));
+    document.getElementById('strikeUraBtn').addEventListener('click', () => triggerCompoundKuchi('ura'));
+    document.getElementById('strikeKaBtn').addEventListener('click', () => triggerCompoundKuchi('ka'));
+    document.getElementById('oroshiRollBtn').addEventListener('click', () => {
+      state.oroshiActive = !state.oroshiActive;
+      if (state.oroshiActive) {
+        state.oroshiStartTime = performance.now() * 0.001;
+        state.oroshiNextHitTime = state.oroshiStartTime;
+        state.oroshiInterval = 0.42;
+      }
+    });
+
+    document.querySelectorAll('.kuchi-pad-btn').forEach(btn => {
+      btn.addEventListener('click', () => triggerCompoundKuchi(btn.dataset.pad));
+    });
+
+    document.getElementById('seqPlayToggleBtn').addEventListener('click', () => {
+      ensureAudio();
+      state.seqPlaying = !state.seqPlaying;
+      state.seqStep = 0;
+      state.seqNextStepTime = performance.now() * 0.001;
+      document.getElementById('seqPlayIcon').textContent = state.seqPlaying ? '⏸' : '▶';
+      document.getElementById('seqPlayText').textContent = state.seqPlaying ? 'Stop Loop' : 'Play Kumi-Daiko';
+    });
+
+    document.querySelectorAll('.pat-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.pat-preset-btn').forEach(b => {
+          b.className = 'pat-preset-btn px-2 py-0.5 rounded text-slate-400 hover:text-slate-200';
+        });
+        btn.className = 'pat-preset-btn px-2 py-0.5 rounded bg-rose-500/25 text-rose-200 border border-rose-500/40 font-semibold';
+        const pat = KUCHI_PATTERNS[btn.dataset.pat];
+        state.seqGrid = JSON.parse(JSON.stringify(pat.tracks));
+        state.seqBpm = pat.bpm;
+        document.getElementById('seqBpmSlider').value = pat.bpm;
+        document.getElementById('seqBpmVal').textContent = pat.bpm;
+        renderSequencerGrid();
+      });
+    });
+
+    document.getElementById('mutateSeqBtn').addEventListener('click', () => {
+      for (let c = 0; c < 16; c++) {
+        const downbeat = (c % 4 === 0);
+        state.seqGrid[0][c] = downbeat ? 1 : (Math.random() < 0.25 ? 1 : (Math.random() < 0.15 ? 2 : 0));
+        state.seqGrid[1][c] = (!downbeat && Math.random() < 0.22) ? (Math.random() < 0.7 ? 1 : 2) : 0;
+        state.seqGrid[2][c] = (!downbeat && Math.random() < 0.28) ? (Math.random() < 0.75 ? 1 : 2) : 0;
+        state.seqGrid[3][c] = (c % 2 === 0 || Math.random() < 0.65) ? 1 : 0;
+        state.seqGrid[4][c] = (c === 0 || c === 8) ? 1 : (c === 14 && Math.random() < 0.6 ? 2 : 0);
+      }
+      renderSequencerGrid();
+    });
+
+    document.getElementById('seqBpmSlider').addEventListener('input', e => {
+      state.seqBpm = parseInt(e.target.value, 10);
+      document.getElementById('seqBpmVal').textContent = state.seqBpm;
+    });
+    document.getElementById('seqSwingSlider').addEventListener('input', e => {
+      state.seqSwing = parseFloat(e.target.value);
+      document.getElementById('seqSwingVal').textContent = `${Math.round(state.seqSwing * 100)}%`;
+    });
+    document.getElementById('clearSeqBtn').addEventListener('click', () => {
+      state.seqGrid = [
+        new Array(16).fill(0),
+        new Array(16).fill(0),
+        new Array(16).fill(0),
+        new Array(16).fill(0),
+        new Array(16).fill(0)
+      ];
+      renderSequencerGrid();
+    });
+
+    document.getElementById('exportDonWavBtn').addEventListener('click', () => exportOneShotWav('don'));
+    document.getElementById('exportKaWavBtn').addEventListener('click', () => exportOneShotWav('ka'));
+    document.getElementById('exportOroshiWavBtn').addEventListener('click', () => exportOneShotWav('oroshi'));
+    document.getElementById('exportLoopWavBtn').addEventListener('click', exportKumiDaikoLoopWav);
+    document.getElementById('footerExportLoopBtn').addEventListener('click', exportKumiDaikoLoopWav);
+
+    document.getElementById('liveRecordToggleBtn').addEventListener('click', () => {
+      ensureAudio();
+      if (!state.isRecordingLive) {
+        state.liveRecordedChunksL = [];
+        state.liveRecordedChunksR = [];
+        state.isRecordingLive = true;
+        document.getElementById('recButtonLabel').textContent = '■ Stop & Save Jam .WAV';
+        document.getElementById('recIndicatorDot').className = 'w-2 h-2 rounded-full bg-rose-400 animate-ping';
+      } else {
+        state.isRecordingLive = false;
+        document.getElementById('recButtonLabel').textContent = '● Record Live Jam to .WAV';
+        document.getElementById('recIndicatorDot').className = 'w-2 h-2 rounded-full bg-rose-500';
+
+        const totalSamples = state.liveRecordedChunksL.reduce((acc, c) => acc + c.length, 0);
+        if (totalSamples > 0) {
+          const buf = audioCtx.createBuffer(2, totalSamples, audioCtx.sampleRate);
+          const outL = buf.getChannelData(0);
+          const outR = buf.getChannelData(1);
+          let ptr = 0;
+          for (let i = 0; i < state.liveRecordedChunksL.length; i++) {
+            outL.set(state.liveRecordedChunksL[i], ptr);
+            outR.set(state.liveRecordedChunksR[i], ptr);
+            ptr += state.liveRecordedChunksL[i].length;
+          }
+          const wavBlob = encodeAudioBufferToWavBlob(buf);
+          triggerBlobDownload(wavBlob, `taiko_live_session_${Date.now()}.wav`);
+        }
+      }
+    });
+
+    document.getElementById('exportJsonPatternBtn').addEventListener('click', () => {
+      const payload = {
+        instrument: 'TAIKO-3D Wadaiko Coupled Dual-Membrane Lab',
+        drumType: state.drumType,
+        standType: state.standType,
+        omoteF0: state.omoteF0,
+        uraRatio: state.uraRatio,
+        barrelCoupling: state.barrelCoupling,
+        urokoDamping: state.urokoDamping,
+        nonlinearGlide: state.nonlinearGlide,
+        bpm: state.seqBpm,
+        swing: state.seqSwing,
+        kuchiShogaGrid: state.seqGrid
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(blob, `taiko_kuchi_shoga_${state.drumType}_${state.seqBpm}bpm.json`);
+    });
+
+    // Camera Presets & Panel Toggles
+    function centerAndFitCamera() {
+      camOrbit.theta = 0.62;
+      camOrbit.phi = 1.16;
+      camOrbit.radius = 10.8;
+      camOrbit.target.set(0, 0.05, 0);
+      updateCameraTransform();
+    }
+    document.getElementById('camNanameBtn').addEventListener('click', centerAndFitCamera);
+    document.getElementById('camCenterFitBtn').addEventListener('click', centerAndFitCamera);
+    document.getElementById('camDualHeadBtn').addEventListener('click', () => {
+      camOrbit.theta = Math.PI * 0.5;
+      camOrbit.phi = 1.48;
+      camOrbit.radius = 10.8;
+      camOrbit.target.set(0, 0.0, 0);
+      updateCameraTransform();
+    });
+    document.getElementById('camTomoeFrontBtn').addEventListener('click', () => {
+      camOrbit.theta = 0.0;
+      camOrbit.phi = 1.35;
+      camOrbit.radius = 8.4;
+      camOrbit.target.set(0, 0.05, 0);
+      updateCameraTransform();
+    });
+    document.getElementById('camUraRearBtn').addEventListener('click', () => {
+      camOrbit.theta = Math.PI;
+      camOrbit.phi = 1.35;
+      camOrbit.radius = 8.8;
+      camOrbit.target.set(0, 0.05, 0);
+      updateCameraTransform();
+    });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      camOrbit.radius = Math.max(4.8, camOrbit.radius - 1.1);
+      updateCameraTransform();
+    });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      camOrbit.radius = Math.min(20.0, camOrbit.radius + 1.1);
+      updateCameraTransform();
+    });
+    document.getElementById('cameraZoomSlider').addEventListener('input', e => {
+      camOrbit.radius = parseFloat(e.target.value);
+      updateCameraTransform();
+    });
+
+    document.getElementById('toggleBarrelXray').addEventListener('change', e => {
+      state.barrelXray = e.target.checked;
+      rebuildTaikoDrum3D();
+    });
+    document.getElementById('toggleTomoeCrest').addEventListener('change', e => {
+      state.tomoeCrest = e.target.checked;
+      headMat.map = state.tomoeCrest ? headCowhideTex : null;
+      headMat.needsUpdate = true;
+    });
+
+    // Individual Panel Toggles & Fullscreen Stage
+    document.getElementById('toggleLeftPanelBtn').addEventListener('click', () => {
+      document.body.classList.toggle('hide-left-panel');
+      setTimeout(handleResize, 25);
+    });
+    document.getElementById('toggleRightPanelBtn').addEventListener('click', () => {
+      document.body.classList.toggle('hide-right-panel');
+      setTimeout(handleResize, 25);
+    });
+    document.getElementById('toggleBottomDeckBtn').addEventListener('click', () => {
+      document.body.classList.toggle('hide-bottom-deck');
+      setTimeout(handleResize, 25);
+    });
+
+    function toggleFullScreenStage() {
+      document.body.classList.toggle('stage-fullscreen');
+      const isFs = document.body.classList.contains('stage-fullscreen');
+      document.getElementById('stageFullscreenBtn').textContent = isFs ? '✕ Exit Full [F]' : '⛶ Full [F]';
+      setTimeout(handleResize, 30);
+    }
+    document.getElementById('headerFullscreenBtn').addEventListener('click', toggleFullScreenStage);
+    document.getElementById('stageFullscreenBtn').addEventListener('click', toggleFullScreenStage);
+
+    window.addEventListener('keydown', e => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+      const k = e.key.toLowerCase();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        triggerCompoundKuchi('don');
+      } else if (k === 'd') {
+        triggerCompoundKuchi('doko');
+      } else if (k === 't') {
+        triggerCompoundKuchi('tsu');
+      } else if (k === 'u') {
+        triggerCompoundKuchi('ura');
+      } else if (k === 'k') {
+        triggerCompoundKuchi('ka');
+      } else if (k === 'l') {
+        triggerCompoundKuchi('kara');
+      } else if (k === 's') {
+        triggerCompoundKuchi('shime');
+      } else if (k === 'h') {
+        triggerCompoundKuchi('kiai');
+      } else if (k === 'o') {
+        document.getElementById('oroshiRollBtn').click();
+      } else if (k === 'c') {
+        centerAndFitCamera();
+      } else if (k === 'f') {
+        toggleFullScreenStage();
+      }
+    });
+
+    function handleResize() {
+      const rect = mountEl.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, true);
+    }
+    window.addEventListener('resize', handleResize);
+    if (window.ResizeObserver) {
+      new ResizeObserver(handleResize).observe(mountEl);
+    }
+
+    // =========================================================================
+    // 10. 2D CHLADNI NODAL RADAR & TELEMETRY TRACE CANVASES + 60 FPS LOOP
+    // =========================================================================
+    const radarCanvas = document.getElementById('chladniRadarCanvas');
+    const radarCtx = radarCanvas.getContext('2d');
+
+    radarCanvas.addEventListener('pointerdown', e => {
+      const rect = radarCanvas.getBoundingClientRect();
+      const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const ny = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+      const rNorm = Math.min(1.0, Math.hypot(nx, ny));
+      const theta = Math.atan2(-ny, nx);
+      if (rNorm > 0.85) {
+        triggerTaikoStrike('ka', state.strikeForce, rNorm, theta);
+      } else if (rNorm > 0.52) {
+        triggerTaikoStrike('tsu', state.strikeForce * 0.78, rNorm, theta);
+      } else {
+        triggerTaikoStrike('don', state.strikeForce, rNorm, theta);
+      }
+    });
+
+    function drawChladniRadar() {
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const maxR = cx - 6;
+
+      radarCtx.clearRect(0, 0, w, h);
+
+      // Outer Fuchi Rim ring
+      radarCtx.strokeStyle = 'rgba(245, 158, 11, 0.55)';
+      radarCtx.lineWidth = 3;
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, maxR, 0, Math.PI * 2);
+      radarCtx.stroke();
+
+      // Active or dominant mode nodal circles & diameters
+      const modeIdx = state.soloModeIdx >= 0 ? state.soloModeIdx : 0;
+      const mode = state.modes[modeIdx];
+
+      // Radial nodal circles
+      radarCtx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+      radarCtx.lineWidth = 1.2;
+      if (mode.n >= 2) {
+        radarCtx.beginPath();
+        radarCtx.arc(cx, cy, maxR * (2.4048 / 5.5201), 0, Math.PI * 2);
+        radarCtx.stroke();
+      }
+      // Mid-zone TSU guide circle
+      radarCtx.setLineDash([2, 3]);
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, maxR * 0.55, 0, Math.PI * 2);
+      radarCtx.stroke();
+      radarCtx.setLineDash([]);
+
+      // Azimuthal nodal diameters for m >= 1
+      if (mode.m >= 1) {
+        radarCtx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+        for (let k = 0; k < mode.m; k++) {
+          const ang = (k * Math.PI) / mode.m + Math.PI / (2 * mode.m);
+          radarCtx.beginPath();
+          radarCtx.moveTo(cx - maxR * Math.cos(ang), cy - maxR * Math.sin(ang));
+          radarCtx.lineTo(cx + maxR * Math.cos(ang), cy + maxR * Math.sin(ang));
+          radarCtx.stroke();
+        }
+      }
+
+      // Live pulsing energy halo
+      const pulseR = Math.max(4, maxR * 0.85 * Math.min(1.0, state.omoteEnergy));
+      const grad = radarCtx.createRadialGradient(cx, cy, 1, cx, cy, pulseR);
+      grad.addColorStop(0, 'rgba(244, 63, 94, 0.48)');
+      grad.addColorStop(1, 'rgba(244, 63, 94, 0.0)');
+      radarCtx.fillStyle = grad;
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+      radarCtx.fill();
+
+      // Last strike point marker (r, θ)
+      const sx = cx + state.lastStrikeR * maxR * Math.cos(state.lastStrikeTheta);
+      const sy = cy - state.lastStrikeR * maxR * Math.sin(state.lastStrikeTheta);
+      radarCtx.fillStyle = state.lastStrikeR > 0.84 ? '#f59e0b' : '#f43f5e';
+      radarCtx.beginPath();
+      radarCtx.arc(sx, sy, 4.2, 0, Math.PI * 2);
+      radarCtx.fill();
+      radarCtx.strokeStyle = '#ffffff';
+      radarCtx.lineWidth = 1.2;
+      radarCtx.stroke();
+    }
+
+    const traceCanvas = document.getElementById('dualHeadTraceCanvas');
+    const traceCtx = traceCanvas.getContext('2d');
+
+    function drawDualHeadTraceCanvas() {
+      const w = traceCanvas.width;
+      const h = traceCanvas.height;
+      traceCtx.clearRect(0, 0, w, h);
+
+      traceCtx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+      for (let i = 1; i <= 3; i++) {
+        const y = (i / 4) * h;
+        traceCtx.beginPath();
+        traceCtx.moveTo(0, y);
+        traceCtx.lineTo(w, y);
+        traceCtx.stroke();
+      }
+
+      const len = state.traceHistory.length;
+      if (len < 2) return;
+
+      traceCtx.strokeStyle = '#f43f5e';
+      traceCtx.lineWidth = 2.0;
+      traceCtx.beginPath();
+      for (let i = 0; i < len; i++) {
+        const x = (i / 180) * w;
+        const y = h - 8 - state.traceHistory[i].omote * (h - 20);
+        if (i === 0) traceCtx.moveTo(x, y);
+        else traceCtx.lineTo(x, y);
+      }
+      traceCtx.stroke();
+
+      traceCtx.strokeStyle = '#22d3ee';
+      traceCtx.lineWidth = 1.8;
+      traceCtx.beginPath();
+      for (let i = 0; i < len; i++) {
+        const x = (i / 180) * w;
+        const y = h - 8 - state.traceHistory[i].ura * (h - 20);
+        if (i === 0) traceCtx.moveTo(x, y);
+        else traceCtx.lineTo(x, y);
+      }
+      traceCtx.stroke();
+
+      traceCtx.strokeStyle = '#f59e0b';
+      traceCtx.lineWidth = 1.6;
+      traceCtx.beginPath();
+      for (let i = 0; i < len; i++) {
+        const x = (i / 180) * w;
+        const pNorm = Math.min(1.0, Math.max(0.0, (state.traceHistory[i].pitch - state.omoteF0 * 0.85) / (state.omoteF0 * 0.55)));
+        const y = h - 10 - pNorm * (h - 24);
+        if (i === 0) traceCtx.moveTo(x, y);
+        else traceCtx.lineTo(x, y);
+      }
+      traceCtx.stroke();
+    }
+
+    function deformDualHeadMeshes() {
+      const m0Minus = state.modes[0];
+      const m0Plus  = state.modes[1];
+      const m1Minus = state.modes[2];
+      const m1Plus  = state.modes[3];
+      const m21     = state.modes[4];
+      const m02     = state.modes[5];
+
+      [
+        { geo: omoteGeo, sign: +1 },
+        { geo: uraGeo,   sign: -1 }
+      ].forEach(({ geo, sign }) => {
+        const pos = geo.attributes.position.array;
+        const col = geo.attributes.color.array;
+        const polar = geo.userData.polar;
+        const vCount = geo.userData.vCount;
+
+        for (let v = 0; v < vCount; v++) {
+          const rNorm = polar[v * 2];
+          const theta = polar[v * 2 + 1];
+
+          let zDisp = 0.0;
+          if (rNorm < 0.998) {
+            const j01 = besselJ(0, 2.4048 * rNorm);
+            const j11 = besselJ(1, 3.8317 * rNorm) * Math.cos(theta - state.lastStrikeTheta);
+            const j21 = besselJ(2, 5.1356 * rNorm) * Math.cos(2 * (theta - state.lastStrikeTheta));
+            const j02 = besselJ(0, 5.5201 * rNorm);
+
+            const w01 = j01 * (
+              m0Minus.ampOmote * Math.sin(m0Minus.phase * 0.085) +
+              sign * m0Plus.ampOmote * Math.sin(m0Plus.phase * 0.085)
+            );
+            const w11 = j11 * (
+              m1Minus.ampOmote * Math.sin(m1Minus.phase * 0.085) +
+              sign * m1Plus.ampOmote * Math.sin(m1Plus.phase * 0.085)
+            );
+            const w21 = j21 * m21.ampOmote * Math.sin(m21.phase * 0.085);
+            const w02 = j02 * m02.ampOmote * Math.sin(m02.phase * 0.085);
+
+            zDisp = (w01 * 0.24 + w11 * 0.17 + w21 * 0.13 + w02 * 0.11);
+          }
+
+          pos[v * 3 + 2] = zDisp;
+
+          const glow = Math.max(-1, Math.min(1, zDisp * 3.8));
+          if (glow >= 0) {
+            col[v * 3]     = 0.95;
+            col[v * 3 + 1] = 0.88 - 0.35 * glow;
+            col[v * 3 + 2] = 0.74 - 0.45 * glow;
+          } else {
+            const c = -glow;
+            col[v * 3]     = 0.95 - 0.55 * c;
+            col[v * 3 + 1] = 0.88 + 0.10 * c;
+            col[v * 3 + 2] = 0.74 + 0.25 * c;
+          }
+        }
+        geo.attributes.position.needsUpdate = true;
+        geo.attributes.color.needsUpdate = true;
+      });
+    }
+
+    let lastTime = performance.now() * 0.001;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now() * 0.001;
+      const dt = Math.min(0.05, Math.max(0.001, now - lastTime));
+      lastTime = now;
+
+      // Oroshi (Mountain Wind) Exponential Accelerating Roll
+      if (state.oroshiActive && now >= state.oroshiNextHitTime) {
+        const elapsed = now - state.oroshiStartTime;
+        const vel = Math.min(1.0, 0.38 + elapsed * 0.16);
+        triggerTaikoStrike('don', vel, 0.08, (Math.random() - 0.5) * 0.8);
+        state.oroshiInterval = Math.max(0.052, state.oroshiInterval * 0.84);
+        state.oroshiNextHitTime = now + state.oroshiInterval;
+        if (elapsed > 4.2) {
+          state.oroshiActive = false;
+        }
+      }
+
+      // 5-Track 16-Step Sequencer Clock
+      if (state.seqPlaying && now >= state.seqNextStepTime) {
+        const sIdx = state.seqStep % 16;
+        const stepDur = (60.0 / state.seqBpm) * 0.25;
+
+        document.querySelectorAll('.seq-cell').forEach(el => el.classList.remove('playhead-col'));
+        for (let r = 0; r < 5; r++) {
+          const cell = document.getElementById(`seqCell_${r}_${sIdx}`);
+          if (cell) cell.classList.add('playhead-col');
+        }
+
+        // Track 0: Omote Center (DON / TSU)
+        if (state.seqGrid[0][sIdx] === 1) triggerTaikoStrike('don', state.strikeForce, 0.08, 0.0);
+        else if (state.seqGrid[0][sIdx] === 2) triggerTaikoStrike('tsu', state.strikeForce * 0.62, 0.58, 0.4);
+
+        // Track 1: Ura Rear / Doko Double
+        if (state.seqGrid[1][sIdx] === 1) triggerTaikoStrike('ura', state.strikeForce * 0.88, 0.12, 0.0);
+        else if (state.seqGrid[1][sIdx] === 2) triggerCompoundKuchi('doko');
+
+        // Track 2: Fuchi Rim (KA / KARA)
+        if (state.seqGrid[2][sIdx] === 1) triggerTaikoStrike('ka', state.strikeForce * 0.85, 0.94, 0.6);
+        else if (state.seqGrid[2][sIdx] === 2) triggerCompoundKuchi('kara');
+
+        // Track 3: Shime Jiuchi
+        if (state.seqGrid[3][sIdx] === 1) triggerTaikoStrike('shime', 0.78, 0.15, 0.0);
+        else if (state.seqGrid[3][sIdx] === 2) {
+          triggerTaikoStrike('shime', 0.78, 0.15, 0.0);
+          setTimeout(() => triggerTaikoStrike('shime', 0.65, 0.18, 0.5), stepDur * 480);
+        }
+
+        // Track 4: Atarigane / Kakegoe
+        if (state.seqGrid[4][sIdx] === 1) triggerTaikoStrike('kiai', 0.82, 0.0, 0.0);
+        else if (state.seqGrid[4][sIdx] === 2) triggerTaikoStrike('kakegoe', 0.88, 0.0, 0.0);
+
+        const swingAdd = (sIdx % 2 === 0) ? stepDur * state.seqSwing : -stepDur * state.seqSwing;
+        state.seqNextStepTime = now + Math.max(0.04, stepDur + swingAdd);
+        state.seqStep = (state.seqStep + 1) % 16;
+      }
+
+      const { fMinus, fPlus } = updateCoupledPhysics(dt);
+
+      deformDualHeadMeshes();
+      updateBachi3DAnimation(dt);
+
+      // Update expanding 3D impact shockwave rings
+      for (let i = activeShockwaves.length - 1; i >= 0; i--) {
+        const sw = activeShockwaves[i];
+        sw.age += dt;
+        const prog = sw.age / 0.45;
+        if (prog >= 1.0) {
+          shockwaveGroup.remove(sw.mesh);
+          sw.mesh.geometry.dispose();
+          sw.mesh.material.dispose();
+          activeShockwaves.splice(i, 1);
+        } else {
+          const s = 1.0 + prog * (sw.maxRadius * 5.2);
+          sw.mesh.scale.set(s, s, 1);
+          sw.mesh.material.opacity = (1.0 - prog) * 0.85;
+        }
+      }
+
+      const spec = TAIKO_MODELS[state.drumType];
+      internalPressureRings.forEach((item, idx) => {
+        const wave = Math.sin(state.modes[1].phase * 0.10 - idx * 0.65) * state.modes[1].ampOmote;
+        item.mesh.position.z = item.uNorm * (spec.shellHalfLen3D * 0.82) + wave * 0.14;
+        const s = (spec.shellRadius3D / 1.85) * (1.0 + wave * 0.08);
+        item.mesh.scale.set(s, s, 1);
+        item.mesh.material.opacity = Math.min(0.85, 0.16 + (state.omoteEnergy + state.uraEnergy) * 0.45);
+      });
+
+      const df = Math.abs(fPlus - fMinus);
+      document.getElementById('doubletBeatBadge').textContent = `Δf_± = ${df.toFixed(1)} Hz`;
+      document.getElementById('hudDoubletFreqs').textContent = `f_− = ${fMinus.toFixed(1)} Hz • f_+ = ${fPlus.toFixed(1)} Hz`;
+      document.getElementById('hudInstantFreq').textContent = `${state.instantPitchHz.toFixed(1)} Hz`;
+      document.getElementById('hudBarrelPressure').textContent = `${state.barrelPressurePa >= 0 ? '+' : ''}${state.barrelPressurePa.toFixed(1)} Pa`;
+      document.getElementById('hudOmoteEnergy').textContent = `${Math.round(state.omoteEnergy * 100)}%`;
+      document.getElementById('hudUraEnergy').textContent = `${Math.round(state.uraEnergy * 100)}%`;
+
+      for (let i = 0; i < state.modes.length; i++) {
+        const m = state.modes[i];
+        const rEl = document.getElementById(`tRatio_${i}`);
+        const fEl = document.getElementById(`tFreq_${i}`);
+        const aEl = document.getElementById(`tAmp_${i}`);
+        if (rEl) {
+          rEl.textContent = `${m.ratio.toFixed(2)}×`;
+          fEl.textContent = m.freq.toFixed(1);
+          aEl.style.width = `${Math.min(100, Math.round(m.ampOmote * 95))}%`;
+        }
+      }
+
+      state.traceHistory.push({
+        omote: state.omoteEnergy,
+        ura: state.uraEnergy,
+        pitch: state.instantPitchHz
+      });
+      if (state.traceHistory.length > 180) state.traceHistory.shift();
+      drawDualHeadTraceCanvas();
+      drawChladniRadar();
+
+      renderer.render(scene, camera);
+    }
+
+    rebuildTaikoDrum3D();
+    buildModalTable();
+    renderSequencerGrid();
+    centerAndFitCamera();
+    handleResize();
+
+    state.nonlinearEnv = 0.75;
+    state.modes.forEach((m, i) => {
+      if (!m.isRimMode) {
+        m.ampOmote = 0.75 / (1 + i * 0.4);
+        m.ampUra   = 0.65 / (1 + i * 0.4);
+      }
+    });
+
+    animate();
+  </script>
+</body>
+</html>

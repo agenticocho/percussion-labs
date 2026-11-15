@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TIMPANI-3D // Coupled Kettle-Cavity Air Spring, Live Pedal Portamento &amp; Bessel Inharmonicity Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-void: #05070b;
+      --bg-panel: rgba(11, 15, 24, 0.9);
+      --border-subtle: rgba(148, 163, 184, 0.16);
+      --accent-copper: #f59e0b;
+      --accent-cyan: #22d3ee;
+      --accent-emerald: #10b981;
+      --accent-violet: #a855f7;
+      --accent-rose: #f43f5e;
+    }
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-void);
+      color: #f1f5f9;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(7, 10, 18, 0.7); }
+    ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.28); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.65); }
+
+    /* Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      background: rgba(30, 41, 59, 0.95);
+      border-radius: 999px;
+      outline: none;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #05070b;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      cursor: pointer;
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    input[type="range"].pedal-slider {
+      height: 10px;
+      background: linear-gradient(90deg, rgba(244,63,94,0.35), rgba(245,158,11,0.5), rgba(34,211,238,0.55));
+      border: 1px solid rgba(245, 158, 11, 0.45);
+    }
+    input[type="range"].pedal-slider::-webkit-slider-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #fbbf24, #d97706);
+      border: 2px solid #fffbeb;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.9);
+    }
+    input[type="range"].cyan-slider::-webkit-slider-thumb {
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.75);
+    }
+    input[type="range"].emerald-slider::-webkit-slider-thumb {
+      background: #10b981;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.75);
+    }
+
+    .glass-card {
+      background: rgba(11, 15, 24, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .hud-pill {
+      background: rgba(5, 8, 15, 0.86);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    /* CRITICAL HiDPI / Fullscreen Canvas Lock */
+    #threeTimpaniMount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    #threeTimpaniMount canvas {
+      display: block !important;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+    }
+
+    /* Fullscreen viewport mode */
+    body.stage-fullscreen #topHeaderBar,
+    body.stage-fullscreen #leftControlSidebar,
+    body.stage-fullscreen #rightPhysicsSidebar,
+    body.stage-fullscreen #bottomTelemetryDeck {
+      display: none !important;
+    }
+    body.stage-fullscreen #mainWorkspaceGrid {
+      height: 100vh !important;
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen w-screen overflow-hidden bg-[#05070b] text-slate-100">
+
+  <!-- TOP HEADER BAR -->
+  <header id="topHeaderBar" class="h-13 shrink-0 px-4 py-2 border-b border-slate-800/80 bg-[#070a12]/95 flex items-center justify-between gap-3 z-30">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/30 via-orange-500/20 to-cyan-500/25 border border-amber-400/40 flex items-center justify-center shadow-inner shrink-0">
+        <span class="font-mono-tech text-xs font-bold text-amber-300">(1,1)</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <h1 class="font-display text-sm md:text-base font-bold tracking-tight text-white truncate">
+            TIMPANI-3D <span class="text-amber-400 font-normal">//</span> <span class="text-slate-300 font-medium text-xs md:text-sm">Coupled Kettle Air-Cavity &amp; Live Pedal Portamento Lab</span>
+          </h1>
+          <span class="hidden xl:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono-tech uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            J_m(j_mn r/R) ↔ Kettle Air Spring
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 truncate">
+          Live Tension Pedal <span class="font-mono-tech text-amber-300">T(t)</span> Mid-Decay Glissando • Vacuum Bessel Zeros (<span class="font-mono-tech text-rose-300">1 : 1.593 : 2.136 : 2.295</span>) vs. Air-Loaded Harmonic Lock (<span class="font-mono-tech text-cyan-300">2 : 3 : 4 : 5</span>)
+        </p>
+      </div>
+    </div>
+
+    <!-- Top Quick Actions -->
+    <div class="flex items-center gap-2 shrink-0">
+      <!-- Drum Kettle Size Selector -->
+      <div class="flex items-center bg-slate-900/90 border border-slate-700/70 rounded-lg p-0.5 text-[11px] font-mono-tech">
+        <button data-drum="32" class="drum-size-btn px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold transition" title="32-inch Bass Timpano (D2–A2)">32" Bass</button>
+        <button data-drum="29" class="drum-size-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="29-inch Low-Mid Timpano (F2–C3)">29" Low</button>
+        <button data-drum="26" class="drum-size-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="26-inch High-Mid Timpano (Bb2–F3)">26" Mid</button>
+        <button data-drum="23" class="drum-size-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="23-inch Treble Timpano (D3–A3)">23" Treble</button>
+        <button data-drum="20" class="drum-size-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition" title="20-inch Piccolo Timpano (F3–C4)">20" Picc</button>
+      </div>
+
+      <button id="strikeNormalBtn" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-semibold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition">
+        <span>🥁 Strike Beating Spot</span>
+        <span class="font-mono-tech text-[10px] bg-black/20 px-1.5 py-0.2 rounded">[Space]</span>
+      </button>
+
+      <button id="rollToggleBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/80 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition" title="Sustained Timpani Tremolo Roll [R]">
+        <span id="rollDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span>Tremolo Roll [R]</span>
+      </button>
+
+      <button id="dampBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-300 hover:text-rose-200 border border-slate-700/80 hover:border-rose-500/40 text-xs font-mono-tech transition" title="Hand Muffle / Dampen Head [M]">
+        ✋ Muffle [M]
+      </button>
+
+      <button id="headerFullscreenBtn" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-xs font-mono-tech transition" title="Toggle Full-Screen 3D Stage [F]">
+        ⛶ Full Screen [F]
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div id="mainWorkspaceGrid" class="flex-1 flex min-h-0 relative overflow-hidden">
+
+    <!-- LEFT SIDEBAR: PEDAL PORTAMENTO & STRIKE / MALLET CONTROLS -->
+    <aside id="leftControlSidebar" class="w-80 xl:w-88 shrink-0 h-full overflow-y-auto border-r border-slate-800/80 bg-[#070b14]/95 p-3 space-y-3 z-20">
+
+      <!-- 1. THE SIGNATURE: LIVE FOOT PEDAL & MID-DECAY PORTAMENTO -->
+      <section class="glass-card rounded-xl p-3 border-amber-500/35 bg-gradient-to-b from-amber-500/[0.07] to-transparent space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-amber-300">
+              1. Live Foot Pedal (Mid-Decay Pitch)
+            </h2>
+          </div>
+          <span id="pedalNoteBadge" class="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-400/40 font-mono-tech text-xs font-bold text-amber-200">
+            F2 • 87.3 Hz
+          </span>
+        </div>
+
+        <p class="text-[11px] text-slate-300 leading-relaxed">
+          Move the pedal <strong class="text-amber-300">while the membrane is ringing</strong> (or drag the 3D foot pedal / scroll wheel) to bend tension <span class="font-mono-tech text-amber-200">T(t)</span> and wave speed <span class="font-mono-tech text-cyan-200">c = √(T/σ)</span> in real time.
+        </p>
+
+        <!-- Prominent Live Pedal Slider -->
+        <div class="bg-slate-950/90 border border-amber-500/30 rounded-lg p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-mono-tech">
+            <span id="pedalLowLabel" class="text-rose-300">Heel Down: D2 (73.4 Hz)</span>
+            <span id="pedalSemitoneReadout" class="text-amber-300 font-bold">+3.0 st</span>
+            <span id="pedalHighLabel" class="text-cyan-300">Toe Down: A2 (110.0 Hz)</span>
+          </div>
+          <input id="pedalSlider" type="range" min="0" max="1" step="0.001" value="0.428" class="pedal-slider" />
+          <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 pt-0.5">
+            <span>Tension T: <strong id="tensionReadout" class="text-slate-200">2,480 N/m</strong></span>
+            <span>Wave c_M: <strong id="waveSpeedReadout" class="text-cyan-300">97.6 m/s</strong></span>
+          </div>
+        </div>
+
+        <!-- Quick Semitone Tuning Stops (Crown Gauge) -->
+        <div>
+          <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+            <span>PEDAL GAUGE TARGET (GLIDES MID-RING)</span>
+            <span id="glideRateLabel" class="text-amber-300">Glide τ = 180 ms</span>
+          </div>
+          <div id="semitoneButtonsGrid" class="grid grid-cols-8 gap-1 font-mono-tech text-[10px]">
+            <!-- Populated dynamically for current drum range -->
+          </div>
+        </div>
+
+        <!-- Automated Mid-Decay Portamento / Glissando Envelopes -->
+        <div class="pt-1 border-t border-slate-800/80 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400">
+            <span>AUTO PORTAMENTO ON STRIKE</span>
+            <span id="glissStatusText" class="text-cyan-300">Manual Live Pedal</span>
+          </div>
+          <div class="grid grid-cols-2 gap-1 text-[11px]">
+            <button data-gliss="manual" class="gliss-mode-btn px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-medium text-left truncate">
+              🦶 Manual Live Pedal
+            </button>
+            <button data-gliss="bartok_up" class="gliss-mode-btn px-2 py-1 rounded bg-slate-900/90 text-slate-300 border border-slate-700/70 hover:border-amber-500/40 text-left truncate" title="Bartók Sonata / Concerto for Orchestra upward pedal glissando mid-ring">
+              📈 Bartók Gliss Up (+5 st)
+            </button>
+            <button data-gliss="bartok_down" class="gliss-mode-btn px-2 py-1 rounded bg-slate-900/90 text-slate-300 border border-slate-700/70 hover:border-amber-500/40 text-left truncate" title="Descending pedal release glissando after strike">
+              📉 Glissando Down (-5 st)
+            </button>
+            <button data-gliss="nielsen_swoop" class="gliss-mode-btn px-2 py-1 rounded bg-slate-900/90 text-slate-300 border border-slate-700/70 hover:border-amber-500/40 text-left truncate" title="Carl Nielsen Symphony No. 4 parabolic pitch bend swoop">
+              🌊 Nielsen Swoop (Up/Dn)
+            </button>
+          </div>
+          <div class="flex items-center gap-2 pt-0.5">
+            <span class="text-[10px] font-mono-tech text-slate-400 shrink-0">Sweep Speed:</span>
+            <input id="glissSpeedSlider" type="range" min="0.25" max="2.5" step="0.05" value="1.0" class="cyan-slider" />
+            <span id="glissSpeedVal" class="text-[10px] font-mono-tech text-cyan-300 w-10 text-right">1.0×</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. COUPLED KETTLE AIR CAVITY & BESSEL INHARMONICITY -->
+      <section class="glass-card rounded-xl p-3 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+            2. Kettle Air-Cavity Coupling
+          </h2>
+          <span id="kettleStateBadge" class="px-1.5 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/30 font-mono-tech text-[10px] text-cyan-300">
+            Coupled Kettle (2:3:4:5)
+          </span>
+        </div>
+
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          An unbaffled vacuum drumhead follows Bessel zeros (<span class="font-mono-tech text-rose-300">1 : 1.593 : 2.136 : 2.295</span> — unpitched clang). The enclosed copper kettle acts as an <strong class="text-cyan-300">adiabatic air spring</strong> on <span class="font-mono-tech">(0,n)</span> modes and <strong class="text-amber-300">radiation mass-loads</strong> <span class="font-mono-tech">(1,1)–(5,1)</span> into a harmonic <span class="font-mono-tech text-emerald-300">1 : 1.50 : 2.00 : 2.50 : 3.00</span> chord.
+        </p>
+
+        <!-- Air Coupling Strength Slider -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] font-mono-tech">
+            <span class="text-slate-300">Air-Cavity Coupling κ_air</span>
+            <span id="airCouplingVal" class="text-cyan-300 font-semibold">100% (Standard Kettle)</span>
+          </div>
+          <input id="airCouplingSlider" type="range" min="0" max="1.35" step="0.01" value="1.00" class="cyan-slider" />
+          <div class="flex justify-between text-[9px] font-mono-tech text-slate-500">
+            <span>0%: Vacuum Bessel Trap</span>
+            <span>100%: Orchestral Kettle</span>
+            <span>135%: Heavy Air Load</span>
+          </div>
+        </div>
+
+        <!-- Kettle Bowl Profile & Volume -->
+        <div class="grid grid-cols-3 gap-1 pt-0.5 text-[10px] font-mono-tech">
+          <button data-bowl="parabolic" class="bowl-profile-btn px-2 py-1.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-semibold">
+            Parabolic Bowl
+          </button>
+          <button data-bowl="hemispherical" class="bowl-profile-btn px-2 py-1.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200">
+            Hemispherical
+          </button>
+          <button data-bowl="open_vacuum" class="bowl-profile-btn px-2 py-1.5 rounded bg-slate-900 text-rose-300/80 border border-slate-800 hover:border-rose-500/40">
+            Vacuum / No Bowl
+          </button>
+        </div>
+
+        <!-- Kettle Depth / Cavity Volume Factor -->
+        <div class="space-y-1 pt-0.5">
+          <div class="flex justify-between text-[11px] font-mono-tech">
+            <span class="text-slate-300">Kettle Cavity Volume V_0</span>
+            <span id="cavityVolumeVal" class="text-amber-300">142 L (Adiabatic Spring)</span>
+          </div>
+          <input id="cavityVolumeSlider" type="range" min="0.45" max="1.65" step="0.01" value="1.00" />
+        </div>
+      </section>
+
+      <!-- 3. STRIKE POSITION (r/R) & MALLET FELT HARDNESS -->
+      <section class="glass-card rounded-xl p-3 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-xs font-bold uppercase tracking-wider text-emerald-300">
+            3. Strike Radius r/R &amp; Mallet Felt
+          </h2>
+          <span id="strikeSpotBadge" class="px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 font-mono-tech text-[10px] text-emerald-300">
+            r/R = 0.72 (Normal)
+          </span>
+        </div>
+
+        <!-- Strike Position r/R -->
+        <div class="space-y-1">
+          <div class="flex justify-between text-[11px] font-mono-tech">
+            <span class="text-slate-300">Strike Radius r_hit / R</span>
+            <span id="strikeRadiusReadout" class="text-emerald-300 font-semibold">0.72 R (4.5" from rim)</span>
+          </div>
+          <input id="strikeRadiusSlider" type="range" min="0.00" max="0.94" step="0.01" value="0.72" class="emerald-slider" />
+          <div class="grid grid-cols-2 gap-1 pt-1 text-[10px] font-mono-tech">
+            <button data-spot="0.72" class="spot-preset-btn px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 text-left truncate">
+              🎯 0.72R Normal Spot
+            </button>
+            <button data-spot="0.00" class="spot-preset-btn px-2 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:border-rose-500/40 text-left truncate" title="J_m(0) = 0 for all m >= 1: excites ONLY (0,n) axisymmetric modes!">
+              ⭕ 0.00R Center Thud
+            </button>
+            <button data-spot="0.44" class="spot-preset-btn px-2 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:border-cyan-500/40 text-left truncate" title="Sits on the nodal circle of (0,2) at r/R = 0.436">
+              〰️ 0.44R (0,2) Node
+            </button>
+            <button data-spot="0.89" class="spot-preset-btn px-2 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 hover:border-amber-500/40 text-left truncate" title="Near counterhoop rim: thin metallic high-m ring">
+              🔔 0.89R Rim Ring
+            </button>
+          </div>
+        </div>
+
+        <!-- Mallet Felt Hardness -->
+        <div class="space-y-1 pt-1.5 border-t border-slate-800/80">
+          <div class="flex justify-between text-[11px] font-mono-tech">
+            <span class="text-slate-300">Mallet Felt Hardness</span>
+            <span id="malletHardnessVal" class="text-amber-300">0.48 (Medium Felt • τ=3.2 ms)</span>
+          </div>
+          <input id="malletHardnessSlider" type="range" min="0.08" max="0.98" step="0.01" value="0.48" />
+          <div class="grid grid-cols-4 gap-1 pt-1 text-[10px] font-mono-tech">
+            <button data-mallet="0.15" class="mallet-preset-btn px-1.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">Soft Felt</button>
+            <button data-mallet="0.48" class="mallet-preset-btn px-1.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-semibold">Med Felt</button>
+            <button data-mallet="0.76" class="mallet-preset-btn px-1.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">Staccato</button>
+            <button data-mallet="0.95" class="mallet-preset-btn px-1.5 py-1 rounded bg-slate-900 text-rose-300 border border-slate-800">Baroque Wood</button>
+          </div>
+        </div>
+
+        <!-- Strike Velocity & Sustain Damping -->
+        <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Strike Force</span>
+              <span id="strikeVelocityVal" class="text-slate-200">0.85 (ff)</span>
+            </div>
+            <input id="strikeVelocitySlider" type="range" min="0.15" max="1.0" step="0.01" value="0.85" />
+          </div>
+          <div>
+            <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+              <span>Ring Sustain</span>
+              <span id="sustainScaleVal" class="text-slate-200">1.0× (6.5s)</span>
+            </div>
+            <input id="sustainScaleSlider" type="range" min="0.3" max="2.5" step="0.05" value="1.0" />
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- CENTER 3D STAGE -->
+    <main class="flex-1 relative h-full min-w-0 bg-[#04060a] overflow-hidden">
+      <div id="threeTimpaniMount"></div>
+
+      <!-- TOP-LEFT FLOATING HUD: COUPLED PHYSICS READOUT -->
+      <div class="absolute top-3 left-3 z-10 pointer-events-none flex flex-col gap-2 max-w-md">
+        <div class="hud-pill rounded-xl px-3 py-2 border border-slate-700/70 shadow-2xl">
+          <div class="flex items-center gap-2 text-[11px] font-mono-tech">
+            <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold" id="hudDrumName">32" BASS TIMPANO</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-cyan-300 font-bold" id="hudPrincipalPitch">f_11 = 87.3 Hz (F2)</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-emerald-300" id="hudPedalAngle">Pedal: 43%</span>
+          </div>
+          <div class="mt-1 flex items-center gap-3 text-[10px] font-mono-tech text-slate-400">
+            <span>Kettle ΔP: <strong id="hudCavityPressure" class="text-amber-300">+0.0 Pa</strong></span>
+            <span>(0,1)/(1,1): <strong id="hud01Ratio" class="text-rose-300">0.840</strong></span>
+            <span>(2,1)/(1,1): <strong id="hud21Ratio" class="text-cyan-300">1.500 (5th)</strong></span>
+            <span>(3,1)/(1,1): <strong id="hud31Ratio" class="text-emerald-300">2.000 (8ve)</strong></span>
+          </div>
+        </div>
+
+        <!-- Interactive Instruction Pill -->
+        <div class="hud-pill rounded-lg px-2.5 py-1.5 text-[10px] font-mono-tech text-slate-300 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span>🖱️ <strong class="text-amber-300">Click Membrane</strong>: Strike at (r/R, θ)</span>
+          <span>🦶 <strong class="text-cyan-300">Drag 3D Pedal / Shift+Wheel</strong>: Bend Pitch Mid-Decay</span>
+          <span>🔄 <strong class="text-slate-200">Right-Drag</strong>: Orbit 3D</span>
+        </div>
+      </div>
+
+      <!-- TOP-RIGHT FLOATING CAMERA & STAGE CONTROLS (ALWAYS VISIBLE IN FULL-SCREEN) -->
+      <div class="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
+        <div class="hud-pill rounded-xl p-1.5 flex items-center gap-1 shadow-xl">
+          <button id="camPresetPerformBtn" class="px-2 py-1 rounded text-[10px] font-mono-tech bg-amber-500/20 text-amber-200 border border-amber-500/40 hover:bg-amber-500/30 transition" title="Timpanist Overhead + Pedal View">
+            Perspective
+          </button>
+          <button id="camPresetCutawayBtn" class="px-2 py-1 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Side Cutaway of Kettle Air Cavity &amp; Pedal Spider">
+            Kettle Cutaway
+          </button>
+          <button id="camPresetTopNodalBtn" class="px-2 py-1 rounded text-[10px] font-mono-tech text-slate-300 hover:bg-slate-800 transition" title="Top-Down Bessel Nodal Map">
+            Top Chladni
+          </button>
+          <button id="camCenterFitBtn" class="px-2 py-1 rounded text-[10px] font-mono-tech bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition" title="Center &amp; Fit Entire Timpano + Pedal in Viewport [C]">
+            ⌖ Center [C]
+          </button>
+          <button id="stageFullscreenBtn" class="px-2.5 py-1 rounded text-[10px] font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 font-semibold transition" title="Toggle Full-Screen 3D Viewport [F]">
+            ⛶ Full Screen [F]
+          </button>
+        </div>
+
+        <!-- Zoom, Cutaway & Visual Overlay Bar -->
+        <div class="hud-pill rounded-xl px-2.5 py-1.5 flex items-center gap-2 text-[10px] font-mono-tech">
+          <button id="zoomOutBtn" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center">−</button>
+          <input id="cameraZoomSlider" type="range" min="5.5" max="22" step="0.1" value="11.4" class="w-20" title="Camera Distance / Zoom" />
+          <button id="zoomInBtn" class="w-5 h-5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center">+</button>
+          <span class="text-slate-600">|</span>
+          <label class="flex items-center gap-1 cursor-pointer text-cyan-300" title="Show internal acoustic pressure waves &amp; adiabatic air spring inside the copper bowl">
+            <input id="toggleKettleXray" type="checkbox" checked class="accent-cyan-400" />
+            <span>Kettle X-Ray</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer text-amber-300" title="Overlay Bessel nodal circles and diameters on the membrane">
+            <input id="toggleNodalOverlay" type="checkbox" checked class="accent-amber-400" />
+            <span>Nodal Lines</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer text-emerald-300" title="Exaggerate 3D membrane displacement for modal inspection">
+            <input id="toggleExaggerate3D" type="checkbox" checked class="accent-emerald-400" />
+            <span>3D Amp 2.5×</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- FLOATING INTERACTIVE LIVE PEDAL DOCK (BOTTOM OF 3D STAGE — ALSO USABLE IN FULL-SCREEN) -->
+      <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 w-[92%] max-w-xl hud-pill rounded-2xl px-4 py-2.5 border border-amber-500/35 shadow-2xl">
+        <div class="flex items-center justify-between gap-3 mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono-tech uppercase tracking-wider font-bold text-amber-300">🦶 Live Foot Pedal Portamento</span>
+            <span id="floatingPedalPitch" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-200 font-mono-tech text-xs font-bold">F2 (87.3 Hz)</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-[10px] font-mono-tech">
+            <button id="quickBendDownBtn" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700" title="Sweep Pedal Heel-Down Mid-Decay">↘ Heel Sweep</button>
+            <button id="quickBendUpBtn" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700" title="Sweep Pedal Toe-Down Mid-Decay">↗ Toe Sweep</button>
+            <button id="quickStrikeAndGlideBtn" class="px-2.5 py-0.5 rounded bg-amber-500/25 hover:bg-amber-500/35 text-amber-200 border border-amber-500/40 font-semibold" title="Strike head and immediately glide up a Perfect Fourth">⚡ Strike + 4th Gliss</button>
+          </div>
+        </div>
+        <input id="floatingPedalSlider" type="range" min="0" max="1" step="0.001" value="0.428" class="pedal-slider" />
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: BESSEL ZEROS VS. KETTLE AIR-LOADED MODAL INSPECTOR -->
+    <aside id="rightPhysicsSidebar" class="w-88 xl:w-96 shrink-0 h-full overflow-y-auto border-l border-slate-800/80 bg-[#070b14]/95 p-3 space-y-3 z-20">
+
+      <!-- BESSEL INHARMONICITY TRAP VS. KETTLE HARMONIC LOCK TABLE -->
+      <section class="glass-card rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-white">
+              Bessel Zeros vs. Kettle Air-Loaded Modes
+            </h2>
+            <p class="text-[10px] text-slate-400">
+              Click any mode <span class="font-mono-tech text-amber-300">(m,n)</span> to solo/excite its 3D Bessel eigenfunction
+            </p>
+          </div>
+          <button id="clearSoloModeBtn" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono-tech text-slate-300 border border-slate-700">
+            All Modes
+          </button>
+        </div>
+
+        <!-- Ratio Framing Toggle: Relative to (0,1) vs Relative to Principal (1,1) -->
+        <div class="flex items-center justify-between bg-slate-950/90 border border-slate-800 rounded-lg p-1 text-[10px] font-mono-tech">
+          <span class="px-1.5 text-slate-400">Normalize Ratios:</span>
+          <div class="flex gap-1">
+            <button id="normMode01Btn" class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-500/40 font-semibold" title="Show textbook Bessel roots relative to (0,1): 1 : 1.593 : 2.136 : 2.295">
+              ÷ f_(0,1) [1 : 1.59 : 2.14]
+            </button>
+            <button id="normMode11Btn" class="px-2 py-0.5 rounded text-slate-400 hover:text-slate-200" title="Show musical intervals relative to Principal Pitch (1,1): 1.00 : 1.50 : 2.00 : 2.50">
+              ÷ f_(1,1) [Pitch Root]
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Comparison Table -->
+        <div class="overflow-hidden rounded-lg border border-slate-800/90 bg-slate-950/80">
+          <table class="w-full text-left border-collapse font-mono-tech text-[10px]">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 bg-slate-900/90">
+                <th class="py-1.5 px-2">Mode</th>
+                <th class="py-1.5 px-1.5 text-rose-300" title="Ideal Unbaffled Circular Membrane in Vacuum (Bessel Zeros j_mn)">Vacuum j_mn</th>
+                <th class="py-1.5 px-1.5 text-cyan-300" title="Coupled Membrane + Copper Kettle Air Cavity Ratio">Kettle Ratio</th>
+                <th class="py-1.5 px-1.5 text-amber-300">Live Hz</th>
+                <th class="py-1.5 px-2 text-right">Amp</th>
+              </tr>
+            </thead>
+            <tbody id="modalInspectorBody" class="divide-y divide-slate-800/60">
+              <!-- Populated dynamically at 60fps -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Physics Note Card -->
+        <div class="rounded-lg bg-slate-900/75 border border-slate-800 p-2 text-[10px] text-slate-300 leading-relaxed space-y-1">
+          <div class="flex items-center justify-between font-mono-tech text-[10px]">
+            <span class="text-rose-300">Vacuum Bessel: 1 : 1.593 : 2.136 : 2.295</span>
+            <span class="text-emerald-300">Kettle (m,1): 2 : 3 : 4 : 5 : 6</span>
+          </div>
+          <p class="text-slate-400">
+            In vacuum, <span class="font-mono-tech text-slate-200">(2,1)/(1,1) = 1.340</span> (a flat fourth) and <span class="font-mono-tech text-slate-200">(3,1)/(1,1) = 1.665</span> (a sixth) — creating an unpitched metallic crash. Coupling the enclosed kettle air cavity compresses <span class="font-mono-tech text-rose-300">(0,1)</span> upward (<span class="font-mono-tech">0.628 → 0.84 f_11</span>) while radiation mass-loading locks <span class="font-mono-tech text-cyan-300">(1,1) : (2,1) : (3,1) : (4,1)</span> into <span class="font-mono-tech text-emerald-300">1.00 : 1.50 : 2.00 : 2.50</span> (virtual fundamental <span class="font-mono-tech">f_0 = 0.5 f_11</span>).
+          </p>
+        </div>
+      </section>
+
+      <!-- RADIAL BESSEL EXCITATION PROFILE J_m(j_mn r/R) CANVAS -->
+      <section class="glass-card rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <h2 class="font-display text-xs font-bold uppercase tracking-wider text-emerald-300">
+            Radial Bessel Excitation |J_m(j_mn r/R)|
+          </h2>
+          <span id="radialFilterSummary" class="font-mono-tech text-[10px] text-slate-400">
+            m≥1 Peak @ 0.72R
+          </span>
+        </div>
+        <canvas id="besselProfileCanvas" width="340" height="125" class="w-full h-[115px] rounded-lg bg-[#050811] border border-slate-800/90 cursor-crosshair" title="Click or drag horizontally to move strike radius r/R and inspect Bessel eigenfunction nodes"></canvas>
+        <div class="flex justify-between text-[9px] font-mono-tech text-slate-400">
+          <span>r/R = 0 (Center: ONLY m=0 modes!)</span>
+          <span>r/R = 0.72 (Beating Spot)</span>
+          <span>r/R = 1.0 (Rim Node)</span>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- BOTTOM TELEMETRY DECK: PORTAMENTO PITCH-TIME TRACE & SPECTRUM -->
+  <footer id="bottomTelemetryDeck" class="h-40 shrink-0 border-t border-slate-800/80 bg-[#060911]/95 px-3 py-2 grid grid-cols-12 gap-3 z-20">
+    <!-- Left 6 cols: Live Mid-Decay Pedal Portamento Pitch-Time Waterfall -->
+    <div class="col-span-6 flex flex-col min-h-0 bg-slate-950/80 border border-slate-800/80 rounded-xl p-2">
+      <div class="flex items-center justify-between text-[10px] font-mono-tech mb-1">
+        <span class="text-amber-300 font-semibold">LIVE PEDAL PORTAMENTO TRAJECTORY • f_mn(T(t)) MID-DECAY GLISSANDO</span>
+        <span id="portamentoDeltaReadout" class="text-cyan-300">ΔPitch: +0.0 cents</span>
+      </div>
+      <canvas id="portamentoTraceCanvas" width="600" height="110" class="w-full flex-1 min-h-0 rounded bg-[#04070e]"></canvas>
+    </div>
+
+    <!-- Right 6 cols: Coupled Kettle Air vs Vacuum Bessel Spectrum -->
+    <div class="col-span-6 flex flex-col min-h-0 bg-slate-950/80 border border-slate-800/80 rounded-xl p-2">
+      <div class="flex items-center justify-between text-[10px] font-mono-tech mb-1">
+        <span class="text-cyan-300 font-semibold">COUPLED MODAL SPECTRUM • ROSE = VACUUM BESSEL j_mn | CYAN/AMBER = LIVE KETTLE HEAD</span>
+        <span id="activePartialsReadout" class="text-emerald-300">10 Coupled Eigenmodes Active</span>
+      </div>
+      <canvas id="spectrumAnalyzerCanvas" width="600" height="110" class="w-full flex-1 min-h-0 rounded bg-[#04070e]"></canvas>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. ACOUSTIC & MATHEMATICAL CONSTANTS FOR TIMPANI (CHRISTIAN ET AL. 1984)
+    // =========================================================================
+    // Standard Orchestral Timpani Sizes & Ranges (Wikipedia / Professional Console)
+    const TIMPANI_DRUMS = {
+      '32': {
+        inches: 32,
+        name: '32" Bass Timpano',
+        radiusM: 0.4064,        // 32" diameter = 0.8128 m
+        kettleVolLiters: 142,
+        fMin: 73.42,            // D2
+        fMax: 110.00,           // A2
+        noteMin: 'D2',
+        noteMax: 'A2',
+        defaultPedal: 0.428,    // F2 (87.31 Hz)
+        sigma: 0.26             // PET / Calfskin areal density kg/m^2
+      },
+      '29': {
+        inches: 29,
+        name: '29" Low-Mid Timpano',
+        radiusM: 0.3683,
+        kettleVolLiters: 108,
+        fMin: 87.31,            // F2
+        fMax: 130.81,           // C3
+        noteMin: 'F2',
+        noteMax: 'C3',
+        defaultPedal: 0.428,    // Ab2 / A2
+        sigma: 0.25
+      },
+      '26': {
+        inches: 26,
+        name: '26" High-Mid Timpano',
+        radiusM: 0.3302,
+        kettleVolLiters: 78,
+        fMin: 116.54,           // Bb2
+        fMax: 174.61,           // F3
+        noteMin: 'Bb2',
+        noteMax: 'F3',
+        defaultPedal: 0.428,    // D3
+        sigma: 0.24
+      },
+      '23': {
+        inches: 23,
+        name: '23" Treble Timpano',
+        radiusM: 0.2921,
+        kettleVolLiters: 54,
+        fMin: 146.83,           // D3
+        fMax: 220.00,           // A3
+        noteMin: 'D3',
+        noteMax: 'A3',
+        defaultPedal: 0.428,    // F3
+        sigma: 0.23
+      },
+      '20': {
+        inches: 20,
+        name: '20" Piccolo Timpano',
+        radiusM: 0.2540,
+        kettleVolLiters: 36,
+        fMin: 174.61,           // F3
+        fMax: 261.63,           // C4
+        noteMin: 'F3',
+        noteMax: 'C4',
+        defaultPedal: 0.571,    // A3 / Bb3
+        sigma: 0.22
+      }
+    };
+
+    // 10 Canonical Circular Membrane Bessel Modes (m = azimuthal diameters, n = radial circles)
+    // Includes exact Bessel zeros j_mn, vacuum ratios, and Christian/Rossing (JASA 1984) coupled kettle ratios
+    const TIMPANI_MODES = [
+      {
+        id: '0,1', m: 0, n: 1,
+        j_mn: 2.404825,
+        vacRatio01: 1.000,
+        vacRatio11: 0.6276,
+        kettleRatio11: 0.840,    // Raised from 0.628 by enclosed kettle adiabatic air spring!
+        baseDecaySec: 1.65,      // Heavily radiation-damped monopole
+        role: 'Axisymmetric Air-Spring Thump',
+        color: '#f43f5e',
+        axisymmetric: true
+      },
+      {
+        id: '1,1', m: 1, n: 1,
+        j_mn: 3.831706,
+        vacRatio01: 1.5933,
+        vacRatio11: 1.0000,
+        kettleRatio11: 1.000,    // PRINCIPAL MUSICAL PITCH (2nd harmonic of virtual root)
+        baseDecaySec: 5.80,
+        role: 'Principal Pitch (2× Virtual Root)',
+        color: '#f59e0b',
+        axisymmetric: false
+      },
+      {
+        id: '2,1', m: 2, n: 1,
+        j_mn: 5.135622,
+        vacRatio01: 2.1355,
+        vacRatio11: 1.3403,
+        kettleRatio11: 1.500,    // Shifted from 1.340 -> 1.500 (Perfect Fifth / 3rd harmonic)
+        baseDecaySec: 6.40,
+        role: 'Perfect Fifth (3× Virtual Root)',
+        color: '#22d3ee',
+        axisymmetric: false
+      },
+      {
+        id: '0,2', m: 0, n: 2,
+        j_mn: 5.520078,
+        vacRatio01: 2.2954,
+        vacRatio11: 1.4406,
+        kettleRatio11: 1.670,    // Stiffened by cavity compliance (nodal circle at r/R = 0.436)
+        baseDecaySec: 2.30,
+        role: '2nd Radial Circle (Node 0.44R)',
+        color: '#fb7185',
+        axisymmetric: true
+      },
+      {
+        id: '3,1', m: 3, n: 1,
+        j_mn: 6.380162,
+        vacRatio01: 2.6531,
+        vacRatio11: 1.6651,
+        kettleRatio11: 2.000,    // Shifted from 1.665 -> 2.000 (Octave / 4th harmonic)
+        baseDecaySec: 5.60,
+        role: 'Octave Partial (4× Virtual Root)',
+        color: '#10b981',
+        axisymmetric: false
+      },
+      {
+        id: '1,2', m: 1, n: 2,
+        j_mn: 7.015587,
+        vacRatio01: 2.9173,
+        vacRatio11: 1.8309,
+        kettleRatio11: 2.290,
+        baseDecaySec: 3.10,
+        role: 'Inner-Circle Dipole (Node 0.55R)',
+        color: '#a855f7',
+        axisymmetric: false
+      },
+      {
+        id: '4,1', m: 4, n: 1,
+        j_mn: 7.588342,
+        vacRatio01: 3.1555,
+        vacRatio11: 1.9804,
+        kettleRatio11: 2.500,    // Shifted from 1.980 -> 2.500 (Major 10th / 5th harmonic)
+        baseDecaySec: 4.50,
+        role: 'Major Tenth (5× Virtual Root)',
+        color: '#38bdf8',
+        axisymmetric: false
+      },
+      {
+        id: '2,2', m: 2, n: 2,
+        j_mn: 8.417244,
+        vacRatio01: 3.5001,
+        vacRatio11: 2.1967,
+        kettleRatio11: 2.820,
+        baseDecaySec: 2.50,
+        role: 'Compound Quadrupole Circle',
+        color: '#c084fc',
+        axisymmetric: false
+      },
+      {
+        id: '0,3', m: 0, n: 3,
+        j_mn: 8.653728,
+        vacRatio01: 3.5985,
+        vacRatio11: 2.2585,
+        kettleRatio11: 2.910,
+        baseDecaySec: 1.90,
+        role: '3rd Axisymmetric Center Mode',
+        color: '#f472b6',
+        axisymmetric: true
+      },
+      {
+        id: '5,1', m: 5, n: 1,
+        j_mn: 8.771484,
+        vacRatio01: 3.6475,
+        vacRatio11: 2.2892,
+        kettleRatio11: 2.990,    // Shifted from 2.289 -> ~3.000 (Twelfth / 6th harmonic)
+        baseDecaySec: 3.70,
+        role: 'Twelfth Partial (6× Virtual Root)',
+        color: '#34d399',
+        axisymmetric: false
+      }
+    ];
+
+    // Polynomial / Series Evaluation of Bessel Function J_m(x) for x in [0, 10]
+    function besselJ(m, x) {
+      if (x <= 1e-8) return m === 0 ? 1.0 : 0.0;
+      let sum = 0.0;
+      const halfX = 0.5 * x;
+      let term = Math.pow(halfX, m);
+      // Divide by m!
+      for (let i = 2; i <= m; i++) term /= i;
+      sum += term;
+      const halfX2 = -halfX * halfX;
+      for (let k = 1; k <= 18; k++) {
+        term *= halfX2 / (k * (m + k));
+        sum += term;
+        if (Math.abs(term) < 1e-12) break;
+      }
+      return sum;
+    }
+
+    // Precompute normalization peak max_{r in [0,1]} |J_m(j_mn * r)| for each mode
+    TIMPANI_MODES.forEach(mode => {
+      let maxVal = 0.001;
+      for (let i = 0; i <= 200; i++) {
+        const r = i / 200;
+        const v = Math.abs(besselJ(mode.m, mode.j_mn * r));
+        if (v > maxVal) maxVal = v;
+      }
+      mode.besselPeak = maxVal;
+    });
+
+    // Musical Note Helper
+    const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+    function freqToNoteInfo(freq) {
+      const midi = 69 + 12 * Math.log2(Math.max(20, freq) / 440.0);
+      const nearest = Math.round(midi);
+      const cents = Math.round((midi - nearest) * 100);
+      const name = NOTE_NAMES[((nearest % 12) + 12) % 12];
+      const octave = Math.floor(nearest / 12) - 1;
+      return {
+        note: `${name}${octave}`,
+        cents,
+        midi,
+        formatted: `${name}${octave}${cents === 0 ? '' : (cents > 0 ? ` +${cents}¢` : ` ${cents}¢`)}`
+      };
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    const state = {
+      drumKey: '32',
+      pedalPos: 0.428,         // 0.0 (Heel Down = D2) to 1.0 (Toe Down = A2)
+      pedalTarget: 0.428,      // For smooth foot-pedal glide
+      pedalGlideTau: 0.065,    // Glide time constant in seconds
+      airCoupling: 1.00,       // 0.0 = Vacuum Bessel Trap, 1.0 = Coupled Copper Kettle
+      bowlProfile: 'parabolic',// 'parabolic' | 'hemispherical' | 'open_vacuum'
+      cavityVolumeScale: 1.00, // Scales kettle volume V_0 (affects (0,n) air spring stiffness)
+      strikeRadius: 0.72,      // r_hit / R (0.0 = dead center, 0.72 = normal beating spot)
+      strikeAngle: -Math.PI * 0.35, // Azimuthal angle where mallet strikes
+      malletHardness: 0.48,    // 0.08 (soft felt) to 0.98 (solid wood)
+      strikeVelocity: 0.85,
+      sustainScale: 1.0,
+      glissMode: 'manual',     // 'manual' | 'bartok_up' | 'bartok_down' | 'nielsen_swoop'
+      glissSpeed: 1.0,
+      glissStartTime: -100,
+      glissBasePedal: 0.428,
+      glissActive: false,
+      normalizeTo: '01',       // '01' (1 : 1.593 : 2.136 : 2.295) or '11' (1.00 : 1.50 : 2.00)
+      soloModeIndex: -1,       // -1 = all modes excited by strike; >=0 = solo specific mode
+      rollActive: false,
+      lastRollHitTime: 0,
+      rollHandToggle: 0,
+      kettleXray: true,
+      nodalOverlay: true,
+      exaggerate3D: true,
+      lastStrikePitchHz: 87.31,
+      cavityPressurePa: 0.0,
+      // Live modal state (amplitudes, phases, current frequencies)
+      modes: TIMPANI_MODES.map(m => ({
+        ...m,
+        currentFreq: 100,
+        vacuumFreq: 100,
+        ratioTo01: m.vacRatio01,
+        ratioTo11: m.kettleRatio11,
+        amplitude: 0.0,
+        initialExcitation: 0.0,
+        phase: 0.0,
+        decayRate: 1.0 / m.baseDecaySec
+      })),
+      // Pitch-Time Portamento History for Bottom Left Trace
+      pitchHistory: []
+    };
+
+    // =========================================================================
+    // 3. COUPLED MEMBRANE + KETTLE AIR-CAVITY PHYSICS ENGINE
+    // =========================================================================
+    function computeCoupledModalFrequencies() {
+      const drum = TIMPANI_DRUMS[state.drumKey];
+      // Principal (1,1) frequency determined by pedal position across 7-semitone (Perfect Fifth) span:
+      // f_11(pedal) = fMin * (fMax / fMin)^pedalPos
+      const f11_coupled = drum.fMin * Math.pow(drum.fMax / drum.fMin, state.pedalPos);
+
+      // Effective wave speed and membrane tension T(t):
+      // In coupled state, f_11 = (j_11 / (2*pi*R)) * c_eff => c_M
+      const R = drum.radiusM;
+      const c_M = (f11_coupled * 2 * Math.PI * R) / (3.831706 / 1.18); // Accounting for baffled air mass loading factor 1.18
+      const tension = drum.sigma * c_M * c_M;
+
+      // Coupled vs Vacuum interpolation parameter
+      const kappa = state.bowlProfile === 'open_vacuum' ? 0.0 : state.airCoupling;
+      const bowlBrightness = state.bowlProfile === 'hemispherical' ? 1.015 : 1.0;
+
+      // Vacuum f_11 if air loading were removed at the exact same tension T(t):
+      // Wait: to make the musical tuning comparison intuitive, f_11 stays anchored to the pedal gauge,
+      // OR we show both the Vacuum Bessel frequencies and the Kettle-Coupled frequencies.
+      // Let's compute each mode's ratio relative to (1,1):
+      const volSpringFactor = 1.0 / Math.max(0.35, state.cavityVolumeScale);
+
+      state.modes.forEach((mode, idx) => {
+        const vacRatio11 = mode.vacRatio11; // j_mn / j_11
+        let targetKettleRatio11 = mode.kettleRatio11;
+
+        // Axisymmetric modes (0,1), (0,2), (0,3) compress the enclosed kettle volume V_0!
+        // Smaller kettle volume V_0 -> stiffer adiabatic air spring -> higher (0,1) frequency
+        if (mode.m === 0) {
+          const airSpringShift = (mode.kettleRatio11 - vacRatio11) * Math.pow(volSpringFactor, mode.n === 1 ? 0.65 : 0.25);
+          targetKettleRatio11 = vacRatio11 + airSpringShift;
+        } else if (mode.m >= 2) {
+          targetKettleRatio11 = mode.kettleRatio11 * bowlBrightness;
+        }
+
+        // Blend smoothly between Vacuum Bessel Ratio (kappa = 0) and Coupled Kettle Ratio (kappa = 1)
+        const blendedRatio11 = vacRatio11 + kappa * (targetKettleRatio11 - vacRatio11);
+
+        mode.vacuumFreq = f11_coupled * vacRatio11;
+        mode.currentFreq = f11_coupled * blendedRatio11;
+        mode.ratioTo11 = blendedRatio11;
+      });
+
+      const f01_current = state.modes[0].currentFreq;
+      state.modes.forEach(mode => {
+        mode.ratioTo01 = mode.currentFreq / Math.max(1e-4, f01_current);
+      });
+
+      return { f11: f11_coupled, c_M, tension };
+    }
+
+    // Compute Excitation Amplitude of Mode (m,n) for Strike at r_hit/R and Mallet Hardness
+    function computeModeStrikeExcitation(mode, rNorm, hardness, velocity) {
+      // 1. Radial Bessel eigenfunction factor |J_m(j_mn * r_hit / R)| normalized by mode peak
+      const besselVal = Math.abs(besselJ(mode.m, mode.j_mn * rNorm)) / mode.besselPeak;
+
+      // 2. Hertzian mallet contact duration filter:
+      // Soft felt has longer contact duration tau_c -> low-pass filters high j_mn modes
+      // Hard felt / wood has short tau_c -> excites upper modes strongly
+      const modeOrder = mode.j_mn / 2.404825; // 1.0 to 3.65
+      const rollOffAlpha = (1.08 - hardness) * 1.15;
+      const malletFilter = Math.exp(-rollOffAlpha * Math.max(0, modeOrder - 1.0));
+
+      // 3. Acoustic far-field radiation efficiency (dipoles/quadrupoles (m,1) radiate strongest in baffled kettle)
+      const radBoost = (mode.n === 1 && mode.m >= 1) ? 1.18 : 0.85;
+
+      return velocity * besselVal * malletFilter * radBoost;
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO API SYNTHESIS ENGINE (WITH REAL-TIME MID-DECAY PORTAMENTO)
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let kettleBodyFilter = null;
+    let modalVoices = [];
+
+    function ensureAudioEngine() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.78;
+
+        // Subtle copper kettle body resonance warmth + limiter compressor
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.value = -10;
+        compressor.knee.value = 12;
+        compressor.ratio.value = 4;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.15;
+
+        kettleBodyFilter = audioCtx.createBiquadFilter();
+        kettleBodyFilter.type = 'peaking';
+        kettleBodyFilter.frequency.value = 135;
+        kettleBodyFilter.Q.value = 1.6;
+        kettleBodyFilter.gain.value = 3.5;
+
+        kettleBodyFilter.connect(compressor);
+        compressor.connect(masterGain);
+        masterGain.connect(audioCtx.destination);
+
+        // Create 10 persistent continuous modal oscillators so pedal movements bend pitch mid-decay!
+        modalVoices = state.modes.map((mode) => {
+          const osc = audioCtx.createOscillator();
+          // Slight warm harmonic saturation on principal modes
+          osc.type = 'sine';
+          osc.frequency.value = mode.currentFreq;
+
+          const gain = audioCtx.createGain();
+          gain.gain.value = 0.0;
+
+          osc.connect(gain);
+          gain.connect(kettleBodyFilter);
+          osc.start();
+          return { osc, gain };
+        });
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Transient Mallet Felt Thump + Kettle Cavity Air Impulse
+    function triggerMalletTransientAudio(velocity, hardness, f11) {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+
+      // Felt impact noise burst
+      const dur = 0.045;
+      const buf = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const t = i / data.length;
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-t * (12 + hardness * 25));
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buf;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = f11 * (1.2 + hardness * 4.8);
+      filter.Q.value = 1.8;
+
+      const env = audioCtx.createGain();
+      env.gain.setValueAtTime(0.28 * velocity * (0.35 + 0.65 * hardness), now);
+      env.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+      noise.connect(filter);
+      filter.connect(env);
+      env.connect(kettleBodyFilter);
+      noise.start(now);
+      noise.stop(now + dur);
+    }
+
+    // Update Web Audio Oscillator Frequencies & Gains Every Frame (Enables Smooth Mid-Decay Portamento!)
+    function syncWebAudioToModalState() {
+      if (!audioCtx || modalVoices.length === 0) return;
+      const now = audioCtx.currentTime;
+      const f11 = state.modes[1].currentFreq;
+      kettleBodyFilter.frequency.setTargetAtTime(f11 * 1.15, now, 0.025);
+
+      for (let i = 0; i < state.modes.length; i++) {
+        const m = state.modes[i];
+        const voice = modalVoices[i];
+        // Continuous pitch bend mid-decay!
+        voice.osc.frequency.setTargetAtTime(Math.max(20, Math.min(8000, m.currentFreq)), now, 0.012);
+
+        // Acoustic weighting
+        const weight = (m.m === 1 && m.n === 1) ? 0.36 :
+                       (m.n === 1 && m.m >= 2) ? 0.22 :
+                       (m.m === 0 && m.n === 1) ? 0.25 : 0.12;
+        const targetGain = Math.min(0.45, m.amplitude * weight);
+        voice.gain.gain.setTargetAtTime(targetGain, now, 0.008);
+      }
+    }
+
+    // =========================================================================
+    // 5. STRIKE & PORTAMENTO ACTION TRIGGERS
+    // =========================================================================
+    let malletAnim = {
+      active: false,
+      t: 1.0,
+      rNorm: 0.72,
+      theta: -Math.PI * 0.35
+    };
+
+    function strikeTimpani(rNorm = state.strikeRadius, theta = state.strikeAngle, velocity = state.strikeVelocity, isRoll = false) {
+      ensureAudioEngine();
+
+      state.strikeRadius = Math.max(0.0, Math.min(0.94, rNorm));
+      state.strikeAngle = theta;
+      updateStrikeUI();
+
+      const { f11 } = computeCoupledModalFrequencies();
+      state.lastStrikePitchHz = f11;
+
+      // Trigger Mallet 3D visual animation
+      malletAnim.active = true;
+      malletAnim.t = 0.0;
+      malletAnim.rNorm = state.strikeRadius;
+      malletAnim.theta = state.strikeAngle;
+
+      // Excite modes according to |J_m(j_mn * r_hit / R)| and Mallet Felt Hardness
+      const kappa = state.bowlProfile === 'open_vacuum' ? 0.0 : state.airCoupling;
+      state.modes.forEach((mode, idx) => {
+        if (state.soloModeIndex >= 0 && state.soloModeIndex !== idx) {
+          mode.amplitude = 0.0;
+          mode.initialExcitation = 0.0;
+          return;
+        }
+        const exc = state.soloModeIndex === idx
+          ? velocity
+          : computeModeStrikeExcitation(mode, state.strikeRadius, state.malletHardness, velocity);
+
+        // Energy accumulation during rolls vs single strike
+        mode.amplitude = isRoll
+          ? Math.min(1.35, Math.hypot(mode.amplitude * 0.86, exc * 0.62))
+          : Math.min(1.35, mode.amplitude * 0.35 + exc);
+        mode.initialExcitation = exc;
+
+        // Decay rate depends on kettle air radiation damping (axisymmetric (0,1) damps fast in air, lingers in vacuum)
+        let tau = mode.baseDecaySec * state.sustainScale;
+        if (mode.m === 0 && mode.n === 1) {
+          tau *= (1.85 - 0.85 * Math.min(1.2, kappa));
+        }
+        mode.decayRate = 1.0 / Math.max(0.15, tau);
+      });
+
+      triggerMalletTransientAudio(velocity, state.malletHardness, f11);
+
+      // Start Automated Mid-Decay Portamento Envelope if selected
+      if (!isRoll && state.glissMode !== 'manual') {
+        state.glissStartTime = performance.now() * 0.001;
+        state.glissBasePedal = state.pedalPos;
+        state.glissActive = true;
+      }
+    }
+
+    function muffleTimpani() {
+      state.rollActive = false;
+      updateRollButtonUI();
+      state.glissActive = false;
+      state.modes.forEach(m => {
+        m.decayRate = 9.5; // Rapid hand-damping decay
+      });
+    }
+
+    // =========================================================================
+    // 6. THREE.JS 3D TIMPANI, KETTLE AIR-SPRING & LIVE PEDAL VISUALIZER
+    // =========================================================================
+    const mountEl = document.getElementById('threeTimpaniMount');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x04060a);
+
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 120);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    mountEl.appendChild(renderer.domElement);
+
+    // Spherical Orbit + Pan Camera State (Framed to show BOTH Membrane Head AND Foot Pedal!)
+    const camOrbit = {
+      theta: 0.42,
+      phi: 0.92,
+      radius: 11.4,
+      target: new THREE.Vector3(0, -1.05, 0),
+      isDragging: false,
+      isPanning: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    function updateCameraTransform() {
+      camOrbit.phi = Math.max(0.12, Math.min(Math.PI * 0.86, camOrbit.phi));
+      camOrbit.radius = Math.max(5.5, Math.min(22.0, camOrbit.radius));
+      const sinPhi = Math.sin(camOrbit.phi);
+      camera.position.set(
+        camOrbit.target.x + camOrbit.radius * sinPhi * Math.sin(camOrbit.theta),
+        camOrbit.target.y + camOrbit.radius * Math.cos(camOrbit.phi),
+        camOrbit.target.z + camOrbit.radius * sinPhi * Math.cos(camOrbit.theta)
+      );
+      camera.lookAt(camOrbit.target);
+      const zSlider = document.getElementById('cameraZoomSlider');
+      if (zSlider) zSlider.value = camOrbit.radius.toFixed(1);
+    }
+
+    // Studio Lighting for Hammered Copper Kettle & Translucent Calfskin/Mylar Head
+    const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.72);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xfff7ed, 1.55);
+    keyLight.position.set(6, 10, 7);
+    scene.add(keyLight);
+
+    const copperRimLight = new THREE.PointLight(0xf59e0b, 1.35, 22);
+    copperRimLight.position.set(-6, 3, -5);
+    scene.add(copperRimLight);
+
+    const cyanFillLight = new THREE.PointLight(0x22d3ee, 1.1, 22);
+    cyanFillLight.position.set(5, -3, 6);
+    scene.add(cyanFillLight);
+
+    // Subtle Studio Floor Grid
+    const floorGrid = new THREE.GridHelper(18, 24, 0x1e293b, 0x0f172a);
+    floorGrid.position.y = -3.75;
+    scene.add(floorGrid);
+
+    // Master Group for the Timpano
+    const timpaniGroup = new THREE.Group();
+    scene.add(timpaniGroup);
+
+    // -------------------------------------------------------------------------
+    // 6A. POLAR MEMBRANE MESH (64 Radial Rings × 96 Azimuthal Sectors)
+    // -------------------------------------------------------------------------
+    const MEM_RINGS = 56;
+    const MEM_SEGS = 96;
+    const HEAD_RADIUS = 2.65;
+
+    const membraneGeo = new THREE.BufferGeometry();
+    const memVertCount = (MEM_RINGS + 1) * (MEM_SEGS + 1);
+    const memPositions = new Float32Array(memVertCount * 3);
+    const memColors = new Float32Array(memVertCount * 3);
+    const memPolarCoords = new Float32Array(memVertCount * 2); // [rNorm, theta]
+    const memIndices = [];
+
+    let vPtr = 0;
+    for (let ir = 0; ir <= MEM_RINGS; ir++) {
+      const rNorm = ir / MEM_RINGS;
+      const r = rNorm * HEAD_RADIUS;
+      for (let it = 0; it <= MEM_SEGS; it++) {
+        const theta = (it / MEM_SEGS) * Math.PI * 2;
+        memPositions[vPtr * 3]     = r * Math.cos(theta);
+        memPositions[vPtr * 3 + 1] = 0.0;
+        memPositions[vPtr * 3 + 2] = r * Math.sin(theta);
+
+        memColors[vPtr * 3]     = 0.14;
+        memColors[vPtr * 3 + 1] = 0.18;
+        memColors[vPtr * 3 + 2] = 0.25;
+
+        memPolarCoords[vPtr * 2]     = rNorm;
+        memPolarCoords[vPtr * 2 + 1] = theta;
+        vPtr++;
+      }
+    }
+
+    for (let ir = 0; ir < MEM_RINGS; ir++) {
+      for (let it = 0; it < MEM_SEGS; it++) {
+        const a = ir * (MEM_SEGS + 1) + it;
+        const b = a + (MEM_SEGS + 1);
+        const c = b + 1;
+        const d = a + 1;
+        memIndices.push(a, b, d);
+        memIndices.push(b, c, d);
+      }
+    }
+
+    membraneGeo.setAttribute('position', new THREE.BufferAttribute(memPositions, 3));
+    membraneGeo.setAttribute('color', new THREE.BufferAttribute(memColors, 3));
+    membraneGeo.setIndex(memIndices);
+    membraneGeo.computeVertexNormals();
+
+    const membraneMat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.34,
+      metalness: 0.12,
+      side: THREE.DoubleSide
+    });
+    const membraneMesh = new THREE.Mesh(membraneGeo, membraneMat);
+    membraneMesh.name = 'TimpaniMembrane';
+    timpaniGroup.add(membraneMesh);
+
+    // Subtle polar wireframe overlay on membrane
+    const membraneWireMat = new THREE.MeshBasicMaterial({
+      color: 0x94a3b8,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.07
+    });
+    const membraneWire = new THREE.Mesh(membraneGeo, membraneWireMat);
+    membraneWire.position.y = 0.003;
+    timpaniGroup.add(membraneWire);
+
+    // -------------------------------------------------------------------------
+    // 6B. DYNAMIC BESSEL NODAL OVERLAY & STRIKE TARGET RING ON MEMBRANE
+    // -------------------------------------------------------------------------
+    const nodalOverlayGroup = new THREE.Group();
+    nodalOverlayGroup.position.y = 0.012;
+    timpaniGroup.add(nodalOverlayGroup);
+
+    // Beating-spot dashed guide circle (at strikeRadius r/R)
+    const strikeCirclePts = [];
+    for (let i = 0; i <= 96; i++) {
+      const a = (i / 96) * Math.PI * 2;
+      strikeCirclePts.push(new THREE.Vector3(Math.cos(a), 0, Math.sin(a)));
+    }
+    const strikeCircleGeo = new THREE.BufferGeometry().setFromPoints(strikeCirclePts);
+    const strikeCircleLine = new THREE.Line(
+      strikeCircleGeo,
+      new THREE.LineBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.65 })
+    );
+    nodalOverlayGroup.add(strikeCircleLine);
+
+    // Strike target crosshair marker
+    const hitMarkerGeo = new THREE.RingGeometry(0.08, 0.14, 32);
+    hitMarkerGeo.rotateX(-Math.PI / 2);
+    const hitMarkerMesh = new THREE.Mesh(
+      hitMarkerGeo,
+      new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide })
+    );
+    nodalOverlayGroup.add(hitMarkerMesh);
+
+    // (0,2) Nodal circle reference at r/R = 0.4356
+    const node02CircleGeo = new THREE.BufferGeometry().setFromPoints(
+      strikeCirclePts.map(p => p.clone().multiplyScalar(HEAD_RADIUS * 0.4356))
+    );
+    const node02CircleLine = new THREE.Line(
+      node02CircleGeo,
+      new THREE.LineBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.35 })
+    );
+    nodalOverlayGroup.add(node02CircleLine);
+
+    // 3 Diametric nodal lines (showing (1,1), (2,1), (3,1) diameters)
+    const nodalDiametersGroup = new THREE.Group();
+    for (let d = 0; d < 3; d++) {
+      const ang = (d * Math.PI) / 3;
+      const lGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-HEAD_RADIUS * Math.cos(ang), 0, -HEAD_RADIUS * Math.sin(ang)),
+        new THREE.Vector3( HEAD_RADIUS * Math.cos(ang), 0,  HEAD_RADIUS * Math.sin(ang))
+      ]);
+      const line = new THREE.Line(
+        lGeo,
+        new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35 })
+      );
+      nodalDiametersGroup.add(line);
+    }
+    nodalOverlayGroup.add(nodalDiametersGroup);
+
+    // -------------------------------------------------------------------------
+    // 6C. HAMMERED COPPER KETTLE BOWL + INTERNAL ADIABATIC AIR-SPRING RINGS
+    // -------------------------------------------------------------------------
+    const kettleGroup = new THREE.Group();
+    timpaniGroup.add(kettleGroup);
+
+    function createKettleGeometry(profileType, depthScale) {
+      const pts = [];
+      const depth = 2.45 * depthScale;
+      const R = HEAD_RADIUS * 0.985;
+      const steps = 32;
+      for (let i = 0; i <= steps; i++) {
+        const u = i / steps; // 0 (bottom vent hole) to 1 (top lip)
+        let r, y;
+        if (profileType === 'hemispherical') {
+          const ang = u * (Math.PI * 0.5);
+          r = Math.max(0.18, R * Math.sin(ang));
+          y = -depth * Math.cos(ang);
+        } else {
+          // Parabolic copper bowl
+          r = Math.max(0.18, R * Math.pow(u, 0.54));
+          y = -depth * (1.0 - Math.pow(u, 1.35));
+        }
+        pts.push(new THREE.Vector2(r, y));
+      }
+      return new THREE.LatheGeometry(pts, 64);
+    }
+
+    const copperMat = new THREE.MeshStandardMaterial({
+      color: 0xd97706,
+      metalness: 0.78,
+      roughness: 0.26,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.62
+    });
+    let kettleBowlMesh = new THREE.Mesh(createKettleGeometry('parabolic', 1.0), copperMat);
+    kettleGroup.add(kettleBowlMesh);
+
+    // Copper Kettle Wireframe Cage (for X-Ray Cutaway clarity)
+    const copperWireMat = new THREE.MeshBasicMaterial({
+      color: 0xf59e0b,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.16
+    });
+    let kettleWireMesh = new THREE.Mesh(kettleBowlMesh.geometry, copperWireMat);
+    kettleGroup.add(kettleWireMesh);
+
+    // Internal Acoustic Air-Cavity Pressure Waves (Adiabatic Air Spring Visualization)
+    const airSpringGroup = new THREE.Group();
+    kettleGroup.add(airSpringGroup);
+    const airWaveRings = [];
+    for (let i = 0; i < 6; i++) {
+      const frac = (i + 1) / 7;
+      const rRing = HEAD_RADIUS * 0.85 * Math.pow(1.0 - frac * 0.75, 0.52);
+      const torusGeo = new THREE.TorusGeometry(rRing, 0.025, 12, 48);
+      torusGeo.rotateX(Math.PI / 2);
+      const torusMat = new THREE.MeshBasicMaterial({
+        color: 0x22d3ee,
+        transparent: true,
+        opacity: 0.35
+      });
+      const mesh = new THREE.Mesh(torusGeo, torusMat);
+      mesh.position.y = -frac * 2.2;
+      airSpringGroup.add(mesh);
+      airWaveRings.push({ mesh, baseY: -frac * 2.2, baseR: rRing, frac });
+    }
+
+    // Vertical Helical Air-Spring Coils inside Kettle (visualizing ΔP = -γ P_0 ΔV / V_0)
+    const springCurvePts = [];
+    const springTurns = 6.5;
+    for (let i = 0; i <= 140; i++) {
+      const u = i / 140;
+      const ang = u * Math.PI * 2 * springTurns;
+      const rad = 0.65 * (1.0 - 0.45 * u);
+      springCurvePts.push(new THREE.Vector3(rad * Math.cos(ang), -u * 2.25, rad * Math.sin(ang)));
+    }
+    const airHelixGeo = new THREE.BufferGeometry().setFromPoints(springCurvePts);
+    const airHelixLine = new THREE.Line(
+      airHelixGeo,
+      new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
+    );
+    airSpringGroup.add(airHelixLine);
+
+    // -------------------------------------------------------------------------
+    // 6D. COUNTERHOOP, 8 TENSION RODS, SPIDER LINKAGE & INTERACTIVE 3D FOOT PEDAL
+    // -------------------------------------------------------------------------
+    const hardwareGroup = new THREE.Group();
+    timpaniGroup.add(hardwareGroup);
+
+    const steelMat = new THREE.MeshStandardMaterial({
+      color: 0x94a3b8,
+      metalness: 0.85,
+      roughness: 0.22
+    });
+    const darkCastMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      metalness: 0.65,
+      roughness: 0.4
+    });
+
+    // Moving Counterhoop Rim (pulled downward as pedal increases tension T(t))
+    const counterhoopGroup = new THREE.Group();
+    hardwareGroup.add(counterhoopGroup);
+
+    const hoopTorus = new THREE.Mesh(
+      new THREE.TorusGeometry(HEAD_RADIUS + 0.08, 0.065, 16, 64),
+      steelMat
+    );
+    hoopTorus.rotateX(Math.PI / 2);
+    counterhoopGroup.add(hoopTorus);
+
+    // 8 T-Handles & Tension Rods linking Counterhoop to Spider Base
+    const NUM_RODS = 8;
+    for (let i = 0; i < NUM_RODS; i++) {
+      const ang = (i / NUM_RODS) * Math.PI * 2;
+      const rx = (HEAD_RADIUS + 0.14) * Math.cos(ang);
+      const rz = (HEAD_RADIUS + 0.14) * Math.sin(ang);
+
+      // Upper lug bracket attached to counterhoop
+      const lug = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.14), steelMat);
+      lug.position.set(rx, -0.02, rz);
+      counterhoopGroup.add(lug);
+
+      // Tension Rod (vertical strut down to spider plate)
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 3.2, 10), steelMat);
+      rod.position.set(rx * 0.96, -1.65, rz * 0.96);
+      rod.rotation.z = Math.cos(ang) * 0.16;
+      rod.rotation.x = -Math.sin(ang) * 0.16;
+      hardwareGroup.add(rod);
+    }
+
+    // Base Spider Hub & 3 Support Struts
+    const baseHub = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.68, 0.28, 24), darkCastMat);
+    baseHub.position.y = -3.25;
+    hardwareGroup.add(baseHub);
+
+    // Spider Tension Plate (moves vertically with pedal actuation!)
+    const spiderPlateGroup = new THREE.Group();
+    spiderPlateGroup.position.y = -2.95;
+    hardwareGroup.add(spiderPlateGroup);
+
+    const spiderCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.12, 16), copperMat);
+    spiderPlateGroup.add(spiderCenter);
+    for (let i = 0; i < NUM_RODS; i++) {
+      const ang = (i / NUM_RODS) * Math.PI * 2;
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.05, 0.06), steelMat);
+      spoke.position.set(Math.cos(ang) * 1.05, 0.08, Math.sin(ang) * 1.05);
+      spoke.rotation.y = -ang;
+      spiderPlateGroup.add(spoke);
+    }
+
+    // PROMINENT INTERACTIVE 3D FOOT PEDAL ASSEMBLY (Front-Right of Kettle)
+    const pedalPivotGroup = new THREE.Group();
+    pedalPivotGroup.position.set(0.0, -3.35, 2.35);
+    hardwareGroup.add(pedalPivotGroup);
+
+    // Pedal Base Housing
+    const pedalHousing = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.32, 1.35), darkCastMat);
+    pedalHousing.position.set(0, -0.18, 0.1);
+    pedalPivotGroup.add(pedalHousing);
+
+    // Articulated Footboard Rocker (Named 'TimpaniFootPedal' for direct 3D raycast dragging!)
+    const pedalRockerGroup = new THREE.Group();
+    pedalPivotGroup.add(pedalRockerGroup);
+
+    const footboardMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.58, 0.10, 1.45),
+      new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        metalness: 0.72,
+        roughness: 0.25,
+        emissive: 0x78350f,
+        emissiveIntensity: 0.35
+      })
+    );
+    footboardMesh.name = 'TimpaniFootPedal';
+    pedalRockerGroup.add(footboardMesh);
+
+    // Toe & Heel Grip Ribs on Footboard
+    for (let r = -0.52; r <= 0.52; r += 0.18) {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.03, 0.05), darkCastMat);
+      rib.position.set(0, 0.06, r);
+      rib.name = 'TimpaniFootPedal';
+      pedalRockerGroup.add(rib);
+    }
+
+    // Mechanical Pitch Gauge Tower (Side of Kettle showing D2–A2 pointer)
+    const gaugeGroup = new THREE.Group();
+    gaugeGroup.position.set(-2.55, -0.85, 1.35);
+    gaugeGroup.rotation.y = 0.45;
+    hardwareGroup.add(gaugeGroup);
+
+    const gaugeArc = new THREE.Mesh(new THREE.BoxGeometry(0.14, 1.25, 0.32), darkCastMat);
+    gaugeGroup.add(gaugeArc);
+
+    const gaugePointer = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.06, 0.42),
+      new THREE.MeshBasicMaterial({ color: 0x22d3ee })
+    );
+    gaugeGroup.add(gaugePointer);
+
+    // -------------------------------------------------------------------------
+    // 6E. 3D FELT TIMPANI MALLET (ANIMATES ON STRIKE & HOVERS AT (r/R, θ))
+    // -------------------------------------------------------------------------
+    const malletGroup = new THREE.Group();
+    timpaniGroup.add(malletGroup);
+
+    // Bamboo shaft
+    const shaftGeo = new THREE.CylinderGeometry(0.032, 0.042, 2.3, 12);
+    shaftGeo.rotateZ(Math.PI / 2);
+    const shaftMesh = new THREE.Mesh(
+      shaftGeo,
+      new THREE.MeshStandardMaterial({ color: 0xd6b370, roughness: 0.45 })
+    );
+    shaftMesh.position.set(1.15, 0.22, 0);
+    shaftMesh.rotation.z = 0.16;
+    malletGroup.add(shaftMesh);
+
+    // Felt cartwheel head (color shifts from soft cream felt -> hard red/wood)
+    const feltHeadMat = new THREE.MeshStandardMaterial({
+      color: 0xfef3c7,
+      roughness: 0.85,
+      metalness: 0.05
+    });
+    const feltHeadMesh = new THREE.Mesh(new THREE.SphereGeometry(0.21, 24, 24), feltHeadMat);
+    feltHeadMesh.scale.set(1.0, 0.82, 1.0);
+    malletGroup.add(feltHeadMesh);
+
+    function updateMallet3DPosition(dt) {
+      const rWorld = state.strikeRadius * HEAD_RADIUS;
+      const hx = rWorld * Math.cos(state.strikeAngle);
+      const hz = rWorld * Math.sin(state.strikeAngle);
+
+      let liftY = 0.42;
+      let pitchRot = 0.08;
+      if (malletAnim.active) {
+        malletAnim.t += dt * 7.5;
+        if (malletAnim.t >= 1.0) {
+          malletAnim.active = false;
+          malletAnim.t = 1.0;
+        }
+        // Fast rebound parabola
+        const u = malletAnim.t;
+        const dip = Math.sin(u * Math.PI) * Math.exp(-u * 2.4);
+        liftY = 0.42 - 0.34 * dip;
+        pitchRot = 0.08 - 0.22 * dip;
+      }
+
+      malletGroup.position.set(hx, liftY, hz);
+      malletGroup.rotation.y = -state.strikeAngle;
+      malletGroup.rotation.z = pitchRot;
+
+      // Color felt head by hardness
+      const h = state.malletHardness;
+      const col = new THREE.Color().setHSL(0.11 - 0.09 * h, 0.75, 0.88 - 0.38 * h);
+      feltHeadMat.color.copy(col);
+      feltHeadMat.roughness = 0.9 - 0.55 * h;
+    }
+
+    // Rebuild Kettle Bowl when profile or volume changes
+    function rebuildKettleBowl3D() {
+      const isVacuum = state.bowlProfile === 'open_vacuum' || state.airCoupling <= 0.02;
+      kettleBowlMesh.visible = !isVacuum;
+      kettleWireMesh.visible = !isVacuum;
+      airSpringGroup.visible = !isVacuum && state.kettleXray;
+
+      if (!isVacuum) {
+        const newGeo = createKettleGeometry(state.bowlProfile, Math.pow(state.cavityVolumeScale, 0.45));
+        kettleBowlMesh.geometry.dispose();
+        kettleBowlMesh.geometry = newGeo;
+        kettleWireMesh.geometry = newGeo;
+        copperMat.opacity = state.kettleXray ? 0.42 : 0.88;
+      }
+    }
+
+    // =========================================================================
+    // 7. RAYCASTING (CLICK HEAD TO STRIKE • DRAG 3D FOOT PEDAL TO BEND PITCH)
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointerNDC = new THREE.Vector2();
+    let isDragging3DPedal = false;
+    let pedalDragStartY = 0;
+    let pedalDragStartVal = 0;
+
+    function getPointerNDC(evt) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNDC.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNDC.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+    renderer.domElement.addEventListener('pointerdown', evt => {
+      getPointerNDC(evt);
+      raycaster.setFromCamera(pointerNDC, camera);
+
+      if (evt.button === 0 && !evt.shiftKey) {
+        // 1. Check if user clicked the 3D Foot Pedal first
+        const pedalHits = raycaster.intersectObjects(pedalRockerGroup.children, true);
+        if (pedalHits.length > 0) {
+          isDragging3DPedal = true;
+          pedalDragStartY = evt.clientY;
+          pedalDragStartVal = state.pedalPos;
+          state.glissActive = false;
+          renderer.domElement.setPointerCapture(evt.pointerId);
+          return;
+        }
+
+        // 2. Check if user clicked the Timpani Membrane Head to strike!
+        const memHits = raycaster.intersectObject(membraneMesh, false);
+        if (memHits.length > 0) {
+          const pt = memHits[0].point;
+          const rNorm = Math.min(0.94, Math.hypot(pt.x, pt.z) / HEAD_RADIUS);
+          const theta = Math.atan2(pt.z, pt.x);
+          strikeTimpani(rNorm, theta, state.strikeVelocity, false);
+          return;
+        }
+      }
+
+      // Otherwise Orbit (Left or Right drag) or Pan (Shift+Left or Middle drag)
+      if (evt.button === 1 || (evt.button === 0 && evt.shiftKey)) {
+        camOrbit.isPanning = true;
+      } else {
+        camOrbit.isDragging = true;
+      }
+      camOrbit.lastX = evt.clientX;
+      camOrbit.lastY = evt.clientY;
+      renderer.domElement.setPointerCapture(evt.pointerId);
+    });
+
+    renderer.domElement.addEventListener('pointermove', evt => {
+      if (isDragging3DPedal) {
+        const dy = pedalDragStartY - evt.clientY;
+        const newPedal = Math.max(0, Math.min(1, pedalDragStartVal + dy * 0.0055));
+        setPedalPositionImmediate(newPedal);
+        return;
+      }
+      if (!camOrbit.isDragging && !camOrbit.isPanning) return;
+      const dx = evt.clientX - camOrbit.lastX;
+      const dy = evt.clientY - camOrbit.lastY;
+      camOrbit.lastX = evt.clientX;
+      camOrbit.lastY = evt.clientY;
+
+      if (camOrbit.isDragging) {
+        camOrbit.theta -= dx * 0.0065;
+        camOrbit.phi -= dy * 0.0065;
+        updateCameraTransform();
+      } else if (camOrbit.isPanning) {
+        const panScale = camOrbit.radius * 0.0012;
+        camOrbit.target.x -= dx * panScale;
+        camOrbit.target.y += dy * panScale;
+        updateCameraTransform();
+      }
+    });
+
+    function endPointerInteraction(evt) {
+      isDragging3DPedal = false;
+      camOrbit.isDragging = false;
+      camOrbit.isPanning = false;
+      try { renderer.domElement.releasePointerCapture(evt.pointerId); } catch (_) {}
+    }
+    renderer.domElement.addEventListener('pointerup', endPointerInteraction);
+    renderer.domElement.addEventListener('pointercancel', endPointerInteraction);
+
+    // Mouse Wheel: Shift+Wheel bends Foot Pedal mid-decay; normal Wheel zooms 3D camera
+    renderer.domElement.addEventListener('wheel', evt => {
+      evt.preventDefault();
+      if (evt.shiftKey) {
+        state.glissActive = false;
+        const nextP = Math.max(0, Math.min(1, state.pedalPos - evt.deltaY * 0.0008));
+        setPedalPositionImmediate(nextP);
+      } else {
+        camOrbit.radius = Math.max(5.5, Math.min(22.0, camOrbit.radius + evt.deltaY * 0.006));
+        updateCameraTransform();
+      }
+    }, { passive: false });
+
+    // =========================================================================
+    // 8. 2D TELEMETRY CANVASES (BESSEL RADIAL PROFILE, PORTAMENTO TRACE, SPECTRUM)
+    // =========================================================================
+    const besselCanvas = document.getElementById('besselProfileCanvas');
+    const besselCtx = besselCanvas.getContext('2d');
+    const traceCanvas = document.getElementById('portamentoTraceCanvas');
+    const traceCtx = traceCanvas.getContext('2d');
+    const specCanvas = document.getElementById('spectrumAnalyzerCanvas');
+    const specCtx = specCanvas.getContext('2d');
+
+    // Interactive click/drag on Radial Bessel Canvas to set Strike Radius r/R
+    let isDraggingBesselCanvas = false;
+    function setStrikeFromBesselCanvas(evt) {
+      const rect = besselCanvas.getBoundingClientRect();
+      const xNorm = Math.max(0.0, Math.min(0.94, (evt.clientX - rect.left) / rect.width));
+      state.strikeRadius = xNorm;
+      updateStrikeUI();
+    }
+    besselCanvas.addEventListener('pointerdown', e => {
+      isDraggingBesselCanvas = true;
+      setStrikeFromBesselCanvas(e);
+      strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+    });
+    window.addEventListener('pointermove', e => {
+      if (isDraggingBesselCanvas) setStrikeFromBesselCanvas(e);
+    });
+    window.addEventListener('pointerup', () => { isDraggingBesselCanvas = false; });
+
+    function drawBesselProfileCanvas() {
+      const w = besselCanvas.width;
+      const h = besselCanvas.height;
+      besselCtx.clearRect(0, 0, w, h);
+
+      // Grid lines
+      besselCtx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+      besselCtx.lineWidth = 1;
+      for (let i = 1; i < 4; i++) {
+        const y = (i / 4) * h;
+        besselCtx.beginPath();
+        besselCtx.moveTo(0, y);
+        besselCtx.lineTo(w, y);
+        besselCtx.stroke();
+      }
+
+      // Draw key Bessel radial eigenfunctions |J_m(j_mn * r/R)| for (0,1), (1,1), (2,1), (0,2), (3,1)
+      const featuredIndices = [0, 1, 2, 3, 4];
+      featuredIndices.forEach(idx => {
+        const mode = state.modes[idx];
+        besselCtx.strokeStyle = mode.color;
+        besselCtx.lineWidth = idx === 1 ? 2.2 : 1.4;
+        besselCtx.beginPath();
+        for (let px = 0; px <= w; px += 3) {
+          const rNorm = px / w;
+          const val = Math.abs(besselJ(mode.m, mode.j_mn * rNorm)) / mode.besselPeak;
+          const py = h - 14 - val * (h - 24);
+          if (px === 0) besselCtx.moveTo(px, py);
+          else besselCtx.lineTo(px, py);
+        }
+        besselCtx.stroke();
+      });
+
+      // Vertical marker for current Strike Radius r_hit/R
+      const hitX = state.strikeRadius * w;
+      besselCtx.strokeStyle = '#10b981';
+      besselCtx.lineWidth = 2;
+      besselCtx.setLineDash([4, 3]);
+      besselCtx.beginPath();
+      besselCtx.moveTo(hitX, 0);
+      besselCtx.lineTo(hitX, h);
+      besselCtx.stroke();
+      besselCtx.setLineDash([]);
+
+      // Draw excitation dots at hitX
+      featuredIndices.forEach(idx => {
+        const mode = state.modes[idx];
+        const val = Math.abs(besselJ(mode.m, mode.j_mn * state.strikeRadius)) / mode.besselPeak;
+        const py = h - 14 - val * (h - 24);
+        besselCtx.fillStyle = mode.color;
+        besselCtx.beginPath();
+        besselCtx.arc(hitX, py, 3.5, 0, Math.PI * 2);
+        besselCtx.fill();
+      });
+
+      // Legend labels
+      besselCtx.font = '10px "JetBrains Mono", monospace';
+      besselCtx.fillStyle = '#f43f5e';
+      besselCtx.fillText('(0,1)', 6, 12);
+      besselCtx.fillStyle = '#f59e0b';
+      besselCtx.fillText('(1,1) Principal', 44, 12);
+      besselCtx.fillStyle = '#22d3ee';
+      besselCtx.fillText('(2,1) 5th', 142, 12);
+      besselCtx.fillStyle = '#10b981';
+      besselCtx.fillText('(3,1) 8ve', 202, 12);
+    }
+
+    function drawPortamentoTraceCanvas() {
+      const w = traceCanvas.width;
+      const h = traceCanvas.height;
+      traceCtx.clearRect(0, 0, w, h);
+
+      const drum = TIMPANI_DRUMS[state.drumKey];
+      const fLow = drum.fMin * 0.55;
+      const fHigh = drum.fMax * 2.25;
+
+      // Subtle horizontal pitch grid lines
+      traceCtx.strokeStyle = 'rgba(148, 163, 184, 0.1)';
+      traceCtx.lineWidth = 1;
+      for (let i = 1; i <= 4; i++) {
+        const y = (i / 5) * h;
+        traceCtx.beginPath();
+        traceCtx.moveTo(0, y);
+        traceCtx.lineTo(w, y);
+        traceCtx.stroke();
+      }
+
+      if (state.pitchHistory.length < 2) return;
+
+      // Plot trajectories for (0,1), (1,1) Principal, (2,1) Fifth, and (3,1) Octave
+      const traceModes = [
+        { key: 'f01', color: '#f43f5e', width: 1.4, label: '(0,1)' },
+        { key: 'f11', color: '#f59e0b', width: 2.6, label: '(1,1) Pitch' },
+        { key: 'f21', color: '#22d3ee', width: 1.8, label: '(2,1) 5th' },
+        { key: 'f31', color: '#10b981', width: 1.5, label: '(3,1) 8ve' }
+      ];
+
+      const len = state.pitchHistory.length;
+      traceModes.forEach(tm => {
+        traceCtx.strokeStyle = tm.color;
+        traceCtx.lineWidth = tm.width;
+        traceCtx.beginPath();
+        for (let i = 0; i < len; i++) {
+          const sample = state.pitchHistory[i];
+          const px = (i / Math.max(1, 220 - 1)) * (w - 65);
+          const normY = Math.log2(sample[tm.key] / fLow) / Math.log2(fHigh / fLow);
+          const py = h - 8 - Math.max(0, Math.min(1, normY)) * (h - 16);
+          if (i === 0) traceCtx.moveTo(px, py);
+          else traceCtx.lineTo(px, py);
+        }
+        traceCtx.stroke();
+
+        // Live right-hand frequency label
+        const latest = state.pitchHistory[len - 1];
+        const normLast = Math.log2(latest[tm.key] / fLow) / Math.log2(fHigh / fLow);
+        const pyLast = h - 8 - Math.max(0, Math.min(1, normLast)) * (h - 16);
+        traceCtx.fillStyle = tm.color;
+        traceCtx.font = '10px "JetBrains Mono", monospace';
+        traceCtx.fillText(`${tm.label} ${latest[tm.key].toFixed(0)}Hz`, w - 62, Math.max(10, Math.min(h - 4, pyLast + 3)));
+      });
+    }
+
+    function drawSpectrumAnalyzerCanvas() {
+      const w = specCanvas.width;
+      const h = specCanvas.height;
+      specCtx.clearRect(0, 0, w, h);
+
+      const drum = TIMPANI_DRUMS[state.drumKey];
+      const maxFreq = drum.fMax * 3.25;
+
+      // Baseline
+      specCtx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+      specCtx.beginPath();
+      specCtx.moveTo(0, h - 18);
+      specCtx.lineTo(w, h - 18);
+      specCtx.stroke();
+
+      state.modes.forEach(mode => {
+        // 1. Ghost Rose Marker = Uncoupled Vacuum Bessel Frequency
+        const xVac = Math.min(w - 12, Math.max(12, (mode.vacuumFreq / maxFreq) * (w - 24) + 12));
+        specCtx.strokeStyle = 'rgba(244, 63, 94, 0.38)';
+        specCtx.setLineDash([2, 2]);
+        specCtx.beginPath();
+        specCtx.moveTo(xVac, h - 18);
+        specCtx.lineTo(xVac, 16);
+        specCtx.stroke();
+        specCtx.setLineDash([]);
+
+        // 2. Live Coupled Kettle Bar
+        const xCoupled = Math.min(w - 12, Math.max(12, (mode.currentFreq / maxFreq) * (w - 24) + 12));
+        const barH = Math.max(6, Math.min(h - 32, mode.amplitude * (h - 34)));
+
+        // Arrow showing shift from Vacuum Bessel -> Kettle Air-Loaded
+        if (Math.abs(xCoupled - xVac) > 2) {
+          specCtx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
+          specCtx.beginPath();
+          specCtx.moveTo(xVac, 22);
+          specCtx.lineTo(xCoupled, 22);
+          specCtx.stroke();
+        }
+
+        specCtx.fillStyle = mode.color;
+        specCtx.fillRect(xCoupled - 5, h - 18 - barH, 10, barH);
+
+        // Mode label
+        specCtx.fillStyle = '#e2e8f0';
+        specCtx.font = '9px "JetBrains Mono", monospace';
+        specCtx.fillText(`(${mode.id})`, xCoupled - 12, h - 5);
+      });
+    }
+
+    // =========================================================================
+    // 9. UI BINDINGS & DYNAMIC MODAL INSPECTOR TABLE
+    // =========================================================================
+    const modalInspectorBody = document.getElementById('modalInspectorBody');
+
+    function buildModalInspectorRows() {
+      modalInspectorBody.innerHTML = '';
+      state.modes.forEach((mode, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/60 cursor-pointer transition';
+        tr.innerHTML = `
+          <td class="py-1.5 px-2 font-semibold" style="color:${mode.color}">
+            (${mode.id}) ${mode.m === 1 && mode.n === 1 ? '★' : ''}
+          </td>
+          <td id="vacRatioCell_${idx}" class="py-1.5 px-1.5 text-rose-300/90">${mode.vacRatio01.toFixed(3)}</td>
+          <td id="kettleRatioCell_${idx}" class="py-1.5 px-1.5 text-cyan-300 font-semibold">${mode.ratioTo01.toFixed(3)}</td>
+          <td id="freqCell_${idx}" class="py-1.5 px-1.5 text-amber-200">${mode.currentFreq.toFixed(1)}</td>
+          <td class="py-1.5 px-2 text-right">
+            <div class="w-12 h-2 bg-slate-900 rounded overflow-hidden inline-block align-middle">
+              <div id="ampBar_${idx}" class="h-full transition-none" style="width:0%;background:${mode.color}"></div>
+            </div>
+          </td>
+        `;
+        tr.addEventListener('click', () => {
+          state.soloModeIndex = state.soloModeIndex === idx ? -1 : idx;
+          strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+          updateSoloButtonsUI();
+        });
+        modalInspectorBody.appendChild(tr);
+      });
+    }
+
+    function updateSoloButtonsUI() {
+      const btn = document.getElementById('clearSoloModeBtn');
+      if (state.soloModeIndex === -1) {
+        btn.textContent = 'All Modes';
+        btn.className = 'px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-mono-tech text-slate-300 border border-slate-700';
+      } else {
+        const m = state.modes[state.soloModeIndex];
+        btn.textContent = `Solo (${m.id}) ×`;
+        btn.className = 'px-2 py-1 rounded bg-amber-500/25 text-[10px] font-mono-tech text-amber-200 border border-amber-500/40 font-semibold';
+      }
+    }
+
+    function buildSemitoneCrownButtons() {
+      const drum = TIMPANI_DRUMS[state.drumKey];
+      const grid = document.getElementById('semitoneButtonsGrid');
+      grid.innerHTML = '';
+      for (let st = 0; st <= 7; st++) {
+        const p = st / 7.0;
+        const f = drum.fMin * Math.pow(drum.fMax / drum.fMin, p);
+        const nInfo = freqToNoteInfo(f);
+        const btn = document.createElement('button');
+        btn.className = 'px-1 py-1 rounded bg-slate-900 hover:bg-amber-500/25 text-slate-300 hover:text-amber-200 border border-slate-800 hover:border-amber-500/40 text-center transition';
+        btn.textContent = nInfo.note;
+        btn.title = `Glide Pedal to ${nInfo.note} (${f.toFixed(1)} Hz)`;
+        btn.addEventListener('click', () => {
+          state.glissActive = false;
+          state.pedalTarget = p;
+        });
+        grid.appendChild(btn);
+      }
+
+      document.getElementById('pedalLowLabel').textContent = `Heel: ${drum.noteMin} (${drum.fMin.toFixed(1)} Hz)`;
+      document.getElementById('pedalHighLabel').textContent = `Toe: ${drum.noteMax} (${drum.fMax.toFixed(1)} Hz)`;
+      document.getElementById('hudDrumName').textContent = drum.name.toUpperCase();
+    }
+
+    function setPedalPositionImmediate(val) {
+      state.pedalPos = Math.max(0, Math.min(1, val));
+      state.pedalTarget = state.pedalPos;
+      document.getElementById('pedalSlider').value = state.pedalPos;
+      document.getElementById('floatingPedalSlider').value = state.pedalPos;
+    }
+
+    function updateStrikeUI() {
+      const drum = TIMPANI_DRUMS[state.drumKey];
+      const inchesFromRim = ((1.0 - state.strikeRadius) * (drum.inches * 0.5)).toFixed(1);
+      document.getElementById('strikeRadiusSlider').value = state.strikeRadius;
+      document.getElementById('strikeRadiusReadout').textContent = `${state.strikeRadius.toFixed(2)} R (${inchesFromRim}" from rim)`;
+
+      let spotName = 'Normal Spot';
+      if (state.strikeRadius < 0.08) spotName = 'Dead Center (m=0 ONLY)';
+      else if (Math.abs(state.strikeRadius - 0.44) < 0.05) spotName = '(0,2) Node Circle';
+      else if (state.strikeRadius > 0.84) spotName = 'Rim Metallic Zone';
+      document.getElementById('strikeSpotBadge').textContent = `r/R = ${state.strikeRadius.toFixed(2)} (${spotName})`;
+
+      // Update 3D strike circle & marker
+      const rWorld = Math.max(0.02, state.strikeRadius * HEAD_RADIUS);
+      strikeCircleLine.scale.set(rWorld, 1, rWorld);
+      hitMarkerMesh.position.set(
+        rWorld * Math.cos(state.strikeAngle),
+        0.005,
+        rWorld * Math.sin(state.strikeAngle)
+      );
+    }
+
+    function updateRollButtonUI() {
+      const btn = document.getElementById('rollToggleBtn');
+      const dot = document.getElementById('rollDot');
+      if (state.rollActive) {
+        btn.className = 'px-2.5 py-1.5 rounded-lg bg-amber-500/25 text-amber-200 border border-amber-500/50 text-xs font-semibold flex items-center gap-1.5 transition';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+      } else {
+        btn.className = 'px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/80 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition';
+        dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+      }
+    }
+
+    // Bind Controls
+    document.getElementById('pedalSlider').addEventListener('input', e => {
+      state.glissActive = false;
+      setPedalPositionImmediate(parseFloat(e.target.value));
+    });
+    document.getElementById('floatingPedalSlider').addEventListener('input', e => {
+      state.glissActive = false;
+      setPedalPositionImmediate(parseFloat(e.target.value));
+    });
+
+    document.getElementById('quickBendDownBtn').addEventListener('click', () => {
+      state.glissActive = false;
+      state.pedalTarget = Math.max(0, state.pedalPos - 0.42);
+    });
+    document.getElementById('quickBendUpBtn').addEventListener('click', () => {
+      state.glissActive = false;
+      state.pedalTarget = Math.min(1, state.pedalPos + 0.42);
+    });
+    document.getElementById('quickStrikeAndGlideBtn').addEventListener('click', () => {
+      const startP = state.pedalPos > 0.65 ? 0.15 : state.pedalPos;
+      setPedalPositionImmediate(startP);
+      strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+      state.glissActive = false;
+      state.pedalTarget = Math.min(1.0, startP + 5.0 / 7.0); // Glide up a Perfect Fourth (5 semitones) mid-ring!
+    });
+
+    // Drum Kettle Size Selector Buttons
+    document.querySelectorAll('.drum-size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.drum-size-btn').forEach(b => {
+          b.className = 'drum-size-btn px-2 py-1 rounded text-slate-400 hover:text-slate-200 transition';
+        });
+        btn.className = 'drum-size-btn px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-semibold transition';
+        state.drumKey = btn.dataset.drum;
+        buildSemitoneCrownButtons();
+        updateStrikeUI();
+        strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+      });
+    });
+
+    // Glissando Mode Buttons
+    document.querySelectorAll('.gliss-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.gliss-mode-btn').forEach(b => {
+          b.className = 'gliss-mode-btn px-2 py-1 rounded bg-slate-900/90 text-slate-300 border border-slate-700/70 hover:border-amber-500/40 text-left truncate';
+        });
+        btn.className = 'gliss-mode-btn px-2 py-1 rounded bg-amber-500/25 text-amber-200 border border-amber-500/40 font-medium text-left truncate';
+        state.glissMode = btn.dataset.gliss;
+        document.getElementById('glissStatusText').textContent = btn.textContent.trim();
+        if (state.glissMode !== 'manual') {
+          strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+        }
+      });
+    });
+
+    document.getElementById('glissSpeedSlider').addEventListener('input', e => {
+      state.glissSpeed = parseFloat(e.target.value);
+      document.getElementById('glissSpeedVal').textContent = `${state.glissSpeed.toFixed(1)}×`;
+    });
+
+    // Air Coupling & Kettle Bowl Controls
+    document.getElementById('airCouplingSlider').addEventListener('input', e => {
+      state.airCoupling = parseFloat(e.target.value);
+      if (state.airCoupling <= 0.02) {
+        document.getElementById('airCouplingVal').textContent = '0% (Vacuum Bessel Zeros)';
+        document.getElementById('kettleStateBadge').textContent = 'Vacuum Bessel (Inharmonic)';
+      } else {
+        document.getElementById('airCouplingVal').textContent = `${Math.round(state.airCoupling * 100)}% (${state.airCoupling > 1.08 ? 'Heavy Load' : 'Standard Kettle'})`;
+        document.getElementById('kettleStateBadge').textContent = 'Coupled Kettle (2:3:4:5)';
+      }
+      rebuildKettleBowl3D();
+    });
+
+    document.querySelectorAll('.bowl-profile-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.bowl-profile-btn').forEach(b => {
+          b.className = 'bowl-profile-btn px-2 py-1.5 rounded bg-slate-900 text-slate-400 border border-slate-800 hover:text-slate-200';
+        });
+        btn.className = 'bowl-profile-btn px-2 py-1.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-semibold';
+        state.bowlProfile = btn.dataset.bowl;
+        if (state.bowlProfile === 'open_vacuum') {
+          document.getElementById('airCouplingSlider').value = 0;
+          document.getElementById('airCouplingVal').textContent = '0% (Vacuum Bessel Zeros)';
+          document.getElementById('kettleStateBadge').textContent = 'Vacuum Bessel (Inharmonic)';
+        } else if (state.airCoupling < 0.05) {
+          state.airCoupling = 1.0;
+          document.getElementById('airCouplingSlider').value = 1.0;
+          document.getElementById('airCouplingVal').textContent = '100% (Standard Kettle)';
+          document.getElementById('kettleStateBadge').textContent = 'Coupled Kettle (2:3:4:5)';
+        }
+        rebuildKettleBowl3D();
+      });
+    });
+
+    document.getElementById('cavityVolumeSlider').addEventListener('input', e => {
+      state.cavityVolumeScale = parseFloat(e.target.value);
+      const drum = TIMPANI_DRUMS[state.drumKey];
+      const liters = Math.round(drum.kettleVolLiters * state.cavityVolumeScale);
+      document.getElementById('cavityVolumeVal').textContent = `${liters} L (Adiabatic Spring)`;
+      rebuildKettleBowl3D();
+    });
+
+    // Strike Spot & Mallet Controls
+    document.getElementById('strikeRadiusSlider').addEventListener('input', e => {
+      state.strikeRadius = parseFloat(e.target.value);
+      updateStrikeUI();
+    });
+
+    document.querySelectorAll('.spot-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.spot-preset-btn').forEach(b => {
+          b.className = 'spot-preset-btn px-2 py-1 rounded bg-slate-900 text-slate-300 border border-slate-800 text-left truncate';
+        });
+        btn.className = 'spot-preset-btn px-2 py-1 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 text-left truncate';
+        state.strikeRadius = parseFloat(btn.dataset.spot);
+        updateStrikeUI();
+        strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+      });
+    });
+
+    document.getElementById('malletHardnessSlider').addEventListener('input', e => {
+      state.malletHardness = parseFloat(e.target.value);
+      const tauMs = (5.2 - state.malletHardness * 4.3).toFixed(1);
+      const label = state.malletHardness < 0.28 ? 'Soft Felt' :
+                    state.malletHardness < 0.62 ? 'Medium Felt' :
+                    state.malletHardness < 0.85 ? 'Hard Staccato' : 'Baroque Wood';
+      document.getElementById('malletHardnessVal').textContent = `${state.malletHardness.toFixed(2)} (${label} • τ=${tauMs} ms)`;
+    });
+
+    document.querySelectorAll('.mallet-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mallet-preset-btn').forEach(b => {
+          b.className = 'mallet-preset-btn px-1.5 py-1 rounded bg-slate-900 text-slate-400 border border-slate-800';
+        });
+        btn.className = 'mallet-preset-btn px-1.5 py-1 rounded bg-amber-500/20 text-amber-200 border border-amber-500/40 font-semibold';
+        const val = parseFloat(btn.dataset.mallet);
+        const slider = document.getElementById('malletHardnessSlider');
+        slider.value = val;
+        slider.dispatchEvent(new Event('input'));
+        strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+      });
+    });
+
+    document.getElementById('strikeVelocitySlider').addEventListener('input', e => {
+      state.strikeVelocity = parseFloat(e.target.value);
+      const dyn = state.strikeVelocity < 0.35 ? 'pp' : state.strikeVelocity < 0.65 ? 'mf' : state.strikeVelocity < 0.88 ? 'ff' : 'fff';
+      document.getElementById('strikeVelocityVal').textContent = `${state.strikeVelocity.toFixed(2)} (${dyn})`;
+    });
+
+    document.getElementById('sustainScaleSlider').addEventListener('input', e => {
+      state.sustainScale = parseFloat(e.target.value);
+      document.getElementById('sustainScaleVal').textContent = `${state.sustainScale.toFixed(1)}× (${(6.5 * state.sustainScale).toFixed(1)}s)`;
+    });
+
+    // Top Header Buttons
+    document.getElementById('strikeNormalBtn').addEventListener('click', () => {
+      strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+    });
+    document.getElementById('rollToggleBtn').addEventListener('click', () => {
+      state.rollActive = !state.rollActive;
+      updateRollButtonUI();
+    });
+    document.getElementById('dampBtn').addEventListener('click', muffleTimpani);
+    document.getElementById('clearSoloModeBtn').addEventListener('click', () => {
+      state.soloModeIndex = -1;
+      updateSoloButtonsUI();
+    });
+
+    // Ratio Normalization Toggle ((0,1) vs (1,1))
+    document.getElementById('normMode01Btn').addEventListener('click', () => {
+      state.normalizeTo = '01';
+      document.getElementById('normMode01Btn').className = 'px-2 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-500/40 font-semibold';
+      document.getElementById('normMode11Btn').className = 'px-2 py-0.5 rounded text-slate-400 hover:text-slate-200';
+    });
+    document.getElementById('normMode11Btn').addEventListener('click', () => {
+      state.normalizeTo = '11';
+      document.getElementById('normMode11Btn').className = 'px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 font-semibold';
+      document.getElementById('normMode01Btn').className = 'px-2 py-0.5 rounded text-slate-400 hover:text-slate-200';
+    });
+
+    // Camera Presets & Fullscreen Toggle
+    function centerAndFitCamera() {
+      camOrbit.theta = 0.42;
+      camOrbit.phi = 0.92;
+      camOrbit.radius = 11.4;
+      camOrbit.target.set(0, -1.05, 0);
+      updateCameraTransform();
+    }
+    document.getElementById('camCenterFitBtn').addEventListener('click', centerAndFitCamera);
+    document.getElementById('camPresetPerformBtn').addEventListener('click', centerAndFitCamera);
+    document.getElementById('camPresetCutawayBtn').addEventListener('click', () => {
+      camOrbit.theta = 0.08;
+      camOrbit.phi = 1.38;
+      camOrbit.radius = 10.6;
+      camOrbit.target.set(0, -1.35, 0);
+      updateCameraTransform();
+    });
+    document.getElementById('camPresetTopNodalBtn').addEventListener('click', () => {
+      camOrbit.theta = 0.0;
+      camOrbit.phi = 0.16;
+      camOrbit.radius = 9.2;
+      camOrbit.target.set(0, 0.0, 0);
+      updateCameraTransform();
+    });
+
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      camOrbit.radius = Math.max(5.5, camOrbit.radius - 1.1);
+      updateCameraTransform();
+    });
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      camOrbit.radius = Math.min(22.0, camOrbit.radius + 1.1);
+      updateCameraTransform();
+    });
+    document.getElementById('cameraZoomSlider').addEventListener('input', e => {
+      camOrbit.radius = parseFloat(e.target.value);
+      updateCameraTransform();
+    });
+
+    document.getElementById('toggleKettleXray').addEventListener('change', e => {
+      state.kettleXray = e.target.checked;
+      rebuildKettleBowl3D();
+    });
+    document.getElementById('toggleNodalOverlay').addEventListener('change', e => {
+      state.nodalOverlay = e.target.checked;
+      nodalOverlayGroup.visible = state.nodalOverlay;
+    });
+    document.getElementById('toggleExaggerate3D').addEventListener('change', e => {
+      state.exaggerate3D = e.target.checked;
+    });
+
+    function toggleFullScreenStage() {
+      document.body.classList.toggle('stage-fullscreen');
+      const isFs = document.body.classList.contains('stage-fullscreen');
+      document.getElementById('stageFullscreenBtn').textContent = isFs ? '✕ Exit Full [F]' : '⛶ Full Screen [F]';
+      setTimeout(handleResize, 30);
+    }
+    document.getElementById('headerFullscreenBtn').addEventListener('click', toggleFullScreenStage);
+    document.getElementById('stageFullscreenBtn').addEventListener('click', toggleFullScreenStage);
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', e => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+      const k = e.key.toLowerCase();
+      if (e.code === 'Space') {
+        e.preventDefault();
+        strikeTimpani(state.strikeRadius, state.strikeAngle, state.strikeVelocity, false);
+      } else if (k === 'r') {
+        state.rollActive = !state.rollActive;
+        updateRollButtonUI();
+      } else if (k === 'm') {
+        muffleTimpani();
+      } else if (k === 'c') {
+        centerAndFitCamera();
+      } else if (k === 'f') {
+        toggleFullScreenStage();
+      } else if (e.key === 'ArrowUp' || k === 'w') {
+        e.preventDefault();
+        state.glissActive = false;
+        setPedalPositionImmediate(state.pedalPos + 0.035);
+      } else if (e.key === 'ArrowDown' || k === 's') {
+        e.preventDefault();
+        state.glissActive = false;
+        setPedalPositionImmediate(state.pedalPos - 0.035);
+      }
+    });
+
+    // Resize Handler with HiDPI CSS Lock
+    function handleResize() {
+      const rect = mountEl.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h, true);
+    }
+    window.addEventListener('resize', handleResize);
+    if (window.ResizeObserver) {
+      new ResizeObserver(handleResize).observe(mountEl);
+    }
+
+    // =========================================================================
+    // 10. 60 FPS REAL-TIME PHYSICS, 3D BESSEL MESH & AUDIO LOOP
+    // =========================================================================
+    let lastTime = performance.now() * 0.001;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const now = performance.now() * 0.001;
+      const dt = Math.min(0.05, Math.max(0.001, now - lastTime));
+      lastTime = now;
+
+      // 1. Sustained Timpani Tremolo Roll Generator (~13 hits/sec with alternating left/right spot)
+      if (state.rollActive && now - state.lastRollHitTime > 0.076) {
+        state.lastRollHitTime = now;
+        state.rollHandToggle = 1 - state.rollHandToggle;
+        const thetaOffset = state.rollHandToggle ? 0.14 : -0.14;
+        const velJitter = state.strikeVelocity * (0.68 + 0.16 * Math.random());
+        strikeTimpani(state.strikeRadius, state.strikeAngle + thetaOffset, velJitter, true);
+      }
+
+      // 2. Automated Mid-Decay Portamento / Glissando Envelopes
+      if (state.glissActive && state.glissMode !== 'manual') {
+        const elapsed = (now - state.glissStartTime) * state.glissSpeed;
+        if (state.glissMode === 'bartok_up') {
+          const prog = Math.min(1.0, elapsed / 1.45);
+          const smooth = prog * prog * (3 - 2 * prog);
+          setPedalPositionImmediate(Math.min(1.0, state.glissBasePedal + smooth * (5.0 / 7.0)));
+          if (prog >= 1.0) state.glissActive = false;
+        } else if (state.glissMode === 'bartok_down') {
+          const prog = Math.min(1.0, elapsed / 1.45);
+          const smooth = prog * prog * (3 - 2 * prog);
+          setPedalPositionImmediate(Math.max(0.0, state.glissBasePedal - smooth * (5.0 / 7.0)));
+          if (prog >= 1.0) state.glissActive = false;
+        } else if (state.glissMode === 'nielsen_swoop') {
+          const prog = Math.min(1.0, elapsed / 2.2);
+          const swoop = Math.sin(prog * Math.PI) * (4.5 / 7.0);
+          setPedalPositionImmediate(Math.max(0.0, Math.min(1.0, state.glissBasePedal + swoop)));
+          if (prog >= 1.0) state.glissActive = false;
+        }
+      } else {
+        // Smooth glide toward pedalTarget when clicking semitone gauge buttons
+        const diff = state.pedalTarget - state.pedalPos;
+        if (Math.abs(diff) > 0.0004) {
+          state.pedalPos += diff * Math.min(1.0, dt / state.pedalGlideTau);
+          document.getElementById('pedalSlider').value = state.pedalPos;
+          document.getElementById('floatingPedalSlider').value = state.pedalPos;
+        }
+      }
+
+      // 3. Recompute Coupled Membrane + Kettle Air-Cavity Frequencies for current Pedal Tension T(t)
+      const { f11, c_M, tension } = computeCoupledModalFrequencies();
+
+      // 4. Advance Modal Phases & Exponential Decay
+      let netVolumeDisplacement = 0.0;
+      for (let i = 0; i < state.modes.length; i++) {
+        const m = state.modes[i];
+        if (m.amplitude > 0.0002) {
+          m.phase = (m.phase + 2 * Math.PI * m.currentFreq * dt) % (Math.PI * 2000);
+          m.amplitude *= Math.exp(-m.decayRate * dt);
+          if (m.m === 0) {
+            // Axisymmetric modes compress/expand the enclosed kettle volume!
+            netVolumeDisplacement += (m.amplitude * Math.sin(m.phase)) / (m.n * m.n);
+          }
+        } else {
+          m.amplitude = 0.0;
+        }
+      }
+
+      // Sync Web Audio Oscillators continuously (Real-time mid-decay portamento!)
+      syncWebAudioToModalState();
+
+      // 5. Deform 3D Polar Membrane Vertices via Bessel Eigenfunctions J_m(j_mn r/R) cos(m(θ - θ_hit))
+      const posAttr = membraneGeo.attributes.position;
+      const colAttr = membraneGeo.attributes.color;
+      const posArr = posAttr.array;
+      const colArr = colAttr.array;
+      const ampScale = state.exaggerate3D ? 0.34 : 0.14;
+
+      // Tension-dependent base tint of membrane
+      const tensionNorm = state.pedalPos;
+
+      for (let v = 0; v < memVertCount; v++) {
+        const rNorm = memPolarCoords[v * 2];
+        const theta = memPolarCoords[v * 2 + 1];
+
+        let disp = 0.0;
+        if (rNorm < 0.999) {
+          const dTheta = theta - state.strikeAngle;
+          for (let i = 0; i < state.modes.length; i++) {
+            const m = state.modes[i];
+            if (m.amplitude < 0.001) continue;
+            const radial = besselJ(m.m, m.j_mn * rNorm) / m.besselPeak;
+            const angular = m.m === 0 ? 1.0 : Math.cos(m.m * dTheta);
+            // Visual slow-motion alias of high frequency so eye tracks modal pattern while hearing true pitch
+            const visualPhase = m.phase * 0.085;
+            disp += m.amplitude * radial * angular * Math.sin(visualPhase);
+          }
+        }
+
+        const yDisp = disp * ampScale;
+        posArr[v * 3 + 1] = yDisp;
+
+        // Diverging scientific color map: Warm Amber (+crest) / Deep Slate (node) / Cyan (-trough)
+        const vNorm = Math.max(-1, Math.min(1, disp * 1.45));
+        if (vNorm >= 0) {
+          colArr[v * 3]     = 0.14 + 0.82 * vNorm + 0.04 * tensionNorm;
+          colArr[v * 3 + 1] = 0.18 + 0.46 * vNorm;
+          colArr[v * 3 + 2] = 0.25 - 0.18 * vNorm;
+        } else {
+          const c = -vNorm;
+          colArr[v * 3]     = 0.14 - 0.10 * c;
+          colArr[v * 3 + 1] = 0.18 + 0.65 * c;
+          colArr[v * 3 + 2] = 0.25 + 0.72 * c;
+        }
+      }
+      posAttr.needsUpdate = true;
+      colAttr.needsUpdate = true;
+
+      // 6. Animate 3D Foot Pedal, Counterhoop Tension Pull, Spider Plate & Internal Kettle Air Spring
+      // Toe-down rotates pedal forward and pulls counterhoop & spider plate downward
+      pedalRockerGroup.rotation.x = (state.pedalPos - 0.45) * 0.58;
+      counterhoopGroup.position.y = -state.pedalPos * 0.085;
+      spiderPlateGroup.position.y = -2.92 - state.pedalPos * 0.18;
+      gaugePointer.position.y = -0.48 + state.pedalPos * 0.96;
+
+      // Internal Kettle Adiabatic Air-Spring Rings compress & glow with netVolumeDisplacement
+      const kappa = state.bowlProfile === 'open_vacuum' ? 0.0 : state.airCoupling;
+      const deltaP = -netVolumeDisplacement * 185.0 * kappa / Math.max(0.4, state.cavityVolumeScale);
+      state.cavityPressurePa = deltaP;
+
+      airWaveRings.forEach((ring, idx) => {
+        const wave = Math.sin(state.modes[0].phase * 0.12 - idx * 0.7) * state.modes[0].amplitude;
+        ring.mesh.position.y = ring.baseY + wave * 0.14;
+        const s = 1.0 + wave * 0.08;
+        ring.mesh.scale.set(s, 1, s);
+        ring.mesh.material.opacity = Math.min(0.85, 0.18 + Math.abs(netVolumeDisplacement) * 0.65);
+      });
+      airHelixLine.scale.y = 1.0 + netVolumeDisplacement * 0.16;
+
+      updateMallet3DPosition(dt);
+
+      // 7. Update Live HUD & Sidebar Readouts
+      const noteInfo = freqToNoteInfo(f11);
+      const semitonesFromLow = (state.pedalPos * 7.0).toFixed(1);
+      document.getElementById('pedalNoteBadge').textContent = `${noteInfo.note} • ${f11.toFixed(1)} Hz`;
+      document.getElementById('floatingPedalPitch').textContent = `${noteInfo.formatted} (${f11.toFixed(1)} Hz)`;
+      document.getElementById('pedalSemitoneReadout').textContent = `+${semitonesFromLow} st (${noteInfo.note})`;
+      document.getElementById('tensionReadout').textContent = `${Math.round(tension).toLocaleString()} N/m`;
+      document.getElementById('waveSpeedReadout').textContent = `${c_M.toFixed(1)} m/s`;
+
+      document.getElementById('hudPrincipalPitch').textContent = `f_11 = ${f11.toFixed(1)} Hz (${noteInfo.note})`;
+      document.getElementById('hudPedalAngle').textContent = `Pedal: ${Math.round(state.pedalPos * 100)}%`;
+      document.getElementById('hudCavityPressure').textContent = `${deltaP >= 0 ? '+' : ''}${deltaP.toFixed(1)} Pa`;
+      document.getElementById('hud01Ratio').textContent = state.modes[0].ratioTo11.toFixed(3);
+      document.getElementById('hud21Ratio').textContent = `${state.modes[2].ratioTo11.toFixed(3)} (${kappa > 0.5 ? '5th' : 'Inharm'})`;
+      document.getElementById('hud31Ratio').textContent = `${state.modes[4].ratioTo11.toFixed(3)} (${kappa > 0.5 ? '8ve' : 'Inharm'})`;
+
+      const centsDelta = 1200 * Math.log2(f11 / Math.max(20, state.lastStrikePitchHz));
+      document.getElementById('portamentoDeltaReadout').textContent =
+        `Mid-Decay Portamento Δ: ${centsDelta >= 0 ? '+' : ''}${Math.round(centsDelta)} cents (${(centsDelta / 100).toFixed(2)} st)`;
+
+      // Update Modal Table Cells
+      for (let i = 0; i < state.modes.length; i++) {
+        const m = state.modes[i];
+        const vacCell = document.getElementById(`vacRatioCell_${i}`);
+        const ketCell = document.getElementById(`kettleRatioCell_${i}`);
+        const fCell = document.getElementById(`freqCell_${i}`);
+        const aBar = document.getElementById(`ampBar_${i}`);
+        if (vacCell) {
+          vacCell.textContent = (state.normalizeTo === '01' ? m.vacRatio01 : m.vacRatio11).toFixed(3);
+          ketCell.textContent = (state.normalizeTo === '01' ? m.ratioTo01 : m.ratioTo11).toFixed(3);
+          fCell.textContent = m.currentFreq.toFixed(1);
+          aBar.style.width = `${Math.min(100, Math.round(m.amplitude * 95))}%`;
+        }
+      }
+
+      // 8. Push Pitch-Time Portamento Sample & Render 2D Telemetry Canvases
+      state.pitchHistory.push({
+        f01: state.modes[0].currentFreq,
+        f11: state.modes[1].currentFreq,
+        f21: state.modes[2].currentFreq,
+        f31: state.modes[4].currentFreq
+      });
+      if (state.pitchHistory.length > 220) state.pitchHistory.shift();
+
+      drawBesselProfileCanvas();
+      drawPortamentoTraceCanvas();
+      drawSpectrumAnalyzerCanvas();
+
+      renderer.render(scene, camera);
+    }
+
+    // Initialize Application
+    buildSemitoneCrownButtons();
+    computeCoupledModalFrequencies();
+    buildModalInspectorRows();
+    updateStrikeUI();
+    rebuildKettleBowl3D();
+    centerAndFitCamera();
+    handleResize();
+
+    // Seed initial modal excitation so the 3D Bessel waves & canvases are immediately alive on load
+    state.modes.forEach(m => {
+      m.amplitude = computeModeStrikeExcitation(m, state.strikeRadius, state.malletHardness, 0.72);
+    });
+
+    animate();
+  </script>
+</body>
+</html>
