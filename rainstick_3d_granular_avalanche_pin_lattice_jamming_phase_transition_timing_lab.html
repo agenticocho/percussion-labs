@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAINSTICK-3D — Granular Avalanche, Pin-Lattice Jamming Phase-Transition &amp; Timing Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#04060a',
+              900: '#090d16',
+              800: '#111827',
+              700: '#1e293b',
+              600: '#334155'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #04060a;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(9, 13, 22, 0.6); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060a;
+      margin-top: -5px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+      transition: transform 0.1s ease, background-color 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6) !important;
+    }
+    .slider-rose::-webkit-slider-thumb {
+      background: #f43f5e !important;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.6) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 8px rgba(192, 132, 252, 0.6) !important;
+    }
+
+    .hud-glass {
+      background: linear-gradient(180deg, rgba(13, 18, 30, 0.88) 0%, rgba(7, 10, 18, 0.94) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 73, 107, 0.48);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+    }
+
+    @keyframes pulseJam {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.55); }
+      50% { box-shadow: 0 0 18px 4px rgba(244, 63, 94, 0.35); }
+    }
+    .jammed-glow { animation: pulseJam 1.4s infinite; }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden select-none flex flex-col p-2.5 gap-2">
+
+  <!-- FULL-SCREEN 3D WEBGL GRANULAR RAINSTICK VIEWPORT -->
+  <div id="webglContainer" class="fixed inset-0 w-full h-full z-0 cursor-grab active:cursor-grabbing"></div>
+
+  <!-- TOP STUDIO HEADER, JAMMING INDICATOR & TIME-REVERSAL FLIP BAR (Flex child 1) -->
+  <header class="relative z-30 hud-glass rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <!-- Left: Brand Identity & Granular Physics Classification -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500/25 via-amber-500/20 to-rose-500/25 border border-sky-500/50 flex items-center justify-center shadow-inner shrink-0">
+        <svg class="w-5 h-5 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="6" y1="20" x2="18" y2="4" stroke="#f59e0b" stroke-width="2.4" stroke-linecap="round"></line>
+          <circle cx="9" cy="15" r="1.4" fill="#38bdf8"></circle>
+          <circle cx="12" cy="11" r="1.4" fill="#38bdf8"></circle>
+          <circle cx="15" cy="8" r="1.4" fill="#38bdf8"></circle>
+          <path d="M8 12l3 1M12 8l3 1M10 16l3 1" stroke="#94a3b8" stroke-width="1.3"></path>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">RAINSTICK-3D // GRANULAR AVALANCHE &amp; JAMMING LAB</h1>
+          <span class="hidden xl:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono bg-sky-500/15 text-sky-300 border border-sky-500/30">112.13+133.1 • Helical Pin Lattice + Force-Chain Arching</span>
+        </div>
+        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+          <span id="hdrMaterialLabel" class="text-amber-300 font-semibold">Eulychnia Cactus + Thorns (1.20m)</span>
+          <span>•</span>
+          <span id="hdrStatisticalVerdict" class="text-emerald-300">Heavy-Tailed Cascade (CV: 2.14)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: LIVE JAMMING INDICATOR & 1-SECOND EVENT RATE METER -->
+    <div id="jammingBannerBox" class="flex items-center gap-3 bg-obsidian-950/90 border border-emerald-500/50 rounded-xl px-3 py-1 transition-all">
+      <div class="flex items-center gap-2">
+        <span id="jammingStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+        <div>
+          <div class="text-[9px] font-mono uppercase tracking-wider text-slate-400">Phase State</div>
+          <div id="jammingStateLabel" class="text-xs font-mono font-extrabold text-emerald-400">FLOWING CASCADE</div>
+        </div>
+      </div>
+      <div class="h-6 w-[1px] bg-slate-800"></div>
+      <div class="text-right min-w-[78px]">
+        <div class="text-[9px] font-mono uppercase tracking-wider text-slate-400">Rate (Last 1.0s)</div>
+        <div class="flex items-baseline justify-end gap-1">
+          <span id="liveRateReadout" class="font-mono text-base font-extrabold text-sky-400">142</span>
+          <span class="text-[9px] font-mono text-slate-400">clicks/s</span>
+        </div>
+      </div>
+      <div class="h-6 w-[1px] bg-slate-800 hidden sm:block"></div>
+      <div class="hidden sm:block text-right min-w-[64px]">
+        <div class="text-[9px] font-mono uppercase tracking-wider text-slate-400">Top Pool</div>
+        <div id="topPoolReadout" class="font-mono text-xs font-bold text-amber-300">84%</div>
+      </div>
+    </div>
+
+    <!-- Right: Time Reversal (Flip 180°), Cascade vs. Poisson Switch & WAV Export -->
+    <div class="flex flex-wrap items-center gap-1.5 bg-obsidian-950/85 border border-slate-800 rounded-xl px-2.5 py-1">
+      <!-- Time Reversal: Flip Stick 180° -->
+      <button id="btnFlipStick" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 transition shadow-md shadow-amber-500/20" title="Invert Rainstick 180° like an hourglass to restart the cascade (Shortcut: F)">
+        <span>🔄 Flip Stick 180° [F]</span>
+      </button>
+
+      <!-- Cascade vs. Poisson Switch -->
+      <button id="btnToggleStatisticsMode" type="button" class="px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/50 transition" title="Switch between correlated granular Avalanche Cascade and memoryless Poisson drops (Shortcut: M)">
+        Mode: CASCADE (Real)
+      </button>
+
+      <!-- Cutaway / Force-Chain X-Ray Toggle -->
+      <button id="btnToggleCutaway" type="button" class="px-2 py-1.5 rounded-lg text-[11px] font-mono bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700 transition" title="Toggle Transparent Cutaway Tube Wall">
+        Cutaway: ON
+      </button>
+
+      <!-- Audio Mute / Unmute -->
+      <button id="btnAudioToggle" type="button" class="px-2 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 transition">
+        🔊 Audio: ON
+      </button>
+
+      <button id="btnQuickExportWav" type="button" class="px-2.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-[11px] font-bold transition">
+        💾 WAV
+      </button>
+    </div>
+  </header>
+
+  <!-- MIDDLE WORKSPACE STAGE (Flex child 2: Guaranteed non-overlapping) -->
+  <div class="relative flex-1 min-h-0 w-full z-20 pointer-events-none">
+
+    <!-- Dock Collapse Toggle Bar -->
+    <div class="absolute top-0 left-0 right-0 flex items-center justify-between pointer-events-none z-30">
+      <button id="btnToggleLeftDock" type="button" class="pointer-events-auto hud-glass px-2.5 py-1 rounded-lg text-[10px] font-mono text-amber-300 hover:text-white border border-amber-500/40 transition">
+        ◀ 6 Granular Controls &amp; Phase Map
+      </button>
+      <button id="btnToggleRightDock" type="button" class="pointer-events-auto hud-glass px-2.5 py-1 rounded-lg text-[10px] font-mono text-sky-300 hover:text-white border border-sky-500/40 transition">
+        Inter-Arrival Histogram &amp; WAV Lab ▶
+      </button>
+    </div>
+
+    <!-- LEFT FLOATING DOCK: THE 6 CORE GRANULAR CONTROLS & INTERACTIVE (φ, θ) JAMMING PHASE DIAGRAM -->
+    <aside id="leftDock" class="pointer-events-auto absolute top-8 bottom-0 left-0 w-[350px] sm:w-[390px] hud-glass rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto transition-transform duration-200">
+      <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+        <div>
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-amber-300">The 6 Granular Physics Controls</h2>
+          <p class="text-[10px] text-slate-400">Reach the sharp jamming boundary from fill, incline, or pin pitch</p>
+        </div>
+        <button id="btnShakeUnjam" type="button" class="px-2 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-[10px] font-mono font-bold text-rose-300 transition" title="Jolt the tube to break jammed force-chain arches (Shortcut: J)">
+          ⚡ Jolt Arch [J]
+        </button>
+      </div>
+
+      <!-- CONTROL 1: BEAD MASS / SIZE DISTRIBUTION (Monodisperse Tick <-> Polydisperse Chord) -->
+      <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-1">
+        <div class="flex justify-between text-xs">
+          <span class="font-bold text-slate-200">1. Bead Mass Distribution</span>
+          <span id="valBeadDispersity" class="font-mono text-amber-400 font-bold">75% Polydisperse Chord</span>
+        </div>
+        <input id="sliderBeadDispersity" type="range" min="0" max="100" value="75" class="w-full" />
+        <div class="flex justify-between text-[9px] font-mono text-slate-500">
+          <span>0% Monodisperse (1-Size Tick)</span>
+          <span>100% Mixed (Pebbles+Seeds+Grit Chord)</span>
+        </div>
+      </div>
+
+      <!-- CONTROL 2: FILL FRACTION φ (Dilute -> Torrent -> Dense Jam) -->
+      <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-1">
+        <div class="flex justify-between text-xs">
+          <span class="font-bold text-slate-200">2. Fill Fraction (φ)</span>
+          <span id="valFillFraction" class="font-mono text-sky-400 font-bold">0.36 (Torrent)</span>
+        </div>
+        <input id="sliderFillFraction" type="range" min="5" max="82" value="36" class="w-full slider-cyan" />
+        <div class="flex justify-between text-[9px] font-mono text-slate-500">
+          <span>0.05 Dilute</span>
+          <span>0.38 Torrent Peak</span>
+          <span class="text-rose-400">φ ≥ φc JAM (Silent)</span>
+        </div>
+      </div>
+
+      <!-- CONTROL 3: PIN DENSITY / HELICAL PITCH (Sparse Free-Fall <-> Dense Chatter / Arch Jam) -->
+      <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-1">
+        <div class="flex justify-between text-xs">
+          <span class="font-bold text-slate-200">3. Pin Density / Helical Pitch</span>
+          <span id="valPinDensity" class="font-mono text-purple-300 font-bold">0.54 (Medium Lattice)</span>
+        </div>
+        <input id="sliderPinDensity" type="range" min="15" max="98" value="54" class="w-full slider-purple" />
+        <div class="flex justify-between text-[9px] font-mono text-slate-500">
+          <span>0.15 Sparse (Long Free-Falls)</span>
+          <span>0.98 Dense (Rapid Chatter / Bridge)</span>
+        </div>
+      </div>
+
+      <!-- CONTROL 4: INCLINE ANGLE θ (Shallow Creep / Jam <-> Steep Rush) -->
+      <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-1">
+        <div class="flex justify-between text-xs">
+          <span class="font-bold text-slate-200">4. Incline Angle (θ)</span>
+          <span id="valInclineAngle" class="font-mono text-emerald-400 font-bold">52° (Steady Rush)</span>
+        </div>
+        <input id="sliderInclineAngle" type="range" min="2" max="88" value="52" class="w-full slider-emerald" />
+        <div class="flex justify-between text-[9px] font-mono text-slate-500">
+          <span class="text-rose-400">θ ≤ θc Repose Jam</span>
+          <span>28° Creep</span>
+          <span>88° Vertical Rush</span>
+        </div>
+      </div>
+
+      <!-- CONTROL 5 & 6: TUBE LENGTH + MATERIAL (Chamber Resonance Coloring Every Click) -->
+      <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-2">
+        <div>
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-bold text-slate-200">5. Tube Length (L)</span>
+            <span id="valTubeLength" class="font-mono text-amber-300 font-bold">1.20 m (f1 = 143 Hz)</span>
+          </div>
+          <input id="sliderTubeLength" type="range" min="40" max="180" value="120" class="w-full" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-200 mb-1">6. Tube Material (Chamber Resonator)</label>
+          <select id="selectTubeMaterial" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 outline-none">
+            <option value="cactus">Eulychnia Cactus + Driven Thorns (Warm Mapuche Woody)</option>
+            <option value="bamboo">Hollow Guadua Bamboo + Hardwood Pegs (Resonant Node Knock)</option>
+            <option value="brass">Thin-Wall Aged Brass + Steel Pins (Metallic Shimmer Ring)</option>
+            <option value="glass">Borosilicate Lab Column + Acrylic Pins (Crystalline DWS Ping)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE 2D JAMMING PHASE DIAGRAM (Fill Fraction φ vs. Incline Angle θ) -->
+      <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-rose-300">Liu–Nagel Jamming Phase Map (φ vs. θ)</span>
+          <span id="lblCriticalThresholds" class="text-[9px] font-mono text-slate-400">φc = 0.61 | θc = 19°</span>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-tight">
+          Click/drag inside the phase diagram to move <code class="text-sky-300">(φ, θ)</code> across the sharp red arch-jamming boundary.
+        </p>
+        <div class="relative h-32 w-full bg-obsidian-900 rounded-lg border border-slate-800 overflow-hidden cursor-crosshair">
+          <canvas id="phaseMapCanvas" class="w-full h-full"></canvas>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT FLOATING DOCK: LIVE INTER-ARRIVAL HISTOGRAM, ROLLING FLOW-RATE TRACE & WAV EXPORTER -->
+    <aside id="rightDock" class="pointer-events-auto absolute top-8 bottom-0 right-0 w-[360px] sm:w-[420px] hud-glass rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto transition-transform duration-200">
+      <!-- Right Dock Navigation Tabs -->
+      <div class="grid grid-cols-2 gap-1 bg-obsidian-950/90 p-1 rounded-xl border border-slate-800 shrink-0">
+        <button type="button" data-right-tab="statistics" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 transition">1. Timing &amp; Jamming Stats</button>
+        <button type="button" data-right-tab="export" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">2. Presets &amp; WAV Export</button>
+      </div>
+
+      <!-- RIGHT TAB 1: LIVE INTER-ARRIVAL DISTRIBUTION P(Δt) & ROLLING EVENT-RATE MONITOR -->
+      <div id="rightTabStatistics" class="flex flex-col gap-2.5">
+        <!-- Cascade vs. Poisson Direct Comparison Switch Card -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-sky-300">Granular Cascade vs. Poisson Switch</h3>
+              <p class="text-[10px] text-slate-400">Same mean rate λ — correlated bursts sound like rain; independent drops sound like dust</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button type="button" id="btnModeCascade" class="py-2 px-2 rounded-xl border text-xs font-bold bg-sky-500/20 border-sky-400 text-white transition">
+              🌊 CASCADE (Correlated)
+              <div class="text-[9px] font-mono text-sky-300 font-normal">Heavy-Tailed • CV &gt; 1.7</div>
+            </button>
+            <button type="button" id="btnModePoisson" class="py-2 px-2 rounded-xl border text-xs font-semibold bg-obsidian-900 border-slate-800 text-slate-300 transition">
+              🎲 POISSON (Fake Rain)
+              <div class="text-[9px] font-mono text-slate-400 font-normal">Exponential • CV ≈ 1.0</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- LIVE INTER-ARRIVAL TIME HISTOGRAM P(Δt) -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-amber-300">Inter-Arrival Distribution P(Δt)</span>
+              <div class="text-[9px] font-mono text-slate-400">Cyan Bars = Measured Δt • Dashed Rose = Poisson Exp(λ)</div>
+            </div>
+            <div class="flex items-center gap-1">
+              <button id="btnToggleLogHist" type="button" class="px-2 py-0.5 rounded bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[9px] font-mono text-sky-300">
+                Scale: Log-Y
+              </button>
+              <button id="btnClearHist" type="button" class="px-2 py-0.5 rounded bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[9px] font-mono text-slate-300">
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div class="relative h-40 w-full bg-obsidian-900 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="histogramCanvas" class="w-full h-full"></canvas>
+          </div>
+
+          <!-- 4 Key Timing Statistics Readouts -->
+          <div class="grid grid-cols-4 gap-1 text-center font-mono">
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[8px] text-slate-400">Mean Δt</div>
+              <div id="statMeanDt" class="text-[11px] font-bold text-slate-200">7.2 ms</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[8px] text-slate-400">CV (σ/μ)</div>
+              <div id="statCV" class="text-[11px] font-bold text-emerald-400">2.18</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[8px] text-slate-400">Fano Factor</div>
+              <div id="statFano" class="text-[11px] font-bold text-amber-400">3.42</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[8px] text-slate-400">Burst Size</div>
+              <div id="statBurst" class="text-[11px] font-bold text-purple-300">4.6x</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LIVE ROLLING 1-SECOND FLOW RATE & JAMMING TRACE -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Rolling 1s Event Rate R(t) &amp; Arch Stress</span>
+            <span id="lblFlowStationarity" class="text-[9px] font-mono text-slate-400">Avalanche Fluctuations</span>
+          </div>
+          <div class="relative h-24 w-full bg-obsidian-900 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="flowTraceCanvas" class="w-full h-full"></canvas>
+          </div>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-0.5">
+            <label class="flex items-center gap-1.5 cursor-pointer text-amber-300">
+              <input id="chkEndlessRecycle" type="checkbox" class="rounded bg-obsidian-800 border-slate-600 text-amber-500" />
+              <span>Continuous Hourglass Recycle (Stationary Flow)</span>
+            </label>
+            <span id="lblTotalEvents" class="text-slate-500">0 hits</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT TAB 2: 6 GRANULAR REGIME PRESETS, WAV SAMPLE EXPORTER & TIMING CSV -->
+      <div id="rightTabExport" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300">6 Granular Regime Presets</h3>
+          <div id="presetGrid" class="grid grid-cols-2 gap-1.5">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Lossless 44.1 kHz WAV & Timing Telemetry Exporter -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">44.1 kHz Stereo WAV &amp; Timing Exporter</h3>
+              <p class="text-[10px] text-slate-400">Synthesize true granular cascade WAVs or export Δt statistics</p>
+            </div>
+            <button id="btnExportTimingJson" type="button" class="px-2 py-1 rounded bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[10px] font-mono text-emerald-300">
+              📊 Δt Stats .JSON
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btnExportCascadeWav" type="button" class="px-2.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md">
+              💾 Export Current Cascade (.WAV)
+            </button>
+            <button id="btnExportHourglassWav" type="button" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md">
+              ⏳ Export Full Flip Drain (.WAV)
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">Export Granular Regime Comparisons (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-wav-regime="cascade_rain" class="regime-wav-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-sky-300 transition">CascadeRain.wav</button>
+              <button type="button" data-wav-regime="poisson_dust" class="regime-wav-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-rose-300 transition">PoissonDust.wav</button>
+              <button type="button" data-wav-regime="stick_slip" class="regime-wav-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-amber-300 transition">StickSlip.wav</button>
+              <button type="button" data-wav-regime="monodisperse" class="regime-wav-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-emerald-300 transition">MonoTick.wav</button>
+              <button type="button" data-wav-regime="polydisperse" class="regime-wav-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-purple-300 transition">PolyChord.wav</button>
+              <button type="button" data-wav-regime="jam_transition" class="regime-wav-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-cyan-300 transition">FlowToJam.wav</button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 pt-1 border-t border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase text-slate-400">Rendered Sample Vault</span>
+              <span id="vaultCountLabel" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="sampleVaultList" class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+              <div class="text-[11px] text-slate-500 bg-obsidian-900/60 border border-slate-800/80 rounded-lg p-2 text-center">
+                Click any WAV button above to synthesize a 44.1 kHz stereo granular cascade file for preview &amp; download.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- BOTTOM FLOATING QUICK REGIME BAR & TELEMETRY (Flex child 3) -->
+  <footer class="relative z-30 hud-glass rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <div class="flex flex-wrap items-center gap-1.5">
+      <button type="button" data-quick-preset="mist" class="quick-preset-btn px-2.5 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/30 border border-sky-400/40 text-sky-200 text-xs font-mono font-semibold transition">
+        1. Canopy Mist (Dilute)
+      </button>
+      <button type="button" data-quick-preset="monsoon" class="quick-preset-btn px-2.5 py-1.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/35 border border-amber-400/60 text-amber-200 text-xs font-mono font-bold transition">
+        2. Monsoon Cascade (Optimal)
+      </button>
+      <button type="button" data-quick-preset="stickslip" class="quick-preset-btn px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/50 text-purple-200 text-xs font-mono font-semibold transition">
+        3. Near-Jam Stick-Slip
+      </button>
+      <button type="button" data-quick-preset="jammed" class="quick-preset-btn px-2.5 py-1.5 rounded-xl bg-rose-500/25 hover:bg-rose-500/40 border border-rose-400/60 text-rose-200 text-xs font-mono font-bold transition">
+        4. Force-Chain JAM (Silent!)
+      </button>
+      <button type="button" data-quick-preset="poisson" class="quick-preset-btn px-2.5 py-1.5 rounded-xl bg-slate-700/50 hover:bg-slate-700/75 border border-slate-500/50 text-slate-200 text-xs font-mono transition">
+        5. Poisson Fake-Rain Test
+      </button>
+    </div>
+
+    <div class="flex items-center gap-3 bg-obsidian-950/90 border border-slate-800 px-3 py-1 rounded-xl">
+      <div id="lastCollisionTelemetry" class="text-[11px] font-mono text-slate-300">
+        Arch Stress: 0.48 • Throat s/d: 2.35 • Air f1: 143 Hz
+      </div>
+      <div class="h-4 w-[1px] bg-slate-800 hidden sm:block"></div>
+      <div class="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-amber-300">
+        <span>[F] Flip 180° • [M] Cascade/Poisson • [J] Jolt Arch</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST BANNER -->
+  <div id="toastBanner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-xl bg-obsidian-900/95 border border-amber-500/60 text-xs font-mono font-semibold text-amber-200 shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Flipped rainstick 180°</span>
+  </div>
+
+  <!-- COMPLETE GRANULAR PHYSICS, TIMING STATISTICS, 3D WEBGL & WEB AUDIO ENGINE -->
+  <script>
+    // =========================================================================
+    // 1. TUBE MATERIAL ACOUSTIC RESONATOR PROFILES & GRAIN SPECIES
+    // =========================================================================
+    const TUBE_MATERIALS = {
+      cactus: {
+        name: "Eulychnia Cactus + Thorns",
+        wallFreqs: [640, 1480, 2650, 4100],
+        wallQs: [4.2, 5.5, 6.0, 4.8],
+        wallGains: [0.65, 0.85, 0.55, 0.30],
+        shellHex: 0x92400e,
+        pinHex: 0xfde68a,
+        frictionMu: 0.24
+      },
+      bamboo: {
+        name: "Guadua Bamboo + Rosewood Pegs",
+        wallFreqs: [420, 1180, 2340, 3680],
+        wallQs: [6.8, 7.2, 6.5, 5.2],
+        wallGains: [0.80, 0.90, 0.60, 0.35],
+        shellHex: 0xb45309,
+        pinHex: 0x78350f,
+        frictionMu: 0.21
+      },
+      brass: {
+        name: "Thin-Wall Aged Brass + Steel Pins",
+        wallFreqs: [980, 2150, 3840, 5920],
+        wallQs: [11.5, 13.0, 14.5, 12.0],
+        wallGains: [0.55, 0.85, 0.95, 0.70],
+        shellHex: 0xd97706,
+        pinHex: 0xe2e8f0,
+        frictionMu: 0.17
+      },
+      glass: {
+        name: "Borosilicate Lab Column + Acrylic Pins",
+        wallFreqs: [1420, 3120, 5180, 7400],
+        wallQs: [14.0, 16.0, 15.0, 12.0],
+        wallGains: [0.45, 0.80, 1.00, 0.85],
+        shellHex: 0x38bdf8,
+        pinHex: 0xf8fafc,
+        frictionMu: 0.14
+      }
+    };
+
+    // Polydisperse Grain Species (From heavy basalt pebbles to fine silica grit)
+    const GRAIN_SPECIES = [
+      { name: "Basalt Pebble", mass: 2.2, radiusScale: 1.38, baseFreq: 1320, colorHex: 0xf59e0b },
+      { name: "Quartz Stone",  mass: 1.3, radiusScale: 1.08, baseFreq: 2280, colorHex: 0x38bdf8 },
+      { name: "Acacia Seed",   mass: 0.8, radiusScale: 0.88, baseFreq: 3420, colorHex: 0x10b981 },
+      { name: "Silica Grit",   mass: 0.4, radiusScale: 0.66, baseFreq: 5280, colorHex: 0xc084fc }
+    ];
+
+    const GRANULAR_PRESETS = {
+      mist: {
+        name: "Canopy Mist (Dilute)",
+        dispersity: 40, fill: 0.14, pinDensity: 0.34, incline: 34, length: 1.10, mat: "cactus", mode: "cascade"
+      },
+      monsoon: {
+        name: "Monsoon Cascade (Optimal)",
+        dispersity: 80, fill: 0.36, pinDensity: 0.54, incline: 52, length: 1.20, mat: "cactus", mode: "cascade"
+      },
+      stickslip: {
+        name: "Near-Jam Stick-Slip Creep",
+        dispersity: 65, fill: 0.56, pinDensity: 0.68, incline: 25, length: 1.35, mat: "bamboo", mode: "cascade"
+      },
+      jammed: {
+        name: "Force-Chain JAM (Silent!)",
+        dispersity: 10, fill: 0.72, pinDensity: 0.82, incline: 18, length: 1.20, mat: "cactus", mode: "cascade"
+      },
+      monodisperse: {
+        name: "Monodisperse Glass Tick",
+        dispersity: 0, fill: 0.28, pinDensity: 0.48, incline: 62, length: 0.95, mat: "glass", mode: "cascade"
+      },
+      poisson: {
+        name: "Poisson Fake-Rain Test",
+        dispersity: 75, fill: 0.36, pinDensity: 0.54, incline: 52, length: 1.20, mat: "cactus", mode: "poisson"
+      }
+    };
+
+    // =========================================================================
+    // 2. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      // The 6 Core Physical Controls
+      beadDispersity: 75,      // 0% (Monodisperse 1-size) to 100% (Polydisperse 4-species chord)
+      fillFraction: 0.36,      // 0.05 to 0.82
+      pinDensity: 0.54,        // 0.15 to 0.98
+      inclineDeg: 52,          // 2° to 88°
+      tubeLengthM: 1.20,       // 0.40 m to 1.80 m
+      tubeMaterial: "cactus",  // 'cactus' | 'bamboo' | 'brass' | 'glass'
+
+      // Granular Timing Mode & Hourglass State
+      statisticsMode: "cascade", // 'cascade' (correlated heavy-tailed) vs. 'poisson' (independent exponential)
+      endlessRecycle: false,
+      audioEnabled: true,
+      cutawayMode: true,
+      logHistogram: true,
+
+      // Hourglass Inversion & Mass Conservation
+      flipParity: 0,           // Toggles 0 <-> 1 on each 180° flip
+      visualFlipAngle: 0,      // Animated 0 <-> Math.PI
+      topReservoirMass: 0.92,  // 1.0 = full top pool, 0.0 = settled at bottom
+      isJammed: false,
+      archStress: 0.42,
+
+      // Avalanche & Timing Statistics State
+      nextAvalancheTimeSec: 0,
+      pendingMicroAvalanche: [], // Queue of { fireTimeSec, axialPos, speciesIdx, impactVel }
+      collisionTimestampsMs: [], // Last 1.0s timestamps for rolling event rate
+      interArrivalSamplesMs: [], // Up to 600 Δt samples (in ms) for histogram & CV
+      rateHistory: new Array(90).fill(0),
+      lastEventTimeSec: null,
+      totalEventsCount: 0,
+
+      // WAV Sample Vault
+      renderedVault: []
+    };
+
+    // =========================================================================
+    // 3. LIU–NAGEL GRANULAR JAMMING PHASE-TRANSITION SOLVER
+    //    Computes critical fill φ_c(θ, ρ_pin) and critical angle θ_c(φ, ρ_pin)
+    // =========================================================================
+    function computeGranularPhasePhysics(params = state) {
+      const phi = params.fillFraction;
+      const rho = params.pinDensity;
+      const thetaDeg = params.inclineDeg;
+      const thetaRad = (thetaDeg * Math.PI) / 180;
+      const polyNorm = params.beadDispersity / 100;
+      const mat = TUBE_MATERIALS[params.tubeMaterial] || TUBE_MATERIALS.cactus;
+
+      // Monodisperse spheres lock into crystalline arches slightly more easily than polydisperse grains
+      const monoArchPenalty = (1.0 - polyNorm) * 0.045;
+
+      // Critical maximum packing before pin-throat arch bridging at vertical incline
+      // As pin density rho increases, throat aperture s/d shrinks (Chevoir et al. 2007; To et al. 2001)
+      const phiMaxVertical = Math.max(0.42, 0.79 - 0.25 * Math.pow(rho, 1.25) - monoArchPenalty);
+
+      // Effective critical fill fraction at current incline angle θ:
+      const sinTheta = Math.sin(thetaRad);
+      const cosTheta = Math.cos(thetaRad);
+      const baseReposeSin = mat.frictionMu + 0.14 * rho; // sin(θ_min) at dilute limit
+      const phiCritical = sinTheta <= baseReposeSin
+        ? 0.04
+        : Math.max(0.08, phiMaxVertical * Math.pow((sinTheta - baseReposeSin) / (1.0 - baseReposeSin), 0.34));
+
+      // Inverse: Critical angle θ_c(φ, ρ_pin) below which current fill fraction φ jams
+      let sinThetaCritical = baseReposeSin;
+      if (phi >= phiMaxVertical) {
+        sinThetaCritical = 1.05; // Jammed even at 90° vertical!
+      } else {
+        const ratio = Math.min(1.0, phi / phiMaxVertical);
+        sinThetaCritical = baseReposeSin + (1.0 - baseReposeSin) * Math.pow(ratio, 1 / 0.34);
+      }
+      const thetaCriticalDeg = sinThetaCritical >= 1.0 ? 90 : Math.round((Math.asin(Math.min(1, sinThetaCritical)) * 180) / Math.PI);
+
+      // Sharp Phase Transition Check: JAMMED if φ >= φ_c OR θ <= θ_c
+      const isJammed = (phi >= phiCritical) || (thetaDeg <= thetaCriticalDeg);
+      const isSettled = !params.endlessRecycle && params.topReservoirMass <= 0.005;
+
+      // Beverloo-Lattice Non-Monotonic Mean Event Rate R (clicks/sec):
+      // Rises with φ in the dilute regime, peaks around φ ≈ 0.36, then slows down near φ_c and drops SHARPLY to 0 at φ_c!
+      let targetEventRate = 0;
+      let meanBurstSize = 1.0;
+      let archStress = Math.min(1.0, (phi / Math.max(0.1, phiCritical)) * 0.85 + (thetaCriticalDeg / Math.max(10, thetaDeg)) * 0.15);
+
+      if (!isJammed && !isSettled) {
+        const excessPhi = Math.max(0, phiCritical - phi);
+        const crowdFactor = Math.pow(excessPhi / phiCritical, 0.58);
+        const gravityDrive = Math.pow(Math.max(0.02, sinTheta - baseReposeSin * 0.85), 0.62);
+        const pinCollisionMultiplier = 0.55 + 1.45 * rho;
+
+        // Peak torrent ~ 220-340 clicks/s; dilute trickle ~ 18-45 clicks/s
+        targetEventRate = 920 * phi * crowdFactor * gravityDrive * pinCollisionMultiplier;
+        targetEventRate = Math.max(8, Math.min(380, targetEventRate));
+
+        // Avalanche burst correlation size increases as we approach the jamming boundary (Self-Organized Criticality)
+        const proximityToJam = Math.min(0.95, phi / phiCritical);
+        meanBurstSize = 2.4 + 6.8 * Math.pow(proximityToJam, 1.5) * (0.6 + 0.6 * rho);
+      } else if (isJammed) {
+        archStress = 1.0;
+        targetEventRate = 0;
+      }
+
+      // Pin throat to bead diameter ratio s/d (jamming typically occurs around s/d < 2.1)
+      const throatRatio = (1.6 + (1.0 - rho) * 2.8) * (1.0 - phi * 0.55);
+
+      // Fundamental longitudinal tube air-column resonance f1 = c / (2 * L)
+      const airFundHz = 343 / (2 * params.tubeLengthM);
+
+      return {
+        isJammed,
+        isSettled,
+        phiCritical,
+        thetaCriticalDeg,
+        targetEventRate,
+        meanBurstSize,
+        archStress,
+        throatRatio,
+        airFundHz
+      };
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO API MICRO-COLLISION & TUBE WAVEGUIDE SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGainNode = null;
+    let tubeConvolverNode = null;
+    let tubeWetGainNode = null;
+    let noiseBufferCache = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+        masterGainNode = audioCtx.createGain();
+        masterGainNode.gain.value = state.audioEnabled ? 0.88 : 0.0;
+        masterGainNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function getShortNoiseBuffer(ctx) {
+      if (noiseBufferCache && noiseBufferCache.sampleRate === ctx.sampleRate) return noiseBufferCache;
+      const sr = ctx.sampleRate;
+      const buf = ctx.createBuffer(1, Math.floor(sr * 0.25), sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sr * 0.012));
+      }
+      noiseBufferCache = buf;
+      return buf;
+    }
+
+    /**
+     * Synthesizes a single bead-pin-wall micro-collision inside the resonant tube chamber.
+     * Coloration depends on:
+     *   - Bead species mass & Hertzian contact duration (Monodisperse 1-pitch vs. Polydisperse 4-species chord)
+     *   - Free-fall impact velocity (sparse pins = longer fall = harder impact)
+     *   - Axial position along the tube zNorm in [-1, +1] (excites longitudinal air modes & stereo image)
+     *   - Tube length L & Material (Cactus, Bamboo, Brass, Borosilicate Glass)
+     */
+    function synthesizeBeadPinCollision(ctx, destNode, when, options = {}) {
+      const {
+        speciesIdx = 1,
+        axialNorm = 0.0, // -1 (top) to +1 (bottom)
+        impactVel = 0.75,
+        params = state,
+        noiseBuf = null
+      } = options;
+
+      const safeWhen = Math.max(ctx.currentTime || 0, when);
+      const mat = TUBE_MATERIALS[params.tubeMaterial] || TUBE_MATERIALS.cactus;
+      const polyNorm = params.beadDispersity / 100;
+
+      // At 0% dispersity (Monodisperse), all beads have identical frequency (2680 Hz);
+      // At 100% dispersity (Polydisperse), the 4 grain species span [1320, 2280, 3420, 5280] Hz ("chord")
+      const species = GRAIN_SPECIES[speciesIdx % GRAIN_SPECIES.length];
+      const monoFreq = 2680;
+      const grainFreq = monoFreq * (1 - polyNorm) + species.baseFreq * polyNorm;
+      const jitter = 1.0 + (Math.random() - 0.5) * (0.015 + polyNorm * 0.08);
+      const contactFreq = grainFreq * jitter;
+
+      // Sparse pins allow longer free-fall and higher terminal impact velocity
+      const freeFallBoost = 0.75 + (1.0 - params.pinDensity) * 0.55;
+      const gainLevel = Math.min(0.42, 0.11 * impactVel * freeFallBoost);
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(gainLevel, safeWhen);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        const tiltCos = Math.cos((params.inclineDeg * Math.PI) / 180);
+        panner.pan.setValueAtTime(Math.max(-0.75, Math.min(0.75, axialNorm * 0.55 * (0.4 + 0.6 * tiltCos))), safeWhen);
+        hitGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        hitGain.connect(destNode);
+      }
+
+      // 1. Bead-on-Pin Hertzian Contact Impulse Ping
+      const oscPin = ctx.createOscillator();
+      const gPin = ctx.createGain();
+      oscPin.type = params.tubeMaterial === 'brass' || params.tubeMaterial === 'glass' ? 'sine' : 'triangle';
+      oscPin.frequency.setValueAtTime(contactFreq * 1.12, safeWhen);
+      oscPin.frequency.exponentialRampToValueAtTime(contactFreq, safeWhen + 0.004);
+
+      const pinDecay = params.tubeMaterial === 'brass' ? 0.026 : (params.tubeMaterial === 'glass' ? 0.022 : 0.013);
+      gPin.gain.setValueAtTime(0.65, safeWhen);
+      gPin.gain.exponentialRampToValueAtTime(0.001, safeWhen + pinDecay);
+
+      oscPin.connect(gPin);
+      gPin.connect(hitGain);
+      oscPin.start(safeWhen);
+      oscPin.stop(safeWhen + pinDecay + 0.004);
+
+      // 2. Tube Wall & Chamber Formant Filter (Colors the broadband micro-click)
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = noiseBuf || getShortNoiseBuffer(ctx);
+
+      // Pick one of the tube material's characteristic wall modes + longitudinal air mode
+      const wallIdx = (speciesIdx + Math.floor((axialNorm + 1) * 2)) % mat.wallFreqs.length;
+      const wallFreq = mat.wallFreqs[wallIdx] * Math.pow(1.2 / params.tubeLengthM, 0.28);
+      const wallQ = mat.wallQs[wallIdx];
+
+      const bpWall = ctx.createBiquadFilter();
+      bpWall.type = 'bandpass';
+      bpWall.frequency.setValueAtTime(wallFreq, safeWhen);
+      bpWall.Q.setValueAtTime(wallQ, safeWhen);
+
+      const gWall = ctx.createGain();
+      const wallDecay = params.tubeMaterial === 'brass' ? 0.038 : (params.tubeMaterial === 'bamboo' ? 0.028 : 0.019);
+      gWall.gain.setValueAtTime(mat.wallGains[wallIdx] * 0.85, safeWhen);
+      gWall.gain.exponentialRampToValueAtTime(0.001, safeWhen + wallDecay);
+
+      nSrc.connect(bpWall);
+      bpWall.connect(gWall);
+      gWall.connect(hitGain);
+      nSrc.start(safeWhen);
+      nSrc.stop(safeWhen + wallDecay + 0.005);
+
+      // 3. Axial Air-Column Cavity Resonance (f_air = c / 2L, stronger for large pebbles)
+      if (speciesIdx === 0 || Math.random() < 0.35) {
+        const airF1 = 343 / (2 * params.tubeLengthM);
+        const airHarm = axialNorm > 0 ? airF1 * 2 : airF1;
+        const oscAir = ctx.createOscillator();
+        const gAir = ctx.createGain();
+        oscAir.type = 'sine';
+        oscAir.frequency.setValueAtTime(airHarm, safeWhen);
+        gAir.gain.setValueAtTime(0.18, safeWhen);
+        gAir.gain.exponentialRampToValueAtTime(0.001, safeWhen + 0.032);
+        oscAir.connect(gAir);
+        gAir.connect(hitGain);
+        oscAir.start(safeWhen);
+        oscAir.stop(safeWhen + 0.036);
+      }
+    }
+
+    // =========================================================================
+    // 5. GRANULAR STOCHASTIC & DETERMINISTIC TIMING ENGINE
+    //    Generates either:
+    //      - CASCADE Mode: Heavy-tailed arch-buckling + Hawkes/Pareto micro-avalanche chains (CV > 1.7)
+    //      - POISSON Mode: Memoryless Exponential(λ) independent events (CV ≈ 1.0)
+    // =========================================================================
+    function stepGranularTimingEngine(nowSec, dtSec) {
+      const phys = computeGranularPhasePhysics(state);
+      state.isJammed = phys.isJammed;
+      state.archStress = phys.archStress;
+
+      // Prune 1-second rolling window for the Jamming / Event Rate Indicator
+      const nowMs = nowSec * 1000;
+      while (state.collisionTimestampsMs.length > 0 && (nowMs - state.collisionTimestampsMs[0]) > 1000) {
+        state.collisionTimestampsMs.shift();
+      }
+
+      // If Jammed or Settled, clear pending micro-avalanches so flow stops SHARPLY!
+      if (phys.isJammed || phys.isSettled) {
+        state.pendingMicroAvalanche.length = 0;
+        return phys;
+      }
+
+      // Deplete top hourglass reservoir proportional to active flow rate and inverse tube length
+      const drainRate = (phys.targetEventRate / 2400) * (1.1 / state.tubeLengthM) * dtSec;
+      if (state.endlessRecycle) {
+        state.topReservoirMass = 0.85;
+      } else {
+        state.topReservoirMass = Math.max(0, state.topReservoirMass - drainRate);
+      }
+
+      const targetRate = phys.targetEventRate;
+      if (targetRate <= 0.1) return phys;
+
+      if (state.statisticsMode === 'poisson') {
+        // MODE B: POISSON ("FAKE RAIN") — Memoryless independent arrivals Δt ~ Exp(λ)
+        state.pendingMicroAvalanche.length = 0;
+        if (state.nextAvalancheTimeSec < nowSec - 0.1) {
+          state.nextAvalancheTimeSec = nowSec;
+        }
+        while (state.nextAvalancheTimeSec <= nowSec + dtSec) {
+          const fireT = state.nextAvalancheTimeSec;
+          emitCollisionEvent(fireT, (Math.random() * 2 - 1) * 0.85, Math.floor(Math.random() * 4), 0.75);
+          const u = Math.max(1e-6, Math.random());
+          const expDt = -Math.log(u) / targetRate;
+          state.nextAvalancheTimeSec += expDt;
+        }
+      } else {
+        // MODE A: CASCADE (TRUE GRANULAR AVALANCHE) — Bursty arch-unpinning + branching pin chain
+        // Mean cluster size K = phys.meanBurstSize; cluster initiation rate λ_cluster = targetRate / K
+        const meanK = Math.max(2.2, phys.meanBurstSize);
+        const clusterRate = targetRate / meanK;
+
+        if (state.nextAvalancheTimeSec < nowSec - 0.1) {
+          state.nextAvalancheTimeSec = nowSec;
+        }
+
+        while (state.nextAvalancheTimeSec <= nowSec + dtSec) {
+          const clusterStartT = state.nextAvalancheTimeSec;
+
+          // Heavy-tailed Pareto-stretched cluster size K (some small 2-bead slips, occasional 12-bead avalanches!)
+          const uSize = Math.max(0.02, Math.random());
+          const clusterSize = Math.max(2, Math.min(22, Math.round((meanK * 0.55) / Math.pow(uSize, 0.58))));
+
+          const startAxial = -0.85 + Math.random() * 1.1;
+          let intraCursorT = clusterStartT;
+
+          for (let k = 0; k < clusterSize; k++) {
+            const axialPos = Math.min(0.95, startAxial + k * 0.08);
+            const speciesIdx = Math.floor(Math.random() * 4);
+            const impactVel = Math.min(1.15, 0.55 + (k / clusterSize) * 0.45 + (1 - state.pinDensity) * 0.25);
+
+            state.pendingMicroAvalanche.push({
+              fireTimeSec: intraCursorT,
+              axialPos,
+              speciesIdx,
+              impactVel
+            });
+
+            // Short correlated intra-avalanche delay (0.8 ms to 5.5 ms as liberated beads hit adjacent pins)
+            const intraDt = (0.0009 + Math.pow(Math.random(), 1.6) * 0.0052) * (120 / Math.max(40, targetRate));
+            intraCursorT += intraDt;
+          }
+
+          // Heavy-tailed inter-avalanche arch-waiting interval before the next local arch buckles
+          const uWait = Math.max(0.015, Math.random());
+          const paretoWait = (1.0 / clusterRate) * (0.42 / Math.pow(uWait, 0.52));
+          state.nextAvalancheTimeSec += Math.min(0.45, paretoWait);
+        }
+
+        // Fire all queued micro-avalanche collisions whose time has arrived
+        state.pendingMicroAvalanche.sort((a, b) => a.fireTimeSec - b.fireTimeSec);
+        while (state.pendingMicroAvalanche.length > 0 && state.pendingMicroAvalanche[0].fireTimeSec <= nowSec + dtSec) {
+          const ev = state.pendingMicroAvalanche.shift();
+          emitCollisionEvent(ev.fireTimeSec, ev.axialPos, ev.speciesIdx, ev.impactVel);
+        }
+      }
+
+      return phys;
+    }
+
+    function emitCollisionEvent(eventTimeSec, axialPos, speciesIdx, impactVel) {
+      // Record inter-arrival time Δt in milliseconds
+      if (state.lastEventTimeSec !== null) {
+        const dtMs = Math.max(0.15, (eventTimeSec - state.lastEventTimeSec) * 1000);
+        if (dtMs < 600) {
+          state.interArrivalSamplesMs.push(dtMs);
+          if (state.interArrivalSamplesMs.length > 550) {
+            state.interArrivalSamplesMs.shift();
+          }
+        }
+      }
+      state.lastEventTimeSec = eventTimeSec;
+      state.collisionTimestampsMs.push(performance.now());
+      state.totalEventsCount++;
+
+      // Trigger Web Audio micro-collision if audio is active
+      if (state.audioEnabled && audioCtx && masterGainNode) {
+        const schedWhen = Math.max(audioCtx.currentTime, audioCtx.currentTime + (eventTimeSec - performance.now() / 1000));
+        synthesizeBeadPinCollision(audioCtx, masterGainNode, schedWhen, {
+          speciesIdx,
+          axialNorm: axialPos,
+          impactVel
+        });
+      }
+
+      // Flash a corresponding 3D bead/pin in the 3D scene
+      flash3DPinAndBead(axialPos, speciesIdx);
+    }
+
+    // =========================================================================
+    // 6. FULL-SCREEN 3D WEBGL RAINSTICK, HELICAL PIN LATTICE & FORCE-CHAIN ENGINE
+    // =========================================================================
+    let scene, camera, renderer;
+    let stickPivotGroup, tubeWallMesh, endCapTopMesh, endCapBotMesh;
+    let pinMeshes = [], beadParticles = [], forceChainArchLines = [];
+
+    const camOrbit = {
+      theta: 0.15,
+      phi: 1.38,
+      radius: 8.6,
+      targetTheta: 0.15,
+      targetPhi: 1.38,
+      targetRadius: 8.6,
+      isDragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    const NUM_3D_BEADS = 360;
+
+    function initThreeJsScene() {
+      const container = document.getElementById('webglContainer');
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04060a);
+      scene.fog = new THREE.FogExp2(0x04060a, 0.025);
+
+      camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.70));
+      const dirLight = new THREE.DirectionalLight(0xfffbeb, 1.25);
+      dirLight.position.set(5, 9, 8);
+      scene.add(dirLight);
+
+      const cyanPoint = new THREE.PointLight(0x38bdf8, 0.95, 22);
+      cyanPoint.position.set(-6, 4, 5);
+      scene.add(cyanPoint);
+
+      const rosePoint = new THREE.PointLight(0xf43f5e, 0.75, 18);
+      rosePoint.position.set(5, -4, 4);
+      scene.add(rosePoint);
+
+      const grid = new THREE.GridHelper(26, 26, 0x1e293b, 0x090d16);
+      grid.position.y = -3.4;
+      scene.add(grid);
+
+      stickPivotGroup = new THREE.Group();
+      scene.add(stickPivotGroup);
+
+      buildRainstick3DModel();
+      initOrbitPointerControls();
+    }
+
+    function get3DTubeHalfLength() {
+      return (state.tubeLengthM / 1.20) * 3.1;
+    }
+
+    function buildRainstick3DModel() {
+      while (stickPivotGroup.children.length > 0) {
+        stickPivotGroup.remove(stickPivotGroup.children[0]);
+      }
+      pinMeshes = [];
+      beadParticles = [];
+      forceChainArchLines = [];
+
+      const matSpec = TUBE_MATERIALS[state.tubeMaterial] || TUBE_MATERIALS.cactus;
+      const halfL = get3DTubeHalfLength();
+      const fullL = halfL * 2;
+      const tubeR = 0.52;
+
+      // 1. Cylindrical Tube Shell (Translucent Cutaway or Solid)
+      const thetaLen = state.cutawayMode ? Math.PI * 1.25 : Math.PI * 2;
+      const tubeGeo = new THREE.CylinderGeometry(tubeR, tubeR, fullL, 40, 1, true, Math.PI * 0.38, thetaLen);
+      const tubeMat = new THREE.MeshStandardMaterial({
+        color: matSpec.shellHex,
+        metalness: state.tubeMaterial === 'brass' ? 0.82 : 0.15,
+        roughness: state.tubeMaterial === 'glass' ? 0.12 : 0.58,
+        transparent: true,
+        opacity: state.cutawayMode ? 0.42 : 0.88,
+        side: THREE.DoubleSide
+      });
+      tubeWallMesh = new THREE.Mesh(tubeGeo, tubeMat);
+      stickPivotGroup.add(tubeWallMesh);
+
+      // Decorative Bamboo / Cactus Rings along the exterior
+      const numRings = Math.max(4, Math.round(fullL * 1.3));
+      const ringMat = new THREE.MeshStandardMaterial({ color: matSpec.pinHex, metalness: 0.4, roughness: 0.5 });
+      for (let r = 0; r <= numRings; r++) {
+        const yPos = -halfL + (r / numRings) * fullL;
+        const rGeo = new THREE.TorusGeometry(tubeR * 1.02, 0.025, 10, 36);
+        rGeo.rotateX(Math.PI / 2);
+        const rMesh = new THREE.Mesh(rGeo, ringMat);
+        rMesh.position.y = yPos;
+        stickPivotGroup.add(rMesh);
+      }
+
+      // Sealed End Caps (Top & Bottom)
+      const capGeo = new THREE.CylinderGeometry(tubeR * 1.04, tubeR * 1.04, 0.14, 32);
+      const capMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5, roughness: 0.4 });
+      endCapTopMesh = new THREE.Mesh(capGeo, capMat);
+      endCapTopMesh.position.y = halfL + 0.07;
+      endCapBotMesh = new THREE.Mesh(capGeo, capMat);
+      endCapBotMesh.position.y = -halfL - 0.07;
+      stickPivotGroup.add(endCapTopMesh, endCapBotMesh);
+
+      // 2. Internal Double-Helix Pin / Thorn Lattice (Scales with state.pinDensity)
+      const numPins = Math.round(18 + state.pinDensity * 92);
+      const pinGeo = new THREE.CylinderGeometry(0.016, 0.016, tubeR * 1.88, 8);
+      pinGeo.rotateZ(Math.PI / 2);
+
+      for (let i = 0; i < numPins; i++) {
+        const u = (i + 0.5) / numPins; // 0 to 1
+        const yPos = (0.5 - u) * (fullL * 0.90);
+        const helixAngle = i * (0.48 + state.pinDensity * 0.35);
+
+        const pMat = new THREE.MeshStandardMaterial({
+          color: matSpec.pinHex,
+          emissive: 0x000000,
+          roughness: 0.4
+        });
+        const pMesh = new THREE.Mesh(pinGeo, pMat);
+        pMesh.position.y = yPos;
+        pMesh.rotation.y = helixAngle;
+        pMesh.userData = { axialNorm: (u * 2 - 1), flashIntensity: 0 };
+        stickPivotGroup.add(pMesh);
+        pinMeshes.push(pMesh);
+      }
+
+      // 3. 3D Granular Bead Ensemble (Scaled & Colored by Bead Mass Distribution)
+      const polyNorm = state.beadDispersity / 100;
+      const activeBeadCount = Math.max(40, Math.round(NUM_3D_BEADS * (state.fillFraction / 0.75)));
+      const baseSphereGeo = new THREE.SphereGeometry(0.042, 10, 10);
+
+      for (let b = 0; b < activeBeadCount; b++) {
+        const speciesIdx = b % GRAIN_SPECIES.length;
+        const sp = GRAIN_SPECIES[speciesIdx];
+        const scale = 1.0 * (1 - polyNorm) + sp.radiusScale * polyNorm;
+        const colorHex = polyNorm < 0.1 ? 0x38bdf8 : sp.colorHex;
+
+        const bMat = new THREE.MeshStandardMaterial({
+          color: colorHex,
+          emissive: colorHex,
+          emissiveIntensity: 0.15,
+          roughness: 0.3,
+          metalness: 0.2
+        });
+        const bMesh = new THREE.Mesh(baseSphereGeo, bMat);
+        bMesh.scale.setScalar(scale);
+
+        const rRand = Math.sqrt(Math.random()) * (tubeR * 0.80);
+        const angRand = Math.random() * Math.PI * 2;
+        const uPos = Math.random(); // 0 (top) to 1 (bottom)
+
+        bMesh.userData = {
+          uPos,
+          vx: 0,
+          vy: 0,
+          rX: Math.cos(angRand) * rRand,
+          rZ: Math.sin(angRand) * rRand,
+          speciesIdx,
+          baseColor: colorHex
+        };
+        stickPivotGroup.add(bMesh);
+        beadParticles.push(bMesh);
+      }
+
+      // 4. 3D Force-Chain Arch Bridge Lines (Glow Bright Red/Amber when JAMMED!)
+      const numArches = 16;
+      for (let a = 0; a < numArches; a++) {
+        const yCenter = (0.42 - (a / numArches) * 0.84) * fullL;
+        const archPts = [];
+        for (let s = 0; s <= 8; s++) {
+          const t = (s / 8) * 2 - 1; // -1 to +1
+          const x = t * tubeR * 0.86;
+          // Upward convex arch bridge supporting weight against gravity
+          const yArch = yCenter + (1 - t * t) * 0.16;
+          const z = Math.sin(a * 1.4 + t) * tubeR * 0.45;
+          archPts.push(new THREE.Vector3(x, yArch, z));
+        }
+        const archGeo = new THREE.BufferGeometry().setFromPoints(archPts);
+        const archMat = new THREE.LineBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.0 });
+        const archLine = new THREE.Line(archGeo, archMat);
+        stickPivotGroup.add(archLine);
+        forceChainArchLines.push(archLine);
+      }
+    }
+
+    function flash3DPinAndBead(axialNorm, speciesIdx) {
+      if (pinMeshes.length === 0) return;
+      const targetIdx = Math.min(pinMeshes.length - 1, Math.max(0, Math.floor(((axialNorm + 1) * 0.5) * pinMeshes.length)));
+      const pMesh = pinMeshes[targetIdx];
+      if (pMesh) {
+        pMesh.userData.flashIntensity = 1.0;
+      }
+    }
+
+    function update3DGranularScene(dtSec, phys) {
+      if (!stickPivotGroup) return;
+
+      // Smoothly animate Rainstick Incline Angle θ and 180° Hourglass Flip
+      // Note: θ = 90° is vertical (rotation.z = 0); θ = 0° is horizontal (rotation.z = π/2)
+      const inclineRotZ = ((90 - state.inclineDeg) * Math.PI) / 180;
+      const targetFlipRot = state.flipParity * Math.PI;
+      state.visualFlipAngle += (targetFlipRot - state.visualFlipAngle) * 0.14;
+
+      stickPivotGroup.rotation.z = inclineRotZ + state.visualFlipAngle;
+
+      const halfL = get3DTubeHalfLength();
+      const fullL = halfL * 2;
+      const dirSign = state.flipParity === 0 ? -1 : 1; // Direction of "downhill" in local stick Y
+
+      // Update Pin Flash Decay
+      pinMeshes.forEach(p => {
+        if (p.userData.flashIntensity > 0.01) {
+          p.userData.flashIntensity *= 0.84;
+          p.material.emissive.setHex(0x38bdf8);
+          p.material.emissiveIntensity = p.userData.flashIntensity * 1.4;
+        } else {
+          p.material.emissiveIntensity = 0;
+        }
+      });
+
+      // Update Force-Chain Arch Bridges (Bright glowing crimson when JAMMED!)
+      forceChainArchLines.forEach((line, idx) => {
+        if (phys.isJammed) {
+          line.material.opacity = 0.88;
+        } else if (phys.archStress > 0.72) {
+          line.material.opacity = (phys.archStress - 0.72) * 1.8;
+        } else {
+          line.material.opacity = 0.0;
+        }
+      });
+
+      // Update 3D Granular Bead Positions
+      const speedScale = phys.isJammed ? 0 : (phys.targetEventRate / 180);
+      beadParticles.forEach((bMesh, idx) => {
+        const bd = bMesh.userData;
+
+        if (!phys.isJammed && !phys.isSettled) {
+          const stepU = (0.18 + (idx % 7) * 0.03) * speedScale * dtSec;
+          bd.uPos += stepU;
+          if (bd.uPos > 1.0) {
+            if (state.endlessRecycle || state.topReservoirMass > 0.08) {
+              bd.uPos = Math.random() * 0.08;
+            } else {
+              bd.uPos = 0.96 + (idx % 12) * 0.003;
+            }
+          }
+        } else if (phys.isSettled) {
+          bd.uPos = Math.min(1.0, bd.uPos + 0.4 * dtSec);
+        }
+
+        // Map uPos in [0, 1] from current top end to current bottom end
+        const localY = dirSign < 0
+          ? halfL * 0.88 - bd.uPos * (fullL * 0.88)
+          : -halfL * 0.88 + bd.uPos * (fullL * 0.88);
+
+        // Pin-deflection lateral wobble while flowing
+        const wobble = (!phys.isJammed && !phys.isSettled && bd.uPos > 0.06 && bd.uPos < 0.92)
+          ? Math.sin(bd.uPos * 38 + idx) * 0.06
+          : 0;
+
+        bMesh.position.set(bd.rX + wobble, localY, bd.rZ - wobble);
+
+        if (phys.isJammed) {
+          bMesh.material.emissive.setHex(0xf43f5e);
+          bMesh.material.emissiveIntensity = 0.55;
+        } else {
+          bMesh.material.emissive.setHex(bd.baseColor);
+          bMesh.material.emissiveIntensity = 0.18;
+        }
+      });
+    }
+
+    function initOrbitPointerControls() {
+      const container = document.getElementById('webglContainer');
+      container.addEventListener('pointerdown', (e) => {
+        camOrbit.isDragging = true;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camOrbit.isDragging) return;
+        const dx = e.clientX - camOrbit.lastX;
+        const dy = e.clientY - camOrbit.lastY;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+        camOrbit.targetTheta -= dx * 0.007;
+        camOrbit.targetPhi = Math.max(0.2, Math.min(Math.PI - 0.2, camOrbit.targetPhi - dy * 0.007));
+      });
+      window.addEventListener('pointerup', () => {
+        camOrbit.isDragging = false;
+      });
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camOrbit.targetRadius = Math.max(4.5, Math.min(15.0, camOrbit.targetRadius + e.deltaY * 0.005));
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        if (!renderer || !camera) return;
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    // =========================================================================
+    // 7. LIVE INTER-ARRIVAL HISTOGRAM, JAMMING PHASE MAP & FLOW RATE CHARTS
+    // =========================================================================
+    const histCanvas = document.getElementById('histogramCanvas');
+    const histCtx = histCanvas.getContext('2d');
+    const flowCanvas = document.getElementById('flowTraceCanvas');
+    const flowCtx = flowCanvas.getContext('2d');
+    const phaseCanvas = document.getElementById('phaseMapCanvas');
+    const phaseCtx = phaseCanvas.getContext('2d');
+
+    function computeTimingStatistics() {
+      const arr = state.interArrivalSamplesMs;
+      if (arr.length < 6) {
+        return { meanMs: 0, cv: 0, fano: 0 };
+      }
+      let sum = 0;
+      for (let i = 0; i < arr.length; i++) sum += arr[i];
+      const meanMs = sum / arr.length;
+
+      let sqDiff = 0;
+      for (let i = 0; i < arr.length; i++) {
+        const d = arr[i] - meanMs;
+        sqDiff += d * d;
+      }
+      const stdMs = Math.sqrt(sqDiff / arr.length);
+      const cv = meanMs > 0.01 ? stdMs / meanMs : 0;
+      const fano = cv * cv;
+      return { meanMs, cv, fano };
+    }
+
+    function renderInterArrivalHistogram(stats) {
+      if (!histCanvas || histCanvas.offsetParent === null) return;
+      const w = histCanvas.clientWidth || 340;
+      const h = histCanvas.clientHeight || 155;
+      if (histCanvas.width !== w) histCanvas.width = w;
+      if (histCanvas.height !== h) histCanvas.height = h;
+
+      histCtx.clearRect(0, 0, w, h);
+
+      const numBins = 24;
+      const maxDtMs = 96; // 4 ms per bin up to 96 ms
+      const binWidthMs = maxDtMs / numBins;
+      const counts = new Array(numBins).fill(0);
+
+      const samples = state.interArrivalSamplesMs;
+      samples.forEach(dt => {
+        const b = Math.min(numBins - 1, Math.floor(dt / binWidthMs));
+        if (b >= 0) counts[b]++;
+      });
+
+      const total = Math.max(1, samples.length);
+      const probs = counts.map(c => c / total);
+      const maxProb = Math.max(0.08, ...probs);
+
+      const padL = 26, padR = 10, padT = 14, padB = 20;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      // Grid lines
+      histCtx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+      histCtx.lineWidth = 1;
+      for (let g = 0; g <= 3; g++) {
+        const gy = padT + (g / 3) * plotH;
+        histCtx.beginPath(); histCtx.moveTo(padL, gy); histCtx.lineTo(w - padR, gy); histCtx.stroke();
+      }
+
+      // Draw Empirical Histogram Bars
+      const barW = plotW / numBins;
+      probs.forEach((p, i) => {
+        if (p <= 0) return;
+        let normH = 0;
+        if (state.logHistogram) {
+          // Log scale from 10^-3 to 1.0
+          const logP = Math.log10(Math.max(0.001, p));
+          normH = (logP + 3) / 3;
+        } else {
+          normH = p / maxProb;
+        }
+        const bh = Math.max(2, normH * plotH);
+        const bx = padL + i * barW;
+        const by = padT + plotH - bh;
+
+        histCtx.fillStyle = state.statisticsMode === 'cascade'
+          ? (i < 3 ? 'rgba(245, 158, 11, 0.85)' : 'rgba(56, 189, 248, 0.78)')
+          : 'rgba(244, 63, 94, 0.75)';
+        histCtx.fillRect(bx + 1, by, barW - 2, bh);
+      });
+
+      // Overlay Theoretical Memoryless Exponential (Poisson) Curve: P_bin = exp(-t/mu) * (1 - exp(-dBin/mu))
+      if (stats.meanMs > 0.5 && samples.length >= 10) {
+        histCtx.beginPath();
+        histCtx.setLineDash([4, 3]);
+        histCtx.strokeStyle = '#f43f5e';
+        histCtx.lineWidth = 1.8;
+
+        for (let i = 0; i < numBins; i++) {
+          const tCenter = (i + 0.5) * binWidthMs;
+          const pExp = (binWidthMs / stats.meanMs) * Math.exp(-tCenter / stats.meanMs);
+          let normY = 0;
+          if (state.logHistogram) {
+            normY = (Math.log10(Math.max(0.001, pExp)) + 3) / 3;
+          } else {
+            normY = Math.min(1.0, pExp / maxProb);
+          }
+          const cx = padL + (i + 0.5) * barW;
+          const cy = padT + plotH - Math.max(0, normY * plotH);
+          if (i === 0) histCtx.moveTo(cx, cy);
+          else histCtx.lineTo(cx, cy);
+        }
+        histCtx.stroke();
+        histCtx.setLineDash([]);
+      }
+
+      // Axis Labels
+      histCtx.fillStyle = '#94a3b8';
+      histCtx.font = '9px JetBrains Mono';
+      histCtx.fillText('0ms', padL, h - 5);
+      histCtx.fillText('32ms', padL + plotW * 0.33, h - 5);
+      histCtx.fillText('64ms', padL + plotW * 0.66, h - 5);
+      histCtx.fillText('96ms+', w - 38, h - 5);
+      histCtx.fillText(state.logHistogram ? 'log P' : 'lin P', 2, padT + 8);
+    }
+
+    function renderFlowTraceCanvas(liveRate, phys) {
+      if (!flowCanvas || flowCanvas.offsetParent === null) return;
+      const w = flowCanvas.clientWidth || 340;
+      const h = flowCanvas.clientHeight || 90;
+      if (flowCanvas.width !== w) flowCanvas.width = w;
+      if (flowCanvas.height !== h) flowCanvas.height = h;
+
+      flowCtx.clearRect(0, 0, w, h);
+
+      // Draw History Area Curve
+      const hist = state.rateHistory;
+      const maxR = 320;
+      flowCtx.beginPath();
+      flowCtx.moveTo(0, h);
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1)) * w;
+        const y = h - Math.min(1, hist[i] / maxR) * (h - 14) - 4;
+        flowCtx.lineTo(x, y);
+      }
+      flowCtx.lineTo(w, h);
+      flowCtx.closePath();
+      flowCtx.fillStyle = phys.isJammed ? 'rgba(244, 63, 94, 0.18)' : 'rgba(16, 185, 129, 0.18)';
+      flowCtx.fill();
+
+      flowCtx.beginPath();
+      for (let i = 0; i < hist.length; i++) {
+        const x = (i / (hist.length - 1)) * w;
+        const y = h - Math.min(1, hist[i] / maxR) * (h - 14) - 4;
+        if (i === 0) flowCtx.moveTo(x, y);
+        else flowCtx.lineTo(x, y);
+      }
+      flowCtx.strokeStyle = phys.isJammed ? '#f43f5e' : '#10b981';
+      flowCtx.lineWidth = 2;
+      flowCtx.stroke();
+
+      flowCtx.fillStyle = phys.isJammed ? '#fda4af' : '#a7f3d0';
+      flowCtx.font = 'bold 10px JetBrains Mono';
+      flowCtx.fillText(
+        phys.isJammed ? 'JAMMED: 0 clicks/s (Force-Chain Arch Locked)' : `Active Flow: ${liveRate} clicks/s`,
+        8, 14
+      );
+    }
+
+    function renderPhaseDiagramCanvas(phys) {
+      if (!phaseCanvas) return;
+      const w = phaseCanvas.clientWidth || 320;
+      const h = phaseCanvas.clientHeight || 120;
+      if (phaseCanvas.width !== w) phaseCanvas.width = w;
+      if (phaseCanvas.height !== h) phaseCanvas.height = h;
+
+      phaseCtx.clearRect(0, 0, w, h);
+
+      // X-axis: Fill Fraction φ in [0.05, 0.82]; Y-axis: Incline Angle θ in [2°, 88°] (top = 88°, bottom = 2°)
+      // Shade Jammed Region vs Flowing Region for current Pin Density ρ_pin
+      const cols = 48;
+      const rows = 24;
+      const cellW = w / cols;
+      const cellH = h / rows;
+
+      for (let ix = 0; ix < cols; ix++) {
+        const phiTest = 0.05 + (ix / (cols - 1)) * (0.82 - 0.05);
+        for (let iy = 0; iy < rows; iy++) {
+          const thetaTest = 88 - (iy / (rows - 1)) * (88 - 2);
+          const pTest = computeGranularPhasePhysics({
+            ...state,
+            fillFraction: phiTest,
+            inclineDeg: thetaTest
+          });
+          if (pTest.isJammed) {
+            phaseCtx.fillStyle = 'rgba(244, 63, 94, 0.28)';
+          } else {
+            const intensity = Math.min(1, pTest.targetEventRate / 280);
+            phaseCtx.fillStyle = `rgba(56, 189, 248, ${0.08 + intensity * 0.38})`;
+          }
+          phaseCtx.fillRect(ix * cellW, iy * cellH, cellW + 0.5, cellH + 0.5);
+        }
+      }
+
+      // Draw Current Operating Point Crosshair (φ, θ)
+      const curX = ((state.fillFraction - 0.05) / (0.82 - 0.05)) * w;
+      const curY = ((88 - state.inclineDeg) / (88 - 2)) * h;
+
+      phaseCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      phaseCtx.lineWidth = 1;
+      phaseCtx.beginPath();
+      phaseCtx.moveTo(curX, 0); phaseCtx.lineTo(curX, h);
+      phaseCtx.moveTo(0, curY); phaseCtx.lineTo(w, curY);
+      phaseCtx.stroke();
+
+      phaseCtx.beginPath();
+      phaseCtx.arc(curX, curY, 5.5, 0, Math.PI * 2);
+      phaseCtx.fillStyle = phys.isJammed ? '#f43f5e' : '#fbbf24';
+      phaseCtx.fill();
+      phaseCtx.strokeStyle = '#04060a';
+      phaseCtx.lineWidth = 2;
+      phaseCtx.stroke();
+
+      phaseCtx.fillStyle = '#e2e8f0';
+      phaseCtx.font = '9px JetBrains Mono';
+      phaseCtx.fillText('FLOWING CASCADE', 8, 13);
+      phaseCtx.fillStyle = '#fda4af';
+      phaseCtx.fillText('JAMMED SOLID (0 clicks/s)', w - 148, h - 6);
+    }
+
+    // =========================================================================
+    // 8. MAIN SIMULATION & TELEMETRY LOOP
+    // =========================================================================
+    let lastFrameMs = performance.now();
+    let lastUiUpdateMs = 0;
+
+    function mainSimulationLoop(nowMs) {
+      const dtSec = Math.min(0.05, Math.max(0.001, (nowMs - lastFrameMs) / 1000));
+      lastFrameMs = nowMs;
+      const nowSec = nowMs / 1000;
+
+      // 1. Step Granular Avalanche / Jamming Timing Engine
+      const phys = stepGranularTimingEngine(nowSec, dtSec);
+
+      // 2. Smoothly Orbit Camera & Render 3D Rainstick Scene
+      camOrbit.theta += (camOrbit.targetTheta - camOrbit.theta) * 0.12;
+      camOrbit.phi += (camOrbit.targetPhi - camOrbit.phi) * 0.12;
+      camOrbit.radius += (camOrbit.targetRadius - camOrbit.radius) * 0.12;
+
+      if (camera) {
+        camera.position.x = camOrbit.radius * Math.sin(camOrbit.phi) * Math.sin(camOrbit.theta);
+        camera.position.y = camOrbit.radius * Math.cos(camOrbit.phi);
+        camera.position.z = camOrbit.radius * Math.sin(camOrbit.phi) * Math.cos(camOrbit.theta);
+        camera.lookAt(0, 0, 0);
+      }
+
+      update3DGranularScene(dtSec, phys);
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+
+      // 3. Update Telemetry Readouts, Histogram & Phase Map at ~15 Hz
+      if (nowMs - lastUiUpdateMs > 65) {
+        lastUiUpdateMs = nowMs;
+        const liveRate = state.collisionTimestampsMs.length;
+        state.rateHistory.push(liveRate);
+        if (state.rateHistory.length > 90) state.rateHistory.shift();
+
+        // Update Top Header Jamming Indicator Banner
+        const banner = document.getElementById('jammingBannerBox');
+        const dot = document.getElementById('jammingStatusDot');
+        const stateLbl = document.getElementById('jammingStateLabel');
+        const rateEl = document.getElementById('liveRateReadout');
+        const poolEl = document.getElementById('topPoolReadout');
+
+        rateEl.textContent = phys.isJammed || phys.isSettled ? '0' : String(liveRate);
+        poolEl.textContent = `${Math.round(state.topReservoirMass * 100)}%`;
+
+        if (phys.isJammed) {
+          banner.className = 'flex items-center gap-3 bg-rose-950/80 border border-rose-500 rounded-xl px-3 py-1 transition-all jammed-glow';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+          stateLbl.textContent = 'JAMMED (ARCH LOCKED)';
+          stateLbl.className = 'text-xs font-mono font-extrabold text-rose-400';
+          rateEl.className = 'font-mono text-base font-extrabold text-rose-400';
+        } else if (phys.isSettled) {
+          banner.className = 'flex items-center gap-3 bg-obsidian-950/90 border border-amber-500/60 rounded-xl px-3 py-1 transition-all';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+          stateLbl.textContent = 'SETTLED — FLIP STICK [F]';
+          stateLbl.className = 'text-xs font-mono font-extrabold text-amber-300';
+          rateEl.className = 'font-mono text-base font-extrabold text-amber-300';
+        } else {
+          banner.className = 'flex items-center gap-3 bg-obsidian-950/90 border border-emerald-500/50 rounded-xl px-3 py-1 transition-all';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+          stateLbl.textContent = state.statisticsMode === 'cascade' ? 'FLOWING CASCADE' : 'POISSON DROPS';
+          stateLbl.className = 'text-xs font-mono font-extrabold text-emerald-400';
+          rateEl.className = 'font-mono text-base font-extrabold text-sky-400';
+        }
+
+        // Update Timing Statistics Cards
+        const stats = computeTimingStatistics();
+        document.getElementById('statMeanDt').textContent = stats.meanMs > 0 ? `${stats.meanMs.toFixed(1)} ms` : '—';
+        document.getElementById('statCV').textContent = stats.cv > 0 ? stats.cv.toFixed(2) : '—';
+        document.getElementById('statFano').textContent = stats.fano > 0 ? stats.fano.toFixed(2) : '—';
+        document.getElementById('statBurst').textContent = phys.isJammed ? '0.0x' : `${phys.meanBurstSize.toFixed(1)}x`;
+        document.getElementById('lblTotalEvents').textContent = `${state.totalEventsCount} hits`;
+
+        const verdictEl = document.getElementById('hdrStatisticalVerdict');
+        if (phys.isJammed) {
+          verdictEl.textContent = 'JAMMED: 0 clicks/s (Force-Chain Arch)';
+          verdictEl.className = 'text-rose-400 font-bold';
+        } else if (state.statisticsMode === 'poisson') {
+          verdictEl.textContent = `Poisson Memoryless (CV: ${stats.cv > 0 ? stats.cv.toFixed(2) : '1.00'})`;
+          verdictEl.className = 'text-rose-300';
+        } else {
+          verdictEl.textContent = `Heavy-Tailed Cascade (CV: ${stats.cv > 0 ? stats.cv.toFixed(2) : '2.10'})`;
+          verdictEl.className = 'text-emerald-300';
+        }
+
+        document.getElementById('lblCriticalThresholds').textContent =
+          `φc = ${phys.phiCritical.toFixed(2)} | θc = ${phys.thetaCriticalDeg}°`;
+        document.getElementById('lastCollisionTelemetry').textContent =
+          `Arch Stress: ${phys.archStress.toFixed(2)} • Throat s/d: ${phys.throatRatio.toFixed(2)} • Air f1: ${Math.round(phys.airFundHz)} Hz`;
+
+        renderInterArrivalHistogram(stats);
+        renderFlowTraceCanvas(liveRate, phys);
+        renderPhaseDiagramCanvas(phys);
+      }
+
+      requestAnimationFrame(mainSimulationLoop);
+    }
+
+    // =========================================================================
+    // 9. TIME REVERSAL (180° FLIP), JOLT ARCH & OFFLINE 44.1kHz WAV EXPORTER
+    // =========================================================================
+    function flipRainstick180() {
+      ensureAudioContext();
+      state.flipParity = state.flipParity === 0 ? 1 : 0;
+      // What was settled at the bottom (1 - topReservoirMass) now becomes the new top reservoir!
+      state.topReservoirMass = Math.max(0.88, 1.0 - state.topReservoirMass * 0.25);
+      beadParticles.forEach((b) => {
+        b.userData.uPos = 1.0 - b.userData.uPos * 0.2;
+      });
+      state.nextAvalancheTimeSec = performance.now() / 1000;
+      showToast('Flipped Rainstick 180° — Cascade Restarted!');
+    }
+
+    function joltForceChainArch() {
+      ensureAudioContext();
+      // Momentarily unjam and emit a burst of 14 liberated arch beads
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < 14; i++) {
+        synthesizeBeadPinCollision(audioCtx, masterGainNode, now + i * 0.0035, {
+          speciesIdx: i % 4,
+          axialNorm: (i / 14) * 2 - 1,
+          impactVel: 0.95
+        });
+      }
+      if (state.isJammed) {
+        // Nudge incline steeper or fill slightly lower if user clicks Jolt Arch
+        if (state.inclineDeg < 45) {
+          state.inclineDeg = Math.min(88, state.inclineDeg + 18);
+          document.getElementById('sliderInclineAngle').value = state.inclineDeg;
+          updateControlLabels();
+        } else {
+          state.fillFraction = Math.max(0.15, state.fillFraction - 0.14);
+          document.getElementById('sliderFillFraction').value = Math.round(state.fillFraction * 100);
+          updateControlLabels();
+        }
+      }
+      showToast('Jolted tube — Force-chain arch buckled!');
+    }
+
+    function setStatisticsMode(mode) {
+      state.statisticsMode = mode;
+      state.interArrivalSamplesMs = [];
+      state.lastEventTimeSec = null;
+
+      const hdrBtn = document.getElementById('btnToggleStatisticsMode');
+      const btnCasc = document.getElementById('btnModeCascade');
+      const btnPois = document.getElementById('btnModePoisson');
+
+      if (mode === 'cascade') {
+        hdrBtn.textContent = 'Mode: CASCADE (Real)';
+        hdrBtn.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/50 transition';
+        btnCasc.className = 'py-2 px-2 rounded-xl border text-xs font-bold bg-sky-500/20 border-sky-400 text-white transition';
+        btnPois.className = 'py-2 px-2 rounded-xl border text-xs font-semibold bg-obsidian-900 border-slate-800 text-slate-300 transition';
+      } else {
+        hdrBtn.textContent = 'Mode: POISSON (Fake)';
+        hdrBtn.className = 'px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/50 transition';
+        btnPois.className = 'py-2 px-2 rounded-xl border text-xs font-bold bg-rose-500/20 border-rose-400 text-white transition';
+        btnCasc.className = 'py-2 px-2 rounded-xl border text-xs font-semibold bg-obsidian-900 border-slate-800 text-slate-300 transition';
+      }
+      showToast(mode === 'cascade' ? 'Switched to Correlated Granular Cascade' : 'Switched to Memoryless Poisson (Fake Rain)');
+    }
+
+    function applyGranularPreset(presetKey) {
+      const p = GRANULAR_PRESETS[presetKey];
+      if (!p) return;
+      ensureAudioContext();
+
+      state.beadDispersity = p.dispersity;
+      state.fillFraction = p.fill;
+      state.pinDensity = p.pinDensity;
+      state.inclineDeg = p.incline;
+      state.tubeLengthM = p.length;
+      state.tubeMaterial = p.mat;
+      state.topReservoirMass = 0.95;
+
+      document.getElementById('sliderBeadDispersity').value = state.beadDispersity;
+      document.getElementById('sliderFillFraction').value = Math.round(state.fillFraction * 100);
+      document.getElementById('sliderPinDensity').value = Math.round(state.pinDensity * 100);
+      document.getElementById('sliderInclineAngle').value = state.inclineDeg;
+      document.getElementById('sliderTubeLength').value = Math.round(state.tubeLengthM * 100);
+      document.getElementById('selectTubeMaterial').value = state.tubeMaterial;
+
+      setStatisticsMode(p.mode);
+      updateControlLabels();
+      buildRainstick3DModel();
+      showToast(`Loaded Preset: ${p.name}`);
+    }
+
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const blockAlign = numChannels * 2;
+      const dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      };
+
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) channels.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function renderAndDownloadGranularWav({ title, durationSec = 5.0, customParams = null, simulateFlipDrain = false, simulateJamSweep = false }) {
+      const sampleRate = 44100;
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offlineCtx = new OfflineCtx(2, Math.ceil(durationSec * sampleRate), sampleRate);
+      const offlineNoise = getShortNoiseBuffer(offlineCtx);
+
+      const p = customParams ? { ...state, ...customParams } : { ...state };
+      const phys = computeGranularPhasePhysics(p);
+      const baseRate = Math.max(45, phys.targetEventRate || 155);
+
+      let cursorSec = 0.04;
+      while (cursorSec < durationSec - 0.15) {
+        const progress = cursorSec / durationSec;
+
+        // If simulating Flow -> Jam Phase Transition, sweep fill fraction past φ_c at 60% of file!
+        if (simulateJamSweep && progress > 0.62) {
+          break; // Sudden sharp jamming silence!
+        }
+
+        // Hourglass envelope bell curve if simulateFlipDrain is active
+        const envScale = simulateFlipDrain ? Math.sin(progress * Math.PI) : 1.0;
+        const effRate = baseRate * Math.max(0.15, envScale);
+
+        if (p.statisticsMode === 'poisson') {
+          synthesizeBeadPinCollision(offlineCtx, offlineCtx.destination, cursorSec, {
+            speciesIdx: Math.floor(Math.random() * 4),
+            axialNorm: (Math.random() * 2 - 1) * 0.85,
+            impactVel: 0.78,
+            params: p,
+            noiseBuf: offlineNoise
+          });
+          cursorSec += -Math.log(Math.max(1e-5, Math.random())) / effRate;
+        } else {
+          // Correlated Granular Cascade Burst
+          const meanK = Math.max(2.5, phys.meanBurstSize || 4.5);
+          const clusterRate = effRate / meanK;
+          const uSize = Math.max(0.03, Math.random());
+          const clusterSize = Math.max(2, Math.min(18, Math.round((meanK * 0.55) / Math.pow(uSize, 0.55))));
+
+          let intraT = cursorSec;
+          const startZ = -0.85 + Math.random() * 1.1;
+          for (let k = 0; k < clusterSize; k++) {
+            if (intraT >= durationSec - 0.08) break;
+            synthesizeBeadPinCollision(offlineCtx, offlineCtx.destination, intraT, {
+              speciesIdx: (k + Math.floor(Math.random() * 4)) % 4,
+              axialNorm: Math.min(0.95, startZ + k * 0.08),
+              impactVel: Math.min(1.1, 0.58 + (k / clusterSize) * 0.42),
+              params: p,
+              noiseBuf: offlineNoise
+            });
+            intraT += 0.0011 + Math.pow(Math.random(), 1.6) * 0.0048;
+          }
+
+          const uWait = Math.max(0.02, Math.random());
+          cursorSec += (1.0 / clusterRate) * (0.42 / Math.pow(uWait, 0.52));
+        }
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.renderedVault.unshift({ name: safeFilename, url });
+      renderSampleVaultUI();
+      showToast(`Exported 44.1kHz WAV: ${safeFilename}`);
+    }
+
+    function renderSampleVaultUI() {
+      const container = document.getElementById('sampleVaultList');
+      document.getElementById('vaultCountLabel').textContent = `${state.renderedVault.length} files`;
+      if (state.renderedVault.length === 0) return;
+
+      container.innerHTML = '';
+      state.renderedVault.slice(0, 6).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'bg-obsidian-900 border border-slate-800 rounded-lg p-1.5 space-y-1';
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[9px] font-mono shrink-0">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastText');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._hideTimer);
+      banner._hideTimer = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 10. UI LABELS, EVENT BINDINGS & KEYBOARD SHORTCUTS
+    // =========================================================================
+    function updateControlLabels() {
+      const phys = computeGranularPhasePhysics(state);
+      const mat = TUBE_MATERIALS[state.tubeMaterial] || TUBE_MATERIALS.cactus;
+
+      document.getElementById('hdrMaterialLabel').textContent =
+        `${mat.name} (${state.tubeLengthM.toFixed(2)}m)`;
+
+      const dispDesc = state.beadDispersity < 15 ? 'Monodisperse Tick' : (state.beadDispersity > 65 ? 'Polydisperse Chord' : 'Bimodal Blend');
+      document.getElementById('valBeadDispersity').textContent = `${state.beadDispersity}% (${dispDesc})`;
+
+      const fillState = phys.isJammed && state.fillFraction >= phys.phiCritical
+        ? 'JAMMED!'
+        : (state.fillFraction < 0.20 ? 'Dilute' : (state.fillFraction < 0.48 ? 'Torrent' : 'Dense'));
+      document.getElementById('valFillFraction').textContent = `${state.fillFraction.toFixed(2)} (${fillState})`;
+
+      const pinDesc = state.pinDensity < 0.35 ? 'Sparse Free-Fall' : (state.pinDensity > 0.75 ? 'Dense Chatter' : 'Medium Lattice');
+      document.getElementById('valPinDensity').textContent = `${state.pinDensity.toFixed(2)} (${pinDesc})`;
+
+      const incDesc = phys.isJammed && state.inclineDeg <= phys.thetaCriticalDeg
+        ? 'JAMMED (Below Repose)'
+        : (state.inclineDeg < 32 ? 'Shallow Creep' : (state.inclineDeg > 68 ? 'Steep Rush' : 'Steady Cascade'));
+      document.getElementById('valInclineAngle').textContent = `${state.inclineDeg}° (${incDesc})`;
+
+      document.getElementById('valTubeLength').textContent =
+        `${state.tubeLengthM.toFixed(2)} m (f1 = ${Math.round(phys.airFundHz)} Hz)`;
+    }
+
+    function renderPresetButtons() {
+      const grid = document.getElementById('presetGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      Object.entries(GRANULAR_PRESETS).forEach(([key, p]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'p-2 rounded-xl border bg-obsidian-900 hover:bg-obsidian-800 border-slate-800 text-left transition';
+        btn.innerHTML = `
+          <div class="text-[11px] font-bold text-amber-300 truncate">${p.name}</div>
+          <div class="text-[9px] font-mono text-slate-400">φ=${p.fill} • θ=${p.incline}° • ${p.mode}</div>
+        `;
+        btn.addEventListener('click', () => applyGranularPreset(key));
+        grid.appendChild(btn);
+      });
+    }
+
+    function initAllListeners() {
+      // Unlock Web Audio on first pointer interaction anywhere
+      window.addEventListener('pointerdown', () => ensureAudioContext(), { once: true });
+
+      // Right Dock Tabs
+      document.querySelectorAll('.right-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-right-tab');
+          document.getElementById('rightTabStatistics').classList.toggle('hidden', target !== 'statistics');
+          document.getElementById('rightTabStatistics').classList.toggle('flex', target === 'statistics');
+          document.getElementById('rightTabExport').classList.toggle('hidden', target !== 'export');
+          document.getElementById('rightTabExport').classList.toggle('flex', target === 'export');
+
+          document.querySelectorAll('.right-tab-btn').forEach(b => {
+            const active = b.getAttribute('data-right-tab') === target;
+            b.className = active
+              ? 'right-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 transition'
+              : 'right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition';
+          });
+        });
+      });
+
+      // Dock Collapse Toggles
+      let leftOpen = true, rightOpen = true;
+      document.getElementById('btnToggleLeftDock').addEventListener('click', () => {
+        leftOpen = !leftOpen;
+        document.getElementById('leftDock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-108%)';
+      });
+      document.getElementById('btnToggleRightDock').addEventListener('click', () => {
+        rightOpen = !rightOpen;
+        document.getElementById('rightDock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(108%)';
+      });
+
+      // The 6 Granular Physics Controls
+      document.getElementById('sliderBeadDispersity').addEventListener('input', (e) => {
+        state.beadDispersity = parseInt(e.target.value, 10);
+        updateControlLabels();
+        buildRainstick3DModel();
+      });
+
+      document.getElementById('sliderFillFraction').addEventListener('input', (e) => {
+        state.fillFraction = parseInt(e.target.value, 10) / 100;
+        if (state.topReservoirMass < 0.15) state.topReservoirMass = 0.85;
+        updateControlLabels();
+        buildRainstick3DModel();
+      });
+
+      document.getElementById('sliderPinDensity').addEventListener('input', (e) => {
+        state.pinDensity = parseInt(e.target.value, 10) / 100;
+        updateControlLabels();
+        buildRainstick3DModel();
+      });
+
+      document.getElementById('sliderInclineAngle').addEventListener('input', (e) => {
+        state.inclineDeg = parseInt(e.target.value, 10);
+        if (state.topReservoirMass < 0.15) state.topReservoirMass = 0.85;
+        updateControlLabels();
+      });
+
+      document.getElementById('sliderTubeLength').addEventListener('input', (e) => {
+        state.tubeLengthM = parseInt(e.target.value, 10) / 100;
+        updateControlLabels();
+        buildRainstick3DModel();
+      });
+
+      document.getElementById('selectTubeMaterial').addEventListener('change', (e) => {
+        state.tubeMaterial = e.target.value;
+        updateControlLabels();
+        buildRainstick3DModel();
+      });
+
+      // Interactive 2D Phase Diagram Click / Drag
+      const updateFromPhaseMap = (e) => {
+        const rect = phaseCanvas.getBoundingClientRect();
+        const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+        state.fillFraction = Number((0.05 + nx * (0.82 - 0.05)).toFixed(2));
+        state.inclineDeg = Math.round(88 - ny * (88 - 2));
+        if (state.topReservoirMass < 0.15) state.topReservoirMass = 0.85;
+
+        document.getElementById('sliderFillFraction').value = Math.round(state.fillFraction * 100);
+        document.getElementById('sliderInclineAngle').value = state.inclineDeg;
+        updateControlLabels();
+      };
+      let phaseDragging = false;
+      phaseCanvas.addEventListener('pointerdown', (e) => { phaseDragging = true; updateFromPhaseMap(e); });
+      window.addEventListener('pointermove', (e) => { if (phaseDragging) updateFromPhaseMap(e); });
+      window.addEventListener('pointerup', () => { phaseDragging = false; });
+
+      // Header & Right Dock Action Buttons
+      document.getElementById('btnFlipStick').addEventListener('click', flipRainstick180);
+      document.getElementById('btnShakeUnjam').addEventListener('click', joltForceChainArch);
+
+      document.getElementById('btnToggleStatisticsMode').addEventListener('click', () => {
+        setStatisticsMode(state.statisticsMode === 'cascade' ? 'poisson' : 'cascade');
+      });
+      document.getElementById('btnModeCascade').addEventListener('click', () => setStatisticsMode('cascade'));
+      document.getElementById('btnModePoisson').addEventListener('click', () => setStatisticsMode('poisson'));
+
+      document.getElementById('btnToggleCutaway').addEventListener('click', (e) => {
+        state.cutawayMode = !state.cutawayMode;
+        e.currentTarget.textContent = `Cutaway: ${state.cutawayMode ? 'ON' : 'OFF'}`;
+        buildRainstick3DModel();
+      });
+
+      document.getElementById('btnAudioToggle').addEventListener('click', (e) => {
+        ensureAudioContext();
+        state.audioEnabled = !state.audioEnabled;
+        if (masterGainNode && audioCtx) {
+          masterGainNode.gain.setValueAtTime(state.audioEnabled ? 0.88 : 0.0, audioCtx.currentTime);
+        }
+        e.currentTarget.textContent = state.audioEnabled ? '🔊 Audio: ON' : '🔇 Audio: MUTE';
+      });
+
+      document.getElementById('btnToggleLogHist').addEventListener('click', (e) => {
+        state.logHistogram = !state.logHistogram;
+        e.currentTarget.textContent = `Scale: ${state.logHistogram ? 'Log-Y' : 'Linear'}`;
+      });
+
+      document.getElementById('btnClearHist').addEventListener('click', () => {
+        state.interArrivalSamplesMs = [];
+        state.lastEventTimeSec = null;
+        showToast('Cleared inter-arrival histogram');
+      });
+
+      document.getElementById('chkEndlessRecycle').addEventListener('change', (e) => {
+        state.endlessRecycle = e.target.checked;
+        if (state.endlessRecycle) state.topReservoirMass = 0.88;
+      });
+
+      // Quick Regime Footer Buttons
+      document.querySelectorAll('.quick-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => applyGranularPreset(btn.getAttribute('data-quick-preset')));
+      });
+
+      // Keyboard Shortcuts: F = Flip 180°, M = Toggle Cascade/Poisson, J = Jolt Arch
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        const k = e.key.toLowerCase();
+        if (k === 'f' || k === ' ') {
+          e.preventDefault();
+          flipRainstick180();
+        } else if (k === 'm') {
+          setStatisticsMode(state.statisticsMode === 'cascade' ? 'poisson' : 'cascade');
+        } else if (k === 'j') {
+          joltForceChainArch();
+        }
+      });
+
+      // WAV Exporters & Timing JSON Exporter
+      const exportCurrentCascade = () => {
+        renderAndDownloadGranularWav({
+          title: `rainstick3d_${state.tubeMaterial}_${state.statisticsMode}_phi${Math.round(state.fillFraction * 100)}`,
+          durationSec: 5.5
+        });
+      };
+      document.getElementById('btnQuickExportWav').addEventListener('click', exportCurrentCascade);
+      document.getElementById('btnExportCascadeWav').addEventListener('click', exportCurrentCascade);
+
+      document.getElementById('btnExportHourglassWav').addEventListener('click', () => {
+        renderAndDownloadGranularWav({
+          title: `rainstick3d_hourglass_flip_drain_${state.tubeMaterial}`,
+          durationSec: Math.min(12.0, Math.max(4.5, state.tubeLengthM * 5.2)),
+          simulateFlipDrain: true
+        });
+      });
+
+      document.querySelectorAll('.regime-wav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const reg = btn.getAttribute('data-wav-regime');
+          if (reg === 'cascade_rain') {
+            renderAndDownloadGranularWav({ title: 'rainstick3d_cascade_correlated_rain', durationSec: 5.0, customParams: { statisticsMode: 'cascade', fillFraction: 0.36, inclineDeg: 52 } });
+          } else if (reg === 'poisson_dust') {
+            renderAndDownloadGranularWav({ title: 'rainstick3d_poisson_independent_dust', durationSec: 5.0, customParams: { statisticsMode: 'poisson', fillFraction: 0.36, inclineDeg: 52 } });
+          } else if (reg === 'stick_slip') {
+            renderAndDownloadGranularWav({ title: 'rainstick3d_near_jam_stick_slip', durationSec: 5.5, customParams: { statisticsMode: 'cascade', fillFraction: 0.56, inclineDeg: 25 } });
+          } else if (reg === 'monodisperse') {
+            renderAndDownloadGranularWav({ title: 'rainstick3d_monodisperse_1size_tick', durationSec: 4.5, customParams: { beadDispersity: 0, tubeMaterial: 'glass' } });
+          } else if (reg === 'polydisperse') {
+            renderAndDownloadGranularWav({ title: 'rainstick3d_polydisperse_mixed_chord', durationSec: 4.5, customParams: { beadDispersity: 100, tubeMaterial: 'cactus' } });
+          } else if (reg === 'jam_transition') {
+            renderAndDownloadGranularWav({ title: 'rainstick3d_flow_to_sharp_jam_silence', durationSec: 5.5, simulateJamSweep: true });
+          }
+        });
+      });
+
+      document.getElementById('btnExportTimingJson').addEventListener('click', () => {
+        const stats = computeTimingStatistics();
+        const phys = computeGranularPhasePhysics(state);
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          lab: "RAINSTICK-3D Granular Avalanche & Jamming Timing Lab",
+          controls: {
+            beadDispersityPct: state.beadDispersity,
+            fillFractionPhi: state.fillFraction,
+            pinDensityRho: state.pinDensity,
+            inclineAngleDeg: state.inclineDeg,
+            tubeLengthM: state.tubeLengthM,
+            tubeMaterial: state.tubeMaterial
+          },
+          phaseState: {
+            isJammed: phys.isJammed,
+            phiCritical: phys.phiCritical,
+            thetaCriticalDeg: phys.thetaCriticalDeg,
+            throatRatioSd: phys.throatRatio
+          },
+          timingStatistics: {
+            mode: state.statisticsMode,
+            sampleCount: state.interArrivalSamplesMs.length,
+            meanInterArrivalMs: stats.meanMs,
+            coefficientOfVariationCV: stats.cv,
+            fanoFactor: stats.fano,
+            verdict: stats.cv > 1.35 ? "HEAVY_TAILED_CORRELATED_CASCADE" : "EXPONENTIAL_POISSON_MEMORYLESS",
+            interArrivalSamplesMs: state.interArrivalSamplesMs
+          }
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `rainstick3d_timing_stats_${state.statisticsMode}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Exported Granular Timing Statistics (.JSON)');
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initThreeJsScene();
+      renderPresetButtons();
+      updateControlLabels();
+      initAllListeners();
+      requestAnimationFrame(mainSimulationLoop);
+    });
+  </script>
+</body>
+</html>
