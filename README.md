@@ -1,6 +1,6 @@
 # Percussion Labs
 
-Seventeen self-contained, browser-native percussion laboratories, plus two
+Eighteen self-contained, browser-native percussion laboratories, plus two
 specialty pendulum pieces. Each one builds an instrument out of a different
 piece of physics or mathematics, and generates its sound from the model rather
 than playing samples over it.
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The seventeen
+## The eighteen
 
 | # | Module | Built on |
 |---|---|---|
@@ -33,6 +33,7 @@ as well — technique first, then visible physics, then abstractions.
 | 15 | **TIMPANI-3D** | Coupled kettle-cavity air spring, live pedal portamento, Bessel inharmonicity |
 | 16 | **TAIKO-3D** | Coupled dual-membrane wadaiko, nonlinear pitch glide, kuchi-shōga WAV loop |
 | 17 | **CYMBAL-3D** | Föppl–von Kármán nonlinear plate, Weyl modal density, wave-turbulence chaos |
+| 18 | **SNARE-3D** | Coupled membrane and snare-wire physics, PAS-40 rudiment lab |
 
 ## Specialty
 
@@ -77,7 +78,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          seventeen laboratory modules + two specialty pendulum pieces
+*.html          eighteen laboratory modules + two specialty pendulum pieces
 ```
 
 ## Licence
