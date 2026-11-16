@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JAM-WAVE 3D — Nagel-Schreckenberg Stop-and-Go Rhythm Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Large Space-Time / Fundamental Focus Overlay -->
+  <div id="focus-overlay" class="fixed inset-x-0 top-20 bottom-4 z-10 mx-auto max-w-2xl px-4 pointer-events-none hidden flex items-center justify-center">
+    <div class="lab-panel rounded-2xl p-4 w-full h-96 pointer-events-auto flex flex-col gap-2">
+      <div class="flex items-center justify-between">
+        <span id="focus-title" class="text-xs font-mono uppercase tracking-wider text-amber-300 font-semibold">Space-Time Diagram (x vs t)</span>
+        <button id="btn-clear-fd" type="button" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Clear Scatter</button>
+      </div>
+      <div class="relative flex-1 bg-slate-950/90 rounded-xl border border-slate-800 overflow-hidden">
+        <canvas id="focus-canvas" class="w-full h-full block"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_#f59e0b]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">JAM-WAVE 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-amber-300 border border-slate-700/70">NaSch · Ring CA</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Nagel–Schreckenberg Stop-and-Go Traffic Wave Rhythm Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="regime-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-400/50">
+        JAM WAVE (BACKWARD)
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-reset" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Reset Road
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry, Space-Time & Fundamental Diagram -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Traffic &amp; Wave Telemetry</span>
+        <span id="lbl-cars" class="text-[10px] font-mono text-slate-400">35 cars</span>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-1 border border-amber-500/20">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Flow (ρ·v̄)</div>
+          <div id="val-flow" class="text-xs font-mono font-semibold text-amber-300 mt-0.5">0.450</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-1 border border-rose-500/20">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Jam Speed</div>
+          <div id="val-jam-speed" class="text-xs font-mono font-semibold text-rose-300 mt-0.5">-0.45 c/s</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-1 border border-cyan-500/20">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Stopped</div>
+          <div id="val-stopped" class="text-xs font-mono font-semibold text-cyan-300 mt-0.5">0</div>
+        </div>
+      </div>
+
+      <!-- Mini Space-Time Diagram -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Space-Time (x vs t)</span>
+          <span class="text-[10px] font-mono text-rose-300">╲ Backward Jams</span>
+        </div>
+        <div class="relative w-full h-28 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="st-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Mini Fundamental Diagram -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Fundamental Diagram</span>
+          <span id="lbl-crit" class="text-[10px] font-mono text-amber-300">Peak ρ ≈ 0.15</span>
+        </div>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="fd-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Display Mode -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Display Mode</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-disp="road" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/50">3D Road</button>
+          <button type="button" data-disp="st" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Space-Time</button>
+          <button type="button" data-disp="fd" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Flow vs ρ</button>
+        </div>
+      </div>
+
+      <!-- Density rho -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-rho" class="text-amber-300 font-semibold">Density ρ <span class="text-slate-500 font-normal">(cars/cell)</span></label>
+          <span id="lbl-rho" class="font-mono text-amber-300 font-bold">0.22</span>
+        </div>
+        <input id="ctrl-rho" type="range" min="0.04" max="0.85" step="0.01" value="0.22" class="lab-slider" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+          Sweep ρ (0.04 → 0.85 Fundamental)
+        </button>
+      </div>
+
+      <!-- Dawdle p & Null Switch (p=0) -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-p" class="text-slate-300 font-medium">Dawdle Probability p</label>
+          <span id="lbl-p" class="font-mono text-rose-300 font-semibold">0.25</span>
+        </div>
+        <input id="ctrl-p" type="range" min="0.00" max="0.60" step="0.01" value="0.25" class="lab-slider" />
+        <button id="btn-null-p0" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 hover:bg-cyan-500/30 transition">
+          p = 0 (Perfect Drivers Null)
+        </button>
+      </div>
+
+      <!-- v_max -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-vmax" class="text-slate-300 font-medium">Top Speed v<sub>max</sub></label>
+          <span id="lbl-vmax" class="font-mono text-slate-200">5</span>
+        </div>
+        <input id="ctrl-vmax" type="range" min="2" max="8" step="1" value="5" class="lab-slider" />
+      </div>
+
+      <!-- Road Length L -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-l" class="text-slate-300 font-medium">Ring Length L</label>
+          <span id="lbl-l" class="font-mono text-slate-200">160 cells</span>
+        </div>
+        <input id="ctrl-l" type="range" min="80" max="320" step="20" value="160" class="lab-slider" />
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-amber-500/40 text-xs font-mono text-amber-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. NAGEL-SCHRECKENBERG (1992) SYNCHRONOUS RING ROAD MODEL
+      // =========================================================================
+      const STEP_DT = 0.14; // Fixed CA step duration (seconds)
+
+      const params = {
+        L: 160,
+        rho: 0.22,
+        vmax: 5,
+        p: 0.25,
+      };
+
+      let pos = [];
+      let vel = [];
+      let newVel = [];
+
+      const state = {
+        running: true,
+        simTime: 0,
+        nextStepTime: 0,
+        displayMode: 'road',
+        flow: 0,
+        stoppedCount: 0,
+        jamFrontCell: null,
+        jamSpeed: 0,
+        stHistory: [], // array of { pos: [...], vel: [...] }
+        fdPoints: [],  // { rho, flow }
+        obsIoIs: [],
+        lastObsTime: null,
+        sweepActive: false,
+        sweepTimer: 0,
+        carMeshes: [],
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function initRoad() {
+        const L = params.L;
+        const M = Math.max(1, Math.min(L - 1, Math.round(params.rho * L)));
+        pos = new Int32Array(M);
+        vel = new Int32Array(M);
+        newVel = new Int32Array(M);
+
+        // Evenly spaced initial placement -> p=0 never jams!
+        for (let i = 0; i < M; i++) {
+          pos[i] = Math.floor((i * L) / M);
+          vel[i] = Math.min(params.vmax, Math.max(1, Math.floor(L / M) - 1));
+        }
+
+        state.simTime = 0;
+        state.nextStepTime = 0;
+        state.stHistory = [];
+        state.obsIoIs = [];
+        state.lastObsTime = null;
+        state.jamFrontCell = null;
+        state.jamSpeed = 0;
+        if (audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+        rebuild3DCars();
+      }
+
+      function stepNaSch(stepTime, onPassObserver) {
+        const L = params.L;
+        const M = pos.length;
+        const vmax = params.vmax;
+        const p = params.p;
+
+        // 1. Accelerate, 2. Brake, 3. Dawdle (synchronous)
+        let sumV = 0;
+        let stopped = 0;
+        for (let i = 0; i < M; i++) {
+          const nextPos = pos[(i + 1) % M];
+          const dist = (nextPos - pos[i] + L) % L;
+          const freeAhead = dist - 1;
+          let v = Math.min(vel[i] + 1, vmax);
+          v = Math.min(v, freeAhead);
+          if (v > 0 && Math.random() < p) v -= 1;
+          newVel[i] = v;
+        }
+
+        // 4. Move & detect observer gate (cell 0) crossings
+        let firstJamFront = null;
+        for (let i = 0; i < M; i++) {
+          const oldP = pos[i];
+          const v = newVel[i];
+          vel[i] = v;
+          sumV += v;
+          if (v === 0) {
+            stopped++;
+            firstJamFront = (oldP + v) % L;
+          }
+          if (v > 0 && oldP + v >= L) {
+            const frac = (L - oldP) / v;
+            onPassObserver(v, stepTime + frac * STEP_DT);
+          }
+          pos[i] = (oldP + v) % L;
+        }
+
+        state.flow = (M / L) * (sumV / M);
+        state.stoppedCount = stopped;
+
+        // Track jam front velocity (negative = moving backward against traffic!)
+        if (firstJamFront !== null && state.jamFrontCell !== null) {
+          let delta = firstJamFront - state.jamFrontCell;
+          if (delta > L / 2) delta -= L;
+          if (delta < -L / 2) delta += L;
+          if (Math.abs(delta) < L / 4) {
+            state.jamSpeed = state.jamSpeed * 0.85 + delta * 0.15;
+          }
+        }
+        state.jamFrontCell = firstJamFront;
+
+        state.stHistory.push({ pos: Int32Array.from(pos), vel: Int32Array.from(vel) });
+        if (state.stHistory.length > 110) state.stHistory.shift();
+
+        state.fdPoints.push({ rho: M / L, flow: state.flow });
+        if (state.fdPoints.length > 1200) state.fdPoints.shift();
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO CLOCK-SYNCHRONIZED OBSERVER CLICKS
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let simAudioOffset = 0;
+      const LOOKAHEAD = 0.045;
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.8;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/25 text-amber-200 border border-amber-400/60 hover:bg-amber-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) initAudio();
+        else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleCarPass(carVel, exactSimTime) {
+        if (state.lastObsTime !== null) {
+          state.obsIoIs.push((exactSimTime - state.lastObsTime) * 1000);
+          if (state.obsIoIs.length > 100) state.obsIoIs.shift();
+        }
+        state.lastObsTime = exactSimTime;
+
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.30) return;
+
+        // Fast cars click high, crawling cars thump low
+        const vNorm = carVel / Math.max(1, params.vmax);
+        const freq = 220 + vNorm * 1050;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, playTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.55, playTime + 0.015);
+        g.gain.setValueAtTime(0.28, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + 0.018);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(playTime);
+        osc.stop(playTime + 0.022);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        const events = [];
+        let t = 0;
+        while (t < dur - 0.03) {
+          stepNaSch(t, (v, tCross) => { events.push({ t: tCross, v }); });
+          t += STEP_DT;
+        }
+
+        for (const ev of events) {
+          if (ev.t < 0 || ev.t >= dur - 0.02) continue;
+          const start = Math.floor(ev.t * sr);
+          const freq = 220 + (ev.v / Math.max(1, params.vmax)) * 1050;
+          const len = Math.floor(sr * 0.016);
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const sig = 0.28 * Math.exp(-tt / 0.0035) * Math.sin(2 * Math.PI * freq * tt);
+            left[start + j] += sig;
+            right[start + j] += sig;
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `jam_wave_rho${params.rho.toFixed(2)}_p${params.p.toFixed(2)}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s 44.1 kHz stereo WAV (${events.length} crossings)`);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D RING ROAD & BACKWARD JAM BEACON
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.055);
+
+      const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.25, phi: 0.78, radius: 5.8, target: new THREE.Vector3(0, 0, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.7));
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 1.1);
+      keyLight.position.set(3, 6, 4);
+      scene.add(keyLight);
+
+      const RING_R = 2.25;
+      const roadRing = new THREE.Mesh(
+        new THREE.RingGeometry(RING_R - 0.18, RING_R + 0.18, 96),
+        new THREE.MeshStandardMaterial({ color: 0x111827, side: THREE.DoubleSide, roughness: 0.8 })
+      );
+      roadRing.rotation.x = -Math.PI / 2;
+      scene.add(roadRing);
+
+      const obsArch = new THREE.Mesh(
+        new THREE.BoxGeometry(0.06, 0.25, 0.42),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.8 })
+      );
+      obsArch.position.set(RING_R, 0.12, 0);
+      scene.add(obsArch);
+
+      const jamBeacon = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.9 })
+      );
+      jamBeacon.visible = false;
+      scene.add(jamBeacon);
+
+      const carsGroup = new THREE.Group();
+      scene.add(carsGroup);
+
+      function rebuild3DCars() {
+        while (carsGroup.children.length > 0) carsGroup.remove(carsGroup.children[0]);
+        state.carMeshes = [];
+        const geo = new THREE.BoxGeometry(0.075, 0.055, 0.12);
+        for (let i = 0; i < pos.length; i++) {
+          const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+          carsGroup.add(m);
+          state.carMeshes.push(m);
+        }
+      }
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.45, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.8, Math.min(11.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. SPACE-TIME & FUNDAMENTAL DIAGRAM CANVASES
+      // =========================================================================
+      const stCanvas = document.getElementById('st-canvas');
+      const stCtx = stCanvas.getContext('2d');
+      const fdCanvas = document.getElementById('fd-canvas');
+      const fdCtx = fdCanvas.getContext('2d');
+      const focusCanvas = document.getElementById('focus-canvas');
+      const focusCtx = focusCanvas.getContext('2d');
+
+      function drawSpaceTime(canvas, ctx) {
+        const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+        ctx.clearRect(0, 0, w, h);
+        const hist = state.stHistory;
+        if (hist.length === 0) return;
+
+        const rows = hist.length;
+        const rowH = h / Math.max(1, rows);
+        const L = params.L;
+        for (let r = 0; r < rows; r++) {
+          const row = hist[r];
+          const y = r * rowH;
+          for (let i = 0; i < row.pos.length; i++) {
+            const x = (row.pos[i] / L) * w;
+            const v = row.vel[i];
+            ctx.fillStyle = v === 0 ? '#f43f5e' : (v <= 2 ? '#f59e0b' : '#22d3ee');
+            ctx.fillRect(x, y, Math.max(1.5, w / L), Math.max(1.5, rowH));
+          }
+        }
+      }
+
+      function drawFundamental(canvas, ctx) {
+        const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.72)';
+        let peakRho = 0, peakFlow = 0;
+        for (const pt of state.fdPoints) {
+          if (pt.flow > peakFlow) { peakFlow = pt.flow; peakRho = pt.rho; }
+          const x = pt.rho * (w - 12) + 6;
+          const y = h - (pt.flow / 1.0) * (h - 12) - 6;
+          ctx.fillRect(x, Math.max(4, Math.min(h - 4, y)), 2.5, 2.5);
+        }
+        if (peakFlow > 0) {
+          document.getElementById('lbl-crit').textContent = `Peak ρ ≈ ${peakRho.toFixed(2)}`;
+        }
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS
+      // =========================================================================
+      document.getElementById('ctrl-rho').addEventListener('input', (e) => {
+        params.rho = parseFloat(e.target.value);
+        document.getElementById('lbl-rho').textContent = params.rho.toFixed(2);
+        initRoad();
+      });
+
+      document.getElementById('ctrl-p').addEventListener('input', (e) => {
+        params.p = parseFloat(e.target.value);
+        document.getElementById('lbl-p').textContent = params.p.toFixed(2);
+      });
+
+      document.getElementById('btn-null-p0').addEventListener('click', () => {
+        params.p = params.p === 0 ? 0.25 : 0.0;
+        document.getElementById('ctrl-p').value = params.p.toFixed(2);
+        document.getElementById('lbl-p').textContent = params.p.toFixed(2);
+        document.getElementById('btn-null-p0').textContent = params.p === 0
+          ? 'Restore Noise (p = 0.25)'
+          : 'p = 0 (Perfect Drivers Null)';
+        initRoad();
+      });
+
+      document.getElementById('ctrl-vmax').addEventListener('input', (e) => {
+        params.vmax = parseInt(e.target.value, 10);
+        document.getElementById('lbl-vmax').textContent = String(params.vmax);
+      });
+
+      document.getElementById('ctrl-l').addEventListener('input', (e) => {
+        params.L = parseInt(e.target.value, 10);
+        document.getElementById('lbl-l').textContent = `${params.L} cells`;
+        initRoad();
+      });
+
+      document.querySelectorAll('.disp-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.displayMode = btn.dataset.disp;
+          document.querySelectorAll('.disp-btn').forEach((b) => {
+            b.className = 'disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/50';
+          const ov = document.getElementById('focus-overlay');
+          ov.classList.toggle('hidden', state.displayMode === 'road');
+          document.getElementById('focus-title').textContent = state.displayMode === 'st'
+            ? 'Space-Time Diagram (x vs t)'
+            : 'Fundamental Diagram (Flow vs Density ρ)';
+        });
+      });
+
+      document.getElementById('btn-clear-fd').addEventListener('click', () => { state.fdPoints = []; });
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+        if (state.running && audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      });
+      document.getElementById('btn-reset').addEventListener('click', initRoad);
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.25; camState.phi = 0.78; camState.radius = 5.8; updateCamera();
+      });
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        if (state.sweepActive) {
+          state.sweepActive = false;
+          document.getElementById('btn-sweep').textContent = 'Sweep ρ (0.04 → 0.85 Fundamental)';
+          return;
+        }
+        state.sweepActive = true;
+        state.sweepTimer = 0;
+        state.fdPoints = [];
+        params.rho = 0.04;
+        document.getElementById('ctrl-rho').value = '0.04';
+        document.getElementById('lbl-rho').textContent = '0.04';
+        document.getElementById('btn-sweep').textContent = 'Stop Sweep';
+        initRoad();
+      });
+
+      // =========================================================================
+      // 7. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+      let uiTick = 0;
+
+      function updateReadouts() {
+        document.getElementById('lbl-cars').textContent = `${pos.length} cars`;
+        document.getElementById('val-flow').textContent = state.flow.toFixed(3);
+        document.getElementById('val-stopped').textContent = String(state.stoppedCount);
+        document.getElementById('val-jam-speed').textContent = state.stoppedCount > 0
+          ? `${state.jamSpeed.toFixed(2)} c/s`
+          : '0.00 c/s';
+
+        const badge = document.getElementById('regime-badge');
+        if (params.p === 0) {
+          badge.textContent = 'p = 0 (ZERO JAMS)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+        } else if (state.stoppedCount >= 3) {
+          badge.textContent = 'JAM WAVE (BACKWARD)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-400/50';
+        } else {
+          badge.textContent = 'FREE FLOW';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/50';
+        }
+
+        drawSpaceTime(stCanvas, stCtx);
+        drawFundamental(fdCanvas, fdCtx);
+        if (state.displayMode === 'st') drawSpaceTime(focusCanvas, focusCtx);
+        else if (state.displayMode === 'fd') drawFundamental(focusCanvas, focusCtx);
+      }
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.running) {
+          let targetSim = state.simTime + dtReal;
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            targetSim = (audioCtx.currentTime + LOOKAHEAD) - simAudioOffset;
+            if (Math.abs(targetSim - state.simTime) > 0.3) {
+              simAudioOffset = audioCtx.currentTime - state.simTime;
+              targetSim = state.simTime + dtReal;
+            }
+          }
+
+          let guard = 0;
+          while (state.nextStepTime <= targetSim && guard < 12) {
+            guard++;
+            stepNaSch(state.nextStepTime, scheduleCarPass);
+            state.nextStepTime += STEP_DT;
+          }
+          state.simTime = targetSim;
+
+          if (state.sweepActive) {
+            state.sweepTimer += dtReal;
+            if (state.sweepTimer >= 0.45) {
+              state.sweepTimer = 0;
+              params.rho = Math.min(0.85, params.rho + 0.02);
+              document.getElementById('ctrl-rho').value = params.rho.toFixed(2);
+              document.getElementById('lbl-rho').textContent = params.rho.toFixed(2);
+              initRoad();
+              if (params.rho >= 0.85) {
+                state.sweepActive = false;
+                document.getElementById('btn-sweep').textContent = 'Sweep ρ (0.04 → 0.85 Fundamental)';
+                showToast('Density sweep complete');
+              }
+            }
+          }
+        }
+
+        // Update 3D cars on ring
+        const L = params.L;
+        for (let i = 0; i < pos.length; i++) {
+          const m = state.carMeshes[i];
+          if (!m) continue;
+          const ang = (pos[i] / L) * Math.PI * 2;
+          m.position.set(RING_R * Math.cos(ang), 0.04, RING_R * Math.sin(ang));
+          m.rotation.y = -ang;
+          const v = vel[i];
+          m.material.color.setHex(v === 0 ? 0xf43f5e : (v <= 2 ? 0xf59e0b : 0x22d3ee));
+        }
+
+        if (state.jamFrontCell !== null) {
+          jamBeacon.visible = true;
+          const jAng = (state.jamFrontCell / L) * Math.PI * 2;
+          jamBeacon.position.set((RING_R + 0.25) * Math.cos(jAng), 0.12, (RING_R + 0.25) * Math.sin(jAng));
+        } else {
+          jamBeacon.visible = false;
+        }
+
+        uiTick++;
+        if (uiTick % 3 === 0) updateReadouts();
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__JAM_WAVE__)
+      // =========================================================================
+      window.__JAM_WAVE__ = {
+        getState: () => ({ ...params, flow: state.flow, stoppedCount: state.stoppedCount, jamSpeed: state.jamSpeed }),
+        verifyFundamentalPeak: () => {
+          const savedRho = params.rho;
+          const res = [];
+          for (const r of [0.06, 0.12, 0.18, 0.30, 0.50, 0.70]) {
+            params.rho = r;
+            initRoad();
+            for (let s = 0; s < 160; s++) stepNaSch(s * STEP_DT, () => {});
+            res.push({ rho: r, flow: state.flow });
+          }
+          params.rho = savedRho;
+          initRoad();
+          return res;
+        },
+      };
+
+      initRoad();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
