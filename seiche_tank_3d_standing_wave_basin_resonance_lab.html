@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEICHE-TANK 3D — Standing Wave &amp; Basin Resonance Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #050a12;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(10, 18, 32, 0.86);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.16);
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 5px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.35);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-[#050a12] text-slate-100 select-none">
+
+  <!-- TOP HEADER -->
+  <header class="shrink-0 border-b border-slate-800/80 bg-[#070d18]/95 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="h-8 w-8 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center shrink-0">
+        <span class="font-mono text-cyan-300 font-bold text-sm">ST</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider uppercase text-slate-100">SEICHE-TANK 3D</h1>
+          <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800/90 text-cyan-300 border border-slate-700/70">MERIAN · NODES &amp; ANTINODES · Q-RESONANCE</span>
+        </div>
+        <p class="text-[11px] text-slate-400 truncate max-w-2xl">
+          A bounded basin is a resonator. The tempo comes from nothing but how long and how deep the tank is.
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 flex-wrap">
+      <button id="btn-audio-toggle" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-cyan-500/40 bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25">
+        AUDIO: OFF (CLICK TO ENABLE)
+      </button>
+      <button id="btn-jolt" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25">
+        IMPULSE / RESET
+      </button>
+      <button id="btn-verify" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25">
+        VERIFY 4 CHECKS
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- 3D CROSS-SECTION BASIN & RESONANCE CURVE -->
+    <section class="flex-1 min-w-0 min-h-0 relative flex flex-col bg-[#050a12]">
+      <div id="viewport-3d" class="flex-1 min-h-0 w-full relative overflow-hidden">
+
+        <!-- Top-Left: Merian Thesis Card -->
+        <div class="absolute top-3 left-3 z-10 max-w-md pointer-events-none">
+          <div class="glass-panel rounded-xl p-3 shadow-xl pointer-events-auto">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-[10px] font-mono uppercase tracking-widest text-cyan-400">Thesis — Bounded Basin Resonator</span>
+              <button id="btn-toggle-thesis" type="button" class="text-[10px] font-mono text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-800/70">HIDE</button>
+            </div>
+            <div id="thesis-body" class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
+              <p>
+                Push water at one end and it sloshes; push it at the right rate and the slosh grows until it laps and breaks at the antinodes. The period is set by geometry alone:
+              </p>
+              <div class="font-mono text-[11px] bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-cyan-200 flex flex-wrap items-center justify-between gap-2">
+                <span>Tₙ = 2L / (n·√(g·h))</span>
+                <span id="hud-merian-live" class="text-amber-300">T₁ = 28.56 s</span>
+              </div>
+              <p class="text-[11px] text-slate-400">
+                <strong class="text-slate-200">The beat is loud at the ends and quiet in the middle.</strong> Walk the listener from a node (still water, silent) to an antinode (full surge, rhythmic lap).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top-Right: Standing Mode & Listener Indicator -->
+        <div class="absolute top-3 right-3 z-10 w-64 pointer-events-none">
+          <div class="glass-panel rounded-xl p-3 shadow-xl pointer-events-auto space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400">Resonance State</span>
+              <span id="badge-state" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-cyan-500/20 text-cyan-200 border-cyan-400/50">RESONANT</span>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] font-mono mb-1">
+                <span class="text-slate-400">Listener Local Slosh</span>
+                <span id="hud-local-amp" class="font-bold text-slate-100">0.00 m</span>
+              </div>
+              <div class="relative h-2.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                <div id="hud-amp-bar" class="h-full transition-all duration-100 rounded-full bg-cyan-400" style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-0.5">
+                <span id="hud-listener-role">At Antinode (End)</span>
+                <span id="hud-beat-bpm">— BPM</span>
+              </div>
+            </div>
+
+            <div class="pt-1 border-t border-slate-800/80 flex items-center justify-between gap-1">
+              <span class="text-[10px] font-mono text-slate-400">VIEW</span>
+              <div class="flex gap-1">
+                <button data-cam="cross" type="button" class="cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">CROSS-SEC</button>
+                <button data-cam="oblique" type="button" class="cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700">3/4 BASIN</button>
+                <button data-cam="top" type="button" class="cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700">NODES</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom-Left: Live Resonance Curve Plot (Response Amplitude vs f_drive / f_1) -->
+        <div class="absolute bottom-3 left-3 right-3 lg:right-auto lg:w-[460px] z-10 pointer-events-none">
+          <div class="glass-panel rounded-xl p-3 shadow-xl pointer-events-auto">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono uppercase tracking-widest text-cyan-400">Resonance Curve |H(f / f₁)|</span>
+                <span id="hud-null-pill" class="hidden text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">SILENT NULL</span>
+              </div>
+              <span id="hud-gain-val" class="text-[11px] font-mono text-amber-300">Gain: —×</span>
+            </div>
+            <div class="relative h-28 w-full bg-[#03070e] rounded-lg border border-slate-800/90 overflow-hidden">
+              <canvas id="canvas-resonance" class="w-full h-full block"></canvas>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span id="hud-nodes-info">Mode n=1: Node at 0.50L</span>
+              <span id="hud-audio-info">Wall Lap: Silent</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT CONTROL & TELEMETRY SIDEBAR -->
+    <aside class="w-full lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-800/90 bg-[#080f1c] flex flex-col min-h-0 max-h-[44vh] lg:max-h-none">
+      <div class="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
+
+        <!-- EXCITATION SELECTOR -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold">Excitation</h2>
+            <span class="text-[10px] font-mono text-slate-500">NO PRESETS</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button data-exc="paddle" type="button" class="exc-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-cyan-500/50 bg-cyan-500/20 text-cyan-200">PADDLE</button>
+            <button data-exc="wind" type="button" class="exc-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-slate-700 bg-slate-800/80 text-slate-300">WIND GUST</button>
+            <button data-exc="seismic" type="button" class="exc-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-slate-700 bg-slate-800/80 text-slate-300">SEISMIC</button>
+          </div>
+        </div>
+
+        <!-- 1. Drive Frequency Ratio f_drive / f1 -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-ratio" class="text-xs font-medium text-slate-200">Drive Freq <span class="font-mono text-cyan-300">f_drive / f₁</span></label>
+            <span id="val-ratio" class="text-xs font-mono text-cyan-300 font-semibold">1.00× (f₁)</span>
+          </div>
+          <input id="slider-ratio" type="range" min="0.50" max="3.20" step="0.01" value="1.00" class="lab-slider" />
+          <p class="text-[10px] text-slate-500">1.00× = n=1, 2.00× = n=2, 3.00× = n=3; 1.40× = off-resonance null.</p>
+        </div>
+
+        <!-- 2. Drive Amplitude -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-amp" class="text-xs font-medium text-slate-200">Drive Amplitude <span class="font-mono text-cyan-300">A_drive</span></label>
+            <span id="val-amp" class="text-xs font-mono text-cyan-300 font-semibold">0.08 m</span>
+          </div>
+          <input id="slider-amp" type="range" min="0.01" max="0.25" step="0.005" value="0.08" class="lab-slider" />
+        </div>
+
+        <!-- 3. Basin Damping Q -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-Q" class="text-xs font-medium text-slate-200">Basin Quality <span class="font-mono text-amber-300">Q</span></label>
+            <span id="val-Q" class="text-xs font-mono text-amber-300 font-semibold">18.0 (Concrete)</span>
+          </div>
+          <input id="slider-Q" type="range" min="0.6" max="40.0" step="0.2" value="18.0" class="lab-slider" />
+          <div class="flex justify-between text-[10px] font-mono text-slate-500">
+            <span>0.6 RUBBLE (FLAT)</span>
+            <span>40 CONCRETE (SHARP)</span>
+          </div>
+        </div>
+
+        <!-- 4. Listener Position u = x / L -->
+        <div class="space-y-1 pt-1 border-t border-slate-800/80">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-listener" class="text-xs font-medium text-slate-200">Listener Position <span class="font-mono text-emerald-300">x / L</span></label>
+            <span id="val-listener" class="text-xs font-mono text-emerald-300 font-semibold">0.00 L (End)</span>
+          </div>
+          <input id="slider-listener" type="range" min="0.00" max="1.00" step="0.01" value="0.00" class="lab-slider" />
+          <p class="text-[10px] text-slate-500">Move from antinode (0.00/1.00, loud beat) to node (0.50, silent).</p>
+        </div>
+
+        <!-- 5. Basin Length L & Depth h -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-L" class="text-xs font-medium text-slate-200">Basin Length <span class="font-mono text-cyan-300">L</span></label>
+            <span id="val-L" class="text-xs font-mono text-cyan-300 font-semibold">100 m</span>
+          </div>
+          <input id="slider-L" type="range" min="20" max="160" step="2" value="100" class="lab-slider" />
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-h" class="text-xs font-medium text-slate-200">Water Depth <span class="font-mono text-cyan-300">h</span></label>
+            <span id="val-h" class="text-xs font-mono text-cyan-300 font-semibold">5.0 m</span>
+          </div>
+          <input id="slider-h" type="range" min="1.0" max="15.0" step="0.2" value="5.0" class="lab-slider" />
+        </div>
+
+        <!-- TELEMETRY GRID -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <h3 class="text-[11px] font-mono uppercase tracking-widest text-slate-400">Merian Telemetry</h3>
+          <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Fundamental T₁ / f₁</div>
+              <div id="tel-t1" class="text-slate-200 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Mode n=2 / n=3</div>
+              <div id="tel-t23" class="text-slate-200 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Wave Speed √(gh)</div>
+              <div id="tel-c" class="text-cyan-300 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">End Surge / h</div>
+              <div id="tel-surge" class="text-amber-300 font-semibold">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+
+  <!-- VERIFICATION MODAL -->
+  <div id="modal-verify" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#0b1322] border border-slate-700 rounded-2xl max-w-xl w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-100">Seiche Physics &amp; Resonance Verification</h3>
+          <p class="text-xs text-slate-400">Live diagnostic checks against Merian's law, nodal geometry, Q-peak &amp; silent nulls</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300">CLOSE</button>
+      </div>
+      <div id="verify-results" class="space-y-2.5 text-xs font-mono"></div>
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-xs font-mono hover:bg-cyan-500/30">RE-RUN CHECKS</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      'use strict';
+
+      // =========================================================================
+      // 1. MERIAN STANDING WAVE PHYSICS & MULTI-MODE RESONATOR
+      // =========================================================================
+      const G = 9.81;
+      const SAMPLE_RATE = 44100;
+
+      function merianPeriod(L, h, n = 1) {
+        const c = Math.sqrt(G * Math.max(0.1, h));
+        return (2 * L) / (n * c);
+      }
+
+      function merianFreq(L, h, n = 1) {
+        return 1 / merianPeriod(L, h, n);
+      }
+
+      // Steady-state harmonic oscillator transfer magnitude |H_n(r)| where r = f_drive / f1
+      function modalGain(r, n, Q) {
+        const rn = r / n;
+        const denom = Math.sqrt(Math.pow(1 - rn * rn, 2) + Math.pow(rn / Math.max(0.2, Q), 2));
+        return 1 / Math.max(1e-6, denom);
+      }
+
+      // Total steady-state response spectrum at r = f_drive / f1 across modes n=1,2,3
+      function totalResonanceGain(r, Q) {
+        let g = 0;
+        for (let n = 1; n <= 3; n++) {
+          g += modalGain(r, n, Q) / n;
+        }
+        return g;
+      }
+
+      // Local spatial mode shape sum at normalized position u in [0, 1]
+      function spatialProfile(u, modalAmps) {
+        let val = 0;
+        for (let n = 1; n <= 3; n++) {
+          val += modalAmps[n - 1] * Math.cos(n * Math.PI * u);
+        }
+        return val;
+      }
+
+      // Active physics state & 3-mode time-domain ODE state (q, qDot)
+      const params = {
+        ratio: 1.00,
+        amp: 0.08,
+        Q: 18.0,
+        listener: 0.00,
+        L: 100,
+        h: 5.0,
+        excitation: 'paddle'
+      };
+
+      const modes = [
+        { n: 1, q: 0, qDot: 0 },
+        { n: 2, q: 0, qDot: 0 },
+        { n: 3, q: 0, qDot: 0 }
+      ];
+
+      // Staggered Arakawa-C 1D Nonlinear Shallow-Water Solver (NX_SWE cells)
+      const NX_SWE = 160;
+      const etaGrid = new Float64Array(NX_SWE);       // free surface displacement (meters)
+      const uGrid = new Float64Array(NX_SWE + 1);     // horizontal velocity at cell faces (m/s)
+      function resetSweGrid() {
+        etaGrid.fill(0);
+        uGrid.fill(0);
+      }
+      function applySeismicJolt(ampMeters) {
+        // Sudden horizontal basin acceleration imparts uniform velocity impulse
+        const uImp = Math.sqrt(G / Math.max(0.5, params.h)) * ampMeters * 2.2;
+        for (let i = 1; i < NX_SWE; i++) uGrid[i] += uImp;
+      }
+
+      function computeSeicheMetrics(p) {
+        const c = Math.sqrt(G * p.h);
+        const T1 = merianPeriod(p.L, p.h, 1);
+        const f1 = 1 / T1;
+        const T2 = T1 / 2;
+        const T3 = T1 / 3;
+        const fDrive = p.ratio * f1;
+
+        // Dominant mode nearest to drive ratio
+        let domMode = 1;
+        if (p.ratio >= 1.55 && p.ratio < 2.55) domMode = 2;
+        else if (p.ratio >= 2.55) domMode = 3;
+
+        const gains = [1, 2, 3].map((n) => modalGain(p.ratio, n, p.Q) / n);
+        const steadyModalAmps = gains.map((g) => p.amp * g);
+        const endAmp = steadyModalAmps.reduce((a, b) => a + b, 0);
+        const listenerAmp = Math.abs(spatialProfile(p.listener, steadyModalAmps));
+
+        // Breaking/lapping threshold at listener position:
+        // Must have both sufficient local slosh (> 0.085 * h) AND non-overdamped basin (Q > 1.8)
+        const localRatio = listenerAmp / p.h;
+        const isLapping = localRatio > 0.085 && p.Q > 1.8;
+
+        return {
+          c, T1, f1, T2, T3, fDrive, domMode,
+          gains, steadyModalAmps, endAmp, listenerAmp,
+          localRatio, isLapping
+        };
+      }
+
+      // =========================================================================
+      // 2. SPATIALLY-SPLIT PURE WEB AUDIO ENGINE (SILENT AT NODES & NULLS)
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+      let audioEnabled = false;
+
+      function ensureAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC({ sampleRate: SAMPLE_RATE });
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.8;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      // Synthesize a single wall-lap / antinode-break impulse strictly proportional to local slosh above threshold
+      function synthesizeWallLapBuffer(localRatio, Q, seed = 101) {
+        const dur = 0.48;
+        const N = Math.floor(SAMPLE_RATE * dur);
+        const buf = new Float32Array(N);
+        // STRICT NULL ENFORCEMENT: off-resonance or overdamped or node -> exact 0.0000
+        if (localRatio <= 0.085 || Q <= 1.8) return buf;
+
+        const intensity = Math.min(1.0, (localRatio - 0.085) / 0.25);
+        let a = seed >>> 0;
+        const rng = () => {
+          a |= 0; a = (a + 0x6D2B79F5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+
+        // 1. Low hydrostatic wall slap thump (55-120 Hz)
+        // 2. Band-limited splash/lap fizz (800-3500 Hz)
+        let bp = 0, lp = 0;
+        const fc = 1400 + 1200 * intensity;
+        const fCoeff = 2 * Math.sin((Math.PI * fc) / SAMPLE_RATE);
+
+        for (let i = 0; i < N; i++) {
+          const t = i / SAMPLE_RATE;
+          const white = rng() * 2 - 1;
+          lp += fCoeff * bp;
+          const hp = white - lp - 0.55 * bp;
+          bp += fCoeff * hp;
+
+          const thumpEnv = Math.exp(-t / 0.055) * (1 - Math.exp(-t / 0.005));
+          const thump = 0.45 * thumpEnv * Math.sin(2 * Math.PI * 78 * t);
+          const splashEnv = Math.exp(-t / (0.09 + 0.14 * intensity)) * (1 - Math.exp(-t / 0.008));
+          const splash = bp * splashEnv * 0.65;
+
+          buf[i] = Math.tanh((thump + splash) * intensity * 1.1);
+        }
+        return buf;
+      }
+
+      function triggerWallLapSound(localRatio, Q) {
+        if (!audioEnabled || !audioCtx) return;
+        if (localRatio <= 0.085 || Q <= 1.8) return;
+        const data = synthesizeWallLapBuffer(localRatio, Q, Math.floor(Math.random() * 100000));
+        const audioBuf = audioCtx.createBuffer(1, data.length, SAMPLE_RATE);
+        audioBuf.copyToChannel(data, 0);
+        const src = audioCtx.createBufferSource();
+        src.buffer = audioBuf;
+        src.connect(masterGain);
+        src.start();
+      }
+
+      // =========================================================================
+      // 3. THREE.JS 3D RECTANGULAR SEICHE BASIN (V2 REALISTIC SHADERS & STANDING-WAVE TRACERS)
+      // =========================================================================
+      const container = document.getElementById('viewport-3d');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03070e);
+      scene.fog = new THREE.FogExp2(0x03070e, 0.016);
+
+      const camera = new THREE.PerspectiveCamera(40, container.clientWidth / Math.max(1, container.clientHeight), 0.1, 140);
+      camera.position.set(0, 2.0, 14.2);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+      container.appendChild(renderer.domElement);
+
+      scene.add(new THREE.AmbientLight(0x67e8f9, 0.45));
+      const sunLight = new THREE.DirectionalLight(0xf0f9ff, 1.45);
+      sunLight.position.set(5, 14, 7);
+      scene.add(sunLight);
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.75);
+      rimLight.position.set(-7, 6, -8);
+      scene.add(rimLight);
+
+      const TANK_LEN = 16;
+      const TANK_WIDTH = 3.6;
+      const X_MIN = -TANK_LEN / 2;
+      const X_MAX = TANK_LEN / 2;
+      const NX = 160;
+      const NZ = 24;
+
+      // Soft bubble/tracer sprite texture (zero external assets)
+      function makeTracerTexture() {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        const ctx = c.getContext('2d');
+        const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+        g.addColorStop(0.0, 'rgba(255, 255, 255, 0.25)');
+        g.addColorStop(0.55, 'rgba(186, 230, 253, 0.55)');
+        g.addColorStop(0.84, 'rgba(224, 242, 254, 0.95)');
+        g.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 64, 64);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.beginPath();
+        ctx.arc(22, 20, 5.0, 0, Math.PI * 2);
+        ctx.fill();
+        const tex = new THREE.CanvasTexture(c);
+        tex.needsUpdate = true;
+        return tex;
+      }
+      const tracerTex = makeTracerTexture();
+
+      // Atmospheric deep-twilight sky dome for realistic Fresnel horizon reflections
+      const skyBackdrop = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 24),
+        new THREE.ShaderMaterial({
+          vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+          fragmentShader: `
+            varying vec2 vUv;
+            void main() {
+              vec3 abyss = vec3(0.015, 0.030, 0.060);
+              vec3 horizon = vec3(0.055, 0.165, 0.285);
+              vec3 zenith = vec3(0.012, 0.025, 0.055);
+              float hGlow = exp(-pow((vUv.y - 0.42) * 3.8, 2.0));
+              vec3 col = mix(abyss, zenith, vUv.y) + horizon * hGlow * 0.75;
+              gl_FragColor = vec4(col, 1.0);
+            }
+          `,
+          depthWrite: false
+        })
+      );
+      skyBackdrop.position.set(0, 2.0, -14.0);
+      scene.add(skyBackdrop);
+
+      const backWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(TANK_LEN, 4.4),
+        new THREE.MeshBasicMaterial({ color: 0x06101f, transparent: true, opacity: 0.52, side: THREE.DoubleSide, depthWrite: false })
+      );
+      backWall.position.set(0, 0.2, -TANK_WIDTH / 2 - 0.01);
+      scene.add(backWall);
+
+      // Tank wireframe
+      const tankBox = new THREE.BoxGeometry(TANK_LEN, 4.4, TANK_WIDTH);
+      const tankLines = new THREE.LineSegments(
+        new THREE.EdgesGeometry(tankBox),
+        new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.25 })
+      );
+      tankLines.position.set(0, 0.2, 0);
+      scene.add(tankLines);
+
+      const waterUniforms = {
+        uTime: { value: 0 },
+        uSunDir: { value: new THREE.Vector3(0.35, 0.85, 0.42).normalize() },
+        uWaterBaseY: { value: 0.2 },
+        uDampingVis: { value: 0.0 }
+      };
+
+      // Realistic basin floor with subtle sediment/concrete texture + animated solar caustics
+      const floorMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(TANK_LEN, TANK_WIDTH, 64, 12),
+        new THREE.ShaderMaterial({
+          uniforms: {
+            uTime: waterUniforms.uTime,
+            uSunDir: waterUniforms.uSunDir,
+            uDampingVis: waterUniforms.uDampingVis
+          },
+          vertexShader: `
+            varying vec3 vWorldPos;
+            void main() {
+              vec4 wp = modelMatrix * vec4(position, 1.0);
+              vWorldPos = wp.xyz;
+              gl_Position = projectionMatrix * viewMatrix * wp;
+            }
+          `,
+          fragmentShader: `
+            uniform float uTime;
+            uniform float uDampingVis;
+            varying vec3 vWorldPos;
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+            float noise(vec2 p) {
+              vec2 i = floor(p); vec2 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                         mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            void main() {
+              float grain = noise(vWorldPos.xz * 3.5);
+              float rubble = noise(vWorldPos.xz * 9.0);
+              vec3 concrete = vec3(0.08, 0.11, 0.15) * (0.85 + 0.3 * grain);
+              vec3 rubbleCol = vec3(0.16, 0.14, 0.12) * (0.7 + 0.6 * rubble);
+              vec3 baseCol = mix(concrete, rubbleCol, uDampingVis);
+
+              // Soft organic underwater light webs
+              vec2 cUV = vWorldPos.xz * 1.1;
+              float c1 = sin(cUV.x * 2.1 + uTime * 0.9 + cos(cUV.y * 1.8 - uTime * 0.7));
+              float c2 = sin(cUV.y * 2.5 - uTime * 0.8 + sin(cUV.x * 2.0 + uTime * 0.9));
+              float caustic = pow(max(0.0, (c1 + c2) * 0.5), 3.0) * 0.65;
+
+              vec3 col = baseCol + vec3(0.06, 0.38, 0.52) * caustic * (1.0 - 0.55 * uDampingVis) * 0.40;
+              gl_FragColor = vec4(col, 1.0);
+            }
+          `,
+          side: THREE.DoubleSide
+        })
+      );
+      floorMesh.rotation.x = -Math.PI / 2;
+      floorMesh.position.y = -1.6;
+      scene.add(floorMesh);
+
+      // Animated wave-maker paddle at left wall (x = X_MIN)
+      const paddleMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 3.6, TANK_WIDTH * 0.96),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35, metalness: 0.6, transparent: true, opacity: 0.72 })
+      );
+      paddleMesh.position.set(X_MIN + 0.08, 0.0, 0);
+      scene.add(paddleMesh);
+
+      // Reused v8 Fresnel + SSS + Multi-Octave Capillary Water Surface Shader (NO foam/curl)
+      const waterSurfGeo = new THREE.PlaneGeometry(TANK_LEN, TANK_WIDTH, NX, NZ);
+      waterSurfGeo.rotateX(-Math.PI / 2);
+      const waterSurfMat = new THREE.ShaderMaterial({
+        uniforms: waterUniforms,
+        vertexShader: `
+          varying vec3 vWorldPos;
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uSunDir;
+          uniform float uWaterBaseY;
+          varying vec3 vWorldPos;
+          varying vec3 vNormal;
+
+          float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
+          float noise(vec2 p) {
+            vec2 i = floor(p); vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+          }
+          float fbm(vec2 p) {
+            float v = 0.0; float a = 0.5;
+            for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; }
+            return v;
+          }
+
+          void main() {
+            vec2 p = vWorldPos.xz * 1.35;
+            float eps = 0.035;
+            float h0 = sin(p.x * 4.8 - uTime * 2.2 + p.y * 2.0) * 0.016 + sin(p.x * 10.5 + uTime * 2.8 - p.y * 5.2) * 0.008 + fbm(p * 3.5 + vec2(-uTime * 0.4, uTime * 0.2)) * 0.022;
+            float hx = sin((p.x + eps) * 4.8 - uTime * 2.2 + p.y * 2.0) * 0.016 + sin((p.x + eps) * 10.5 + uTime * 2.8 - p.y * 5.2) * 0.008 + fbm((p + vec2(eps, 0.0)) * 3.5 + vec2(-uTime * 0.4, uTime * 0.2)) * 0.022;
+            float hz = sin(p.x * 4.8 - uTime * 2.2 + (p.y + eps) * 2.0) * 0.016 + sin(p.x * 10.5 + uTime * 2.8 - (p.y + eps) * 5.2) * 0.008 + fbm((p + vec2(0.0, eps)) * 3.5 + vec2(-uTime * 0.4, uTime * 0.2)) * 0.022;
+
+            vec3 rippleN = normalize(vec3((h0 - hx) / eps * 0.24, 1.0, (h0 - hz) / eps * 0.24));
+            vec3 N = normalize(vNormal + vec3(rippleN.x, 0.0, rippleN.z) * 0.48);
+            vec3 V = normalize(cameraPosition - vWorldPos);
+            vec3 L = normalize(uSunDir);
+            vec3 H = normalize(L + V);
+
+            float cosTheta = max(dot(N, V), 0.0);
+            float fresnel = 0.02 + 0.98 * pow(1.0 - cosTheta, 5.0);
+
+            vec3 deepWater = vec3(0.015, 0.14, 0.26);
+            vec3 shallowTeal = vec3(0.02, 0.40, 0.50);
+            vec3 skyCol = mix(vec3(0.05, 0.14, 0.26), vec3(0.32, 0.58, 0.78), pow(max(N.y, 0.0), 1.5));
+
+            float crestElev = clamp((vWorldPos.y - uWaterBaseY + 0.15) * 1.1, 0.0, 1.4);
+            float sssFactor = pow(max(0.0, crestElev), 1.35) * (0.4 + 0.6 * max(0.0, dot(V, -L) * 0.5 + 0.5));
+            vec3 sssCol = vec3(0.04, 0.76, 0.70) * sssFactor * 0.55;
+
+            vec3 waterCol = mix(deepWater, shallowTeal, clamp(crestElev * 0.65, 0.0, 1.0)) + sssCol;
+            float spec = pow(max(dot(N, H), 0.0), 185.0) * 1.75;
+            vec3 col = mix(waterCol, skyCol, clamp(fresnel * 0.88, 0.0, 0.92)) + vec3(0.92, 0.97, 1.0) * spec;
+
+            gl_FragColor = vec4(col, mix(0.76, 0.95, fresnel * 0.5));
+          }
+        `,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
+      const waterSurfMesh = new THREE.Mesh(waterSurfGeo, waterSurfMat);
+      scene.add(waterSurfMesh);
+
+      // Reused v8 cross-section water column curtain with volumetric descending light rays
+      const curtainGeo = new THREE.BufferGeometry();
+      const curtainVerts = new Float32Array((NX + 1) * 2 * 3);
+      const curtainFrac = new Float32Array((NX + 1) * 2);
+      const curtainIndices = [];
+      for (let i = 0; i < NX; i++) {
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+        curtainIndices.push(a, b, c, b, d, c);
+      }
+      curtainGeo.setAttribute('position', new THREE.BufferAttribute(curtainVerts, 3));
+      curtainGeo.setAttribute('aSurfaceFrac', new THREE.BufferAttribute(curtainFrac, 1));
+      curtainGeo.setIndex(curtainIndices);
+      const curtainMesh = new THREE.Mesh(curtainGeo, new THREE.ShaderMaterial({
+        uniforms: { uTime: waterUniforms.uTime },
+        vertexShader: `attribute float aSurfaceFrac; varying float vFrac; varying vec3 vWorldPos; void main(){ vFrac = aSurfaceFrac; vec4 wp = modelMatrix * vec4(position, 1.0); vWorldPos = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+        fragmentShader: `
+          uniform float uTime;
+          varying float vFrac;
+          varying vec3 vWorldPos;
+          void main(){
+            vec3 topCol = vec3(0.05, 0.56, 0.70);
+            vec3 botCol = vec3(0.01, 0.10, 0.20);
+            vec3 col = mix(botCol, topCol, pow(vFrac, 1.3));
+            float ray = sin(vWorldPos.x * 2.4 - uTime * 1.4 + vWorldPos.y * 0.9) * 0.5 + 0.5;
+            col += vec3(0.06, 0.42, 0.55) * pow(ray, 3.0) * vFrac * 0.38;
+            gl_FragColor = vec4(col, mix(0.46, 0.26, vFrac));
+          }
+        `,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      }));
+      scene.add(curtainMesh);
+
+      // Softened cross-section meniscus line
+      const crestLineGeo = new THREE.BufferGeometry();
+      const crestLinePos = new Float32Array((NX + 1) * 3);
+      crestLineGeo.setAttribute('position', new THREE.BufferAttribute(crestLinePos, 3));
+      scene.add(new THREE.Line(crestLineGeo, new THREE.LineBasicMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.42 })));
+
+      // Standing-wave subsurface parcel tracers (horizontal oscillation at nodes, vertical at antinodes!)
+      const TRACER_COUNT = 220;
+      const tracerPos = new Float32Array(TRACER_COUNT * 3);
+      const tracerGeo = new THREE.BufferGeometry();
+      tracerGeo.setAttribute('position', new THREE.BufferAttribute(tracerPos, 3));
+      const tracerPoints = new THREE.Points(tracerGeo, new THREE.PointsMaterial({
+        size: 0.09,
+        color: 0x7dd3fc,
+        map: tracerTex,
+        transparent: true,
+        opacity: 0.55,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      }));
+      scene.add(tracerPoints);
+      const parcelTracers = Array.from({ length: TRACER_COUNT }, () => ({
+        u0: 0.02 + Math.random() * 0.96,
+        depthFrac: 0.10 + Math.random() * 0.80,
+        z: (Math.random() - 0.5) * (TANK_WIDTH * 0.86)
+      }));
+
+      // Subtle antinode wall-lap splash bubbles (strictly when lapping at antinodes)
+      const MAX_LAP_BUBBLES = 320;
+      const lapPos = new Float32Array(MAX_LAP_BUBBLES * 3);
+      const lapCol = new Float32Array(MAX_LAP_BUBBLES * 3);
+      const lapGeo = new THREE.BufferGeometry();
+      lapGeo.setAttribute('position', new THREE.BufferAttribute(lapPos, 3));
+      lapGeo.setAttribute('color', new THREE.BufferAttribute(lapCol, 3));
+      const lapPoints = new THREE.Points(lapGeo, new THREE.PointsMaterial({
+        size: 0.14,
+        map: tracerTex,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.88,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      }));
+      scene.add(lapPoints);
+      const lapBubbles = Array.from({ length: MAX_LAP_BUBBLES }, () => ({
+        active: false, x: 0, y: -50, z: 0, vx: 0, vy: 0, life: 0, maxLife: 1
+      }));
+      function spawnWallLapBubbles(uPos, ySurf) {
+        const xWall = X_MIN + uPos * TANK_LEN;
+        let spawned = 0;
+        for (let i = 0; i < MAX_LAP_BUBBLES && spawned < 38; i++) {
+          const b = lapBubbles[i];
+          if (!b.active) {
+            b.active = true;
+            b.x = xWall + (Math.random() - 0.5) * 0.35;
+            b.y = ySurf - Math.random() * 0.18;
+            b.z = (Math.random() - 0.5) * (TANK_WIDTH * 0.88);
+            b.vx = (uPos < 0.5 ? 1 : -1) * (0.2 + Math.random() * 0.6);
+            b.vy = 0.25 + Math.random() * 0.75;
+            b.life = 0;
+            b.maxLife = 0.45 + Math.random() * 0.55;
+            spawned++;
+          }
+        }
+      }
+
+      // Nodal Line Vertical Markers (up to 3 nodes for n=3)
+      const nodeMarkers = [];
+      for (let i = 0; i < 3; i++) {
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, -1.6, TANK_WIDTH / 2 + 0.04),
+          new THREE.Vector3(0, 2.0, TANK_WIDTH / 2 + 0.04)
+        ]);
+        const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.75 }));
+        scene.add(line);
+        nodeMarkers.push(line);
+      }
+
+      // Listener Position Probe (hydrophone pole + glowing ring)
+      const listenerGroup = new THREE.Group();
+      const probePole = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, 3.6, 12),
+        new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.75 })
+      );
+      probePole.position.y = 0.2;
+      listenerGroup.add(probePole);
+      const probeRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.16, 0.025, 10, 24),
+        new THREE.MeshBasicMaterial({ color: 0x34d399 })
+      );
+      probeRing.rotation.x = Math.PI / 2;
+      listenerGroup.add(probeRing);
+      listenerGroup.position.set(X_MIN, 0, TANK_WIDTH / 2 + 0.08);
+      scene.add(listenerGroup);
+
+      // Camera presets & drag
+      const camPresets = {
+        cross: { pos: new THREE.Vector3(0, 1.0, 14.0), look: new THREE.Vector3(0, 0.0, 0) },
+        oblique: { pos: new THREE.Vector3(-6.0, 4.8, 11.5), look: new THREE.Vector3(0, 0.0, 0) },
+        top: { pos: new THREE.Vector3(0, 11.5, 4.5), look: new THREE.Vector3(0, 0.0, 0) }
+      };
+      let activeCamPreset = 'cross';
+      let isDragging = false, prevPtr = { x: 0, y: 0 }, camOrbitOffset = { yaw: 0, pitch: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => { isDragging = true; prevPtr = { x: e.clientX, y: e.clientY }; });
+      window.addEventListener('pointerup', () => { isDragging = false; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        camOrbitOffset.yaw = Math.max(-0.85, Math.min(0.85, camOrbitOffset.yaw - (e.clientX - prevPtr.x) * 0.005));
+        camOrbitOffset.pitch = Math.max(-0.35, Math.min(0.65, camOrbitOffset.pitch + (e.clientY - prevPtr.y) * 0.004));
+        prevPtr = { x: e.clientX, y: e.clientY };
+      });
+
+      // =========================================================================
+      // 4. UI & CONTROLS
+      // =========================================================================
+      let currentMetrics = computeSeicheMetrics(params);
+
+      function updateUI() {
+        currentMetrics = computeSeicheMetrics(params);
+        const m = currentMetrics;
+
+        document.getElementById('val-ratio').textContent = `${params.ratio.toFixed(2)}× (n=${m.domMode})`;
+        document.getElementById('val-amp').textContent = `${params.amp.toFixed(3)} m`;
+        const qLabel = params.Q < 2 ? 'Rubble' : params.Q < 10 ? 'Damped' : 'Concrete';
+        document.getElementById('val-Q').textContent = `${params.Q.toFixed(1)} (${qLabel})`;
+        document.getElementById('val-listener').textContent = `${params.listener.toFixed(2)} L`;
+        document.getElementById('val-L').textContent = `${params.L} m`;
+        document.getElementById('val-h').textContent = `${params.h.toFixed(1)} m`;
+
+        document.getElementById('hud-merian-live').textContent = `T₁ = ${m.T1.toFixed(2)} s (${m.f1.toFixed(3)} Hz)`;
+        document.getElementById('tel-t1').textContent = `${m.T1.toFixed(2)} s / ${m.f1.toFixed(3)} Hz`;
+        document.getElementById('tel-t23').textContent = `${m.T2.toFixed(2)} s / ${m.T3.toFixed(2)} s`;
+        document.getElementById('tel-c').textContent = `${m.c.toFixed(2)} m/s`;
+        document.getElementById('tel-surge').textContent = `${(m.endAmp / params.h * 100).toFixed(1)}% h`;
+
+        document.getElementById('hud-local-amp').textContent = `${m.listenerAmp.toFixed(2)} m`;
+        document.getElementById('hud-amp-bar').style.width = `${Math.min(100, (m.localRatio / 0.45) * 100)}%`;
+
+        const bpm = (60 / (m.T1 / m.domMode)) * 2; // 2 crests per period at ends, or 1 per period
+        document.getElementById('hud-beat-bpm').textContent = `${bpm.toFixed(1)} BPM`;
+
+        const nodeList = m.domMode === 1 ? '0.50L' : m.domMode === 2 ? '0.25L, 0.75L' : '0.17L, 0.50L, 0.83L';
+        document.getElementById('hud-nodes-info').textContent = `Mode n=${m.domMode}: Nodes at ${nodeList}`;
+
+        const badge = document.getElementById('badge-state');
+        const nullPill = document.getElementById('hud-null-pill');
+        const distFromNode = Math.abs(Math.cos(m.domMode * Math.PI * params.listener));
+        document.getElementById('hud-listener-role').textContent = distFromNode < 0.25 ? 'Near Node (Still)' : 'Near Antinode (Surge)';
+
+        if (params.Q <= 1.8) {
+          badge.textContent = 'OVER-DAMPED';
+          badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-slate-800 text-slate-300 border-slate-600';
+          nullPill.classList.remove('hidden');
+          nullPill.textContent = 'NULL: OVER-DAMPED (NO PEAK)';
+          document.getElementById('hud-audio-info').textContent = 'Wall Lap: Silent (Over-damped)';
+        } else if (!m.isLapping) {
+          badge.textContent = distFromNode < 0.25 ? 'AT NODE (QUIET)' : 'OFF-RESONANCE';
+          badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-500/15 text-emerald-300 border-emerald-500/40';
+          nullPill.classList.remove('hidden');
+          nullPill.textContent = distFromNode < 0.25 ? 'NODE: SLOSH VISIBLE, SILENT' : 'NULL: OFF-RESONANCE (QUIET)';
+          document.getElementById('hud-audio-info').textContent = 'Wall Lap: Silent';
+        } else {
+          badge.textContent = 'RESONANT SEICHE';
+          badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-amber-500/20 text-amber-200 border-amber-400/50';
+          nullPill.classList.add('hidden');
+          document.getElementById('hud-audio-info').textContent = 'Wall Lap: Active Beat';
+        }
+
+        const totalGain = totalResonanceGain(params.ratio, params.Q);
+        document.getElementById('hud-gain-val').textContent = `Gain: ${totalGain.toFixed(1)}×`;
+      }
+
+      document.getElementById('slider-ratio').addEventListener('input', (e) => { params.ratio = parseFloat(e.target.value); updateUI(); });
+      document.getElementById('slider-amp').addEventListener('input', (e) => { params.amp = parseFloat(e.target.value); updateUI(); });
+      document.getElementById('slider-Q').addEventListener('input', (e) => { params.Q = parseFloat(e.target.value); updateUI(); });
+      document.getElementById('slider-listener').addEventListener('input', (e) => { params.listener = parseFloat(e.target.value); updateUI(); });
+      document.getElementById('slider-L').addEventListener('input', (e) => { params.L = parseFloat(e.target.value); updateUI(); });
+      document.getElementById('slider-h').addEventListener('input', (e) => { params.h = parseFloat(e.target.value); updateUI(); });
+
+      document.querySelectorAll('.exc-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.excitation = btn.getAttribute('data-exc');
+          document.querySelectorAll('.exc-btn').forEach((b) => {
+            b.className = 'exc-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-slate-700 bg-slate-800/80 text-slate-300';
+          });
+          btn.className = 'exc-btn px-2 py-1.5 rounded-lg text-[11px] font-mono font-semibold border border-cyan-500/50 bg-cyan-500/20 text-cyan-200';
+          if (params.excitation === 'seismic') {
+            applySeismicJolt(params.amp);
+          }
+          updateUI();
+        });
+      });
+
+      document.getElementById('btn-jolt').addEventListener('click', () => {
+        resetSweGrid();
+        applySeismicJolt(params.amp * 1.2);
+      });
+
+      document.getElementById('btn-toggle-thesis').addEventListener('click', () => {
+        const body = document.getElementById('thesis-body');
+        const btn = document.getElementById('btn-toggle-thesis');
+        body.classList.toggle('hidden');
+        btn.textContent = body.classList.contains('hidden') ? 'SHOW' : 'HIDE';
+      });
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeCamPreset = btn.getAttribute('data-cam');
+          document.querySelectorAll('.cam-btn').forEach((b) => {
+            b.className = 'cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-200 border border-cyan-500/40';
+        });
+      });
+
+      document.getElementById('btn-audio-toggle').addEventListener('click', () => {
+        ensureAudio();
+        audioEnabled = !audioEnabled;
+        const btn = document.getElementById('btn-audio-toggle');
+        btn.textContent = audioEnabled ? 'AUDIO: ON' : 'AUDIO: OFF';
+        btn.className = audioEnabled
+          ? 'px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-emerald-500/50 bg-emerald-500/20 text-emerald-200'
+          : 'px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-cyan-500/40 bg-cyan-500/15 text-cyan-200';
+      });
+
+      // =========================================================================
+      // 5. VERIFICATION SUITE — FOUR CHECKS
+      // =========================================================================
+      function runFourChecks() {
+        // Check 1: Merian's period T1 = k * L / sqrt(g*h) across 3 basin lengths
+        const lengths = [40, 80, 120];
+        const hTest = 5.0;
+        const periods = lengths.map((L) => merianPeriod(L, hTest, 1));
+        const xScale = lengths.map((L) => L / Math.sqrt(G * hTest));
+        let num = 0, den = 0;
+        for (let i = 0; i < 3; i++) {
+          num += xScale[i] * periods[i];
+          den += xScale[i] * xScale[i];
+        }
+        const fittedConst = num / den;
+        const pass1 = Math.abs(fittedConst - 2.0) < 0.001;
+
+        // Check 2: Node positions for n=1 (0.50) and n=2 (0.25, 0.75)
+        let minU1 = 0, minVal1 = Infinity;
+        for (let u = 0; u <= 1.0; u += 0.005) {
+          const v = Math.abs(spatialProfile(u, [1, 0, 0]));
+          if (v < minVal1) { minVal1 = v; minU1 = u; }
+        }
+        let minU2a = 0, minVal2a = Infinity, minU2b = 0, minVal2b = Infinity;
+        for (let u = 0; u <= 0.5; u += 0.005) {
+          const v = Math.abs(spatialProfile(u, [0, 1, 0]));
+          if (v < minVal2a) { minVal2a = v; minU2a = u; }
+        }
+        for (let u = 0.5; u <= 1.0; u += 0.005) {
+          const v = Math.abs(spatialProfile(u, [0, 1, 0]));
+          if (v < minVal2b) { minVal2b = v; minU2b = u; }
+        }
+        const pass2 = Math.abs(minU1 - 0.50) < 0.01 && Math.abs(minU2a - 0.25) < 0.01 && Math.abs(minU2b - 0.75) < 0.01;
+
+        // Check 3: Resonance peak lands at f1 and narrows as Q rises
+        function scanPeakAndBW(Qval) {
+          let peakR = 0, peakG = 0;
+          const curve = [];
+          for (let r = 0.50; r <= 1.50; r += 0.005) {
+            const g = modalGain(r, 1, Qval);
+            curve.push({ r, g });
+            if (g > peakG) { peakG = g; peakR = r; }
+          }
+          const halfPower = peakG / Math.SQRT2;
+          const above = curve.filter((pt) => pt.g >= halfPower);
+          const bw = above.length > 1 ? above[above.length - 1].r - above[0].r : 0;
+          return { peakR, peakG, bw };
+        }
+        const q10 = scanPeakAndBW(10);
+        const q30 = scanPeakAndBW(30);
+        const pass3 = Math.abs(q10.peakR - 1.0) < 0.01 && Math.abs(q30.peakR - 1.0) < 0.01 && q30.bw < q10.bw;
+
+        // Check 4: Two nulls — off-resonance (1.4 * f1) & over-damped (Q = 0.8) must be genuinely silent
+        const mOff = computeSeicheMetrics({ ...params, ratio: 1.40, amp: 0.08, Q: 18.0, listener: 0.0, L: 100, h: 5.0 });
+        const bufOff = synthesizeWallLapBuffer(mOff.localRatio, 18.0, 42);
+        const maxOff = bufOff.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+        const mDamped = computeSeicheMetrics({ ...params, ratio: 1.00, amp: 0.08, Q: 0.8, listener: 0.0, L: 100, h: 5.0 });
+        const bufDamped = synthesizeWallLapBuffer(mDamped.localRatio, 0.8, 42);
+        const maxDamped = bufDamped.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+        const pass4 = !mOff.isLapping && maxOff === 0 && !mDamped.isLapping && maxDamped === 0;
+
+        return [
+          {
+            title: '1. Merian\'s Period Scaling (T₁ = 2L / √(gh))',
+            pass: pass1,
+            detail: `L=[40, 80, 120] m, h=5 m → T₁=[${periods.map(t => t.toFixed(2)).join(', ')}] s | Fitted constant: ${fittedConst.toFixed(4)} (target 2.0000)`
+          },
+          {
+            title: '2. Nodal Positions (n=1 & n=2)',
+            pass: pass2,
+            detail: `n=1 node at ${minU1.toFixed(3)}L (target 0.500L) | n=2 nodes at ${minU2a.toFixed(3)}L, ${minU2b.toFixed(3)}L (target 0.250L, 0.750L)`
+          },
+          {
+            title: '3. Resonance Peak & Q-Bandwidth Narrowing',
+            pass: pass3,
+            detail: `Q=10: peak=${q10.peakR.toFixed(3)}f₁, Δf=${q10.bw.toFixed(3)}f₁ | Q=30: peak=${q30.peakR.toFixed(3)}f₁, Δf=${q30.bw.toFixed(3)}f₁`
+          },
+          {
+            title: '4. Two Silent Nulls (Off-Resonance & Over-Damped)',
+            pass: pass4,
+            detail: `Off-res (1.40f₁): max=${maxOff.toFixed(6)} (-∞ dB) | Over-damped (Q=0.8): max=${maxDamped.toFixed(6)} (-∞ dB)`
+          }
+        ];
+      }
+
+      function renderVerificationModal() {
+        const results = runFourChecks();
+        document.getElementById('verify-results').innerHTML = results.map((r) => `
+          <div class="p-3 rounded-xl border ${r.pass ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-rose-950/30 border-rose-500/40'}">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-slate-100">${r.title}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.pass ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${r.pass ? 'PASS' : 'FAIL'}</span>
+            </div>
+            <div class="text-slate-300 text-[11px]">${r.detail}</div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('btn-verify').addEventListener('click', () => {
+        renderVerificationModal();
+        document.getElementById('modal-verify').classList.remove('hidden');
+      });
+      document.getElementById('btn-close-verify').addEventListener('click', () => {
+        document.getElementById('modal-verify').classList.add('hidden');
+      });
+      document.getElementById('btn-rerun-verify').addEventListener('click', renderVerificationModal);
+
+      // =========================================================================
+      // 6. LIVE RESONANCE CURVE PLOT
+      // =========================================================================
+      const resCanvas = document.getElementById('canvas-resonance');
+      const resCtx = resCanvas.getContext('2d');
+
+      function drawResonanceCurve() {
+        const rect = resCanvas.getBoundingClientRect();
+        if (resCanvas.width !== Math.floor(rect.width) || resCanvas.height !== Math.floor(rect.height)) {
+          resCanvas.width = Math.max(100, Math.floor(rect.width));
+          resCanvas.height = Math.max(60, Math.floor(rect.height));
+        }
+        const W = resCanvas.width;
+        const H = resCanvas.height;
+        resCtx.clearRect(0, 0, W, H);
+
+        const rMin = 0.4, rMax = 3.2;
+        const rToX = (r) => ((r - rMin) / (rMax - rMin)) * W;
+        const maxY = Math.max(4, params.Q * 1.15);
+        const gToY = (g) => (H - 16) * (1 - Math.min(1, g / maxY)) + 4;
+
+        // Mode markers (1f1, 2f1, 3f1)
+        resCtx.font = '9px "JetBrains Mono", monospace';
+        for (let n = 1; n <= 3; n++) {
+          const x = rToX(n);
+          resCtx.strokeStyle = 'rgba(51, 65, 85, 0.7)';
+          resCtx.setLineDash([3, 3]);
+          resCtx.beginPath();
+          resCtx.moveTo(x, 0);
+          resCtx.lineTo(x, H - 14);
+          resCtx.stroke();
+          resCtx.fillStyle = 'rgba(148, 163, 184, 0.85)';
+          resCtx.fillText(`${n}f₁`, x + 3, H - 3);
+        }
+        resCtx.setLineDash([]);
+
+        // Resonance curve
+        resCtx.beginPath();
+        resCtx.moveTo(0, H - 14);
+        for (let px = 0; px <= W; px += 2) {
+          const r = rMin + (px / W) * (rMax - rMin);
+          const g = totalResonanceGain(r, params.Q);
+          resCtx.lineTo(px, gToY(g));
+        }
+        resCtx.strokeStyle = '#38bdf8';
+        resCtx.lineWidth = 2;
+        resCtx.stroke();
+
+        // Current drive operating point
+        const curX = rToX(params.ratio);
+        const curG = totalResonanceGain(params.ratio, params.Q);
+        const curY = gToY(curG);
+        resCtx.fillStyle = '#fbbf24';
+        resCtx.beginPath();
+        resCtx.arc(curX, curY, 4.5, 0, Math.PI * 2);
+        resCtx.fill();
+      }
+
+      // =========================================================================
+      // 7. ANIMATION LOOP (NONLINEAR SHALLOW-WATER PDE + EULERIAN ADVECTION)
+      // =========================================================================
+      let lastTime = performance.now();
+      let simTime = 0;
+      let prevListenerDisp = 0;
+      let prevVelSign = 1;
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dt = Math.min(0.033, (now - lastTime) / 1000);
+        lastTime = now;
+
+        const m = currentMetrics;
+        const timeScale = Math.max(1.2, m.T1 / 4.2);
+        const dtSim = dt * timeScale;
+        simTime += dtSim;
+        waterUniforms.uTime.value = now / 1000;
+
+        // Camera interpolation
+        const baseCam = camPresets[activeCamPreset] || camPresets.cross;
+        const radius = baseCam.pos.distanceTo(baseCam.look);
+        const baseYaw = Math.atan2(baseCam.pos.x - baseCam.look.x, baseCam.pos.z - baseCam.look.z);
+        const basePitch = Math.asin(Math.max(-0.9, Math.min(0.9, (baseCam.pos.y - baseCam.look.y) / radius)));
+        const yaw = baseYaw + camOrbitOffset.yaw;
+        const pitch = Math.max(-0.2, Math.min(0.85, basePitch + camOrbitOffset.pitch));
+        camera.position.lerp(new THREE.Vector3(
+          baseCam.look.x + radius * Math.cos(pitch) * Math.sin(yaw),
+          baseCam.look.y + radius * Math.sin(pitch),
+          baseCam.look.z + radius * Math.cos(pitch) * Math.cos(yaw)
+        ), 0.09);
+        camera.lookAt(baseCam.look);
+
+        // --- STAGGERED 1D NONLINEAR SHALLOW-WATER SOLVER ---
+        const dxCell = params.L / NX_SWE;
+        const cWave = Math.sqrt(G * Math.max(0.2, params.h));
+        const maxSubDt = (0.38 * dxCell) / Math.max(0.5, cWave);
+        const subSteps = Math.max(4, Math.min(40, Math.ceil(dtSim / maxSubDt)));
+        const hStep = dtSim / subSteps;
+
+        const omegaDrive = 2 * Math.PI * m.fDrive;
+        const omega1 = 2 * Math.PI * m.f1;
+        // Physical basin damping gamma = omega1 / Q (rubble Q<1.8 damps waves immediately)
+        const gamma = omega1 / Math.max(0.25, params.Q);
+
+        for (let st = 0; st < subSteps; st++) {
+          const tSub = simTime - dtSim + (st + 0.5) * hStep;
+
+          // Solid no-penetration walls at x=0 and x=L
+          uGrid[0] = 0;
+          uGrid[NX_SWE] = 0;
+
+          // Smooth distributed forcing near paddle (first 8% of basin) or wind across basin
+          const paddleForce = params.excitation === 'paddle'
+            ? G * (params.amp / (0.08 * params.L)) * 5.2 * Math.sin(omegaDrive * tSub)
+            : 0;
+          const windAccel = params.excitation === 'wind'
+            ? G * (params.amp / params.L) * 2.2 * Math.sin(omegaDrive * tSub) * (0.55 + 0.45 * Math.sin(omegaDrive * 0.27 * tSub))
+            : 0;
+
+          // Physical eddy viscosity nu kills grid-scale Nyquist sawtooth while preserving long seiche modes
+          const nuEddy = 0.08 * cWave * dxCell;
+
+          // 1. Update interior velocities u[1..NX_SWE-1]
+          for (let i = 1; i < NX_SWE; i++) {
+            const dEtaDx = (etaGrid[i] - etaGrid[i - 1]) / dxCell;
+            const d2u = (uGrid[i + 1] - 2 * uGrid[i] + uGrid[i - 1]) / (dxCell * dxCell);
+            const uNorm = i / NX_SWE;
+            const paddleZone = uNorm < 0.10 ? Math.cos((uNorm / 0.10) * Math.PI * 0.5) : 0;
+            const acc = -G * dEtaDx + nuEddy * d2u - gamma * uGrid[i] + paddleForce * paddleZone + windAccel;
+            uGrid[i] += acc * hStep;
+          }
+
+          // 2. Update free-surface elevation eta[0..NX_SWE-1] with linear-plus-smooth flux
+          for (let i = 0; i < NX_SWE; i++) {
+            const fluxL = params.h * uGrid[i];
+            const fluxR = params.h * uGrid[i + 1];
+            etaGrid[i] -= ((fluxR - fluxL) / dxCell) * hStep;
+            etaGrid[i] = Math.max(-params.h * 0.55, Math.min(params.h * 0.65, etaGrid[i]));
+          }
+        }
+
+        // Animate left paddle mesh smoothly with uGrid[0]
+        if (params.excitation === 'paddle') {
+          paddleMesh.rotation.z = -0.16 * Math.sin(omegaDrive * simTime);
+          paddleMesh.position.x = X_MIN + 0.08 + 0.14 * Math.cos(omegaDrive * simTime);
+        } else {
+          paddleMesh.rotation.z *= 0.9;
+          paddleMesh.position.x = X_MIN + 0.08;
+        }
+
+        // Gentle 3-point filter per frame guarantees glassy smooth seiche surface (kills Nyquist modes)
+        for (let pass = 0; pass < 2; pass++) {
+          let prev = etaGrid[0];
+          for (let i = 1; i < NX_SWE - 1; i++) {
+            const cur = etaGrid[i];
+            etaGrid[i] = 0.92 * cur + 0.04 * (prev + etaGrid[i + 1]);
+            prev = cur;
+          }
+        }
+
+        // Update 3D water surface & cross-section from SWE etaGrid
+        const wsPos = waterSurfGeo.attributes.position.array;
+        const cPos = curtainGeo.attributes.position.array;
+        const cFrac = curtainGeo.attributes.aSurfaceFrac.array;
+        const clPos = crestLineGeo.attributes.position.array;
+        const waterBaseY = 0.2;
+        const visScale = 1.45 / Math.max(0.5, params.h * 0.28);
+
+        for (let ix = 0; ix <= NX; ix++) {
+          const u = ix / NX;
+          const x = X_MIN + u * TANK_LEN;
+          const fIdx = u * (NX_SWE - 1);
+          const i0 = Math.floor(fIdx);
+          const i1 = Math.min(NX_SWE - 1, i0 + 1);
+          const frac = fIdx - i0;
+          const etaVal = etaGrid[i0] * (1 - frac) + etaGrid[i1] * frac;
+          const ySurf = Math.max(-1.45, Math.min(2.25, waterBaseY + etaVal * visScale));
+
+          const cIdx = ix * 2;
+          cPos[cIdx * 3] = x;
+          cPos[cIdx * 3 + 1] = -1.6;
+          cPos[cIdx * 3 + 2] = TANK_WIDTH / 2;
+          cFrac[cIdx] = 0.0;
+
+          cPos[(cIdx + 1) * 3] = x;
+          cPos[(cIdx + 1) * 3 + 1] = ySurf;
+          cPos[(cIdx + 1) * 3 + 2] = TANK_WIDTH / 2;
+          cFrac[cIdx + 1] = 1.0;
+
+          clPos[ix * 3] = x;
+          clPos[ix * 3 + 1] = ySurf + 0.012;
+          clPos[ix * 3 + 2] = TANK_WIDTH / 2 + 0.02;
+
+          for (let iz = 0; iz <= NZ; iz++) {
+            const vIdx = iz * (NX + 1) + ix;
+            const zFrac = (iz / NZ) - 0.5;
+            // Subtle glass-wall meniscus & natural 3D cross-tank shimmer
+            const meniscus = 0.018 * Math.pow(Math.abs(zFrac * 2), 4.0);
+            wsPos[vIdx * 3 + 1] = ySurf + meniscus;
+          }
+        }
+
+        waterSurfGeo.attributes.position.needsUpdate = true;
+        waterSurfGeo.computeVertexNormals();
+        curtainGeo.attributes.position.needsUpdate = true;
+        curtainGeo.attributes.aSurfaceFrac.needsUpdate = true;
+        crestLineGeo.attributes.position.needsUpdate = true;
+
+        // Position nodal line markers for active dominant mode
+        const nodePositions = m.domMode === 1 ? [0.5] : m.domMode === 2 ? [0.25, 0.75] : [1 / 6, 0.5, 5 / 6];
+        for (let i = 0; i < 3; i++) {
+          if (i < nodePositions.length) {
+            nodeMarkers[i].visible = true;
+            nodeMarkers[i].position.x = X_MIN + nodePositions[i] * TANK_LEN;
+          } else {
+            nodeMarkers[i].visible = false;
+          }
+        }
+
+        waterUniforms.uDampingVis.value = Math.max(0, Math.min(1, (4.0 - params.Q) / 3.4));
+
+        // Eulerian advection of subsurface parcel tracers using real SWE velocity field!
+        for (let i = 0; i < TRACER_COUNT; i++) {
+          const tr = parcelTracers[i];
+          const sIdx = Math.min(NX_SWE - 1, Math.max(0, Math.floor(tr.u0 * NX_SWE)));
+          const uVel = uGrid[sIdx];
+          const etaHere = etaGrid[sIdx];
+          // Advect horizontal normalized coordinate u0 by Eulerian velocity uVel / L
+          tr.u0 += (uVel / Math.max(10, params.L)) * dtSim * 1.8;
+          if (tr.u0 < 0.01) tr.u0 = 0.01;
+          if (tr.u0 > 0.99) tr.u0 = 0.99;
+
+          const xWorld = X_MIN + tr.u0 * TANK_LEN;
+          const ySurfLocal = waterBaseY + etaHere * visScale;
+          const yWorld = -1.6 + (ySurfLocal + 1.6) * (1.0 - tr.depthFrac);
+          tracerPos[i * 3] = xWorld;
+          tracerPos[i * 3 + 1] = Math.max(-1.52, Math.min(ySurfLocal - 0.04, yWorld));
+          tracerPos[i * 3 + 2] = tr.z;
+        }
+        tracerGeo.attributes.position.needsUpdate = true;
+
+        // Update wall-lap bubbles
+        for (let i = 0; i < MAX_LAP_BUBBLES; i++) {
+          const b = lapBubbles[i];
+          if (b.active) {
+            b.life += dt;
+            if (b.life >= b.maxLife) { b.active = false; lapPos[i * 3 + 1] = -50; continue; }
+            b.vy -= 2.4 * dt;
+            b.x += b.vx * dt;
+            b.y += b.vy * dt;
+            lapPos[i * 3] = b.x;
+            lapPos[i * 3 + 1] = b.y;
+            lapPos[i * 3 + 2] = b.z;
+            const fade = 1 - b.life / b.maxLife;
+            lapCol[i * 3] = 0.75 * fade;
+            lapCol[i * 3 + 1] = 0.95 * fade;
+            lapCol[i * 3 + 2] = 1.0 * fade;
+          } else {
+            lapPos[i * 3 + 1] = -50;
+          }
+        }
+        lapGeo.attributes.position.needsUpdate = true;
+        lapGeo.attributes.color.needsUpdate = true;
+
+        // Update Listener Probe directly from live SWE free-surface elevation
+        const lIdx = Math.min(NX_SWE - 1, Math.max(0, Math.round(params.listener * (NX_SWE - 1))));
+        const listenerDisp = etaGrid[lIdx];
+        const listenerY = Math.max(-1.45, Math.min(2.2, waterBaseY + listenerDisp * visScale));
+        listenerGroup.position.x = X_MIN + params.listener * TANK_LEN;
+        probeRing.position.y = listenerY;
+
+        const vel = listenerDisp - prevListenerDisp;
+        if (prevVelSign > 0 && vel <= 0 && Math.abs(listenerDisp) / params.h > 0.085 && params.Q > 1.8) {
+          triggerWallLapSound(Math.abs(listenerDisp) / params.h, params.Q);
+          spawnWallLapBubbles(params.listener, listenerY);
+        }
+        if (Math.abs(vel) > 1e-6) prevVelSign = vel > 0 ? 1 : -1;
+        prevListenerDisp = listenerDisp;
+
+        renderer.render(scene, camera);
+        drawResonanceCurve();
+      }
+
+      window.addEventListener('resize', () => {
+        const w = container.clientWidth;
+        const h = Math.max(1, container.clientHeight);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      updateUI();
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
