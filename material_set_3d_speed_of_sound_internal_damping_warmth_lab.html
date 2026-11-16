@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MATERIAL-SET 3D — Speed of Sound, Internal Damping &amp; Warmth Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .panel-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .panel-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(9, 14, 28, 0.84);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#050811] text-slate-200">
+
+  <!-- Full-Screen 3D WebGL Resonator -->
+  <div id="webgl-container" class="fixed inset-0 z-0"></div>
+
+  <!-- Top Header -->
+  <header class="fixed top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_#f59e0b]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white">MATERIAL-SET <span class="text-amber-400">3D</span></h1>
+          <span class="hidden md:inline-block text-[10px] mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-400/25">α = 0.75 Damping Law</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">"Warm" is not a pitch or spectrum — it is how fast high modes die (<span class="mono text-sky-300">τ_n ∝ 1/(η·f_n^α)</span>).</p>
+      </div>
+    </div>
+
+    <!-- Live Material Physics Pill -->
+    <div class="hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto">
+      <span id="header-mat-name" class="text-xs font-bold uppercase tracking-wider text-amber-300">BRONZE</span>
+      <span class="text-slate-600">|</span>
+      <span id="header-c" class="mono text-xs text-sky-300">c = 3500 m/s</span>
+      <span class="text-slate-600">|</span>
+      <span id="header-f1" class="mono text-xs text-emerald-300">f₁ = 217.8 Hz</span>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-toggle-verify" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-2 transition-colors border border-emerald-500/30">
+        <span id="verify-badge-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="hidden sm:inline">4-Check Proof</span>
+        <span id="verify-badge-text" class="mono text-[11px] text-emerald-300 font-semibold">4/4 PASS</span>
+      </button>
+      <button id="btn-export-wav" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors text-slate-200" title="Export struck resonator decay (.WAV)">
+        <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+        <span class="hidden sm:inline">Export WAV</span>
+      </button>
+      <button id="btn-toggle-panel" type="button" class="lg:hidden glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl">
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Panel: Material Selector, Geometry Lock, Damping Scale (Null), Mallet -->
+  <aside id="left-panel" class="fixed top-16 left-3 sm:left-5 bottom-40 z-20 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 flex flex-col gap-3 overflow-y-auto panel-scroll transition-transform duration-200">
+    <!-- Strike & A/B Auto-Strike -->
+    <div class="flex items-center gap-2">
+      <button id="btn-strike" type="button" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all">
+        <span>STRIKE RESONATOR</span>
+      </button>
+      <button id="btn-ab-loop" type="button" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3 rounded-xl border border-slate-700/70 transition-colors" title="Auto-strike every 2.2s for A/B comparison">
+        Auto: OFF
+      </button>
+    </div>
+
+    <!-- 7 Materials Grid -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Material (c, η)</h2>
+        <span id="mat-char-badge" class="text-[10px] text-amber-300 font-medium">bell-like, long shimmer</span>
+      </div>
+      <div id="material-grid" class="grid grid-cols-2 gap-1.5"></div>
+    </div>
+
+    <!-- Isolating Control #1: Geometry Locked -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Geometry L</h2>
+          <p class="text-[10px] text-slate-400">Locked by default (f ∝ c / L)</p>
+        </div>
+        <button id="btn-geom-lock" type="button" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/35">
+          LOCKED (0.45 m)
+        </button>
+      </div>
+      <input id="geom-slider" type="range" min="25" max="90" step="1" value="45" disabled class="lab-slider opacity-45 cursor-not-allowed" />
+    </div>
+
+    <!-- Isolating Control #2: Damping Scale (0 -> 3x) & Damping-Null Switch -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="damp-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Damping Scale (η)</label>
+        <span id="damp-readout" class="mono text-xs font-bold text-sky-300">1.00×</span>
+      </div>
+      <input id="damp-slider" type="range" min="0" max="300" step="5" value="100" class="lab-slider mb-2" />
+      <button id="btn-damp-null" type="button" class="w-full py-1.5 px-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 transition-colors">
+        Set η → 0 (Damping Null)
+      </button>
+      <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
+        At η = 0, bronze and wood have flat, identical centroid curves while still differing in pitch (c).
+      </p>
+    </div>
+
+    <!-- Mallet Hardness -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1">
+        <label for="mallet-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Mallet Strike</label>
+        <span id="mallet-readout" class="mono text-xs font-semibold text-amber-300">70% Hard</span>
+      </div>
+      <input id="mallet-slider" type="range" min="10" max="100" step="1" value="70" class="lab-slider" />
+    </div>
+  </aside>
+
+  <!-- Right Panel: Live Centroid & Mode Decay Telemetry -->
+  <aside class="fixed top-16 right-3 sm:right-5 z-20 w-72 max-w-[calc(100vw-1.5rem)] hidden md:flex flex-col gap-3 pointer-events-none">
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto">
+      <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-2">Live Strike Telemetry</div>
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Centroid f_c(t):</span>
+          <span id="live-centroid-hz" class="mono font-bold text-sky-300">— Hz</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Centroid Collapse t½:</span>
+          <span id="live-thalf" class="mono font-bold text-amber-300">— s</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Fundamental f₁:</span>
+          <span id="live-f1" class="mono text-slate-200">217.8 Hz</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-400">Mode 8 (f₈):</span>
+          <span id="live-f8" class="mono text-slate-200">6940 Hz</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-panel rounded-2xl p-3.5 pointer-events-auto">
+      <div class="text-[10px] font-bold uppercase tracking-widest text-amber-300 mb-1.5">Legend (Centroid Plot)</div>
+      <div id="legend-list" class="grid grid-cols-2 gap-1 text-[10px] mono"></div>
+    </div>
+  </aside>
+
+  <!-- Bottom Display Panel: Centroid-vs-Time / Spectrum / Mode Decay Grid -->
+  <section class="fixed bottom-3 left-3 right-3 z-20 glass-panel rounded-2xl p-3 pointer-events-auto">
+    <div class="flex items-center justify-between mb-1.5 gap-2">
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-view="centroid" class="view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35">Centroid vs Time</button>
+        <button type="button" data-view="spectrum" class="view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700">Live Spectrum</button>
+        <button type="button" data-view="decay" class="view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700">Mode Decay Grid (τ vs f)</button>
+      </div>
+      <span id="plot-subtitle" class="hidden sm:inline mono text-[10px] text-slate-400">Normalized Centroid Collapse (0.0s → 3.0s) · Wood collapses, Glass holds flat</span>
+    </div>
+    <div class="relative w-full h-28 rounded-xl bg-slate-950/85 border border-slate-800/90 overflow-hidden">
+      <canvas id="main-plot-canvas" class="w-full h-full block"></canvas>
+    </div>
+  </section>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Material Physics Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Isolating speed of sound (c) from frequency-dependent damping (η, α = 0.75).</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto panel-scroll space-y-3">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">1. Pitch Scaling: Steel / Bronze Mode Ratio = 5100 / 3500 ≈ 1.457×</div>
+            <p id="v-check1-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check1-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">2. Decay Scaling: Per-Mode τ_n ∝ f_n^-α (Fitted α = 0.75)</div>
+            <p id="v-check2-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check2-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">3. Centroid-Time Collapse Ordering: glass &gt; steel &gt; bronze &gt; aluminium &gt; wood</div>
+            <p id="v-check3-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check3-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">4. Damping-Null (η = 0): Flat Centroid Curves Across All Materials</div>
+            <p id="v-check4-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check4-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Drag 3D resonator to orbit · Scroll to zoom · Spacebar to strike</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/35 hover:bg-amber-500/30 font-medium transition-colors">
+          Re-run Verification
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden glass-panel px-4 py-2 rounded-xl text-xs font-medium text-amber-200 border border-amber-400/35"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. SEVEN MATERIALS, ONE GEOMETRY, TWO NUMBERS (c, eta)
+      // =========================================================================
+      const ALPHA_EXP = 0.75; // frequency-dependent internal damping exponent (0.5 .. 1.0)
+      const K_GEOM = 0.028;
+      const C_TAU = 0.45;     // physical decay scaling constant: tau_n = C_TAU / (eta_eff * f_n^alpha)
+      const MODE_RATIOS = [1.0, 2.756, 5.404, 8.933, 13.344, 18.64, 24.81, 31.87];
+
+      const MATERIALS = {
+        bronze:    { name: 'Bronze',    c: 3500, eta: 0.00090, color: '#f59e0b', matHex: 0xd97706, rough: 0.28, metal: 0.88, desc: 'bell-like, long shimmer' },
+        brass:     { name: 'Brass',     c: 3480, eta: 0.00140, color: '#eab308', matHex: 0xeab308, rough: 0.24, metal: 0.90, desc: 'brighter, slightly shorter' },
+        steel:     { name: 'Steel',     c: 5100, eta: 0.00055, color: '#38bdf8', matHex: 0x94a3b8, rough: 0.20, metal: 0.92, desc: 'high and sustained' },
+        aluminium: { name: 'Aluminium', c: 5100, eta: 0.00450, color: '#a78bfa', matHex: 0xcbd5e1, rough: 0.38, metal: 0.78, desc: 'the "cheap" hollow ring' },
+        glass:     { name: 'Glass',     c: 5600, eta: 0.00025, color: '#2dd4bf', matHex: 0x67e8f9, rough: 0.08, metal: 0.15, desc: 'crystalline, rings long' },
+        wood:      { name: 'Wood',      c: 1850, eta: 0.04500, color: '#fb7185', matHex: 0x92400e, rough: 0.82, metal: 0.05, desc: 'warm knock, dies fast' },
+        stone:     { name: 'Stone',     c: 4600, eta: 0.02200, color: '#94a3b8', matHex: 0x64748b, rough: 0.90, metal: 0.05, desc: 'dense clack, short ring' }
+      };
+
+      const state = {
+        materialKey: 'bronze',
+        L: 0.45,              // meters (locked by default)
+        geomLocked: true,
+        dampingScale: 1.0,    // 0 .. 3.0
+        malletHardness: 0.70, // 0.1 .. 1.0
+        displayView: 'centroid', // 'centroid' | 'spectrum' | 'decay'
+        autoStrike: false,
+        autoTimer: null,
+        audioCtx: null,
+        sampleRate: 48000,
+        lastStrikePerf: -1,
+        activeModes: [],
+        verification: null
+      };
+
+      function computeModesForMaterial(matKey, L, dampingScale, malletHardness) {
+        const mat = MATERIALS[matKey];
+        const etaEff = mat.eta * dampingScale;
+        const rolloff = 1.8 - 1.65 * malletHardness;
+        return MODE_RATIOS.map((r, idx) => {
+          const f = K_GEOM * (mat.c / L) * r;
+          const amp0 = 1.0 / (1.0 + Math.pow(idx, 2) * rolloff * rolloff);
+          const tau = etaEff <= 1e-9 ? Infinity : C_TAU / (etaEff * Math.pow(f, ALPHA_EXP));
+          return { index: idx + 1, f, amp0, tau };
+        });
+      }
+
+      function computeCentroidAtTime(modes, t) {
+        let num = 0, den = 0;
+        for (let i = 0; i < modes.length; i++) {
+          const m = modes[i];
+          const e = m.tau === Infinity ? m.amp0 : m.amp0 * Math.exp(-t / m.tau);
+          num += m.f * e;
+          den += e;
+        }
+        return den > 1e-12 ? num / den : modes[0].f;
+      }
+
+      function computeCentroidHalfTime(modes) {
+        const c0 = computeCentroidAtTime(modes, 0);
+        const f1 = modes[0].f;
+        if (!Number.isFinite(modes[0].tau) || c0 <= f1 + 1) return Infinity;
+        const target = f1 + 0.5 * (c0 - f1);
+        for (let t = 0.005; t <= 20.0; t += 0.005) {
+          if (computeCentroidAtTime(modes, t) <= target) return t;
+        }
+        return 20.0;
+      }
+
+      // =========================================================================
+      // 2. PER-MODE WEB AUDIO SYNTHESIS (IDENTICAL EXCITATION)
+      // =========================================================================
+      function ensureAudio() {
+        if (!state.audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new Ctx();
+          if (state.audioCtx.sampleRate) state.sampleRate = state.audioCtx.sampleRate;
+        }
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+      }
+
+      function strikeResonator() {
+        ensureAudio();
+        const ctx = state.audioCtx;
+        const now = ctx.currentTime + 0.005;
+        state.activeModes = computeModesForMaterial(state.materialKey, state.L, state.dampingScale, state.malletHardness);
+        state.lastStrikePerf = performance.now();
+
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.32, now);
+        master.connect(ctx.destination);
+
+        // Short physical mallet-contact transient (filtered noise burst, scaled by mallet hardness)
+        const transLen = Math.floor(state.sampleRate * 0.014);
+        const transBuf = ctx.createBuffer(1, transLen, state.sampleRate);
+        const tCh = transBuf.getChannelData(0);
+        for (let i = 0; i < transLen; i++) {
+          tCh[i] = (Math.random() * 2 - 1) * Math.exp(-i / (transLen * 0.25));
+        }
+        const transSrc = ctx.createBufferSource();
+        transSrc.buffer = transBuf;
+        const transBp = ctx.createBiquadFilter();
+        transBp.type = 'bandpass';
+        transBp.frequency.setValueAtTime(900 + state.malletHardness * 2600, now);
+        transBp.Q.setValueAtTime(1.4, now);
+        const transGain = ctx.createGain();
+        transGain.gain.setValueAtTime(0.28 * state.malletHardness, now);
+        transSrc.connect(transBp);
+        transBp.connect(transGain);
+        transGain.connect(master);
+        transSrc.start(now);
+
+        const maxDur = 3.8;
+        state.activeModes.forEach((m) => {
+          if (m.f > state.sampleRate * 0.45) return;
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(m.f, now);
+
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(m.amp0 * 0.48, now + 0.002);
+
+          if (m.tau === Infinity) {
+            // Damping-null: flat sustain for 2.6s then clean release
+            g.gain.setValueAtTime(m.amp0 * 0.48, now + 2.5);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + 2.65);
+          } else {
+            const stopT = Math.min(maxDur, Math.max(0.06, m.tau * 6.9));
+            const endGain = Math.max(0.0001, m.amp0 * 0.48 * Math.exp(-stopT / m.tau));
+            g.gain.exponentialRampToValueAtTime(endGain, now + stopT);
+            g.gain.linearRampToValueAtTime(0.00001, now + stopT + 0.02);
+          }
+
+          osc.connect(g);
+          g.connect(master);
+          const stopAt = m.tau === Infinity ? 2.7 : Math.min(maxDur, Math.max(0.06, m.tau * 6.9)) + 0.03;
+          osc.start(now);
+          osc.stop(now + stopAt);
+        });
+      }
+
+      // =========================================================================
+      // 3. 16-BIT MONO WAV EXPORT
+      // =========================================================================
+      function exportModalWav() {
+        const sr = 44100;
+        const dur = 3.2;
+        const len = Math.floor(sr * dur);
+        const buf = new Float32Array(len);
+        const modes = computeModesForMaterial(state.materialKey, state.L, state.dampingScale, state.malletHardness);
+
+        modes.forEach((m) => {
+          const w = (2 * Math.PI * m.f) / sr;
+          for (let i = 0; i < len; i++) {
+            const t = i / sr;
+            const env = m.tau === Infinity ? 1.0 : Math.exp(-t / m.tau);
+            const atk = Math.min(1, t / 0.0025);
+            buf[i] += m.amp0 * 0.35 * atk * env * Math.sin(w * i);
+          }
+        });
+
+        const dataBytes = len * 2;
+        const ab = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(ab);
+        const wStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + dataBytes, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 2, true);
+        view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, dataBytes, true);
+        let off = 44;
+        for (let i = 0; i < len; i++) {
+          const s = Math.max(-1, Math.min(1, buf[i]));
+          view.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+          off += 2;
+        }
+        const blob = new Blob([ab], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `material_set_3d_${state.materialKey}_damp${state.dampingScale.toFixed(2)}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${MATERIALS[state.materialKey].name} modal decay (.WAV)`);
+      }
+
+      // =========================================================================
+      // 4. FOUR-CHECK VERIFICATION SUITE
+      // =========================================================================
+      function runFourCheckVerification() {
+        const L = state.L;
+        // 1. Pitch scaling: steel / bronze = 5100 / 3500
+        const mBronze = computeModesForMaterial('bronze', L, 1.0, 0.7);
+        const mSteel = computeModesForMaterial('steel', L, 1.0, 0.7);
+        const pitchRatio = mSteel[0].f / mBronze[0].f;
+        const expectedRatio = 5100 / 3500;
+        const pass1 = Math.abs(pitchRatio - expectedRatio) < 1e-4;
+
+        // 2. Decay scaling: log(tau) vs log(f) linear regression -> slope = -alpha
+        const curModes = computeModesForMaterial(state.materialKey, L, Math.max(0.05, state.dampingScale), state.malletHardness);
+        const xs = curModes.map((m) => Math.log(m.f));
+        const ys = curModes.map((m) => Math.log(m.tau));
+        const meanX = xs.reduce((a, b) => a + b, 0) / xs.length;
+        const meanY = ys.reduce((a, b) => a + b, 0) / ys.length;
+        let num = 0, den = 0;
+        for (let i = 0; i < xs.length; i++) {
+          num += (xs[i] - meanX) * (ys[i] - meanY);
+          den += (xs[i] - meanX) ** 2;
+        }
+        const fittedAlpha = -(num / den);
+        const pass2 = Math.abs(fittedAlpha - ALPHA_EXP) < 0.01;
+
+        // 3. Centroid-time collapse ordering: glass > steel > bronze > aluminium > wood
+        const orderKeys = ['glass', 'steel', 'bronze', 'aluminium', 'wood'];
+        const tHalves = orderKeys.map((k) => ({
+          key: k,
+          t: computeCentroidHalfTime(computeModesForMaterial(k, L, 1.0, 0.7))
+        }));
+        let ordered = true;
+        for (let i = 0; i < tHalves.length - 1; i++) {
+          if (!(tHalves[i].t > tHalves[i + 1].t)) ordered = false;
+        }
+        const pass3 = ordered;
+
+        // 4. Damping-null: eta = 0 -> all materials have 0.000 Hz centroid change over 3s
+        let maxNullDrift = 0;
+        Object.keys(MATERIALS).forEach((k) => {
+          const nullModes = computeModesForMaterial(k, L, 0, 0.7);
+          const c0 = computeCentroidAtTime(nullModes, 0);
+          const c3 = computeCentroidAtTime(nullModes, 3.0);
+          maxNullDrift = Math.max(maxNullDrift, Math.abs(c3 - c0));
+        });
+        const pass4 = maxNullDrift < 1e-6;
+
+        state.verification = { pass1, pass2, pass3, pass4, pitchRatio, expectedRatio, fittedAlpha, tHalves, maxNullDrift };
+        updateVerificationUI();
+      }
+
+      // =========================================================================
+      // 5. THREE.JS 3D RESONATOR (FIXED GEOMETRY, MATERIAL SHADING)
+      // =========================================================================
+      let scene, camera, renderer, resonatorMesh, malletMesh;
+      let camTheta = 0.55, camPhi = 1.05, camRadius = 8.2;
+      let isDragging = false, prevX = 0, prevY = 0;
+
+      function initThree() {
+        const container = document.getElementById('webgl-container');
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050811, 0.035);
+
+        camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 100);
+        updateCameraPos();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x050811, 1);
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+        const keyLight = new THREE.PointLight(0xffffff, 1.4, 30);
+        keyLight.position.set(5, 8, 6);
+        scene.add(keyLight);
+        const rimLight = new THREE.PointLight(0x38bdf8, 1.1, 30);
+        rimLight.position.set(-6, 4, -5);
+        scene.add(rimLight);
+
+        const grid = new THREE.PolarGridHelper(6, 12, 4, 48, 0x1e293b, 0x0f172a);
+        grid.position.y = -1.6;
+        scene.add(grid);
+
+        // Fixed Resonator Bar / Bell Plate Geometry
+        const barGeo = new THREE.BoxGeometry(3.6, 0.42, 0.95);
+        const barMat = new THREE.MeshStandardMaterial({
+          color: MATERIALS.bronze.matHex,
+          roughness: MATERIALS.bronze.rough,
+          metalness: MATERIALS.bronze.metal
+        });
+        resonatorMesh = new THREE.Mesh(barGeo, barMat);
+        scene.add(resonatorMesh);
+
+        // Mallet striker
+        const malletGeo = new THREE.SphereGeometry(0.22, 16, 16);
+        malletMesh = new THREE.Mesh(malletGeo, new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 }));
+        malletMesh.position.set(0, 1.15, 0);
+        scene.add(malletMesh);
+
+        const dom = renderer.domElement;
+        dom.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          camTheta -= (e.clientX - prevX) * 0.006;
+          camPhi = Math.max(0.25, Math.min(1.42, camPhi - (e.clientY - prevY) * 0.006));
+          prevX = e.clientX; prevY = e.clientY;
+          updateCameraPos();
+        });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          camRadius = Math.max(4.5, Math.min(15, camRadius + e.deltaY * 0.01));
+          updateCameraPos();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      function updateCameraPos() {
+        camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+        camera.position.y = camRadius * Math.cos(camPhi);
+        camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+        camera.lookAt(0, 0, 0);
+      }
+
+      function update3DMaterialAndScale() {
+        if (!resonatorMesh) return;
+        const mat = MATERIALS[state.materialKey];
+        resonatorMesh.material.color.setHex(mat.matHex);
+        resonatorMesh.material.roughness = mat.rough;
+        resonatorMesh.material.metalness = mat.metal;
+        resonatorMesh.material.transparent = state.materialKey === 'glass';
+        resonatorMesh.material.opacity = state.materialKey === 'glass' ? 0.72 : 1.0;
+        const scaleL = state.L / 0.45;
+        resonatorMesh.scale.set(scaleL, 1, 1);
+      }
+
+      // =========================================================================
+      // 6. MONEY PLOT: CENTROID-VS-TIME, SPECTRUM, MODE DECAY GRID
+      // =========================================================================
+      function drawMainPlot(elapsedSec) {
+        const canvas = document.getElementById('main-plot-canvas');
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const W = rect.width, H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        if (state.displayView === 'centroid') {
+          const maxT = 3.0;
+          const padL = 36, padR = 12, padT = 10, padB = 18;
+          const pw = W - padL - padR, ph = H - padT - padB;
+
+          // Grid lines
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+          ctx.lineWidth = 1;
+          [0, 0.5, 1.0].forEach((v) => {
+            const y = padT + (1 - v) * ph;
+            ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+          });
+
+          // Plot all 7 materials (normalized centroid above f1: 1.0 at t=0 -> 0.0 when collapsed to f1)
+          Object.keys(MATERIALS).forEach((k) => {
+            const mat = MATERIALS[k];
+            const modes = computeModesForMaterial(k, state.L, state.dampingScale, state.malletHardness);
+            const c0 = computeCentroidAtTime(modes, 0);
+            const f1 = modes[0].f;
+            const span = Math.max(1, c0 - f1);
+            const isSel = k === state.materialKey;
+
+            ctx.strokeStyle = mat.color;
+            ctx.globalAlpha = isSel ? 1.0 : 0.42;
+            ctx.lineWidth = isSel ? 2.6 : 1.3;
+            ctx.beginPath();
+            for (let i = 0; i <= 90; i++) {
+              const t = (i / 90) * maxT;
+              const ct = computeCentroidAtTime(modes, t);
+              const norm = Math.max(0, Math.min(1, (ct - f1) / span));
+              const x = padL + (t / maxT) * pw;
+              const y = padT + (1 - norm) * ph;
+              if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Live playhead dot on selected curve
+            if (isSel && elapsedSec >= 0 && elapsedSec <= maxT) {
+              const ct = computeCentroidAtTime(modes, elapsedSec);
+              const norm = Math.max(0, Math.min(1, (ct - f1) / span));
+              const x = padL + (elapsedSec / maxT) * pw;
+              const y = padT + (1 - norm) * ph;
+              ctx.globalAlpha = 1.0;
+              ctx.fillStyle = '#ffffff';
+              ctx.beginPath(); ctx.arc(x, y, 4.2, 0, Math.PI * 2); ctx.fill();
+            }
+          });
+          ctx.globalAlpha = 1.0;
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('100%', 4, padT + 6);
+          ctx.fillText('0%', 14, padT + ph);
+          ctx.fillText('0.0s', padL, H - 4);
+          ctx.fillText('1.5s', padL + pw * 0.5 - 10, H - 4);
+          ctx.fillText('3.0s', W - padR - 22, H - 4);
+        } else if (state.displayView === 'spectrum') {
+          const modes = state.activeModes.length ? state.activeModes : computeModesForMaterial(state.materialKey, state.L, state.dampingScale, state.malletHardness);
+          const t = elapsedSec >= 0 ? elapsedSec : 0;
+          const maxF = 9500;
+          modes.forEach((m) => {
+            const x = 20 + (Math.min(maxF, m.f) / maxF) * (W - 40);
+            const e = m.tau === Infinity ? m.amp0 : m.amp0 * Math.exp(-t / m.tau);
+            const bh = e * (H - 28);
+            ctx.fillStyle = MATERIALS[state.materialKey].color;
+            ctx.fillRect(x - 4, H - 16 - bh, 8, bh);
+          });
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('0 Hz', 16, H - 4);
+          ctx.fillText('9.5 kHz', W - 52, H - 4);
+        } else {
+          // Mode decay grid (log tau vs log f)
+          const modes = computeModesForMaterial(state.materialKey, state.L, Math.max(0.05, state.dampingScale), state.malletHardness);
+          const padL = 42, padR = 20, padT = 12, padB = 18;
+          const pw = W - padL - padR, ph = H - padT - padB;
+          const minLogF = Math.log10(150), maxLogF = Math.log10(12000);
+          const minLogT = Math.log10(0.005), maxLogT = Math.log10(25);
+
+          ctx.strokeStyle = MATERIALS[state.materialKey].color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          modes.forEach((m, idx) => {
+            const x = padL + ((Math.log10(m.f) - minLogF) / (maxLogF - minLogF)) * pw;
+            const y = padT + (1 - (Math.log10(Math.min(25, Math.max(0.005, m.tau))) - minLogT) / (maxLogT - minLogT)) * ph;
+            if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+          });
+          ctx.stroke();
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('log τ_n (slope = -0.75)', padL + 6, padT + 10);
+        }
+      }
+
+      // =========================================================================
+      // 7. ANIMATION & UI UPDATES
+      // =========================================================================
+      function animate() {
+        requestAnimationFrame(animate);
+        const now = performance.now();
+        const elapsed = state.lastStrikePerf > 0 ? (now - state.lastStrikePerf) / 1000 : -1;
+
+        if (malletMesh && resonatorMesh) {
+          if (elapsed >= 0 && elapsed < 0.25) {
+            const bounce = Math.sin((elapsed / 0.25) * Math.PI);
+            malletMesh.position.y = 1.15 - bounce * 0.72;
+            resonatorMesh.position.y = -bounce * 0.05;
+          } else {
+            malletMesh.position.y = 1.15;
+            resonatorMesh.position.y = 0;
+          }
+        }
+
+        const curModes = state.activeModes.length ? state.activeModes : computeModesForMaterial(state.materialKey, state.L, state.dampingScale, state.malletHardness);
+        const tLive = elapsed >= 0 ? Math.min(3.0, elapsed) : 0;
+        const cHz = computeCentroidAtTime(curModes, tLive);
+        document.getElementById('live-centroid-hz').textContent = `${Math.round(cHz)} Hz`;
+
+        drawMainPlot(elapsed);
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      }
+
+      function renderMaterialGrid() {
+        const grid = document.getElementById('material-grid');
+        const legend = document.getElementById('legend-list');
+        grid.innerHTML = '';
+        legend.innerHTML = '';
+
+        Object.keys(MATERIALS).forEach((k) => {
+          const m = MATERIALS[k];
+          const active = k === state.materialKey;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `px-2.5 py-1.5 rounded-lg text-left border transition-colors ${
+            active ? 'bg-slate-800 border-amber-400 text-white' : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-800/70'
+          }`;
+          btn.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold">${m.name}</span>
+              <span class="w-2 h-2 rounded-full" style="background:${m.color}"></span>
+            </div>
+            <div class="mono text-[9px] text-slate-400">${m.c} m/s</div>
+          `;
+          btn.addEventListener('click', () => {
+            state.materialKey = k;
+            update3DMaterialAndScale();
+            updateUI();
+            runFourCheckVerification();
+            strikeResonator();
+          });
+          grid.appendChild(btn);
+
+          legend.innerHTML += `<div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:${m.color}"></span><span class="${active ? 'text-white font-bold' : 'text-slate-400'}">${m.name}</span></div>`;
+        });
+      }
+
+      function updateUI() {
+        const mat = MATERIALS[state.materialKey];
+        const modes = computeModesForMaterial(state.materialKey, state.L, state.dampingScale, state.malletHardness);
+        state.activeModes = modes;
+        const tHalf = computeCentroidHalfTime(modes);
+
+        document.getElementById('header-mat-name').textContent = mat.name.toUpperCase();
+        document.getElementById('header-c').textContent = `c = ${mat.c} m/s`;
+        document.getElementById('header-f1').textContent = `f₁ = ${modes[0].f.toFixed(1)} Hz`;
+        document.getElementById('mat-char-badge').textContent = mat.desc;
+        document.getElementById('damp-readout').textContent = state.dampingScale === 0 ? '0.00× (NULL)' : `${state.dampingScale.toFixed(2)}×`;
+        document.getElementById('mallet-readout').textContent = `${Math.round(state.malletHardness * 100)}% Hard`;
+        document.getElementById('live-thalf').textContent = tHalf === Infinity ? '∞ (Flat)' : `${tHalf.toFixed(3)} s`;
+        document.getElementById('live-f1').textContent = `${modes[0].f.toFixed(1)} Hz`;
+        document.getElementById('live-f8').textContent = `${Math.round(modes[modes.length - 1].f)} Hz`;
+        renderMaterialGrid();
+      }
+
+      function updateVerificationUI() {
+        const v = state.verification;
+        if (!v) return;
+        const count = [v.pass1, v.pass2, v.pass3, v.pass4].filter(Boolean).length;
+        document.getElementById('verify-badge-text').textContent = `${count}/4 ${count === 4 ? 'PASS' : 'CHECK'}`;
+
+        const setB = (id, ok) => {
+          const el = document.getElementById(id);
+          el.textContent = ok ? 'PASS' : 'FAIL';
+          el.className = `mono text-[10px] font-bold px-2 py-1 rounded border ${
+            ok ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
+          }`;
+        };
+
+        setB('v-check1-badge', v.pass1);
+        document.getElementById('v-check1-detail').textContent = `Measured Steel/Bronze = ${v.pitchRatio.toFixed(4)}× (Expected ${v.expectedRatio.toFixed(4)}×)`;
+
+        setB('v-check2-badge', v.pass2);
+        document.getElementById('v-check2-detail').textContent = `Log-log regression slope α̂ = ${v.fittedAlpha.toFixed(4)} (Target α = ${ALPHA_EXP})`;
+
+        setB('v-check3-badge', v.pass3);
+        document.getElementById('v-check3-detail').textContent = v.tHalves.map((x) => `${x.key}: ${x.t.toFixed(2)}s`).join(' > ');
+
+        setB('v-check4-badge', v.pass4);
+        document.getElementById('v-check4-detail').textContent = `Max centroid drift at η=0 across all 7 materials = ${v.maxNullDrift.toFixed(6)} Hz`;
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+      }
+
+      function bindEvents() {
+        document.getElementById('btn-strike').addEventListener('click', strikeResonator);
+        document.getElementById('btn-export-wav').addEventListener('click', exportModalWav);
+
+        document.getElementById('btn-ab-loop').addEventListener('click', () => {
+          state.autoStrike = !state.autoStrike;
+          document.getElementById('btn-ab-loop').textContent = `Auto: ${state.autoStrike ? 'ON' : 'OFF'}`;
+          if (state.autoStrike) {
+            strikeResonator();
+            state.autoTimer = setInterval(strikeResonator, 2200);
+          } else if (state.autoTimer) {
+            clearInterval(state.autoTimer);
+            state.autoTimer = null;
+          }
+        });
+
+        document.getElementById('btn-geom-lock').addEventListener('click', () => {
+          state.geomLocked = !state.geomLocked;
+          const btn = document.getElementById('btn-geom-lock');
+          const slider = document.getElementById('geom-slider');
+          slider.disabled = state.geomLocked;
+          slider.classList.toggle('opacity-45', state.geomLocked);
+          slider.classList.toggle('cursor-not-allowed', state.geomLocked);
+          btn.textContent = state.geomLocked ? `LOCKED (${state.L.toFixed(2)} m)` : `UNLOCKED (${state.L.toFixed(2)} m)`;
+          btn.className = state.geomLocked
+            ? 'mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/35'
+            : 'mono text-[10px] font-bold px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-400/35';
+        });
+
+        document.getElementById('geom-slider').addEventListener('input', (e) => {
+          state.L = Number(e.target.value) / 100;
+          document.getElementById('btn-geom-lock').textContent = `UNLOCKED (${state.L.toFixed(2)} m)`;
+          update3DMaterialAndScale();
+          updateUI();
+          runFourCheckVerification();
+        });
+
+        document.getElementById('damp-slider').addEventListener('input', (e) => {
+          state.dampingScale = Number(e.target.value) / 100;
+          updateUI();
+          runFourCheckVerification();
+        });
+
+        document.getElementById('btn-damp-null').addEventListener('click', () => {
+          state.dampingScale = state.dampingScale === 0 ? 1.0 : 0.0;
+          document.getElementById('damp-slider').value = Math.round(state.dampingScale * 100);
+          document.getElementById('btn-damp-null').textContent = state.dampingScale === 0 ? 'Restore Material η (1.0×)' : 'Set η → 0 (Damping Null)';
+          updateUI();
+          runFourCheckVerification();
+          showToast(state.dampingScale === 0 ? 'Damping Null active: all centroid curves flattened' : 'Material damping restored');
+        });
+
+        document.getElementById('mallet-slider').addEventListener('input', (e) => {
+          state.malletHardness = Number(e.target.value) / 100;
+          updateUI();
+        });
+
+        document.querySelectorAll('.view-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.displayView = btn.dataset.view;
+            document.querySelectorAll('.view-btn').forEach((b) => {
+              const active = b.dataset.view === state.displayView;
+              b.className = `view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${
+                active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800/80 text-slate-400 border-slate-700'
+              }`;
+            });
+          });
+        });
+
+        const modal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          runFourCheckVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        });
+        document.getElementById('btn-rerun-verify').addEventListener('click', runFourCheckVerification);
+
+        document.getElementById('btn-toggle-panel').addEventListener('click', () => {
+          document.getElementById('left-panel').classList.toggle('-translate-x-[110%]');
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            strikeResonator();
+          }
+        });
+      }
+
+      window.addEventListener('load', () => {
+        initThree();
+        update3DMaterialAndScale();
+        updateUI();
+        runFourCheckVerification();
+        bindEvents();
+        animate();
+      });
+    })();
+  </script>
+</body>
+</html>
