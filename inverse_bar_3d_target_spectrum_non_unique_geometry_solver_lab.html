@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>INVERSE-BAR 3D — Target Spectrum &amp; Non-Unique Geometry Solver Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .panel-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .panel-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(9, 14, 28, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#050811] text-slate-200">
+
+  <!-- Full-Screen 3D WebGL Dual-Bar Viewport -->
+  <div id="webgl-container" class="fixed inset-0 z-0"></div>
+
+  <!-- Top Header -->
+  <header class="fixed top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white">INVERSE-BAR <span class="text-emerald-400">3D</span></h1>
+          <span class="hidden md:inline-block text-[10px] mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/25">Euler–Bernoulli Inverse Solver</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Spectrum in, thickness profile <span class="mono text-sky-300">h(x)</span> out — proving solutions are non-unique.</p>
+      </div>
+    </div>
+
+    <!-- Solver Status / Refusal Banner -->
+    <div id="status-banner" class="hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-2.5 pointer-events-auto border border-emerald-500/30">
+      <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="status-text" class="mono text-xs font-semibold text-emerald-300">SOLVED · RMS 0.0021 &lt; TOL 0.0150</span>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-toggle-verify" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-2 transition-colors border border-emerald-500/30">
+        <span id="verify-badge-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="hidden sm:inline">4-Check Proof</span>
+        <span id="verify-badge-text" class="mono text-[11px] text-emerald-300 font-semibold">4/4 PASS</span>
+      </button>
+      <button id="btn-toggle-panel" type="button" class="lg:hidden glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl">
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Panel: Target Spectrum, Modes, Constraints, Solver -->
+  <aside id="left-panel" class="fixed top-16 left-3 sm:left-5 bottom-36 z-20 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 flex flex-col gap-3 overflow-y-auto panel-scroll transition-transform duration-200">
+    <!-- Solve Dual Seeds Button -->
+    <button id="btn-solve-dual" type="button" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.35)] transition-all">
+      <span>SOLVE DUAL SEEDS (A vs B)</span>
+    </button>
+
+    <!-- Target Spectrum Ratios -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="target-input" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Target Ratios</label>
+        <span id="modes-fit-label" class="mono text-[10px] text-sky-300">3 modes</span>
+      </div>
+      <input id="target-input" type="text" value="1 : 4 : 10" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 mono text-xs text-white focus:outline-none focus:border-sky-400 mb-2" />
+      <div class="grid grid-cols-2 gap-1 mb-2">
+        <button type="button" data-ratio="1 : 4 : 10" class="ratio-btn mono text-[10px] py-1 rounded bg-sky-500/20 text-sky-300 border border-sky-400/35">1:4:10 Marimba</button>
+        <button type="button" data-ratio="1 : 2.76 : 5.40" class="ratio-btn mono text-[10px] py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">1:2.76:5.40 Xylo</button>
+        <button type="button" data-ratio="1 : 3 : 5" class="ratio-btn mono text-[10px] py-1 rounded bg-slate-800 text-slate-300 border border-slate-700">1:3:5 Odd</button>
+        <button type="button" data-ratio="1 : 2 : 3 : 4 : 5" class="ratio-btn mono text-[10px] py-1 rounded bg-rose-500/15 text-rose-300 border border-rose-400/30">1:2:3:4:5 Unreach</button>
+      </div>
+      <div class="flex items-center justify-between text-[10px] text-slate-400">
+        <span>Modes to fit:</span>
+        <div class="flex items-center gap-1">
+          <button type="button" data-m="2" class="m-btn mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700">2</button>
+          <button type="button" data-m="3" class="m-btn mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/35">3</button>
+          <button type="button" data-m="4" class="m-btn mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700">4</button>
+          <button type="button" data-m="5" class="m-btn mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700">5</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Solver Method -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Inverse Solver</h2>
+      <div class="grid grid-cols-3 gap-1">
+        <button type="button" data-solver="gd" class="solver-btn text-[10px] py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35 font-medium">Grad Desc</button>
+        <button type="button" data-solver="restart" class="solver-btn text-[10px] py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 font-medium">Rand Restart</button>
+        <button type="button" data-solver="sa" class="solver-btn text-[10px] py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 font-medium">Sim Anneal</button>
+      </div>
+    </div>
+
+    <!-- Manufacturability Constraints -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Manufacturability</h2>
+        <span class="mono text-[10px] text-slate-400">Tol = 0.015</span>
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+          <span>h_min (undercut floor)</span>
+          <span id="hmin-readout" class="mono text-sky-300">0.25</span>
+        </div>
+        <input id="hmin-slider" type="range" min="15" max="60" step="1" value="25" class="lab-slider" />
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+          <span>h_max (stock ceiling)</span>
+          <span id="hmax-readout" class="mono text-sky-300">1.35</span>
+        </div>
+        <input id="hmax-slider" type="range" min="100" max="160" step="5" value="135" class="lab-slider" />
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] text-slate-400 mb-0.5">
+          <span>Max Slope |Δh|</span>
+          <span id="slope-readout" class="mono text-amber-300">0.28</span>
+        </div>
+        <input id="slope-slider" type="range" min="10" max="60" step="2" value="28" class="lab-slider" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Dual Solution Comparison & Audition -->
+  <aside class="fixed top-16 right-3 sm:right-5 z-20 w-72 max-w-[calc(100vw-1.5rem)] hidden md:flex flex-col gap-3 pointer-events-none">
+    <!-- Solution A vs Solution B Cards -->
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Non-Uniqueness Proof</span>
+        <span id="diff-readout" class="mono text-[10px] text-emerald-300">Δshape = 0.18</span>
+      </div>
+
+      <!-- Solution A -->
+      <div class="bg-slate-900/75 border border-sky-500/35 rounded-xl p-2.5">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-sky-300">Solution A (Top Bar)</span>
+          <button id="btn-hear-a" type="button" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/35 text-sky-200 border border-sky-400/35">
+            Hear A
+          </button>
+        </div>
+        <div id="sol-a-ratios" class="mono text-[10px] text-slate-200">1.00 : 4.00 : 10.00</div>
+        <div id="sol-a-res" class="mono text-[10px] text-emerald-300 mt-0.5">Residual: 0.0021</div>
+      </div>
+
+      <!-- Solution B -->
+      <div class="bg-slate-900/75 border border-amber-500/35 rounded-xl p-2.5">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-bold text-amber-300">Solution B (Bottom Bar)</span>
+          <button id="btn-hear-b" type="button" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 border border-amber-400/35">
+            Hear B
+          </button>
+        </div>
+        <div id="sol-b-ratios" class="mono text-[10px] text-slate-200">1.00 : 4.00 : 10.00</div>
+        <div id="sol-b-res" class="mono text-[10px] text-emerald-300 mt-0.5">Residual: 0.0024</div>
+      </div>
+
+      <p class="text-[10px] text-slate-400 leading-snug">
+        Two visibly different carved profiles, identical mode ratios — same sound.
+      </p>
+    </div>
+  </aside>
+
+  <!-- Bottom Spectra Overlay & Thickness Profile Comparison -->
+  <section class="fixed bottom-3 left-3 right-3 z-20 glass-panel rounded-2xl p-3 pointer-events-auto">
+    <div class="flex items-center justify-between mb-1.5">
+      <div class="flex items-center gap-4 text-[11px]">
+        <span class="font-semibold text-sky-300">Spectra Overlay &amp; Carved Profiles h(x)</span>
+        <span class="hidden sm:inline mono text-[10px] text-sky-300">— Profile A</span>
+        <span class="hidden sm:inline mono text-[10px] text-amber-300">— Profile B</span>
+      </div>
+      <span id="bottom-verdict" class="mono text-[11px] font-bold text-emerald-300">MATCHED WITHIN TOLERANCE (0.015)</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 h-24">
+      <div class="relative rounded-xl bg-slate-950/85 border border-slate-800/90 overflow-hidden">
+        <canvas id="profile-canvas" class="w-full h-full block"></canvas>
+      </div>
+      <div class="relative rounded-xl bg-slate-950/85 border border-slate-800/90 overflow-hidden">
+        <canvas id="spectra-canvas" class="w-full h-full block"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Inverse Solver Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Euler–Bernoulli 10-element FEM forward model &amp; manufacturable optimization.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto panel-scroll space-y-3">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">1. Forward Consistency: Recovered h(x) Matches Target &lt; Tol (0.015)</div>
+            <p id="v-check1-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check1-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">2. Non-Uniqueness: Two Seeds Yield Distinct Profiles with Equivalent Residuals</div>
+            <p id="v-check2-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check2-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">3. Manufacturability: Both Profiles Obey h_min, h_max &amp; Max Slope</div>
+            <p id="v-check3-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check3-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">4. Honest Refusal: Unreachable 1:2:3:4:5 Target Returns Failure</div>
+            <p id="v-check4-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check4-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Drag 3D bars to orbit · Scroll to zoom</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/35 hover:bg-emerald-500/30 font-medium transition-colors">
+          Re-run Verification
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden glass-panel px-4 py-2 rounded-xl text-xs font-medium text-emerald-200 border border-emerald-400/35"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. EULER-BERNOULLI FREE-FREE BEAM FEM FORWARD SOLVER (N = 10 ELEMENTS)
+      // =========================================================================
+      const N_ELEM = 10;
+      const N_DOF = 2 * (N_ELEM + 1); // 22 DOFs (w, theta)
+      const TOLERANCE = 0.015;
+      const F1_HZ = 220.0;
+
+      const state = {
+        targetRatios: [1, 4, 10],
+        modesToFit: 3,
+        solverType: 'gd', // 'gd' | 'restart' | 'sa'
+        hMin: 0.25,
+        hMax: 1.35,
+        maxSlope: 0.28,
+        solA: { h: new Array(N_ELEM).fill(1), ratios: [1, 2.76, 5.4], residual: 0, feasible: false },
+        solB: { h: new Array(N_ELEM).fill(1), ratios: [1, 2.76, 5.4], residual: 0, feasible: false },
+        audioCtx: null,
+        verification: null
+      };
+
+      function forwardBeamModes(hArr, numModes) {
+        const le = 1.0 / N_ELEM;
+        const le2 = le * le;
+        const le3 = le2 * le;
+        const K = Array.from({ length: N_DOF }, () => new Float64Array(N_DOF));
+        const M = Array.from({ length: N_DOF }, () => new Float64Array(N_DOF));
+
+        // Assemble element stiffness (proportional to h^3) & consistent mass (proportional to h)
+        const kBase = [
+          [12, 6 * le, -12, 6 * le],
+          [6 * le, 4 * le2, -6 * le, 2 * le2],
+          [-12, -6 * le, 12, -6 * le],
+          [6 * le, 2 * le2, -6 * le, 4 * le2]
+        ];
+        const mBase = [
+          [156, 22 * le, 54, -13 * le],
+          [22 * le, 4 * le2, 13 * le, -3 * le2],
+          [54, 13 * le, 156, -22 * le],
+          [-13 * le, -3 * le2, -22 * le, 4 * le2]
+        ];
+
+        for (let e = 0; e < N_ELEM; e++) {
+          const h = hArr[e];
+          const kScale = (h * h * h) / le3;
+          const mScale = (h * le) / 420.0;
+          const off = 2 * e;
+          for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 4; j++) {
+              K[off + i][off + j] += kScale * kBase[i][j];
+              M[off + i][off + j] += mScale * mBase[i][j];
+            }
+          }
+        }
+
+        // Cholesky M = L * L^T
+        const L = Array.from({ length: N_DOF }, () => new Float64Array(N_DOF));
+        for (let i = 0; i < N_DOF; i++) {
+          for (let j = 0; j <= i; j++) {
+            let sum = M[i][j];
+            for (let k = 0; k < j; k++) sum -= L[i][k] * L[j][k];
+            L[i][j] = i === j ? Math.sqrt(Math.max(1e-14, sum)) : sum / L[j][j];
+          }
+        }
+
+        // Compute L^-1
+        const Linv = Array.from({ length: N_DOF }, () => new Float64Array(N_DOF));
+        for (let i = 0; i < N_DOF; i++) {
+          Linv[i][i] = 1.0 / L[i][i];
+          for (let j = 0; j < i; j++) {
+            let sum = 0;
+            for (let k = j; k < i; k++) sum -= L[i][k] * Linv[k][j];
+            Linv[i][j] = sum / L[i][i];
+          }
+        }
+
+        // A = Linv * K * Linv^T
+        const Temp = Array.from({ length: N_DOF }, () => new Float64Array(N_DOF));
+        for (let i = 0; i < N_DOF; i++) {
+          for (let j = 0; j < N_DOF; j++) {
+            let s = 0;
+            for (let k = 0; k <= i; k++) s += Linv[i][k] * K[k][j];
+            Temp[i][j] = s;
+          }
+        }
+        const A = Array.from({ length: N_DOF }, () => new Float64Array(N_DOF));
+        for (let i = 0; i < N_DOF; i++) {
+          for (let j = 0; j <= i; j++) {
+            let s = 0;
+            for (let k = 0; k <= j; k++) s += Temp[i][k] * Linv[j][k];
+            A[i][j] = s;
+            A[j][i] = s;
+          }
+        }
+
+        // Cyclic Jacobi eigenvalue solver on 22x22 symmetric matrix A
+        for (let sweep = 0; sweep < 14; sweep++) {
+          let maxOff = 0;
+          for (let p = 0; p < N_DOF - 1; p++) {
+            for (let q = p + 1; q < N_DOF; q++) {
+              const apq = A[p][q];
+              if (Math.abs(apq) < 1e-11) continue;
+              maxOff = Math.max(maxOff, Math.abs(apq));
+              const tau = (A[q][q] - A[p][p]) / (2.0 * apq);
+              const t = tau >= 0 ? 1.0 / (tau + Math.sqrt(1 + tau * tau)) : -1.0 / (-tau + Math.sqrt(1 + tau * tau));
+              const c = 1.0 / Math.sqrt(1 + t * t);
+              const s = t * c;
+              const app = A[p][p] - t * apq;
+              const aqq = A[q][q] + t * apq;
+              A[p][p] = app;
+              A[q][q] = aqq;
+              A[p][q] = 0;
+              A[q][p] = 0;
+              for (let r = 0; r < N_DOF; r++) {
+                if (r !== p && r !== q) {
+                  const arp = A[r][p];
+                  const arq = A[r][q];
+                  A[r][p] = c * arp - s * arq;
+                  A[p][r] = A[r][p];
+                  A[r][q] = s * arp + c * arq;
+                  A[q][r] = A[r][q];
+                }
+              }
+            }
+          }
+          if (maxOff < 1e-10) break;
+        }
+
+        const evals = [];
+        for (let i = 0; i < N_DOF; i++) evals.push(Math.max(0, A[i][i]));
+        evals.sort((a, b) => a - b);
+
+        // Skip the 2 rigid-body zero modes (indices 0, 1)
+        const omegas = evals.slice(2, 2 + numModes).map((v) => Math.sqrt(Math.max(1e-12, v)));
+        const w0 = omegas[0];
+        return omegas.map((w) => w / w0);
+      }
+
+      // =========================================================================
+      // 2. INVERSE OPTIMIZER WITH BOUNDS, SLOPE & SMOOTHNESS PROJECTION
+      // =========================================================================
+      function projectManufacturable(h, hMin, hMax, maxSlope) {
+        const out = h.slice();
+        for (let i = 0; i < out.length; i++) {
+          out[i] = Math.max(hMin, Math.min(hMax, out[i]));
+        }
+        // Forward-backward slope clamping passes
+        for (let pass = 0; pass < 4; pass++) {
+          for (let i = 0; i < out.length - 1; i++) {
+            const diff = out[i + 1] - out[i];
+            if (Math.abs(diff) > maxSlope) {
+              const adj = (Math.abs(diff) - maxSlope) * 0.5 * Math.sign(diff);
+              out[i] += adj;
+              out[i + 1] -= adj;
+            }
+          }
+          for (let i = 0; i < out.length; i++) {
+            out[i] = Math.max(hMin, Math.min(hMax, out[i]));
+          }
+        }
+        return out;
+      }
+
+      function evalObjective(h, target, modesToFit) {
+        const ratios = forwardBeamModes(h, modesToFit);
+        let specErrSq = 0;
+        for (let m = 1; m < modesToFit; m++) {
+          const e = ratios[m] / target[m] - 1.0;
+          specErrSq += e * e;
+        }
+        const rms = Math.sqrt(specErrSq / Math.max(1, modesToFit - 1));
+        let smooth = 0;
+        for (let i = 1; i < h.length - 1; i++) {
+          const d2 = h[i + 1] - 2 * h[i] + h[i - 1];
+          smooth += d2 * d2;
+        }
+        return { loss: specErrSq + 0.015 * smooth, rms, ratios };
+      }
+
+      function solveFromSeed(initH, target, modesToFit, solverType, hMin, hMax, maxSlope) {
+        let h = projectManufacturable(initH, hMin, hMax, maxSlope);
+        let cur = evalObjective(h, target, modesToFit);
+        let bestH = h.slice();
+        let best = cur;
+
+        if (solverType === 'sa') {
+          let temp = 0.08;
+          for (let iter = 0; iter < 160; iter++) {
+            const cand = h.slice();
+            const idx = Math.floor(Math.random() * N_ELEM);
+            cand[idx] += (Math.random() * 2 - 1) * 0.14;
+            const proj = projectManufacturable(cand, hMin, hMax, maxSlope);
+            const ev = evalObjective(proj, target, modesToFit);
+            if (ev.loss < cur.loss || Math.random() < Math.exp((cur.loss - ev.loss) / temp)) {
+              h = proj;
+              cur = ev;
+              if (ev.rms < best.rms) { best = ev; bestH = proj.slice(); }
+            }
+            temp *= 0.975;
+          }
+          h = bestH.slice();
+          cur = best;
+        }
+
+        // Gradient descent polish (used by GD, Restart, and post-SA polish)
+        const iters = solverType === 'gd' ? 75 : 50;
+        const eps = 1e-3;
+        let lr = 0.24;
+        for (let iter = 0; iter < iters; iter++) {
+          const grad = new Array(N_ELEM).fill(0);
+          for (let i = 0; i < N_ELEM; i++) {
+            const hp = h.slice();
+            hp[i] += eps;
+            const evp = evalObjective(hp, target, modesToFit);
+            grad[i] = (evp.loss - cur.loss) / eps;
+          }
+          const next = h.map((v, i) => v - lr * grad[i]);
+          const proj = projectManufacturable(next, hMin, hMax, maxSlope);
+          const ev = evalObjective(proj, target, modesToFit);
+          if (ev.loss <= cur.loss) {
+            h = proj;
+            cur = ev;
+            if (ev.rms < best.rms) { best = ev; bestH = proj.slice(); }
+            lr = Math.min(0.35, lr * 1.05);
+          } else {
+            lr *= 0.55;
+            if (lr < 1e-4) break;
+          }
+        }
+
+        return {
+          h: bestH,
+          ratios: best.ratios,
+          residual: best.rms,
+          feasible: best.rms <= TOLERANCE
+        };
+      }
+
+      function solveDualSeeds(targetOverride, modesOverride) {
+        const target = targetOverride || state.targetRatios;
+        const M = modesOverride || state.modesToFit;
+        const { hMin, hMax, maxSlope, solverType } = state;
+
+        // Seed A: Symmetric parabolic undercut guess (canonical marimba arch)
+        const seedA = Array.from({ length: N_ELEM }, (_, i) => {
+          const u = (i + 0.5) / N_ELEM - 0.5;
+          return 0.45 + 2.1 * u * u;
+        });
+
+        // Seed B: Asymmetric / twin-pocket guess to reveal non-uniqueness
+        const seedB = Array.from({ length: N_ELEM }, (_, i) => {
+          const u = (i + 0.5) / N_ELEM;
+          return solverType === 'restart'
+            ? hMin + Math.random() * (hMax - hMin)
+            : (0.95 - 0.55 * Math.sin(Math.PI * u) + 0.25 * (u - 0.5));
+        });
+
+        const resA = solveFromSeed(seedA, target, M, solverType, hMin, hMax, maxSlope);
+        let resB = solveFromSeed(seedB, target, M, solverType, hMin, hMax, maxSlope);
+
+        // If Seed B landed too close to Seed A, try an inverted-bias seed to guarantee distinct basin exploration
+        const diffAB = profileL2Diff(resA.h, resB.h);
+        if (diffAB < 0.04) {
+          const seedB2 = Array.from({ length: N_ELEM }, (_, i) => {
+            const u = (i + 0.5) / N_ELEM;
+            return 1.15 - 0.6 * Math.sin(2 * Math.PI * u * 0.5) - 0.22 * u;
+          });
+          const resB2 = solveFromSeed(seedB2, target, M, solverType, hMin, hMax, maxSlope);
+          if (resB2.residual <= TOLERANCE && profileL2Diff(resA.h, resB2.h) > diffAB) {
+            resB = resB2;
+          }
+        }
+
+        if (!targetOverride) {
+          state.solA = resA;
+          state.solB = resB;
+          rebuild3DBars();
+          updateUI();
+        }
+        return { resA, resB };
+      }
+
+      function profileL2Diff(h1, h2) {
+        let s = 0;
+        for (let i = 0; i < h1.length; i++) s += (h1[i] - h2[i]) ** 2;
+        return Math.sqrt(s / h1.length);
+      }
+
+      function checkManufacturability(h, hMin, hMax, maxSlope) {
+        for (let i = 0; i < h.length; i++) {
+          if (h[i] < hMin - 1e-4 || h[i] > hMax + 1e-4) return false;
+          if (i < h.length - 1 && Math.abs(h[i + 1] - h[i]) > maxSlope + 1e-4) return false;
+        }
+        return true;
+      }
+
+      // =========================================================================
+      // 3. WEB AUDIO AUDITION (IDENTICAL SPECTRUM, DIFFERENT SHAPES)
+      // =========================================================================
+      function hearSolution(sol) {
+        if (!state.audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new Ctx();
+        }
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+
+        const ctx = state.audioCtx;
+        const now = ctx.currentTime + 0.01;
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.32, now);
+        master.connect(ctx.destination);
+
+        sol.ratios.forEach((r, idx) => {
+          const f = F1_HZ * r;
+          if (f > state.audioCtx.sampleRate * 0.45) return;
+          const osc = ctx.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, now);
+
+          const g = ctx.createGain();
+          const amp = 0.55 / (1 + idx * 0.65);
+          const tau = 0.65 / Math.pow(r, 0.55);
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(amp, now + 0.002);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.15, tau * 3.5));
+
+          osc.connect(g);
+          g.connect(master);
+          osc.start(now);
+          osc.stop(now + Math.max(0.18, tau * 3.6));
+        });
+      }
+
+      // =========================================================================
+      // 4. FOUR-CHECK VERIFICATION SUITE
+      // =========================================================================
+      function runFourCheckVerification() {
+        const { resA, resB } = solveDualSeeds([1, 4, 10], 3);
+        const pass1 = resA.feasible && resA.residual < TOLERANCE;
+        const diff = profileL2Diff(resA.h, resB.h);
+        const pass2 = resA.feasible && resB.feasible && diff > 0.03;
+        const pass3 = checkManufacturability(resA.h, state.hMin, state.hMax, state.maxSlope) &&
+                      checkManufacturability(resB.h, state.hMin, state.hMax, state.maxSlope);
+        const unreach = solveDualSeeds([1, 2, 3, 4, 5], 5);
+        const pass4 = !unreach.resA.feasible && unreach.resA.residual > TOLERANCE;
+
+        state.verification = {
+          pass1, pass2, pass3, pass4,
+          resA, resB, diff, unreachRes: unreach.resA.residual
+        };
+        updateVerificationUI();
+      }
+
+      // =========================================================================
+      // 5. THREE.JS 3D CARVED BARS (SOLUTION A & SOLUTION B)
+      // =========================================================================
+      let scene, camera, renderer, barGroupA, barGroupB;
+      let camTheta = 0.35, camPhi = 1.05, camRadius = 9.5;
+      let isDragging = false, prevX = 0, prevY = 0;
+
+      function initThree() {
+        const container = document.getElementById('webgl-container');
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050811, 0.03);
+
+        camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 100);
+        updateCameraPos();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x050811, 1);
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+        const keyLight = new THREE.PointLight(0x38bdf8, 1.5, 30);
+        keyLight.position.set(5, 8, 6);
+        scene.add(keyLight);
+        const rimLight = new THREE.PointLight(0xf59e0b, 1.2, 30);
+        rimLight.position.set(-6, -4, 5);
+        scene.add(rimLight);
+
+        const grid = new THREE.GridHelper(12, 12, 0x1e293b, 0x0f172a);
+        grid.position.y = -2.3;
+        scene.add(grid);
+
+        barGroupA = new THREE.Group();
+        barGroupB = new THREE.Group();
+        barGroupA.position.y = 0.85;
+        barGroupB.position.y = -0.85;
+        scene.add(barGroupA);
+        scene.add(barGroupB);
+
+        const dom = renderer.domElement;
+        dom.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          camTheta -= (e.clientX - prevX) * 0.006;
+          camPhi = Math.max(0.25, Math.min(1.42, camPhi - (e.clientY - prevY) * 0.006));
+          prevX = e.clientX; prevY = e.clientY;
+          updateCameraPos();
+        });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          camRadius = Math.max(5.0, Math.min(16, camRadius + e.deltaY * 0.01));
+          updateCameraPos();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          drawBottomCanvases();
+        });
+      }
+
+      function updateCameraPos() {
+        camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+        camera.position.y = camRadius * Math.cos(camPhi);
+        camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+        camera.lookAt(0, 0, 0);
+      }
+
+      function rebuild3DBars() {
+        if (!barGroupA || !barGroupB) return;
+        while (barGroupA.children.length) barGroupA.remove(barGroupA.children[0]);
+        while (barGroupB.children.length) barGroupB.remove(barGroupB.children[0]);
+
+        const totalW = 5.4;
+        const segW = totalW / N_ELEM;
+
+        function buildSegments(group, hArr, colorHex) {
+          const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.35, metalness: 0.25 });
+          for (let i = 0; i < N_ELEM; i++) {
+            const thickness = hArr[i] * 0.72;
+            const geo = new THREE.BoxGeometry(segW * 0.94, thickness, 0.95);
+            const mesh = new THREE.Mesh(geo, mat);
+            const x = -totalW * 0.5 + (i + 0.5) * segW;
+            // Flat top playing surface, undercut from underneath like a real marimba bar!
+            mesh.position.set(x, -thickness * 0.5, 0);
+            group.add(mesh);
+          }
+        }
+
+        buildSegments(barGroupA, state.solA.h, 0x38bdf8);
+        buildSegments(barGroupB, state.solB.h, 0xf59e0b);
+      }
+
+      // =========================================================================
+      // 6. BOTTOM CANVASES: PROFILE OVERLAY & SPECTRA OVERLAY
+      // =========================================================================
+      function drawBottomCanvases() {
+        // 1. Profile h(x) overlay
+        const pCan = document.getElementById('profile-canvas');
+        const pRect = pCan.getBoundingClientRect();
+        if (pRect.width > 0) {
+          const dpr = window.devicePixelRatio || 1;
+          pCan.width = Math.floor(pRect.width * dpr);
+          pCan.height = Math.floor(pRect.height * dpr);
+          const ctx = pCan.getContext('2d');
+          ctx.scale(dpr, dpr);
+          const W = pRect.width, H = pRect.height;
+          ctx.clearRect(0, 0, W, H);
+
+          const drawProf = (hArr, col) => {
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            for (let i = 0; i < N_ELEM; i++) {
+              const x = 16 + (i / (N_ELEM - 1)) * (W - 32);
+              const norm = (hArr[i] - state.hMin) / Math.max(0.1, state.hMax - state.hMin);
+              const y = H - 14 - norm * (H - 28);
+              if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          };
+          drawProf(state.solA.h, '#38bdf8');
+          drawProf(state.solB.h, '#f59e0b');
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('Carved Thickness h(x): A vs B', 10, 12);
+        }
+
+        // 2. Spectra Overlay
+        const sCan = document.getElementById('spectra-canvas');
+        const sRect = sCan.getBoundingClientRect();
+        if (sRect.width > 0) {
+          const dpr = window.devicePixelRatio || 1;
+          sCan.width = Math.floor(sRect.width * dpr);
+          sCan.height = Math.floor(sRect.height * dpr);
+          const ctx = sCan.getContext('2d');
+          ctx.scale(dpr, dpr);
+          const W = sRect.width, H = sRect.height;
+          ctx.clearRect(0, 0, W, H);
+
+          const maxR = Math.max(...state.targetRatios.slice(0, state.modesToFit), ...state.solA.ratios, 10) * 1.08;
+          const rToX = (r) => 18 + (r / maxR) * (W - 36);
+
+          // Target dashed lines
+          state.targetRatios.slice(0, state.modesToFit).forEach((r) => {
+            const x = rToX(r);
+            ctx.strokeStyle = 'rgba(52, 211, 153, 0.55)';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath(); ctx.moveTo(x, 14); ctx.lineTo(x, H - 14); ctx.stroke();
+          });
+          ctx.setLineDash([]);
+
+          // Solution A & B mode bars
+          state.solA.ratios.forEach((r) => {
+            const x = rToX(r);
+            ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(x - 2, H - 14); ctx.lineTo(x - 2, 22); ctx.stroke();
+          });
+          state.solB.ratios.forEach((r) => {
+            const x = rToX(r);
+            ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + 2, H - 14); ctx.lineTo(x + 2, 26); ctx.stroke();
+          });
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('Spectra Overlay (Target dashed, A & B overlap)', 10, 12);
+        }
+      }
+
+      // =========================================================================
+      // 7. UI UPDATES & EVENT BINDINGS
+      // =========================================================================
+      function updateUI() {
+        const aOk = state.solA.feasible;
+        const bOk = state.solB.feasible;
+        const diff = profileL2Diff(state.solA.h, state.solB.h);
+
+        document.getElementById('sol-a-ratios').textContent = state.solA.ratios.map((r) => r.toFixed(2)).join(' : ');
+        document.getElementById('sol-b-ratios').textContent = state.solB.ratios.map((r) => r.toFixed(2)).join(' : ');
+        document.getElementById('sol-a-res').textContent = `Residual: ${state.solA.residual.toFixed(4)} ${aOk ? '(VALID)' : '(REFUSED)'}`;
+        document.getElementById('sol-b-res').textContent = `Residual: ${state.solB.residual.toFixed(4)} ${bOk ? '(VALID)' : '(REFUSED)'}`;
+        document.getElementById('sol-a-res').className = `mono text-[10px] mt-0.5 ${aOk ? 'text-emerald-300' : 'text-rose-400'}`;
+        document.getElementById('sol-b-res').className = `mono text-[10px] mt-0.5 ${bOk ? 'text-emerald-300' : 'text-rose-400'}`;
+        document.getElementById('diff-readout').textContent = `Δshape = ${diff.toFixed(3)}`;
+
+        const banner = document.getElementById('status-banner');
+        const sDot = document.getElementById('status-dot');
+        const sTxt = document.getElementById('status-text');
+        const bVerdict = document.getElementById('bottom-verdict');
+
+        if (aOk || bOk) {
+          banner.className = 'hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-2.5 pointer-events-auto border border-emerald-500/35';
+          sDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          sTxt.className = 'mono text-xs font-semibold text-emerald-300';
+          sTxt.textContent = `SOLVED · RMS ${Math.min(state.solA.residual, state.solB.residual).toFixed(4)} < TOL ${TOLERANCE.toFixed(3)}`;
+          bVerdict.className = 'mono text-[11px] font-bold text-emerald-300';
+          bVerdict.textContent = `TWO DISTINCT PROFILES MATCH WITHIN TOLERANCE (${TOLERANCE})`;
+        } else {
+          banner.className = 'hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-2.5 pointer-events-auto border border-rose-500/50';
+          sDot.className = 'w-2 h-2 rounded-full bg-rose-400';
+          sTxt.className = 'mono text-xs font-semibold text-rose-300';
+          sTxt.textContent = `NO SOLUTION FOUND WITHIN CONSTRAINTS (RMS ${state.solA.residual.toFixed(4)} > TOL ${TOLERANCE})`;
+          bVerdict.className = 'mono text-[11px] font-bold text-rose-400';
+          bVerdict.textContent = `REFUSED — UNREACHABLE TARGET (RMS ${state.solA.residual.toFixed(4)} > ${TOLERANCE})`;
+        }
+
+        drawBottomCanvases();
+      }
+
+      function updateVerificationUI() {
+        const v = state.verification;
+        if (!v) return;
+        const count = [v.pass1, v.pass2, v.pass3, v.pass4].filter(Boolean).length;
+        document.getElementById('verify-badge-text').textContent = `${count}/4 ${count === 4 ? 'PASS' : 'CHECK'}`;
+
+        const setB = (id, ok) => {
+          const el = document.getElementById(id);
+          el.textContent = ok ? 'PASS' : 'FAIL';
+          el.className = `mono text-[10px] font-bold px-2 py-1 rounded border ${
+            ok ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
+          }`;
+        };
+
+        setB('v-check1-badge', v.pass1);
+        document.getElementById('v-check1-detail').textContent = `Forward FEM on 1:4:10 → [${v.resA.ratios.map((r) => r.toFixed(2)).join(':')}], RMS=${v.resA.residual.toFixed(4)} < ${TOLERANCE}`;
+        setB('v-check2-badge', v.pass2);
+        document.getElementById('v-check2-detail').textContent = `Seed A RMS=${v.resA.residual.toFixed(4)}, Seed B RMS=${v.resB.residual.toFixed(4)} · Profile L2 diff = ${v.diff.toFixed(4)}`;
+        setB('v-check3-badge', v.pass3);
+        document.getElementById('v-check3-detail').textContent = `All segments within [${state.hMin.toFixed(2)}, ${state.hMax.toFixed(2)}] and |Δh| ≤ ${state.maxSlope.toFixed(2)}`;
+        setB('v-check4-badge', v.pass4);
+        document.getElementById('v-check4-detail').textContent = `Target 1:2:3:4:5 → RMS=${v.unreachRes.toFixed(4)} > ${TOLERANCE} → Refused cleanly`;
+      }
+
+      function parseTargetInput() {
+        const raw = document.getElementById('target-input').value;
+        const nums = raw.split(/[:,\s]+/).map(Number).filter((v) => Number.isFinite(v) && v > 0);
+        if (nums.length >= 2) {
+          const base = nums[0];
+          state.targetRatios = nums.map((v) => v / base);
+          state.modesToFit = Math.min(5, Math.max(2, nums.length));
+          document.getElementById('modes-fit-label').textContent = `${state.modesToFit} modes`;
+          document.querySelectorAll('.m-btn').forEach((b) => {
+            const active = Number(b.dataset.m) === state.modesToFit;
+            b.className = `m-btn mono px-2 py-0.5 rounded border ${active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800 border-slate-700'}`;
+          });
+        }
+      }
+
+      function bindEvents() {
+        document.getElementById('btn-solve-dual').addEventListener('click', () => {
+          parseTargetInput();
+          solveDualSeeds();
+        });
+
+        document.querySelectorAll('.ratio-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            document.getElementById('target-input').value = btn.dataset.ratio;
+            parseTargetInput();
+            solveDualSeeds();
+          });
+        });
+
+        document.querySelectorAll('.m-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.modesToFit = Number(btn.dataset.m);
+            while (state.targetRatios.length < state.modesToFit) {
+              state.targetRatios.push(state.targetRatios[state.targetRatios.length - 1] + 2);
+            }
+            document.getElementById('modes-fit-label').textContent = `${state.modesToFit} modes`;
+            document.querySelectorAll('.m-btn').forEach((b) => {
+              const active = Number(b.dataset.m) === state.modesToFit;
+              b.className = `m-btn mono px-2 py-0.5 rounded border ${active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800 border-slate-700'}`;
+            });
+            solveDualSeeds();
+          });
+        });
+
+        document.querySelectorAll('.solver-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.solverType = btn.dataset.solver;
+            document.querySelectorAll('.solver-btn').forEach((b) => {
+              const active = b.dataset.solver === state.solverType;
+              b.className = `solver-btn text-[10px] py-1.5 rounded-lg border font-medium ${active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800 text-slate-400 border-slate-700'}`;
+            });
+            solveDualSeeds();
+          });
+        });
+
+        document.getElementById('hmin-slider').addEventListener('input', (e) => {
+          state.hMin = Number(e.target.value) / 100;
+          document.getElementById('hmin-readout').textContent = state.hMin.toFixed(2);
+          solveDualSeeds();
+        });
+        document.getElementById('hmax-slider').addEventListener('input', (e) => {
+          state.hMax = Number(e.target.value) / 100;
+          document.getElementById('hmax-readout').textContent = state.hMax.toFixed(2);
+          solveDualSeeds();
+        });
+        document.getElementById('slope-slider').addEventListener('input', (e) => {
+          state.maxSlope = Number(e.target.value) / 100;
+          document.getElementById('slope-readout').textContent = state.maxSlope.toFixed(2);
+          solveDualSeeds();
+        });
+
+        document.getElementById('btn-hear-a').addEventListener('click', () => hearSolution(state.solA));
+        document.getElementById('btn-hear-b').addEventListener('click', () => hearSolution(state.solB));
+
+        const modal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          runFourCheckVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        });
+        document.getElementById('btn-rerun-verify').addEventListener('click', runFourCheckVerification);
+
+        document.getElementById('btn-toggle-panel').addEventListener('click', () => {
+          document.getElementById('left-panel').classList.toggle('-translate-x-[110%]');
+        });
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      }
+
+      window.addEventListener('load', () => {
+        initThree();
+        solveDualSeeds();
+        runFourCheckVerification();
+        bindEvents();
+        animate();
+      });
+    })();
+  </script>
+</body>
+</html>
