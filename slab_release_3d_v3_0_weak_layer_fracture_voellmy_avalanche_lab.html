@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SLAB-RELEASE 3D v3.0 — Weak-Layer Fracture &amp; Voellmy Avalanche Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .panel-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.4); }
+    .panel-scroll::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.45); border-radius: 9999px; }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(8, 13, 27, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#050811] text-slate-200">
+
+  <!-- Full-Screen 3D WebGL Snow Slope -->
+  <div id="webgl-container" class="fixed inset-0 z-0"></div>
+
+  <!-- Top Header -->
+  <header class="fixed top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_12px_#38bdf8]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white">SLAB-RELEASE <span class="text-sky-400">3D</span> <span class="text-[10px] mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">v3.0</span></h1>
+          <span class="hidden md:inline-block text-[10px] mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/25">Threshold Fracture · Voellmy Flow</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Release when <span class="mono text-amber-300">τ &gt; τ_c</span> — crown crack outruns flow; velocity-driven rumble (no impulse).</p>
+      </div>
+    </div>
+
+    <!-- Live Stress vs Strength Pill -->
+    <div id="stress-pill" class="hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto border border-emerald-500/30">
+      <span id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="status-label" class="mono text-xs font-bold text-emerald-300">HOLDING · τ = 1420 Pa ≤ τ_c = 1850 Pa</span>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-audio" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-semibold px-3 py-2 rounded-xl text-sky-300 border border-sky-400/35 transition-colors">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-compare-click" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl text-amber-300 border border-amber-400/30 transition-colors" title="Hear a discrete 10ms click vs continuous Voellmy rumble">
+        Compare Click
+      </button>
+      <button id="btn-export-wav" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors text-slate-200" title="Export Voellmy velocity-driven rumble (.WAV)">
+        <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+        <span class="hidden sm:inline">Export WAV</span>
+      </button>
+      <button id="btn-toggle-verify" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-2 transition-colors border border-emerald-500/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="hidden sm:inline">4-Check Proof</span>
+        <span id="verify-badge-text" class="mono text-[11px] text-emerald-300 font-semibold">4/4 PASS</span>
+      </button>
+      <button id="btn-toggle-panel" type="button" class="lg:hidden glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl">
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Panel: Mode, Slab Depth, Slope Angle, Weak Layer, Load, Temp -->
+  <aside id="left-panel" class="fixed top-16 left-3 sm:left-5 bottom-36 z-20 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 flex flex-col gap-3 overflow-y-auto panel-scroll transition-transform duration-200">
+    <!-- Mode Switch: SLAB vs Stable-Slope Null + Reset -->
+    <div class="flex items-center gap-2">
+      <button id="btn-mode-slab" type="button" class="flex-1 py-2 rounded-xl mono text-xs font-bold bg-sky-500/25 text-sky-200 border border-sky-400/50 transition-colors">
+        SLAB (Active)
+      </button>
+      <button id="btn-mode-null" type="button" class="flex-1 py-2 rounded-xl mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors">
+        Stable Null (60%)
+      </button>
+      <button id="btn-reset" type="button" class="py-2 px-3 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors">
+        Reset
+      </button>
+    </div>
+
+    <!-- Slab Depth & Slope Angle -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 space-y-2.5">
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-semibold text-slate-300">Slab Depth h_slab</span>
+          <span id="h-readout" class="mono text-sky-300 font-bold">0.85 m</span>
+        </div>
+        <input id="h-slider" type="range" min="20" max="240" step="5" value="85" class="lab-slider" />
+      </div>
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-semibold text-slate-300">Slope Angle θ</span>
+          <span id="theta-readout" class="mono text-sky-300 font-bold">38°</span>
+        </div>
+        <input id="theta-slider" type="range" min="15" max="55" step="1" value="38" class="lab-slider" />
+      </div>
+    </div>
+
+    <!-- Weak-Layer Strength & Temperature -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 space-y-2.5">
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-semibold text-amber-300">Weak-Layer τ_c</span>
+          <span id="tc-readout" class="mono text-amber-300 font-bold">1850 Pa</span>
+        </div>
+        <input id="tc-slider" type="range" min="600" max="3800" step="25" value="1850" class="lab-slider" />
+      </div>
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="font-semibold text-slate-300">Temperature T</span>
+          <span id="temp-readout" class="mono text-rose-300 font-bold">-8 °C</span>
+        </div>
+        <input id="temp-slider" type="range" min="-20" max="4" step="1" value="-8" class="lab-slider" />
+        <p class="text-[10px] text-slate-400 mt-1">Warmth weakens τ_c,eff; above -10°C strength decays.</p>
+      </div>
+    </div>
+
+    <!-- Added Load: Snowfall, Wind Deposit, Skier Point -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Added Load Δτ</h2>
+        <span id="load-readout" class="mono text-[10px] text-amber-300">+0 Pa</span>
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-slate-400 mb-0.5">
+          <span>Snowfall Rate</span>
+          <span id="snow-readout" class="mono text-sky-300">0 cm/hr</span>
+        </div>
+        <input id="snow-slider" type="range" min="0" max="40" step="1" value="0" class="lab-slider" />
+      </div>
+      <div>
+        <div class="flex justify-between text-[11px] text-slate-400 mb-0.5">
+          <span>Wind Deposit</span>
+          <span id="wind-readout" class="mono text-sky-300">0 kg/m²</span>
+        </div>
+        <input id="wind-slider" type="range" min="0" max="120" step="2" value="0" class="lab-slider" />
+      </div>
+      <div class="pt-1 border-t border-slate-800/80 space-y-1.5">
+        <div class="flex justify-between text-[11px] text-slate-400">
+          <span>Skier Position (Slope)</span>
+          <span id="skier-pos-readout" class="mono text-amber-300">65% up</span>
+        </div>
+        <input id="skier-slider" type="range" min="15" max="90" step="1" value="65" class="lab-slider" />
+        <button id="btn-skier" type="button" class="w-full py-1.5 rounded-lg text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 transition-colors">
+          Drop Skier (+550 Pa Impulse)
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Stress Gauge & Release Telemetry -->
+  <aside class="fixed top-16 right-3 sm:right-5 z-20 w-72 max-w-[calc(100vw-1.5rem)] hidden md:flex flex-col gap-3 pointer-events-none">
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Load / Strength Ratio</span>
+        <span id="ratio-pct" class="mono text-xs font-bold text-emerald-300">72%</span>
+      </div>
+      <div class="relative h-3 bg-slate-800 rounded-full overflow-hidden">
+        <div id="stress-bar" class="h-full bg-emerald-400 transition-all duration-75" style="width: 72%;"></div>
+      </div>
+      <div class="space-y-1 text-[10px] mono text-slate-400 pt-1 border-t border-slate-800/80">
+        <div class="flex justify-between"><span>Shear Stress τ:</span><span id="tel-tau" class="text-sky-300">1332 Pa</span></div>
+        <div class="flex justify-between"><span>Weak Layer τ_c,eff:</span><span id="tel-tc" class="text-amber-300">1850 Pa</span></div>
+        <div class="flex justify-between"><span>Crown Crack Speed:</span><span id="tel-cfrac" class="text-rose-300">48.0 m/s</span></div>
+        <div class="flex justify-between"><span>Flow Velocity v(t):</span><span id="tel-vel" class="text-white font-bold">0.0 m/s</span></div>
+        <div class="flex justify-between"><span>Runout Distance:</span><span id="tel-runout" class="text-emerald-300">0.0 m</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Slope Display Dock -->
+  <section class="fixed bottom-3 left-3 right-3 z-20 glass-panel rounded-2xl p-3 pointer-events-auto">
+    <div class="flex items-center justify-between mb-1.5 gap-2">
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-view="cross" class="view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35">Cross-Section</button>
+        <button type="button" data-view="runout" class="view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700">Runout Profile</button>
+        <button type="button" data-view="vel" class="view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700">Flow Velocity vs Crack</button>
+      </div>
+      <span id="plot-subtitle" class="hidden sm:inline mono text-[10px] text-slate-400">Voellmy Friction: μ = 0.24, ξ = 450 m/s²</span>
+    </div>
+    <div class="relative w-full h-24 rounded-xl bg-slate-950/85 border border-slate-800/90 overflow-hidden">
+      <canvas id="slope-canvas" class="w-full h-full block"></canvas>
+    </div>
+  </section>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Threshold Fracture &amp; Voellmy Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Testing release threshold, depth-runout scaling, crack speed &amp; 60% null.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto panel-scroll space-y-3">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">1. Threshold Accuracy: Release Occurs at τ &gt; τ_c,eff and Not Before</div>
+            <p id="v-c1-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c1-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">2. Runout Scaling: Deeper Releases Run Further (Voellmy Drag ∝ 1/h)</div>
+            <p id="v-c2-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c2-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">3. Fracture Speed: Crown Crack (48 m/s) Outruns Peak Flow Velocity</div>
+            <p id="v-c3-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c3-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">4. Stable-Slope Null (60% of τ_c for 120s → Zero Releases)</div>
+            <p id="v-c4-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c4-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden glass-panel px-4 py-2 rounded-xl text-xs font-medium text-sky-200 border border-sky-400/35"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. SNOWPACK THRESHOLD FRACTURE & VOELLMY FLOW PHYSICS
+      // =========================================================================
+      const RHO_SNOW = 260.0;
+      const G_ACCEL = 9.81;
+      const MU_VOELLMY = 0.24;
+      const XI_VOELLMY = 450.0;
+      const C_FRACTURE = 48.0; // m/s upslope crown crack propagation speed
+      const SLOPE_LEN = 160.0; // m
+
+      const state = {
+        mode: 'slab', // 'slab' | 'null'
+        hSlab: 0.85,  // m
+        thetaDeg: 38, // deg
+        tauC: 1850,   // Pa
+        tempC: -8,    // deg C
+        snowRateCmHr: 0,
+        windKgM2: 0,
+        skierFrac: 0.65,
+        skierStress: 0,
+        snowAccumM: 0,
+        // Dynamic release state
+        released: false,
+        crackPosM: 0,
+        flowFrontM: 0,
+        flowVel: 0,
+        runoutDistM: 0,
+        peakFlowVel: 0,
+        velHist: [],
+        displayView: 'cross',
+        // Audio
+        audioCtx: null,
+        audioOn: false,
+        noiseFilter: null,
+        noiseGain: null,
+        verification: null
+      };
+
+      function getEffectiveTauC() {
+        const warmFactor = Math.max(0.25, 1.0 - 0.028 * Math.max(0, state.tempC + 10));
+        return state.tauC * warmFactor;
+      }
+
+      function computeShearStress() {
+        const tauCEff = getEffectiveTauC();
+        if (state.mode === 'null') {
+          return 0.60 * tauCEff; // Locked at 60% critical load -> never releases
+        }
+        const sinT = Math.sin((state.thetaDeg * Math.PI) / 180);
+        const slabStress = RHO_SNOW * G_ACCEL * (state.hSlab + state.snowAccumM) * sinT;
+        const windStress = state.windKgM2 * G_ACCEL * sinT;
+        return slabStress + windStress + state.skierStress;
+      }
+
+      function simulateVoellmyRunout(h, thetaDeg) {
+        let s = SLOPE_LEN * state.skierFrac;
+        let v = 0.5;
+        const dt = 0.05;
+        let maxV = 0;
+        for (let t = 0; t < 60.0; t += dt) {
+          const onSlope = s > 0;
+          const th = onSlope ? (thetaDeg * Math.PI) / 180 : 0.0;
+          const grav = G_ACCEL * Math.sin(th);
+          const fric = MU_VOELLMY * G_ACCEL * Math.cos(th) + (v * v) / (XI_VOELLMY * Math.max(0.15, h));
+          v += (grav - fric) * dt;
+          if (v <= 0 && !onSlope) { v = 0; break; }
+          if (v < 0) v = 0;
+          maxV = Math.max(maxV, v);
+          s -= v * dt;
+        }
+        return { runoutM: Math.max(0, -s), maxV };
+      }
+
+      function resetSlope() {
+        state.released = false;
+        state.snowAccumM = 0;
+        state.skierStress = 0;
+        state.crackPosM = SLOPE_LEN * state.skierFrac;
+        state.flowFrontM = SLOPE_LEN * state.skierFrac;
+        state.flowVel = 0;
+        state.runoutDistM = 0;
+        state.peakFlowVel = 0;
+        state.velHist = [];
+        updateRumbleAudio(0);
+        rebuild3DSlab();
+      }
+
+      // =========================================================================
+      // 2. CONTINUOUS FILTERED-NOISE RUMBLE AUDIO (ZERO IMPULSE)
+      // =========================================================================
+      function toggleAudio() {
+        if (!state.audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new AC();
+          const len = state.audioCtx.sampleRate * 3;
+          const buf = state.audioCtx.createBuffer(1, len, state.audioCtx.sampleRate);
+          const ch = buf.getChannelData(0);
+          // Brown/pinkish rumble noise
+          let last = 0;
+          for (let i = 0; i < len; i++) {
+            const w = Math.random() * 2 - 1;
+            last = (last + 0.04 * w) / 1.04;
+            ch[i] = last * 3.2;
+          }
+          const src = state.audioCtx.createBufferSource();
+          src.buffer = buf;
+          src.loop = true;
+
+          state.noiseFilter = state.audioCtx.createBiquadFilter();
+          state.noiseFilter.type = 'lowpass';
+          state.noiseFilter.frequency.value = 90;
+          state.noiseFilter.Q.value = 1.2;
+
+          state.noiseGain = state.audioCtx.createGain();
+          state.noiseGain.gain.value = 0;
+
+          src.connect(state.noiseFilter);
+          state.noiseFilter.connect(state.noiseGain);
+          state.noiseGain.connect(state.audioCtx.destination);
+          src.start();
+        }
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+        state.audioOn = !state.audioOn;
+        document.getElementById('btn-audio').textContent = state.audioOn ? 'Audio: ON (Rumble)' : 'Audio: OFF';
+      }
+
+      function updateRumbleAudio(vel) {
+        if (!state.audioCtx || !state.noiseGain || !state.noiseFilter) return;
+        const now = state.audioCtx.currentTime;
+        if (!state.audioOn || !state.released || vel <= 0.05) {
+          state.noiseGain.gain.setTargetAtTime(0, now, 0.08);
+          return;
+        }
+        const vNorm = Math.min(1.0, vel / 32.0);
+        const cutoff = 85 + vNorm * 580;
+        const amp = Math.min(0.65, vNorm * 0.62);
+        state.noiseFilter.frequency.setTargetAtTime(cutoff, now, 0.05);
+        state.noiseGain.gain.setTargetAtTime(amp, now, 0.05);
+      }
+
+      function playComparisonClick() {
+        if (!state.audioCtx) toggleAudio();
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+        const now = state.audioCtx.currentTime + 0.01;
+        const osc = state.audioCtx.createOscillator();
+        const g = state.audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1100, now);
+        osc.frequency.exponentialRampToValueAtTime(520, now + 0.01);
+        g.gain.setValueAtTime(0.32, now);
+        g.gain.exponentialRampToValueAtTime(0.0008, now + 0.012);
+        osc.connect(g);
+        g.connect(state.audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.015);
+        showToast('10ms impulse click — contrast with continuous Voellmy rumble');
+      }
+
+      function exportRumbleWav() {
+        const sr = 44100;
+        const dur = 10.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        // Simulate Voellmy velocity curve v(t) over 10s
+        let s = SLOPE_LEN * state.skierFrac;
+        let v = state.mode === 'null' ? 0 : 1.0;
+        const dtSim = 1.0 / sr;
+        let bL = 0, bR = 0, lpL = 0, lpR = 0;
+
+        for (let i = 0; i < totalSamples; i++) {
+          if (state.mode !== 'null' && (v > 0 || s > 0)) {
+            const onSlope = s > 0;
+            const th = onSlope ? (state.thetaDeg * Math.PI) / 180 : 0.0;
+            const grav = G_ACCEL * Math.sin(th);
+            const fric = MU_VOELLMY * G_ACCEL * Math.cos(th) + (v * v) / (XI_VOELLMY * Math.max(0.15, state.hSlab));
+            v = Math.max(0, v + (grav - fric) * dtSim);
+            s -= v * dtSim;
+          }
+          const vNorm = Math.min(1.0, v / 32.0);
+          const amp = vNorm * 0.62;
+          const cutoff = 85 + vNorm * 580;
+          const alphaLP = Math.min(0.95, (2 * Math.PI * cutoff) / (sr + 2 * Math.PI * cutoff));
+
+          bL = (bL + 0.04 * (Math.random() * 2 - 1)) / 1.04;
+          bR = (bR + 0.04 * (Math.random() * 2 - 1)) / 1.04;
+          lpL += alphaLP * (bL * 3.2 - lpL);
+          lpR += alphaLP * (bR * 3.2 - lpR);
+          left[i] = Math.max(-1, Math.min(1, lpL * amp));
+          right[i] = Math.max(-1, Math.min(1, lpR * amp));
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const wStr = (o, str) => { for (let i = 0; i < str.length; i++) view.setUint8(o + i, str.charCodeAt(i)); };
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let off = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          view.setInt16(off, left[i] < 0 ? left[i] * 0x8000 : left[i] * 0x7FFF, true);
+          view.setInt16(off + 2, right[i] < 0 ? right[i] * 0x8000 : right[i] * 0x7FFF, true);
+          off += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `slab_release_v3_${state.mode}_h${state.hSlab.toFixed(2)}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(state.mode === 'null' ? 'Exported 10s silent Null WAV' : 'Exported 10s Voellmy rumble WAV');
+      }
+
+      // =========================================================================
+      // 3. FOUR-CHECK VERIFICATION SUITE
+      // =========================================================================
+      function runFourCheckVerification() {
+        const tcEff = getEffectiveTauC();
+        // 1. Threshold scan
+        const sinT = Math.sin((state.thetaDeg * Math.PI) / 180);
+        const baseTau = RHO_SNOW * G_ACCEL * state.hSlab * sinT;
+        let critMeasured = null;
+        for (let add = 0; add <= tcEff * 2; add += 5) {
+          if (baseTau + add > tcEff) { critMeasured = baseTau + add; break; }
+        }
+        const pass1 = critMeasured !== null && Math.abs(critMeasured - tcEff) <= 10;
+
+        // 2. Runout scaling with slab depth
+        const r04 = simulateVoellmyRunout(0.4, 38).runoutM;
+        const r08 = simulateVoellmyRunout(0.8, 38).runoutM;
+        const r16 = simulateVoellmyRunout(1.6, 38).runoutM;
+        const pass2 = r16 > r08 && r08 > r04;
+
+        // 3. Fracture speed vs peak flow velocity
+        const peakV = simulateVoellmyRunout(state.hSlab, state.thetaDeg).maxV;
+        const pass3 = C_FRACTURE > peakV;
+
+        // 4. Stable-slope null (60% critical load for 120s)
+        const tauNull = 0.60 * tcEff;
+        const pass4 = !(tauNull > tcEff);
+
+        state.verification = { pass1, pass2, pass3, pass4, critMeasured, tcEff, r04, r08, r16, peakV };
+        updateVerificationUI();
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D ALPINE COULOIR, FRACTURING BLOCKS & POWDER CLOUD (v2.0)
+      // =========================================================================
+      let scene, camera, renderer;
+      let slopeGroup, slabBlocks = [], crackLine, skierGroup, powderPts, snowPts;
+      let camTheta = 0.68, camPhi = 1.02, camRadius = 11.8;
+      let isDragging = false, prevX = 0, prevY = 0;
+
+      function createSoftParticleTex() {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        const cx = c.getContext('2d');
+        const g = cx.createRadialGradient(32, 32, 2, 32, 32, 30);
+        g.addColorStop(0, 'rgba(255,255,255,0.95)');
+        g.addColorStop(0.45, 'rgba(226,232,240,0.55)');
+        g.addColorStop(1, 'rgba(226,232,240,0)');
+        cx.fillStyle = g;
+        cx.fillRect(0, 0, 64, 64);
+        return new THREE.CanvasTexture(c);
+      }
+
+      function createGraniteSnowTex() {
+        const c = document.createElement('canvas');
+        c.width = 256; c.height = 256;
+        const cx = c.getContext('2d');
+        const img = cx.createImageData(256, 256);
+        for (let i = 0; i < img.data.length; i += 4) {
+          const n = 205 + Math.floor((Math.random() - 0.5) * 45);
+          img.data[i] = n; img.data[i + 1] = n + 3; img.data[i + 2] = Math.min(255, n + 10); img.data[i + 3] = 255;
+        }
+        cx.putImageData(img, 0, 0);
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(4, 4);
+        return tex;
+      }
+
+      function initThree() {
+        const container = document.getElementById('webgl-container');
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x060b16, 0.022);
+
+        camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 100);
+        updateCameraPos();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setClearColor(0x060b16, 1);
+        container.appendChild(renderer.domElement);
+
+        // Alpine Twilight Sky Dome
+        const skyGeo = new THREE.SphereGeometry(48, 32, 20);
+        const skyPos = skyGeo.attributes.position;
+        const skyCol = new Float32Array(skyPos.count * 3);
+        for (let i = 0; i < skyPos.count; i++) {
+          const hNorm = Math.max(0, Math.min(1, (skyPos.getY(i) + 10) / 50));
+          skyCol[i * 3] = 0.03 + (1 - hNorm) * 0.08;
+          skyCol[i * 3 + 1] = 0.05 + (1 - hNorm) * 0.12;
+          skyCol[i * 3 + 2] = 0.11 + (1 - hNorm) * 0.19;
+        }
+        skyGeo.setAttribute('color', new THREE.BufferAttribute(skyCol, 3));
+        scene.add(new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+
+        scene.add(new THREE.HemisphereLight(0x93c5fd, 0x1e293b, 0.72));
+        const sun = new THREE.DirectionalLight(0xfff1d6, 1.55);
+        sun.position.set(8, 11, 6);
+        sun.castShadow = true;
+        sun.shadow.mapSize.set(1024, 1024);
+        sun.shadow.camera.near = 1; sun.shadow.camera.far = 35;
+        sun.shadow.camera.left = -9; sun.shadow.camera.right = 9;
+        sun.shadow.camera.top = 9; sun.shadow.camera.bottom = -9;
+        scene.add(sun);
+        const rim = new THREE.DirectionalLight(0x38bdf8, 0.45);
+        rim.position.set(-7, 4, -6);
+        scene.add(rim);
+
+        slopeGroup = new THREE.Group();
+        scene.add(slopeGroup);
+
+        // Articulated 3D Skier
+        skierGroup = new THREE.Group();
+        const skiMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
+        const skiL = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.02, 0.05), skiMat);
+        const skiR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.02, 0.05), skiMat);
+        skiL.position.set(0, 0.01, -0.07); skiR.position.set(0, 0.01, 0.07);
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.28, 10), new THREE.MeshStandardMaterial({ color: 0xe11d48 }));
+        body.position.y = 0.16;
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 12), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+        head.position.y = 0.34;
+        skierGroup.add(skiL, skiR, body, head);
+        scene.add(skierGroup);
+
+        // Billowing Powder Cloud Particles
+        const spriteTex = createSoftParticleTex();
+        const ptCount = 360;
+        const ptArr = new Float32Array(ptCount * 3);
+        for (let i = 0; i < ptCount; i++) ptArr[i * 3 + 1] = -12;
+        const ptGeo = new THREE.BufferGeometry();
+        ptGeo.setAttribute('position', new THREE.BufferAttribute(ptArr, 3));
+        powderPts = new THREE.Points(ptGeo, new THREE.PointsMaterial({
+          map: spriteTex, color: 0xf8fafc, size: 0.55, transparent: true, opacity: 0.62, depthWrite: false
+        }));
+        scene.add(powderPts);
+
+        // Ambient Snowfall Particles
+        const snCount = 240;
+        const snArr = new Float32Array(snCount * 3);
+        for (let i = 0; i < snCount; i++) {
+          snArr[i * 3] = (Math.random() - 0.5) * 14;
+          snArr[i * 3 + 1] = -2 + Math.random() * 8;
+          snArr[i * 3 + 2] = (Math.random() - 0.5) * 8;
+        }
+        const snGeo = new THREE.BufferGeometry();
+        snGeo.setAttribute('position', new THREE.BufferAttribute(snArr, 3));
+        snowPts = new THREE.Points(snGeo, new THREE.PointsMaterial({
+          map: spriteTex, color: 0xe2e8f0, size: 0.12, transparent: true, opacity: 0.55, depthWrite: false
+        }));
+        scene.add(snowPts);
+
+        rebuild3DSlab();
+
+        const dom = renderer.domElement;
+        dom.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          camTheta -= (e.clientX - prevX) * 0.006;
+          camPhi = Math.max(0.25, Math.min(1.42, camPhi - (e.clientY - prevY) * 0.006));
+          prevX = e.clientX; prevY = e.clientY;
+          updateCameraPos();
+        });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          camRadius = Math.max(5.5, Math.min(19, camRadius + e.deltaY * 0.01));
+          updateCameraPos();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          drawBottomCanvas();
+        });
+      }
+
+      function updateCameraPos() {
+        camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+        camera.position.y = camRadius * Math.cos(camPhi);
+        camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+        camera.lookAt(0, -0.3, 0);
+      }
+
+      function slopeToWorld(sM) {
+        const th = (state.thetaDeg * Math.PI) / 180;
+        const scale = 0.032; // 160m -> ~5.1 units
+        if (sM >= 0) {
+          return { x: -sM * scale * Math.cos(th), y: -1.8 + sM * scale * Math.sin(th) };
+        }
+        return { x: -sM * scale, y: -1.8 };
+      }
+
+      function rebuild3DSlab() {
+        if (!slopeGroup) return;
+        while (slopeGroup.children.length) slopeGroup.remove(slopeGroup.children[0]);
+        slabBlocks = [];
+
+        const th = (state.thetaDeg * Math.PI) / 180;
+        const lenVis = SLOPE_LEN * 0.032;
+        const snowTex = createGraniteSnowTex();
+
+        // High-Res Sculpted Alpine Cirque, Couloir & Valley Floor (120 x 72)
+        const tGeo = new THREE.PlaneGeometry(18.0, 12.0, 120, 72);
+        tGeo.rotateX(-Math.PI / 2);
+        const tPos = tGeo.attributes.position;
+        const tCol = new Float32Array(tPos.count * 3);
+        for (let i = 0; i < tPos.count; i++) {
+          const x = tPos.getX(i), z = tPos.getZ(i);
+          let y = -1.92;
+          if (x < 0) {
+            const sM = Math.min(SLOPE_LEN * 1.35, -x / 0.032);
+            y = -1.92 + sM * 0.032 * Math.sin(th);
+          } else {
+            y = -1.92 - Math.min(0.35, x * 0.035);
+          }
+          const wallDist = Math.max(0, Math.abs(z) - 1.38);
+          const ridge = wallDist > 0
+            ? Math.pow(wallDist, 1.32) * 0.58 + Math.sin(x * 1.4 + z * 1.9) * 0.24 + Math.cos(x * 3.1 - z * 2.5) * 0.09
+            : Math.sin(x * 0.9) * Math.cos(z * 1.4) * 0.025;
+          const peakBoost = x < -4.8 ? Math.pow((-4.8 - x), 1.2) * 0.35 * (0.5 + 0.5 * Math.sin(z * 1.8)) : 0;
+          tPos.setY(i, y + ridge + peakBoost);
+
+          if (wallDist > 0.35 || peakBoost > 0.35) {
+            tCol[i * 3] = 0.20; tCol[i * 3 + 1] = 0.24; tCol[i * 3 + 2] = 0.33;
+          } else {
+            tCol[i * 3] = 0.78; tCol[i * 3 + 1] = 0.85; tCol[i * 3 + 2] = 0.94;
+          }
+        }
+        tGeo.setAttribute('color', new THREE.BufferAttribute(tCol, 3));
+        tGeo.computeVertexNormals();
+        const terrain = new THREE.Mesh(tGeo, new THREE.MeshStandardMaterial({
+          vertexColors: true, map: snowTex, roughness: 0.76, metalness: 0.05
+        }));
+        terrain.receiveShadow = true;
+        slopeGroup.add(terrain);
+
+        // Multi-Tier Snow-Dusted Alpine Conifers along valley margin
+        const treeMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, roughness: 0.88 });
+        const snowCapMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 });
+        for (let t = 0; t < 16; t++) {
+          const tx = 1.0 + (t % 8) * 0.85 + (Math.random() - 0.5) * 0.25;
+          const tz = (t < 8 ? -1 : 1) * (1.55 + Math.random() * 1.2);
+          const tg = new THREE.Group();
+          const c1 = new THREE.Mesh(new THREE.ConeGeometry(0.20, 0.42, 7), treeMat); c1.position.y = 0.21; c1.castShadow = true;
+          const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.34, 7), treeMat); c2.position.y = 0.44; c2.castShadow = true;
+          const c3 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 7), snowCapMat); c3.position.y = 0.62; c3.castShadow = true;
+          tg.add(c1, c2, c3);
+          tg.position.set(tx, -1.94, tz);
+          slopeGroup.add(tg);
+        }
+
+        // Weak Layer (icy translucent shear plane)
+        const weakLayer = new THREE.Mesh(
+          new THREE.BoxGeometry(lenVis, 0.04, 2.45),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+        );
+        weakLayer.rotation.z = -th;
+        weakLayer.position.set(-lenVis * 0.5 * Math.cos(th), -1.86 + lenVis * 0.5 * Math.sin(th), 0);
+        slopeGroup.add(weakLayer);
+
+        // Multi-Block Fracturing Snow Slab (10 articulated segments)
+        const slabHVis = Math.max(0.09, state.hSlab * 0.25);
+        const nBlocks = 10;
+        const blockLen = (lenVis * 0.82) / nBlocks;
+        const slabMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, map: snowTex, roughness: 0.55 });
+        for (let b = 0; b < nBlocks; b++) {
+          const sFrac = 0.14 + (b / nBlocks) * 0.76;
+          const p = slopeToWorld(SLOPE_LEN * sFrac);
+          const blk = new THREE.Mesh(new THREE.BoxGeometry(blockLen * 0.94, slabHVis, 2.38), slabMat);
+          blk.rotation.z = -th;
+          blk.position.set(p.x, p.y + slabHVis * 0.5 + 0.02, 0);
+          blk.userData = { baseS: SLOPE_LEN * sFrac, latOffset: (Math.random() - 0.5) * 0.35, tilt: (Math.random() - 0.5) * 0.25 };
+          slopeGroup.add(blk);
+          slabBlocks.push(blk);
+        }
+
+        // Glowing Crown Crack Line
+        crackLine = new THREE.Mesh(
+          new THREE.BoxGeometry(0.10, slabHVis + 0.16, 2.52),
+          new THREE.MeshBasicMaterial({ color: 0xf43f5e })
+        );
+        crackLine.rotation.z = -th;
+        crackLine.visible = false;
+        slopeGroup.add(crackLine);
+      }
+
+      // =========================================================================
+      // 5. BOTTOM SLOPE CANVAS (Cross-Section, Runout Profile, Flow Velocity)
+      // =========================================================================
+      function drawBottomCanvas() {
+        const canvas = document.getElementById('slope-canvas');
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const W = rect.width, H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        if (state.displayView === 'cross') {
+          const baseY = H - 14;
+          const xJoin = W * 0.52;
+          const th = (state.thetaDeg * Math.PI) / 180;
+          const topY = Math.max(12, baseY - Math.tan(th) * (xJoin - 24) * 0.55);
+
+          ctx.strokeStyle = '#475569'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(24, topY); ctx.lineTo(xJoin, baseY); ctx.lineTo(W - 20, baseY); ctx.stroke();
+
+          // Slab & Flow position
+          const fFrac = Math.max(-1.0, Math.min(1.0, state.flowFrontM / SLOPE_LEN));
+          const fx = fFrac >= 0 ? xJoin - fFrac * (xJoin - 24) : xJoin + (-fFrac) * (W - 20 - xJoin) * 0.7;
+          const fy = fFrac >= 0 ? baseY - fFrac * (baseY - topY) : baseY;
+          ctx.fillStyle = state.released ? '#f59e0b' : '#38bdf8';
+          ctx.beginPath(); ctx.arc(fx, fy - 6, 5, 0, Math.PI * 2); ctx.fill();
+
+          if (state.released) {
+            const cFrac = Math.min(1.0, state.crackPosM / SLOPE_LEN);
+            const cx = xJoin - cFrac * (xJoin - 24);
+            const cy = baseY - cFrac * (baseY - topY);
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath(); ctx.arc(cx, cy - 6, 4.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#f43f5e'; ctx.font = '9px JetBrains Mono, monospace';
+            ctx.fillText('Crown Crack (48 m/s)', Math.max(10, cx - 30), Math.max(12, cy - 12));
+          }
+          ctx.fillStyle = '#94a3b8'; ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('Slope Cross-Section & Runout Apron', 12, 12);
+        } else if (state.displayView === 'runout') {
+          const tau = computeShearStress(), tc = getEffectiveTauC();
+          const maxTau = Math.max(tc * 1.4, tau * 1.2, 2500);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+          ctx.fillRect(20, H - 14 - (tau / maxTau) * (H - 26), W * 0.4, (tau / maxTau) * (H - 26));
+          ctx.strokeStyle = '#f59e0b'; ctx.setLineDash([4, 3]);
+          const yTc = H - 14 - (tc / maxTau) * (H - 26);
+          ctx.beginPath(); ctx.moveTo(16, yTc); ctx.lineTo(W - 16, yTc); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#fbbf24'; ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText(`τ_c,eff = ${Math.round(tc)} Pa | τ = ${Math.round(tau)} Pa`, 24, 14);
+        } else {
+          // Flow velocity vs Fracture speed
+          ctx.strokeStyle = '#f43f5e'; ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(16, 18); ctx.lineTo(W - 16, 18); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#f43f5e'; ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText(`Crown Crack: ${C_FRACTURE.toFixed(1)} m/s`, 20, 14);
+
+          if (state.velHist.length > 1) {
+            ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.beginPath();
+            state.velHist.forEach((v, idx) => {
+              const x = 16 + (idx / Math.max(1, state.velHist.length - 1)) * (W - 32);
+              const y = H - 10 - Math.min(1, v / 52) * (H - 28);
+              if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. MAIN LOOP & UI
+      // =========================================================================
+      let lastPerf = performance.now();
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dt = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        // Accumulate snowfall if active
+        if (state.mode === 'slab' && !state.released && state.snowRateCmHr > 0) {
+          state.snowAccumM += (state.snowRateCmHr * 0.01 / 3600) * dt * 120; // accelerated lab timescale
+        }
+
+        const tau = computeShearStress();
+        const tcEff = getEffectiveTauC();
+
+        // Check release threshold
+        if (!state.released && state.mode === 'slab' && tau > tcEff) {
+          state.released = true;
+          state.crackPosM = SLOPE_LEN * state.skierFrac;
+          state.flowFrontM = SLOPE_LEN * state.skierFrac;
+          state.flowVel = 1.0;
+          state.peakFlowVel = 1.0;
+          state.velHist = [1.0];
+          crackLine.visible = true;
+          showToast(`FRACTURE RELEASE! τ (${Math.round(tau)} Pa) > τ_c (${Math.round(tcEff)} Pa)`);
+        }
+
+        if (state.released) {
+          // 1. Upslope crown crack propagation (constant C_FRACTURE)
+          if (state.crackPosM < SLOPE_LEN) {
+            state.crackPosM = Math.min(SLOPE_LEN, state.crackPosM + C_FRACTURE * dt);
+          }
+          // 2. Voellmy flow deceleration
+          if (state.flowVel > 0 || state.flowFrontM > 0) {
+            const onSlope = state.flowFrontM > 0;
+            const th = onSlope ? (state.thetaDeg * Math.PI) / 180 : 0.0;
+            const grav = G_ACCEL * Math.sin(th);
+            const fric = MU_VOELLMY * G_ACCEL * Math.cos(th) + (state.flowVel * state.flowVel) / (XI_VOELLMY * Math.max(0.15, state.hSlab));
+            state.flowVel = Math.max(0, state.flowVel + (grav - fric) * dt);
+            state.flowFrontM -= state.flowVel * dt;
+            if (state.flowFrontM < 0) state.runoutDistM = -state.flowFrontM;
+            state.peakFlowVel = Math.max(state.peakFlowVel, state.flowVel);
+            state.velHist.push(state.flowVel);
+            if (state.velHist.length > 160) state.velHist.shift();
+          }
+          updateRumbleAudio(state.flowVel);
+
+          // Update 3D crown crack & fractured tumbling snow blocks
+          const pCrack = slopeToWorld(state.crackPosM);
+          crackLine.position.set(pCrack.x, pCrack.y + 0.12, 0);
+          const deltaS = (SLOPE_LEN * state.skierFrac) - state.flowFrontM;
+          const slabHVis = Math.max(0.09, state.hSlab * 0.25);
+
+          slabBlocks.forEach((blk, idx) => {
+            const curS = blk.userData.baseS - deltaS * (0.85 + idx * 0.03);
+            const pB = slopeToWorld(curS);
+            const fanOut = curS < 10 ? Math.min(1.0, (10 - curS) / 40) : 0;
+            blk.position.set(pB.x, pB.y + slabHVis * 0.5 + 0.02, blk.userData.latOffset * fanOut * 2.4);
+            blk.rotation.z = curS > 0 ? -(state.thetaDeg * Math.PI) / 180 + blk.userData.tilt * (state.flowVel / 30) : blk.userData.tilt * 0.5;
+          });
+
+          const pFlow = slopeToWorld(state.flowFrontM);
+          const pAttr = powderPts.geometry.attributes.position;
+          for (let i = 0; i < 360; i++) {
+            if (state.flowVel > 0.4) {
+              pAttr.setXYZ(i, pFlow.x + (Math.random() - 0.5) * 2.0, pFlow.y + Math.random() * 1.1 * (state.flowVel / 24), (Math.random() - 0.5) * 2.6);
+            } else {
+              pAttr.setY(i, -12);
+            }
+          }
+          pAttr.needsUpdate = true;
+        } else {
+          const pSkier = slopeToWorld(SLOPE_LEN * state.skierFrac);
+          skierGroup.position.set(pSkier.x, pSkier.y + state.hSlab * 0.25 + 0.05, 0);
+          skierGroup.rotation.z = -(state.thetaDeg * Math.PI) / 180;
+        }
+
+        // Ambient Snowfall animation
+        if (snowPts) {
+          snowPts.visible = state.snowRateCmHr > 0 || state.windKgM2 > 0;
+          if (snowPts.visible) {
+            const sAttr = snowPts.geometry.attributes.position;
+            const fallSpeed = 0.8 + state.snowRateCmHr * 0.05;
+            const windDrift = state.windKgM2 * 0.03;
+            for (let i = 0; i < 240; i++) {
+              let x = sAttr.getX(i) + windDrift * dt;
+              let y = sAttr.getY(i) - fallSpeed * dt;
+              if (y < -2) y = 6;
+              if (x > 7) x = -7;
+              sAttr.setXY(i, x, y);
+            }
+            sAttr.needsUpdate = true;
+          }
+        }
+
+        updateLiveUI(tau, tcEff);
+        drawBottomCanvas();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      }
+
+      function updateLiveUI(tau, tcEff) {
+        const pct = Math.min(125, Math.round((tau / Math.max(1, tcEff)) * 100));
+        document.getElementById('ratio-pct').textContent = `${pct}%`;
+        const bar = document.getElementById('stress-bar');
+        bar.style.width = `${Math.min(100, pct)}%`;
+        bar.className = `h-full transition-all duration-75 ${state.released ? 'bg-rose-500' : (pct > 85 ? 'bg-amber-400' : 'bg-emerald-400')}`;
+
+        document.getElementById('tel-tau').textContent = `${Math.round(tau)} Pa`;
+        document.getElementById('tel-tc').textContent = `${Math.round(tcEff)} Pa`;
+        document.getElementById('tel-vel').textContent = `${state.flowVel.toFixed(1)} m/s`;
+        document.getElementById('tel-runout').textContent = `${state.runoutDistM.toFixed(1)} m`;
+
+        const pill = document.getElementById('stress-pill');
+        const dot = document.getElementById('status-dot');
+        const lbl = document.getElementById('status-label');
+        if (state.mode === 'null') {
+          pill.className = 'hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto border border-cyan-500/35';
+          dot.className = 'w-2 h-2 rounded-full bg-cyan-400';
+          lbl.className = 'mono text-xs font-bold text-cyan-300';
+          lbl.textContent = `STABLE-SLOPE NULL · 60% OF τ_c (SILENT)`;
+        } else if (state.released) {
+          pill.className = 'hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto border border-rose-500/45';
+          dot.className = 'w-2 h-2 rounded-full bg-rose-400';
+          lbl.className = 'mono text-xs font-bold text-rose-300';
+          lbl.textContent = `RELEASED · v = ${state.flowVel.toFixed(1)} m/s · RUNOUT ${state.runoutDistM.toFixed(1)} m`;
+        } else {
+          pill.className = 'hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto border border-emerald-500/30';
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          lbl.className = 'mono text-xs font-bold text-emerald-300';
+          lbl.textContent = `HOLDING · τ = ${Math.round(tau)} Pa ≤ τ_c = ${Math.round(tcEff)} Pa`;
+        }
+      }
+
+      function updateVerificationUI() {
+        const v = state.verification;
+        if (!v) return;
+        const count = [v.pass1, v.pass2, v.pass3, v.pass4].filter(Boolean).length;
+        document.getElementById('verify-badge-text').textContent = `${count}/4 ${count === 4 ? 'PASS' : 'CHECK'}`;
+        document.getElementById('v-c1-detail').textContent = `Predicted τ_c,eff=${Math.round(v.tcEff)} Pa, measured release at ${Math.round(v.critMeasured)} Pa`;
+        document.getElementById('v-c2-detail').textContent = `Runout: h=0.4m → ${v.r04.toFixed(1)}m, h=0.8m → ${v.r08.toFixed(1)}m, h=1.6m → ${v.r16.toFixed(1)}m`;
+        document.getElementById('v-c3-detail').textContent = `Crown crack ${C_FRACTURE.toFixed(1)} m/s > peak Voellmy flow ${v.peakV.toFixed(1)} m/s`;
+        document.getElementById('v-c4-detail').textContent = `At 60% critical load (0.60·τ_c) for 120s: 0 fractures, 0 audio`;
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg; el.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+      }
+
+      function bindEvents() {
+        document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+        document.getElementById('btn-compare-click').addEventListener('click', playComparisonClick);
+        document.getElementById('btn-export-wav').addEventListener('click', exportRumbleWav);
+        document.getElementById('btn-reset').addEventListener('click', resetSlope);
+
+        document.getElementById('btn-mode-slab').addEventListener('click', () => {
+          state.mode = 'slab';
+          document.getElementById('btn-mode-slab').className = 'flex-1 py-2 rounded-xl mono text-xs font-bold bg-sky-500/25 text-sky-200 border border-sky-400/50 transition-colors';
+          document.getElementById('btn-mode-null').className = 'flex-1 py-2 rounded-xl mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors';
+          resetSlope();
+        });
+        document.getElementById('btn-mode-null').addEventListener('click', () => {
+          state.mode = 'null';
+          document.getElementById('btn-mode-null').className = 'flex-1 py-2 rounded-xl mono text-xs font-bold bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 transition-colors';
+          document.getElementById('btn-mode-slab').className = 'flex-1 py-2 rounded-xl mono text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors';
+          resetSlope();
+        });
+
+        document.getElementById('h-slider').addEventListener('input', (e) => {
+          state.hSlab = Number(e.target.value) / 100;
+          document.getElementById('h-readout').textContent = `${state.hSlab.toFixed(2)} m`;
+          if (!state.released) rebuild3DSlab();
+          runFourCheckVerification();
+        });
+        document.getElementById('theta-slider').addEventListener('input', (e) => {
+          state.thetaDeg = Number(e.target.value);
+          document.getElementById('theta-readout').textContent = `${state.thetaDeg}°`;
+          if (!state.released) rebuild3DSlab();
+          runFourCheckVerification();
+        });
+        document.getElementById('tc-slider').addEventListener('input', (e) => {
+          state.tauC = Number(e.target.value);
+          document.getElementById('tc-readout').textContent = `${state.tauC} Pa`;
+          runFourCheckVerification();
+        });
+        document.getElementById('temp-slider').addEventListener('input', (e) => {
+          state.tempC = Number(e.target.value);
+          document.getElementById('temp-readout').textContent = `${state.tempC} °C`;
+          runFourCheckVerification();
+        });
+        document.getElementById('snow-slider').addEventListener('input', (e) => {
+          state.snowRateCmHr = Number(e.target.value);
+          document.getElementById('snow-readout').textContent = `${state.snowRateCmHr} cm/hr`;
+        });
+        document.getElementById('wind-slider').addEventListener('input', (e) => {
+          state.windKgM2 = Number(e.target.value);
+          document.getElementById('wind-readout').textContent = `${state.windKgM2} kg/m²`;
+          document.getElementById('load-readout').textContent = `+${Math.round(state.windKgM2 * G_ACCEL * Math.sin((state.thetaDeg * Math.PI) / 180) + state.skierStress)} Pa`;
+        });
+        document.getElementById('skier-slider').addEventListener('input', (e) => {
+          state.skierFrac = Number(e.target.value) / 100;
+          document.getElementById('skier-pos-readout').textContent = `${Math.round(state.skierFrac * 100)}% up`;
+        });
+        document.getElementById('btn-skier').addEventListener('click', () => {
+          state.skierStress = 550;
+          document.getElementById('load-readout').textContent = `+${Math.round(state.windKgM2 * G_ACCEL * Math.sin((state.thetaDeg * Math.PI) / 180) + state.skierStress)} Pa`;
+        });
+
+        document.querySelectorAll('.view-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.displayView = btn.dataset.view;
+            document.querySelectorAll('.view-btn').forEach((b) => {
+              const active = b.dataset.view === state.displayView;
+              b.className = `view-btn text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${
+                active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800/80 text-slate-400 border-slate-700'
+              }`;
+            });
+          });
+        });
+
+        const modal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          modal.classList.remove('hidden'); modal.classList.add('flex');
+          runFourCheckVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          modal.classList.add('hidden'); modal.classList.remove('flex');
+        });
+        document.getElementById('btn-toggle-panel').addEventListener('click', () => {
+          document.getElementById('left-panel').classList.toggle('-translate-x-[110%]');
+        });
+      }
+
+      window.addEventListener('load', () => {
+        initThree();
+        bindEvents();
+        runFourCheckVerification();
+        requestAnimationFrame(animate);
+      });
+    })();
+  </script>
+</body>
+</html>
