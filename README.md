@@ -1,6 +1,6 @@
 # Percussion Labs
 
-Thirty-four self-contained, browser-native percussion laboratories, plus two
+Thirty-five self-contained, browser-native percussion laboratories, plus two
 specialty pendulum pieces. Each one builds an instrument out of a different
 piece of physics or mathematics, and generates its sound from the model rather
 than playing samples over it.
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The thirty-four
+## The thirty-five
 
 | # | Module | Built on |
 |---|---|---|
@@ -50,6 +50,7 @@ as well — technique first, then visible physics, then abstractions.
 | 32 | **TIMBRE-CLOCK 3D** | Spectrum-rhythm unifier, 20-50 Hz fusion crossover, single partial array |
 | 33 | **SPIRAL-DRUM 3D** | FitzHugh-Nagumo excitable medium, rotating spiral beat, tip meander to chaos |
 | 34 | **JAM-WAVE 3D** | Nagel-Schreckenberg traffic, backward jam waves, fundamental diagram, null at p=0 |
+| 35 | **GRAPH-CHOIR 3D** | Network Kuramoto, winding-number polyrhythm, cycle-space null |
 
 ## Specialty
 
@@ -94,7 +95,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          thirty-four laboratory modules + two specialty pendulum pieces
+*.html          thirty-five laboratory modules + two specialty pendulum pieces
 ```
 
 ## Licence
