@@ -554,6 +554,25 @@
           src.buffer = buf;
           routeNodeToRoom(src);
           src.start(now);
+        } else if (kind === 'bar') {
+          // Play the visitor's 16-step bar once with exact currentTime scheduling
+          const stepSec = 0.125; // 120 BPM 16th notes
+          for (let i = 0; i < 16; i++) {
+            if (!state.barPattern[i]) continue;
+            const t = now + i * stepSec;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(145, t);
+            osc.frequency.exponentialRampToValueAtTime(48, t + 0.085);
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.linearRampToValueAtTime(0.72, t + 0.002);
+            gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.16);
+            osc.connect(gain);
+            routeNodeToRoom(gain);
+            osc.start(t);
+            osc.stop(t + 0.18);
+          }
         } else {
           // Dry drum hit (low-end body + transient)
           const osc = ctx.createOscillator();
@@ -569,6 +588,7 @@
           osc.start(now);
           osc.stop(now + 0.18);
         }
+        state.lastFirePerf = performance.now();
       }
 
       // =========================================================================
@@ -722,7 +742,6 @@
         );
         roomGroup.add(srcMesh);
         roomGroup.add(lisMesh);
-</a>>
         rebuild3DRoom();
 
         const dom = renderer.domElement;
@@ -1119,6 +1138,11 @@
 
       function animate() {
         requestAnimationFrame(animate);
+        if (srcMesh && state.lastFirePerf) {
+          const dt = (performance.now() - state.lastFirePerf) / 1000;
+          const pulse = dt < 0.25 ? 1.0 + 0.9 * Math.sin((dt / 0.25) * Math.PI) : 1.0;
+          srcMesh.scale.set(pulse, pulse, pulse);
+        }
         if (renderer && scene && camera) {
           renderer.render(scene, camera);
         }
