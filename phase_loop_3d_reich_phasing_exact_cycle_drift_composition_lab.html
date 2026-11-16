@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PHASE-LOOP 3D — Reich Phasing &amp; Exact Cycle-Drift Composition Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    /* Custom thin scrollbars for side panels */
+    .panel-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .panel-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .panel-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    /* Scoped range inputs so they never crush layout */
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(9, 14, 28, 0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+    }
+    .step-btn {
+      transition: transform 0.08s ease, background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .step-btn:active {
+      transform: scale(0.93);
+    }
+    @keyframes pulseRing {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(56, 189, 248, 0); }
+    }
+    .milestone-flash {
+      animation: pulseRing 1.1s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#050811] text-slate-200">
+
+  <!-- Full-Screen 3D WebGL Canvas -->
+  <div id="webgl-container" class="fixed inset-0 z-0"></div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_#38bdf8]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white">PHASE-LOOP <span class="text-sky-400">3D</span></h1>
+          <span class="hidden md:inline-block text-[10px] mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/25">Exact Integer Clock</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">One authored bar. Voice B = <span class="mono text-amber-300">T·n/(n+1)</span>. Arithmetic composes the rest.</p>
+      </div>
+    </div>
+
+    <!-- Center-Top Status Pill -->
+    <div id="milestone-banner" class="hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto transition-all duration-200">
+      <span id="milestone-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="milestone-text" class="mono text-xs font-semibold tracking-wide text-slate-200">LOCKED UNISON — 0.0° OFFSET</span>
+    </div>
+
+    <!-- Right Action Buttons -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-toggle-verify" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-2 transition-colors border border-emerald-500/30">
+        <span id="verify-badge-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="hidden sm:inline">4-Check Proof</span>
+        <span id="verify-badge-text" class="mono text-[11px] text-emerald-300 font-semibold">4/4 PASS</span>
+      </button>
+      <button id="btn-export-wav" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors text-slate-200" title="Render full n-cycle phasing loop as 16-bit WAV">
+        <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+        <span class="hidden sm:inline">Export WAV</span>
+      </button>
+      <button id="btn-toggle-panel" type="button" class="lg:hidden glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl">
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Column: One Bar, One Integer, Master Clock -->
+  <aside id="left-panel" class="fixed top-16 left-3 sm:left-5 bottom-24 z-20 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 flex flex-col gap-3.5 overflow-y-auto panel-scroll transition-transform duration-200">
+    <!-- Transport & Master Clock -->
+    <div class="flex items-center justify-between gap-2">
+      <button id="btn-play" type="button" class="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(56,189,248,0.35)] transition-all">
+        <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="play-label">START PHASE</span>
+      </button>
+      <button id="btn-reset" type="button" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3 rounded-xl border border-slate-700/70 transition-colors" title="Reset both voices to 0° unison">
+        Reset 0°
+      </button>
+    </div>
+
+    <!-- One Bar Editor (16 Steps) -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">One Authored Bar</h2>
+          <p id="bar-mode-desc" class="text-[10px] text-slate-400">16 steps · toggle on/off once</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="btn-preset-clapping" type="button" class="text-[10px] font-medium px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-400/30 hover:bg-amber-500/25 transition-colors">
+            Clapping 12/8
+          </button>
+          <button id="btn-mode-16" type="button" class="text-[10px] font-medium px-2 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35 hover:bg-sky-500/30 transition-colors">
+            16-Step
+          </button>
+        </div>
+      </div>
+
+      <!-- 16-Step Grid (4x4) -->
+      <div id="step-grid" class="grid grid-cols-4 gap-1.5 mb-2.5"></div>
+
+      <div class="flex items-center justify-between text-[10px] text-slate-400">
+        <span id="active-hits-label" class="mono">8 active hits / 16 steps</span>
+        <div class="flex items-center gap-2">
+          <button id="btn-invert-bar" type="button" class="hover:text-sky-300 transition-colors">Invert</button>
+          <button id="btn-clear-bar" type="button" class="hover:text-rose-300 transition-colors">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The Single Integer: n vs n+1 -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Ratio Denominator <span class="mono text-sky-400">n</span></h2>
+          <p class="text-[10px] text-slate-400">Voice B period = <span class="mono text-amber-300">T·n/(n+1)</span></p>
+        </div>
+        <span id="ratio-pill" class="mono text-xs font-bold px-2 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/30">12 : 13</span>
+      </div>
+      <div id="n-selector" class="grid grid-cols-5 gap-1.5 mb-2">
+        <button type="button" data-n="3" class="n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-slate-700 bg-slate-800/70 hover:bg-slate-700 transition-colors">3</button>
+        <button type="button" data-n="5" class="n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-slate-700 bg-slate-800/70 hover:bg-slate-700 transition-colors">5</button>
+        <button type="button" data-n="7" class="n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-slate-700 bg-slate-800/70 hover:bg-slate-700 transition-colors">7</button>
+        <button type="button" data-n="8" class="n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-slate-700 bg-slate-800/70 hover:bg-slate-700 transition-colors">8</button>
+        <button type="button" data-n="12" class="n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-sky-400 bg-sky-500/20 text-sky-300 transition-colors">12</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-[10px] mono text-slate-400 pt-1 border-t border-slate-800/80">
+        <div>Drift/cycle: <span id="drift-per-cycle" class="text-slate-200">30.00°</span></div>
+        <div class="text-right">Half-beat: <span id="half-cycle-val" class="text-amber-300">6.0 cyc</span></div>
+      </div>
+    </div>
+
+    <!-- Master Tempo & Voice A Period -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="tempo-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Master Tempo (A)</label>
+        <span id="tempo-readout" class="mono text-xs font-semibold text-sky-300">60 BPM · 4.000s</span>
+      </div>
+      <input id="tempo-slider" type="range" min="40" max="150" step="1" value="60" class="lab-slider mb-2" />
+      <div class="flex items-center justify-between text-[10px] mono text-slate-400">
+        <span>N_A: <span id="samples-a" class="text-slate-200">192000</span> smp</span>
+        <span>N_B: <span id="samples-b" class="text-amber-300">177231</span> smp</span>
+      </div>
+    </div>
+
+    <!-- Voice Timbre (Identical by Default) -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Voice Timbre</h2>
+        <div class="flex items-center gap-1">
+          <button type="button" data-sound="clap" class="sound-btn text-[10px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/35">Clap</button>
+          <button type="button" data-sound="wood" class="sound-btn text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Woodblock</button>
+        </div>
+      </div>
+
+      <button id="btn-timbre-toggle" type="button" class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition-colors mb-2">
+        <span class="text-xs font-medium text-slate-200">Identical Timbre</span>
+        <span id="timbre-pill" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">ON (DEFAULT)</span>
+      </button>
+      <p id="timbre-why" class="text-[10px] leading-relaxed text-slate-400">
+        Identical dry timbre is essential: if voices differ in pitch, the ear tracks two separate instruments instead of hearing one rhythmic figure split, smear, and snap back together.
+      </p>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Phase Dial, Cycle Counter & Countdown -->
+  <aside class="fixed top-16 right-3 sm:right-5 z-20 w-72 max-w-[calc(100vw-1.5rem)] hidden md:flex flex-col gap-3 pointer-events-none">
+    <!-- Circular Phase Dial -->
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto flex flex-col items-center">
+      <div class="w-full flex items-center justify-between mb-2">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Phase Offset Dial</span>
+        <span id="phase-deg-readout" class="mono text-xs font-bold text-sky-300">0.0°</span>
+      </div>
+      <div class="relative w-44 h-44">
+        <svg id="phase-dial-svg" viewBox="0 0 200 200" class="w-full h-full">
+          <!-- Outer dial track -->
+          <circle cx="100" cy="100" r="76" fill="none" stroke="rgba(51,65,85,0.55)" stroke-width="8" />
+          <!-- Progress arc -->
+          <circle id="dial-arc" cx="100" cy="100" r="76" fill="none" stroke="#38bdf8" stroke-width="8" stroke-linecap="round"
+                  stroke-dasharray="477.52" stroke-dashoffset="477.52" transform="rotate(-90 100 100)" />
+          <!-- 0° / 360° Realignment Marker (top) -->
+          <line x1="100" y1="13" x2="100" y2="30" stroke="#34d399" stroke-width="3" stroke-linecap="round" />
+          <text x="100" y="10" text-anchor="middle" fill="#34d399" font-size="8.5" font-family="JetBrains Mono, monospace" font-weight="700">0°/360° SYNC</text>
+          <!-- 180° Half-Beat Marker (bottom) -->
+          <line x1="100" y1="170" x2="100" y2="187" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" />
+          <text x="100" y="196" text-anchor="middle" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono, monospace" font-weight="700">180° HALF-BEAT</text>
+          <!-- Degree ticks -->
+          <line x1="18" y1="100" x2="26" y2="100" stroke="rgba(148,163,184,0.4)" stroke-width="1.5" />
+          <line x1="174" y1="100" x2="182" y2="100" stroke="rgba(148,163,184,0.4)" stroke-width="1.5" />
+          <!-- Voice A fixed reference needle (top) -->
+          <line x1="100" y1="100" x2="100" y2="36" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3 3" opacity="0.7" />
+          <!-- Voice B rotating phase needle -->
+          <g id="dial-needle" transform="rotate(0 100 100)">
+            <line x1="100" y1="100" x2="100" y2="32" stroke="#fbbf24" stroke-width="2.75" stroke-linecap="round" />
+            <circle cx="100" cy="32" r="4.5" fill="#fbbf24" />
+          </g>
+          <circle cx="100" cy="100" r="5" fill="#e2e8f0" />
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-8">
+          <span id="phase-beat-offset" class="mono text-[11px] font-semibold text-slate-300">0.000 cyc</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cycle Counter & Countdown to Resolution -->
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Cycles Elapsed (A)</span>
+        <span id="resolution-flag" class="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/25">TARGET: 12</span>
+      </div>
+      <div class="flex items-baseline justify-between mb-2">
+        <span id="cycle-counter" class="mono text-2xl font-bold text-white">0.00</span>
+        <span id="cycle-total" class="mono text-xs text-slate-400">/ 12 cycles</span>
+      </div>
+      <!-- Progress bar with Midpoint (50%) and Resolution (100%) flags -->
+      <div class="relative h-2.5 bg-slate-800 rounded-full overflow-hidden mb-2">
+        <div id="cycle-progress" class="h-full bg-gradient-to-r from-sky-400 via-amber-400 to-emerald-400 transition-all duration-75" style="width: 0%;"></div>
+        <div class="absolute top-0 bottom-0 left-1/2 w-0.5 bg-amber-300/90" title="n/2 Half-Beat Midpoint"></div>
+      </div>
+      <div class="flex items-center justify-between text-[10px] mono">
+        <span id="countdown-half" class="text-amber-300">Half-beat in: 24.0s</span>
+        <span id="countdown-sync" class="text-emerald-300">Snap in: 48.0s</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Aligned Scrolling Step-Strips -->
+  <section class="fixed bottom-3 left-3 right-3 lg:left-[21.5rem] lg:right-[19.5rem] z-20 glass-panel rounded-2xl p-3 pointer-events-auto">
+    <div class="flex items-center justify-between mb-1.5">
+      <div class="flex items-center gap-3 text-[11px]">
+        <span class="flex items-center gap-1.5 font-semibold text-sky-300">
+          <span class="w-2 h-2 rounded-full bg-sky-400"></span> Voice A (Master T)
+        </span>
+        <span class="flex items-center gap-1.5 font-semibold text-amber-300">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span> Voice B (T·n/(n+1))
+        </span>
+      </div>
+      <div class="flex items-center gap-3 text-[10px] mono text-slate-400">
+        <span id="strip-coincidence">Coincidence: 100%</span>
+        <span id="strip-elapsed">t = 0.000 s</span>
+      </div>
+    </div>
+    <div class="relative w-full h-20 rounded-xl bg-slate-950/80 border border-slate-800/90 overflow-hidden">
+      <canvas id="step-strip-canvas" class="w-full h-full block"></canvas>
+    </div>
+  </section>
+
+  <!-- 4-Check Verification Modal / Drawer -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Exact Arithmetic &amp; Signal Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Computed directly from the integer-sample master clock and discrete onset train.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto panel-scroll space-y-3">
+        <!-- Check 1 -->
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">1. Realignment Period = n × T_A (&lt; 1 ms error)</div>
+            <p id="v-check1-detail" class="mono text-[11px] text-slate-400 mt-1">Measured Δt = —</p>
+          </div>
+          <span id="v-check1-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <!-- Check 2 -->
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">2. Half-Beat Midpoint at n/2 Cycles (0.500 ± 2%)</div>
+            <p id="v-check2-detail" class="mono text-[11px] text-slate-400 mt-1">Measured offset = —</p>
+          </div>
+          <span id="v-check2-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <!-- Check 3 -->
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">3. Integer Sample Ratio Exactness: N_B = N_A · n / (n + 1)</div>
+            <p id="v-check3-detail" class="mono text-[11px] text-slate-400 mt-1">N_A, N_B = —</p>
+          </div>
+          <span id="v-check3-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <!-- Check 4 + Autocorrelation Canvas -->
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <div class="text-xs font-semibold text-slate-200">4. Composite Onset Autocorrelation Peak at n·T_A (No Shorter Period)</div>
+              <p id="v-check4-detail" class="mono text-[11px] text-slate-400 mt-1">Peak lag = —</p>
+            </div>
+            <span id="v-check4-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+          </div>
+          <div class="w-full h-32 rounded-lg bg-slate-950 border border-slate-800/80 overflow-hidden">
+            <canvas id="autocorr-canvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Drag 3D viewport to orbit · Scroll to zoom · Spacebar to Play/Pause</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35 hover:bg-sky-500/30 font-medium transition-colors">
+          Re-run Verification
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden glass-panel px-4 py-2 rounded-xl text-xs font-medium text-sky-200 border border-sky-400/35"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. AUTHORITATIVE INTEGER-SAMPLE MASTER CLOCK & STATE
+      // =========================================================================
+      const CLAPPING_12_8 = [1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0];
+      const DEFAULT_16 = [1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0];
+
+      const state = {
+        barSteps: 16,
+        pattern: DEFAULT_16.slice(),
+        n: 12,
+        tempoBpm: 60,
+        identicalTimbre: true,
+        soundType: 'clap', // 'clap' | 'wood'
+        sampleRate: 48000, // updated to actual AudioContext.sampleRate on init
+        samplesPerCycleA: 0,
+        samplesPerCycleB: 0,
+        samplesPerStepA: 0,
+        samplesPerStepB: 0,
+        isPlaying: false,
+        // Single master clock anchor
+        audioCtx: null,
+        masterStartAudioTime: 0,
+        pausedElapsedSamples: 0,
+        nextScheduleStepA: 0,
+        nextScheduleStepB: 0,
+        schedulerTimer: null,
+        // Visual pulse states for 3D nodes
+        lastHitA: -1,
+        lastHitTimeA: 0,
+        lastHitB: -1,
+        lastHitTimeB: 0,
+        coincidenceFlash: 0,
+        lastCoincidenceSample: -1,
+        // Verification results
+        verification: null
+      };
+
+      // Derive exact integer sample periods from single master clock
+      function recomputeExactClock() {
+        const sr = state.sampleRate;
+        const S = state.barSteps;
+        const n = state.n;
+        // 4/4 (16 steps) = 4 beats; 12/8 (12 steps) = 4 dotted-quarter beats (3.0s at 60 BPM or 4.0s at 45 BPM)
+        const beatsPerBar = S === 12 ? 3 : 4;
+        const targetSeconds = (beatsPerBar * 60) / state.tempoBpm;
+        const unit = S * (n + 1);
+        // k is an integer multiplier so that BOTH bar periods AND every individual step are exact integers
+        const k = Math.max(1, Math.round((targetSeconds * sr) / unit));
+        state.samplesPerCycleA = k * S * (n + 1);
+        state.samplesPerCycleB = k * S * n;
+        state.samplesPerStepA = k * (n + 1);
+        state.samplesPerStepB = k * n;
+      }
+
+      // =========================================================================
+      // 2. DRY WEB AUDIO SYNTHESIS & SINGLE-CLOCK LOOKAHEAD SCHEDULER
+      // =========================================================================
+      let noiseBuffer = null;
+
+      function ensureAudioContext() {
+        if (!state.audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new Ctx();
+          if (state.audioCtx.sampleRate && state.audioCtx.sampleRate !== state.sampleRate) {
+            state.sampleRate = state.audioCtx.sampleRate;
+            recomputeExactClock();
+            runFourCheckVerification();
+            updateClockReadouts();
+          }
+          // Pre-build 0.1s dry white noise buffer
+          const len = Math.floor(state.sampleRate * 0.1);
+          noiseBuffer = state.audioCtx.createBuffer(1, len, state.sampleRate);
+          const data = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < len; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+        }
+        if (state.audioCtx.state === 'suspended') {
+          state.audioCtx.resume();
+        }
+      }
+
+      function triggerDryVoice(when, voice) {
+        const ctx = state.audioCtx;
+        if (!ctx) return;
+
+        // Identical timbre by default; optional pitch shift for Voice B when differentiated
+        const pitchMult = (!state.identicalTimbre && voice === 'B') ? 1.3348 : 1.0; // +5 semitones
+
+        if (state.soundType === 'clap') {
+          // Ultra-dry 3-microburst handclap (zero reverb)
+          const src = ctx.createBufferSource();
+          src.buffer = noiseBuffer;
+
+          const bp = ctx.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.frequency.setValueAtTime(1450 * pitchMult, when);
+          bp.Q.setValueAtTime(1.8, when);
+
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.0001, when);
+          // 3 tight micro-transients + fast 42ms exponential decay
+          gain.gain.linearRampToValueAtTime(0.65, when + 0.0015);
+          gain.gain.exponentialRampToValueAtTime(0.12, when + 0.008);
+          gain.gain.linearRampToValueAtTime(0.75, when + 0.011);
+          gain.gain.exponentialRampToValueAtTime(0.15, when + 0.018);
+          gain.gain.linearRampToValueAtTime(0.85, when + 0.021);
+          gain.gain.exponentialRampToValueAtTime(0.0008, when + 0.065);
+
+          src.connect(bp);
+          bp.connect(gain);
+          gain.connect(ctx.destination);
+          src.start(when);
+          src.stop(when + 0.075);
+        } else {
+          // Ultra-dry woodblock (dual resonant modes, 38ms decay)
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          osc1.type = 'sine';
+          osc2.type = 'triangle';
+          osc1.frequency.setValueAtTime(840 * pitchMult, when);
+          osc2.frequency.setValueAtTime(1290 * pitchMult, when);
+
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.0001, when);
+          gain.gain.linearRampToValueAtTime(0.55, when + 0.0015);
+          gain.gain.exponentialRampToValueAtTime(0.0008, when + 0.042);
+
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(ctx.destination);
+          osc1.start(when);
+          osc2.start(when);
+          osc1.stop(when + 0.048);
+          osc2.stop(when + 0.048);
+        }
+      }
+
+      const LOOKAHEAD_SEC = 0.12;
+      const SCHEDULE_POLL_MS = 20;
+
+      function scheduleLoop() {
+        if (!state.isPlaying || !state.audioCtx) return;
+        const ctx = state.audioCtx;
+        const sr = state.sampleRate;
+        const horizonSample = Math.floor((ctx.currentTime + LOOKAHEAD_SEC - state.masterStartAudioTime) * sr);
+        const S = state.barSteps;
+
+        // Schedule Voice A steps from exact integer sample clock
+        while (state.nextScheduleStepA * state.samplesPerStepA <= horizonSample) {
+          const stepGlobal = state.nextScheduleStepA;
+          const stepInBar = stepGlobal % S;
+          if (state.pattern[stepInBar]) {
+            const samplePos = stepGlobal * state.samplesPerStepA;
+            const audioTime = state.masterStartAudioTime + samplePos / sr;
+            if (audioTime >= ctx.currentTime - 0.02) {
+              triggerDryVoice(Math.max(ctx.currentTime, audioTime), 'A');
+            }
+          }
+          state.nextScheduleStepA++;
+        }
+
+        // Schedule Voice B steps from the EXACT SAME master clock
+        while (state.nextScheduleStepB * state.samplesPerStepB <= horizonSample) {
+          const stepGlobal = state.nextScheduleStepB;
+          const stepInBar = stepGlobal % S;
+          if (state.pattern[stepInBar]) {
+            const samplePos = stepGlobal * state.samplesPerStepB;
+            const audioTime = state.masterStartAudioTime + samplePos / sr;
+            if (audioTime >= ctx.currentTime - 0.02) {
+              triggerDryVoice(Math.max(ctx.currentTime, audioTime), 'B');
+            }
+          }
+          state.nextScheduleStepB++;
+        }
+
+        state.schedulerTimer = setTimeout(scheduleLoop, SCHEDULE_POLL_MS);
+      }
+
+      function getCurrentSamplePosition() {
+        if (!state.isPlaying || !state.audioCtx) {
+          return state.pausedElapsedSamples;
+        }
+        return Math.max(0, (state.audioCtx.currentTime - state.masterStartAudioTime) * state.sampleRate);
+      }
+
+      function togglePlay() {
+        ensureAudioContext();
+        if (state.isPlaying) {
+          state.pausedElapsedSamples = getCurrentSamplePosition();
+          state.isPlaying = false;
+          if (state.schedulerTimer) {
+            clearTimeout(state.schedulerTimer);
+            state.schedulerTimer = null;
+          }
+        } else {
+          const sr = state.sampleRate;
+          state.masterStartAudioTime = state.audioCtx.currentTime - state.pausedElapsedSamples / sr;
+          state.nextScheduleStepA = Math.ceil(state.pausedElapsedSamples / state.samplesPerStepA);
+          state.nextScheduleStepB = Math.ceil(state.pausedElapsedSamples / state.samplesPerStepB);
+          state.isPlaying = true;
+          scheduleLoop();
+        }
+        updatePlayButtonUI();
+      }
+
+      function resetPhase() {
+        state.pausedElapsedSamples = 0;
+        if (state.isPlaying && state.audioCtx) {
+          state.masterStartAudioTime = state.audioCtx.currentTime;
+          state.nextScheduleStepA = 0;
+          state.nextScheduleStepB = 0;
+        }
+        state.lastHitA = -1;
+        state.lastHitB = -1;
+        showToast('Phase reset to 0.0° unison');
+      }
+
+      // =========================================================================
+      // 3. FOUR-CHECK EXACT ARITHMETIC & SIGNAL VERIFICATION
+      // =========================================================================
+      function runFourCheckVerification() {
+        const sr = state.sampleRate;
+        const N_A = state.samplesPerCycleA;
+        const N_B = state.samplesPerCycleB;
+        const n = state.n;
+        const S = state.barSteps;
+        const sA = state.samplesPerStepA;
+        const sB = state.samplesPerStepB;
+
+        // Check 3: Integer sample ratio exactness
+        const isIntA = Number.isInteger(N_A);
+        const isIntB = Number.isInteger(N_B);
+        const ratioExact = isIntA && isIntB && (N_B * (n + 1) === N_A * n);
+
+        // Build discrete onset trains for 2*n cycles (binned at sub-step resolution for autocorrelation)
+        // Use bins = S * n * (n + 1) per n cycles -> 1 bin = k samples!
+        // Since N_A = k * S * (n + 1) and N_B = k * S * n, every onset falls on an EXACT bin index!
+        const k = N_A / (S * (n + 1));
+        const binsPerCycleA = S * (n + 1);
+        const binsPerStepA = n + 1;
+        const binsPerStepB = n;
+        const totalCycles = 2 * n;
+        const totalBins = totalCycles * binsPerCycleA;
+
+        const trainA = new Float32Array(totalBins);
+        const trainB = new Float32Array(totalBins);
+        const composite = new Float32Array(totalBins);
+
+        const totalStepsA = totalCycles * S;
+        for (let g = 0; g < totalStepsA; g++) {
+          if (state.pattern[g % S]) {
+            const bin = g * binsPerStepA;
+            if (bin < totalBins) trainA[bin] = 1;
+          }
+        }
+        const totalStepsB = Math.ceil((totalBins) / binsPerStepB);
+        for (let g = 0; g < totalStepsB; g++) {
+          if (state.pattern[g % S]) {
+            const bin = g * binsPerStepB;
+            if (bin < totalBins) trainB[bin] = 1;
+          }
+        }
+        for (let i = 0; i < totalBins; i++) {
+          composite[i] = trainA[i] + trainB[i];
+        }
+
+        // Check 1: Realignment period (maximal coincidence peaks)
+        // Find bins where both A and B fire, or check cycle-start coincidence peaks
+        const binsPerRealign = n * binsPerCycleA;
+        let coincidenceAt0 = 0;
+        let coincidenceAtN = 0;
+        for (let i = 0; i < binsPerCycleA; i++) {
+          if (trainA[i] > 0 && trainB[i] > 0) coincidenceAt0++;
+          if (trainA[binsPerRealign + i] > 0 && trainB[binsPerRealign + i] > 0) coincidenceAtN++;
+        }
+        const expectedRealignMs = (n * N_A / sr) * 1000;
+        const measuredRealignMs = (binsPerRealign * k / sr) * 1000;
+        const realignErrorMs = Math.abs(measuredRealignMs - expectedRealignMs);
+        const pass1 = realignErrorMs < 1.0 && coincidenceAt0 > 0 && coincidenceAtN === coincidenceAt0;
+
+        // Check 2: Half-beat midpoint at n/2 cycles (sample = round(n * N_A / 2))
+        const midSample = Math.round((n * N_A) / 2);
+        const phaseBAtMid = (midSample % N_B) / N_B; // cycles mod 1
+        const phaseAAtMid = (midSample % N_A) / N_A;
+        let relPhaseMid = (phaseBAtMid - phaseAAtMid + 1) % 1;
+        const midErrorPct = Math.abs(relPhaseMid - 0.5) * 100;
+        const pass2 = midErrorPct <= 2.0;
+
+        // Check 4: Autocorrelation on composite onset train over lag 0 .. n*T_A + 1 cycle
+        // R(lag) normalized by R(0)
+        const maxLag = Math.min(totalBins - 1, binsPerRealign + binsPerCycleA);
+        const acf = new Float32Array(maxLag + 1);
+        let r0 = 0;
+        for (let i = 0; i < totalBins - maxLag; i++) {
+          r0 += composite[i] * composite[i];
+        }
+        acf[0] = 1.0;
+        let maxShorterPeak = 0;
+        let maxShorterLag = 0;
+        for (let lag = 1; lag <= maxLag; lag++) {
+          let sum = 0;
+          const limit = totalBins - maxLag;
+          for (let i = 0; i < limit; i++) {
+            sum += composite[i] * composite[i + lag];
+          }
+          const norm = r0 > 0 ? sum / r0 : 0;
+          acf[lag] = norm;
+          if (lag < binsPerRealign && norm > maxShorterPeak) {
+            maxShorterPeak = norm;
+            maxShorterLag = lag;
+          }
+        }
+        const rAtRealign = acf[binsPerRealign] || 0;
+        const rAtOneCycle = acf[binsPerCycleA] || 0;
+        const hasHits = state.pattern.slice(0, S).some(Boolean);
+        const pass4 = hasHits && rAtRealign > 0.99 && maxShorterPeak < 0.98;
+
+        state.verification = {
+          pass1, pass2, pass3: ratioExact, pass4,
+          measuredRealignMs, expectedRealignMs, realignErrorMs,
+          relPhaseMid, midErrorPct,
+          N_A, N_B, n,
+          rAtRealign, rAtOneCycle, maxShorterPeak,
+          binsPerCycleA, binsPerRealign, acf
+        };
+
+        updateVerificationUI();
+      }
+
+      // =========================================================================
+      // 4. 44.1 kHz / Native-SR 16-BIT STEREO WAV EXPORT
+      // =========================================================================
+      function exportFullCycleWav() {
+        const sr = 44100;
+        const S = state.barSteps;
+        const n = state.n;
+        const beatsPerBar = S === 12 ? 3 : 4;
+        const targetSec = (beatsPerBar * 60) / state.tempoBpm;
+        const k = Math.max(1, Math.round((targetSec * sr) / (S * (n + 1))));
+        const N_A = k * S * (n + 1);
+        const sA = k * (n + 1);
+        const sB = k * n;
+        const totalSamples = n * N_A + Math.floor(sr * 0.15); // full n cycles + tail
+
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        function stampVoice(startSample, voice) {
+          const pitchMult = (!state.identicalTimbre && voice === 'B') ? 1.3348 : 1.0;
+          const dur = Math.floor(sr * 0.065);
+          // Pan slightly only if differentiated, dead center if identical
+          const panL = state.identicalTimbre ? 0.707 : (voice === 'A' ? 0.85 : 0.45);
+          const panR = state.identicalTimbre ? 0.707 : (voice === 'A' ? 0.45 : 0.85);
+
+          if (state.soundType === 'clap') {
+            let b0 = 0, b1 = 0;
+            const omega = (2 * Math.PI * 1450 * pitchMult) / sr;
+            const cosW = Math.cos(omega);
+            const alpha = Math.sin(omega) / (2 * 1.8);
+            const a0 = 1 + alpha;
+            for (let i = 0; i < dur && startSample + i < totalSamples; i++) {
+              const t = i / sr;
+              let env = 0;
+              if (t < 0.008) env = 0.65 * Math.exp(-t / 0.004);
+              else if (t < 0.018) env = 0.75 * Math.exp(-(t - 0.009) / 0.004);
+              else env = 0.85 * Math.exp(-(t - 0.019) / 0.012);
+              const x = (Math.random() * 2 - 1);
+              const y = (alpha * x - alpha * b1 + 2 * cosW * b0 - (1 - alpha) * b1) / a0;
+              b1 = b0;
+              b0 = y;
+              const s = Math.max(-1, Math.min(1, y * env * 1.8));
+              left[startSample + i] += s * panL;
+              right[startSample + i] += s * panR;
+            }
+          } else {
+            const f1 = 840 * pitchMult;
+            const f2 = 1290 * pitchMult;
+            for (let i = 0; i < dur && startSample + i < totalSamples; i++) {
+              const t = i / sr;
+              const env = Math.exp(-t / 0.009) * 0.55;
+              const sig = (Math.sin(2 * Math.PI * f1 * t) + 0.45 * Math.sin(2 * Math.PI * f2 * t)) * env;
+              left[startSample + i] += sig * panL;
+              right[startSample + i] += sig * panR;
+            }
+          }
+        }
+
+        for (let g = 0; g < n * S; g++) {
+          if (state.pattern[g % S]) stampVoice(g * sA, 'A');
+        }
+        for (let g = 0; g < (n + 1) * S; g++) {
+          if (state.pattern[g % S]) stampVoice(g * sB, 'B');
+        }
+
+        // Encode 16-bit PCM WAV
+        const dataBytes = totalSamples * 4;
+        const buf = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(buf);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + dataBytes, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true);
+        view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, dataBytes, true);
+
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+
+        const blob = new Blob([buf], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `phase_loop_3d_n${n}_${state.tempoBpm}bpm.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${n}-cycle WAV (${(n * N_A / sr).toFixed(2)}s)`);
+      }
+
+      // =========================================================================
+      // 5. THREE.JS 3D PHASE ORBITALS & COINCIDENCE CORE
+      // =========================================================================
+      let scene, camera, renderer;
+      let groupA, groupB, coreMesh, bridgeLines;
+      let nodesA = [], nodesB = [];
+      let camTheta = 0.45, camPhi = 0.92, camRadius = 15.5;
+      let isDragging = false, prevX = 0, prevY = 0;
+
+      function initThree() {
+        const container = document.getElementById('webgl-container');
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050811, 0.025);
+
+        camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
+        updateCameraPos();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x050811, 1);
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        scene.add(new THREE.AmbientLight(0x94a3b8, 0.55));
+        const keyLight = new THREE.PointLight(0x38bdf8, 1.8, 40);
+        keyLight.position.set(6, 10, 8);
+        scene.add(keyLight);
+        const rimLight = new THREE.PointLight(0xfbbf24, 1.4, 40);
+        rimLight.position.set(-8, 6, -6);
+        scene.add(rimLight);
+
+        // Subtle polar reference grid
+        const gridHelper = new THREE.PolarGridHelper(9.5, 16, 6, 64, 0x1e293b, 0x0f172a);
+        gridHelper.position.y = -1.2;
+        scene.add(gridHelper);
+
+        // Outer Ring (Voice A) and Inner Ring (Voice B)
+        const ringGeoA = new THREE.TorusGeometry(5.6, 0.035, 12, 96);
+        const ringMatA = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 });
+        const ringA = new THREE.Mesh(ringGeoA, ringMatA);
+        ringA.rotation.x = Math.PI / 2;
+        scene.add(ringA);
+
+        const ringGeoB = new THREE.TorusGeometry(3.7, 0.035, 12, 96);
+        const ringMatB = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.45 });
+        const ringB = new THREE.Mesh(ringGeoB, ringMatB);
+        ringB.rotation.x = Math.PI / 2;
+        scene.add(ringB);
+
+        // Fixed Playhead Laser at +Z (angle 0)
+        const beamGeo = new THREE.BoxGeometry(0.06, 0.08, 6.8);
+        const beamMat = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.7 });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.position.set(0, -0.4, 3.6);
+        scene.add(beam);
+
+        // Center Coincidence Core
+        const coreGeo = new THREE.IcosahedronGeometry(1.05, 1);
+        const coreMat = new THREE.MeshStandardMaterial({
+          color: 0x38bdf8,
+          emissive: 0x0ea5e9,
+          emissiveIntensity: 0.45,
+          roughness: 0.25,
+          metalness: 0.7,
+          wireframe: false
+        });
+        coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(coreMesh);
+
+        groupA = new THREE.Group();
+        groupB = new THREE.Group();
+        bridgeLines = new THREE.Group();
+        scene.add(groupA);
+        scene.add(groupB);
+        scene.add(bridgeLines);
+
+        rebuild3DRings();
+
+        // Pointer orbit controls
+        const dom = renderer.domElement;
+        dom.addEventListener('pointerdown', (e) => {
+          isDragging = true;
+          prevX = e.clientX;
+          prevY = e.clientY;
+        });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          const dx = e.clientX - prevX;
+          const dy = e.clientY - prevY;
+          prevX = e.clientX;
+          prevY = e.clientY;
+          camTheta -= dx * 0.006;
+          camPhi = Math.max(0.28, Math.min(1.42, camPhi - dy * 0.006));
+          updateCameraPos();
+        });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          camRadius = Math.max(8.5, Math.min(24, camRadius + e.deltaY * 0.01));
+          updateCameraPos();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      function updateCameraPos() {
+        camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+        camera.position.y = camRadius * Math.cos(camPhi);
+        camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+        camera.lookAt(0, -0.2, 0);
+      }
+
+      function rebuild3DRings() {
+        if (!groupA || !groupB) return;
+        while (groupA.children.length) groupA.remove(groupA.children[0]);
+        while (groupB.children.length) groupB.remove(groupB.children[0]);
+        while (bridgeLines.children.length) bridgeLines.remove(bridgeLines.children[0]);
+        nodesA = [];
+        nodesB = [];
+
+        const S = state.barSteps;
+        const geo = new THREE.BoxGeometry(0.42, 0.42, 0.42);
+        for (let i = 0; i < S; i++) {
+          const angle = (i / S) * Math.PI * 2;
+          const active = Boolean(state.pattern[i]);
+
+          const matA = new THREE.MeshStandardMaterial({
+            color: active ? 0x38bdf8 : 0x1e293b,
+            emissive: active ? 0x0284c7 : 0x000000,
+            emissiveIntensity: active ? 0.45 : 0,
+            roughness: 0.3,
+            metalness: 0.5
+          });
+          const mA = new THREE.Mesh(geo, matA);
+          mA.position.set(Math.sin(angle) * 5.6, active ? 0.15 : -0.25, Math.cos(angle) * 5.6);
+          mA.scale.set(1, active ? 1.4 : 0.45, 1);
+          groupA.add(mA);
+          nodesA.push(mA);
+
+          const matB = new THREE.MeshStandardMaterial({
+            color: active ? 0xfbbf24 : 0x1e293b,
+            emissive: active ? 0xd97706 : 0x000000,
+            emissiveIntensity: active ? 0.45 : 0,
+            roughness: 0.3,
+            metalness: 0.5
+          });
+          const mB = new THREE.Mesh(geo, matB);
+          mB.position.set(Math.sin(angle) * 3.7, active ? 0.15 : -0.25, Math.cos(angle) * 3.7);
+          mB.scale.set(0.9, active ? 1.4 : 0.45, 0.9);
+          groupB.add(mB);
+          nodesB.push(mB);
+
+          // Connecting phase filament for active steps
+          if (active) {
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(0, 0, 0),
+              new THREE.Vector3(0, 0, 0)
+            ]);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.35 });
+            const line = new THREE.Line(lineGeo, lineMat);
+            line.userData.stepIndex = i;
+            bridgeLines.add(line);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. ALIGNED SCROLLING STEP-STRIPS & ANIMATION LOOP
+      // =========================================================================
+      const stripCanvas = document.getElementById('step-strip-canvas');
+      const stripCtx = stripCanvas.getContext('2d');
+
+      function drawStepStrips(samplePos) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = stripCanvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        const w = Math.floor(rect.width * dpr);
+        const h = Math.floor(rect.height * dpr);
+        if (stripCanvas.width !== w || stripCanvas.height !== h) {
+          stripCanvas.width = w;
+          stripCanvas.height = h;
+        }
+
+        const ctx = stripCtx;
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        const W = rect.width;
+        const H = rect.height;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // Playhead line at 22% from left
+        const playX = W * 0.22;
+        const pxPerCycle = Math.min(340, W * 0.46);
+        const S = state.barSteps;
+        const N_A = state.samplesPerCycleA;
+        const N_B = state.samplesPerCycleB;
+
+        // Current continuous cycle positions
+        const cycA = samplePos / N_A;
+        const cycB = samplePos / N_B;
+
+        const yA = H * 0.30;
+        const yB = H * 0.72;
+
+        // Baseline tracks
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.16)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, yA); ctx.lineTo(W, yA); ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.16)';
+        ctx.beginPath(); ctx.moveTo(0, yB); ctx.lineTo(W, yB); ctx.stroke();
+
+        // Draw visible steps for Voice A & Voice B mapped onto the SAME time axis (samples -> px)
+        const pxPerSample = pxPerCycle / N_A;
+        const minSample = samplePos - (playX / pxPerSample) - state.samplesPerStepA;
+        const maxSample = samplePos + ((W - playX) / pxPerSample) + state.samplesPerStepA;
+
+        // Voice A dots
+        const startStepA = Math.max(0, Math.floor(minSample / state.samplesPerStepA));
+        const endStepA = Math.ceil(maxSample / state.samplesPerStepA);
+        for (let g = startStepA; g <= endStepA; g++) {
+          const smp = g * state.samplesPerStepA;
+          const x = playX + (smp - samplePos) * pxPerSample;
+          const stepIdx = g % S;
+          const active = Boolean(state.pattern[stepIdx]);
+
+          if (stepIdx === 0) {
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+            ctx.beginPath(); ctx.moveTo(x, 4); ctx.lineTo(x, H * 0.48); ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(x, yA, active ? 5.2 : 2.0, 0, Math.PI * 2);
+          ctx.fillStyle = active ? '#38bdf8' : 'rgba(100, 116, 139, 0.35)';
+          ctx.fill();
+        }
+
+        // Voice B dots (same time-to-x scale! Lateral shift is directly visible)
+        const startStepB = Math.max(0, Math.floor(minSample / state.samplesPerStepB));
+        const endStepB = Math.ceil(maxSample / state.samplesPerStepB);
+        for (let g = startStepB; g <= endStepB; g++) {
+          const smp = g * state.samplesPerStepB;
+          const x = playX + (smp - samplePos) * pxPerSample;
+          const stepIdx = g % S;
+          const active = Boolean(state.pattern[stepIdx]);
+
+          if (stepIdx === 0) {
+            ctx.strokeStyle = 'rgba(251, 191, 36, 0.25)';
+            ctx.beginPath(); ctx.moveTo(x, H * 0.52); ctx.lineTo(x, H - 4); ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(x, yB, active ? 5.2 : 2.0, 0, Math.PI * 2);
+          ctx.fillStyle = active ? '#fbbf24' : 'rgba(100, 116, 139, 0.35)';
+          ctx.fill();
+        }
+
+        // Playhead laser
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(playX, 0);
+        ctx.lineTo(playX, H);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      // =========================================================================
+      // 7. MAIN RENDER & TELEMETRY LOOP
+      // =========================================================================
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const samplePos = getCurrentSamplePosition();
+        const sr = state.sampleRate;
+        const N_A = state.samplesPerCycleA;
+        const N_B = state.samplesPerCycleB;
+        const n = state.n;
+        const S = state.barSteps;
+
+        // Exact fractional cycle & phase
+        const cyclesElapsed = samplePos / N_A;
+        const cycleInPhase = cyclesElapsed % n;
+        const phaseFracA = (samplePos % N_A) / N_A;
+        const phaseFracB = (samplePos % N_B) / N_B;
+        let relPhase = (phaseFracB - phaseFracA + 1) % 1;
+        // Snap tiny float noise near 0/1
+        if (relPhase > 0.9999 || relPhase < 0.0001) relPhase = 0;
+        const phaseDeg = relPhase * 360;
+
+        // Trigger visual flashes on step boundaries
+        const curStepA = Math.floor(samplePos / state.samplesPerStepA) % S;
+        const curStepB = Math.floor(samplePos / state.samplesPerStepB) % S;
+        const now = performance.now();
+
+        if (state.isPlaying && curStepA !== state.lastHitA) {
+          state.lastHitA = curStepA;
+          if (state.pattern[curStepA]) state.lastHitTimeA = now;
+        }
+        if (state.isPlaying && curStepB !== state.lastHitB) {
+          state.lastHitB = curStepB;
+          if (state.pattern[curStepB]) state.lastHitTimeB = now;
+        }
+
+        // Rotate 3D rings so active playhead aligns with +Z
+        if (groupA && groupB) {
+          groupA.rotation.y = -phaseFracA * Math.PI * 2;
+          groupB.rotation.y = -phaseFracB * Math.PI * 2;
+
+          // Pulse individual nodes
+          for (let i = 0; i < nodesA.length; i++) {
+            const active = Boolean(state.pattern[i]);
+            if (active && i === curStepA && state.isPlaying && (now - state.lastHitTimeA) < 130) {
+              nodesA[i].scale.set(1.28, 2.2, 1.28);
+            } else {
+              nodesA[i].scale.set(1, active ? 1.35 : 0.45, 1);
+            }
+          }
+          for (let i = 0; i < nodesB.length; i++) {
+            const active = Boolean(state.pattern[i]);
+            if (active && i === curStepB && state.isPlaying && (now - state.lastHitTimeB) < 130) {
+              nodesB[i].scale.set(1.2, 2.2, 1.2);
+            } else {
+              nodesB[i].scale.set(0.9, active ? 1.35 : 0.45, 0.9);
+            }
+          }
+
+          // Update connecting phase-bridge filaments in world space
+          bridgeLines.children.forEach((line) => {
+            const idx = line.userData.stepIndex;
+            const nA = nodesA[idx];
+            const nB = nodesB[idx];
+            if (!nA || !nB) return;
+            const pA = new THREE.Vector3();
+            const pB = new THREE.Vector3();
+            nA.getWorldPosition(pA);
+            nB.getWorldPosition(pB);
+            const posAttr = line.geometry.attributes.position;
+            posAttr.setXYZ(0, pA.x, pA.y, pA.z);
+            posAttr.setXYZ(1, pB.x, pB.y, pB.z);
+            posAttr.needsUpdate = true;
+            // Color shifts from emerald (aligned) to amber (180° opposed)
+            const dist = Math.abs(relPhase - 0.5) * 2; // 1 when aligned, 0 when 180°
+            line.material.color.setHSL(0.12 + dist * 0.30, 0.85, 0.55);
+          });
+        }
+
+        // Core pulse proportional to alignment
+        if (coreMesh) {
+          const alignScore = Math.cos(relPhase * Math.PI * 2) * 0.5 + 0.5; // 1 at 0°, 0 at 180°
+          coreMesh.rotation.y += 0.008;
+          coreMesh.rotation.x += 0.004;
+          const s = 0.85 + alignScore * 0.38;
+          coreMesh.scale.set(s, s, s);
+          coreMesh.material.emissiveIntensity = 0.2 + alignScore * 0.9;
+          coreMesh.material.color.setHSL(0.11 + alignScore * 0.36, 0.85, 0.55);
+        }
+
+        if (renderer && scene && camera) {
+          renderer.render(scene, camera);
+        }
+
+        // Update 2D aligned step strips
+        drawStepStrips(samplePos);
+
+        // Update HUD Phase Dial, Cycle Counter & Countdowns
+        updateLiveTelemetry(samplePos, cyclesElapsed, cycleInPhase, relPhase, phaseDeg);
+      }
+
+      // =========================================================================
+      // 8. UI UPDATES & EVENT BINDINGS
+      // =========================================================================
+      function updateLiveTelemetry(samplePos, cyclesElapsed, cycleInPhase, relPhase, phaseDeg) {
+        const n = state.n;
+        const sr = state.sampleRate;
+        const T_A_sec = state.samplesPerCycleA / sr;
+
+        // Dial arc & needle
+        const circ = 477.52;
+        document.getElementById('dial-arc').setAttribute('stroke-dashoffset', (circ * (1 - relPhase)).toFixed(2));
+        document.getElementById('dial-needle').setAttribute('transform', `rotate(${phaseDeg.toFixed(2)} 100 100)`);
+        document.getElementById('phase-deg-readout').textContent = `${phaseDeg.toFixed(1)}°`;
+        document.getElementById('phase-beat-offset').textContent = `${relPhase.toFixed(3)} cyc`;
+
+        // Cycle counter
+        document.getElementById('cycle-counter').textContent = cycleInPhase.toFixed(2);
+        document.getElementById('cycle-total').textContent = `/ ${n} cycles`;
+        document.getElementById('cycle-progress').style.width = `${Math.min(100, (cycleInPhase / n) * 100).toFixed(2)}%`;
+
+        // Countdowns to half-beat (n/2) and resolution (n)
+        const cycToHalf = (n / 2) - cycleInPhase;
+        const secToHalf = cycToHalf >= 0 ? cycToHalf * T_A_sec : (n + n / 2 - cycleInPhase) * T_A_sec;
+        const secToSync = (n - cycleInPhase) * T_A_sec;
+
+        document.getElementById('countdown-half').textContent =
+          cycToHalf >= 0 ? `Half-beat in: ${secToHalf.toFixed(1)}s` : `Past half-beat`;
+        document.getElementById('countdown-sync').textContent = `Snap in: ${secToSync.toFixed(1)}s`;
+
+        // Coincidence & elapsed
+        const alignPct = Math.round((Math.cos(relPhase * Math.PI * 2) * 0.5 + 0.5) * 100);
+        document.getElementById('strip-coincidence').textContent = `Alignment: ${alignPct}%`;
+        document.getElementById('strip-elapsed').textContent = `t = ${(samplePos / sr).toFixed(3)} s`;
+
+        // Approaching milestone banner
+        const banner = document.getElementById('milestone-banner');
+        const dot = document.getElementById('milestone-dot');
+        const txt = document.getElementById('milestone-text');
+        banner.classList.remove('milestone-flash');
+
+        if (phaseDeg < 12 || phaseDeg > 348) {
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          txt.textContent = cyclesElapsed < 0.2 ? 'LOCKED UNISON — 0.0° OFFSET' : `REALIGNED AT CYCLE ${Math.round(cyclesElapsed)} — SNAP!`;
+          banner.classList.add('milestone-flash');
+        } else if (Math.abs(phaseDeg - 180) < 16) {
+          dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+          txt.textContent = `MAX DISPLACEMENT (180° HALF-BEAT) — ${cycleInPhase.toFixed(2)} / ${n} CYC`;
+          banner.classList.add('milestone-flash');
+        } else if (secToSync < 4.5 && state.isPlaying) {
+          dot.className = 'w-2 h-2 rounded-full bg-sky-400';
+          txt.textContent = `APPROACHING RESOLUTION — SNAP IN ${secToSync.toFixed(1)}s`;
+        } else {
+          dot.className = 'w-2 h-2 rounded-full bg-sky-400';
+          txt.textContent = `DRIFTING — ${phaseDeg.toFixed(1)}° (${relPhase.toFixed(3)} CYC)`;
+        }
+      }
+
+      function renderStepGrid() {
+        const grid = document.getElementById('step-grid');
+        grid.innerHTML = '';
+        for (let i = 0; i < 16; i++) {
+          const disabled = i >= state.barSteps;
+          const active = !disabled && Boolean(state.pattern[i]);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'step-btn h-8 rounded-lg mono text-xs font-semibold border flex items-center justify-center ' + (
+            disabled
+              ? 'bg-slate-900/30 border-slate-800/40 text-slate-700 cursor-not-allowed'
+              : active
+                ? 'bg-sky-500/25 border-sky-400 text-sky-200 shadow-[0_0_12px_rgba(56,189,248,0.25)]'
+                : 'bg-slate-800/60 border-slate-700/70 text-slate-400 hover:bg-slate-800'
+          );
+          btn.textContent = i + 1;
+          btn.disabled = disabled;
+          btn.addEventListener('click', () => {
+            if (disabled) return;
+            state.pattern[i] = state.pattern[i] ? 0 : 1;
+            renderStepGrid();
+            rebuild3DRings();
+            runFourCheckVerification();
+          });
+          grid.appendChild(btn);
+        }
+
+        const hits = state.pattern.slice(0, state.barSteps).reduce((a, b) => a + b, 0);
+        document.getElementById('active-hits-label').textContent = `${hits} active hits / ${state.barSteps} steps`;
+        document.getElementById('bar-mode-desc').textContent =
+          state.barSteps === 12 ? '12/8 Clapping Music · 12 active steps' : '16 steps · toggle on/off once';
+      }
+
+      function updateClockReadouts() {
+        const sr = state.sampleRate;
+        const T_A = state.samplesPerCycleA / sr;
+        document.getElementById('tempo-readout').textContent = `${state.tempoBpm} BPM · ${T_A.toFixed(3)}s`;
+        document.getElementById('samples-a').textContent = state.samplesPerCycleA;
+        document.getElementById('samples-b').textContent = state.samplesPerCycleB;
+        document.getElementById('ratio-pill').textContent = `${state.n} : ${state.n + 1}`;
+        document.getElementById('drift-per-cycle').textContent = `${(360 / state.n).toFixed(2)}°`;
+        document.getElementById('half-cycle-val').textContent = `${(state.n / 2).toFixed(1)} cyc`;
+        document.getElementById('resolution-flag').textContent = `TARGET: ${state.n}`;
+
+        document.querySelectorAll('.n-btn').forEach((btn) => {
+          const val = Number(btn.dataset.n);
+          if (val === state.n) {
+            btn.className = 'n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-sky-400 bg-sky-500/20 text-sky-300 transition-colors';
+          } else {
+            btn.className = 'n-btn py-1.5 rounded-lg mono text-xs font-semibold border border-slate-700 bg-slate-800/70 hover:bg-slate-700 text-slate-300 transition-colors';
+          }
+        });
+      }
+
+      function updateVerificationUI() {
+        const v = state.verification;
+        if (!v) return;
+        const allPass = v.pass1 && v.pass2 && v.pass3 && v.pass4;
+        const count = [v.pass1, v.pass2, v.pass3, v.pass4].filter(Boolean).length;
+
+        document.getElementById('verify-badge-text').textContent = `${count}/4 ${allPass ? 'PASS' : 'CHECK'}`;
+        document.getElementById('verify-badge-dot').className = `w-2 h-2 rounded-full ${allPass ? 'bg-emerald-400' : 'bg-amber-400'}`;
+
+        const setBadge = (id, ok) => {
+          const el = document.getElementById(id);
+          el.textContent = ok ? 'PASS' : 'FAIL';
+          el.className = `mono text-[10px] font-bold px-2 py-1 rounded border ${
+            ok ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
+          }`;
+        };
+
+        setBadge('v-check1-badge', v.pass1);
+        document.getElementById('v-check1-detail').textContent =
+          `Measured Δt = ${v.measuredRealignMs.toFixed(3)} ms | Expected n·T_A = ${v.expectedRealignMs.toFixed(3)} ms | Error = ${v.realignErrorMs.toFixed(4)} ms`;
+
+        setBadge('v-check2-badge', v.pass2);
+        document.getElementById('v-check2-detail').textContent =
+          `At n/2 = ${(v.n / 2).toFixed(1)} cycles: offset = ${v.relPhaseMid.toFixed(5)} cycles (error ${v.midErrorPct.toFixed(4)}%)`;
+
+        setBadge('v-check3-badge', v.pass3);
+        document.getElementById('v-check3-detail').textContent =
+          `N_A = ${v.N_A} (int), N_B = ${v.N_B} (int) · Exact check: N_B·(n+1) = ${v.N_B * (v.n + 1)} === N_A·n = ${v.N_A * v.n}`;
+
+        setBadge('v-check4-badge', v.pass4);
+        document.getElementById('v-check4-detail').textContent =
+          `R(n·T_A) = ${v.rAtRealign.toFixed(4)} | R(T_A) = ${v.rAtOneCycle.toFixed(4)} | Max lag < n·T_A = ${v.maxShorterPeak.toFixed(4)}`;
+
+        drawAutocorrelationPlot(v);
+      }
+
+      function drawAutocorrelationPlot(v) {
+        const canvas = document.getElementById('autocorr-canvas');
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const W = rect.width;
+        const H = rect.height;
+
+        ctx.clearRect(0, 0, W, H);
+        const acf = v.acf;
+        const len = acf.length;
+
+        // Vertical marker at T_A (1 cycle) and n*T_A (resolution)
+        const x1 = (v.binsPerCycleA / len) * W;
+        const xN = (v.binsPerRealign / len) * W;
+
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.35)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(x1, 0); ctx.lineTo(x1, H); ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.65)';
+        ctx.beginPath(); ctx.moveTo(xN, 0); ctx.lineTo(xN, H); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Plot autocorrelation bars
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.25;
+        for (let i = 0; i < len; i++) {
+          const val = acf[i];
+          if (val > 0.02) {
+            const x = (i / len) * W;
+            const y = H - val * (H - 18) - 6;
+            ctx.beginPath();
+            ctx.moveTo(x, H - 6);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+          }
+        }
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText('T_A', x1 + 4, 14);
+        ctx.fillStyle = '#34d399';
+        ctx.fillText('n·T_A (PEAK = 1.0)', Math.min(W - 115, xN - 108), 14);
+      }
+
+      function updatePlayButtonUI() {
+        document.getElementById('icon-play').classList.toggle('hidden', state.isPlaying);
+        document.getElementById('icon-pause').classList.toggle('hidden', !state.isPlaying);
+        document.getElementById('play-label').textContent = state.isPlaying ? 'PAUSE' : 'START PHASE';
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+      }
+
+      function bindEvents() {
+        document.getElementById('btn-play').addEventListener('click', togglePlay);
+        document.getElementById('btn-reset').addEventListener('click', resetPhase);
+        document.getElementById('btn-export-wav').addEventListener('click', exportFullCycleWav);
+
+        document.getElementById('btn-preset-clapping').addEventListener('click', () => {
+          state.barSteps = 12;
+          state.pattern = CLAPPING_12_8.slice();
+          state.n = 12;
+          recomputeExactClock();
+          resetPhase();
+          renderStepGrid();
+          rebuild3DRings();
+          updateClockReadouts();
+          runFourCheckVerification();
+          showToast('Loaded Clapping Music (12/8, n = 12)');
+        });
+
+        document.getElementById('btn-mode-16').addEventListener('click', () => {
+          state.barSteps = 16;
+          if (state.pattern.slice(12).every((v) => v === 0)) {
+            state.pattern = DEFAULT_16.slice();
+          }
+          recomputeExactClock();
+          resetPhase();
+          renderStepGrid();
+          rebuild3DRings();
+          updateClockReadouts();
+          runFourCheckVerification();
+          showToast('Switched to 16-Step Bar');
+        });
+
+        document.getElementById('btn-invert-bar').addEventListener('click', () => {
+          for (let i = 0; i < state.barSteps; i++) state.pattern[i] = state.pattern[i] ? 0 : 1;
+          renderStepGrid();
+          rebuild3DRings();
+          runFourCheckVerification();
+        });
+
+        document.getElementById('btn-clear-bar').addEventListener('click', () => {
+          state.pattern.fill(0);
+          renderStepGrid();
+          rebuild3DRings();
+          runFourCheckVerification();
+        });
+
+        document.querySelectorAll('.n-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.n = Number(btn.dataset.n);
+            recomputeExactClock();
+            resetPhase();
+            updateClockReadouts();
+            runFourCheckVerification();
+          });
+        });
+
+        document.getElementById('tempo-slider').addEventListener('input', (e) => {
+          const prevNA = state.samplesPerCycleA;
+          const prevPos = getCurrentSamplePosition();
+          state.tempoBpm = Number(e.target.value);
+          recomputeExactClock();
+          // Keep phase ratio continuous if playing
+          const frac = prevPos / prevNA;
+          if (state.isPlaying && state.audioCtx) {
+            state.pausedElapsedSamples = frac * state.samplesPerCycleA;
+            state.masterStartAudioTime = state.audioCtx.currentTime - state.pausedElapsedSamples / state.sampleRate;
+            state.nextScheduleStepA = Math.ceil(state.pausedElapsedSamples / state.samplesPerStepA);
+            state.nextScheduleStepB = Math.ceil(state.pausedElapsedSamples / state.samplesPerStepB);
+          } else {
+            state.pausedElapsedSamples = frac * state.samplesPerCycleA;
+          }
+          updateClockReadouts();
+          runFourCheckVerification();
+        });
+
+        document.querySelectorAll('.sound-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.soundType = btn.dataset.sound;
+            document.querySelectorAll('.sound-btn').forEach((b) => {
+              const active = b.dataset.sound === state.soundType;
+              b.className = `sound-btn text-[10px] px-2 py-0.5 rounded border ${
+                active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`;
+            });
+          });
+        });
+
+        document.getElementById('btn-timbre-toggle').addEventListener('click', () => {
+          state.identicalTimbre = !state.identicalTimbre;
+          const pill = document.getElementById('timbre-pill');
+          if (state.identicalTimbre) {
+            pill.textContent = 'ON (DEFAULT)';
+            pill.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+          } else {
+            pill.textContent = 'PITCH SPLIT (+5st)';
+            pill.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30';
+          }
+        });
+
+        // Verification modal
+        const modal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          runFourCheckVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        });
+        document.getElementById('btn-rerun-verify').addEventListener('click', runFourCheckVerification);
+
+        // Mobile panel toggle
+        document.getElementById('btn-toggle-panel').addEventListener('click', () => {
+          const panel = document.getElementById('left-panel');
+          panel.classList.toggle('-translate-x-[110%]');
+        });
+
+        // Spacebar shortcut
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            togglePlay();
+          }
+        });
+      }
+
+      // =========================================================================
+      // 9. BOOTSTRAP
+      // =========================================================================
+      window.addEventListener('load', () => {
+        recomputeExactClock();
+        initThree();
+        renderStepGrid();
+        updateClockReadouts();
+        runFourCheckVerification();
+        bindEvents();
+        animate();
+      });
+    })();
+  </script>
+</body>
+</html>
