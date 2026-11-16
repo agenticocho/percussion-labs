@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STRANGE-DRUM 3D — Chaotic Oscillator &amp; Thresholded Rhythm Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f43f5e;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f43f5e;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_10px_#f43f5e]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">STRANGE-DRUM 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-rose-300 border border-slate-700/70">Poincaré · λ &gt; 0</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Deterministic Chaos, Intermittency &amp; Shuffle-Null Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="regime-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-400/50">
+        CHAOTIC (λ &gt; 0)
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-replay" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition" title="Reset orbit to exact seed initial condition">
+        Replay Seed
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Return Map Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Chaos &amp; Order Telemetry</span>
+        <span id="lbl-hits" class="text-[10px] font-mono text-slate-400">0 hits</span>
+      </div>
+
+      <!-- Lyapunov & Period -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-2 px-2 border border-rose-500/25">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Lyapunov λ</div>
+          <div id="val-lyap" class="text-sm font-mono font-bold text-rose-300 mt-0.5">+0.350</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-2 px-2 border border-cyan-500/25">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Detected Period</div>
+          <div id="val-period" class="text-sm font-mono font-bold text-cyan-300 mt-0.5">Aperiodic</div>
+        </div>
+      </div>
+
+      <!-- Sequential Order Statistic (Real vs Shuffle) -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Order |ρ₁| (Active)</div>
+          <div id="val-order-active" class="text-xs font-mono font-semibold text-emerald-300 mt-0.5">0.00</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Mean IOI</div>
+          <div id="val-mean-ioi" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">--- ms</div>
+        </div>
+      </div>
+
+      <!-- First-Return Map (tau_{n+1} vs tau_n) -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Return Map (τₙ₊₁ vs τₙ)</span>
+          <span id="lbl-return-desc" class="text-[10px] font-mono text-rose-300">Attractor Curve</span>
+        </div>
+        <div class="relative w-full h-32 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="return-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Autocorrelation / Sequence Trace -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Interval Sequence τₙ</span>
+        <div class="relative w-full h-20 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="seq-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Chaotic System Selector -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Dynamical System</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-sys="logistic" class="sys-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-rose-500/25 text-rose-200 border border-rose-400/50">Logistic</button>
+          <button type="button" data-sys="rossler" class="sys-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Rössler</button>
+          <button type="button" data-sys="lorenz" class="sys-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Lorenz</button>
+        </div>
+      </div>
+
+      <!-- Bifurcation Parameter r / c / rho -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-r" id="lbl-r-name" class="text-rose-300 font-semibold">Parameter r</label>
+          <span id="lbl-r" class="font-mono text-rose-300 font-bold">3.8280</span>
+        </div>
+        <input id="ctrl-r" type="range" min="2.80" max="4.00" step="0.0005" value="3.8280" class="lab-slider" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+          Sweep r (Periodic → Chaos → 3-Cycle)
+        </button>
+      </div>
+
+      <!-- Threshold & Rate -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-thresh" class="text-slate-300 font-medium">Poincaré Threshold</label>
+          <span id="lbl-thresh" class="font-mono text-slate-200">0.50</span>
+        </div>
+        <input id="ctrl-thresh" type="range" min="0.15" max="0.85" step="0.01" value="0.50" class="lab-slider" />
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-rate" class="text-slate-300 font-medium">Iteration Rate</label>
+          <span id="lbl-rate" class="font-mono text-slate-200">18 iter/s</span>
+        </div>
+        <input id="ctrl-rate" type="range" min="4" max="45" step="1" value="18" class="lab-slider" />
+      </div>
+
+      <!-- Seed Input -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-seed" class="text-slate-300 font-medium">Deterministic Seed</label>
+          <span class="text-[10px] font-mono text-slate-500">Bit-Exact</span>
+        </div>
+        <div class="flex gap-1.5">
+          <input id="ctrl-seed" type="number" value="1337" min="1" max="999999" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-100 focus:outline-none focus:border-rose-400" />
+          <button id="btn-apply-seed" type="button" class="px-3 py-1 rounded-lg text-xs font-mono bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700">Apply</button>
+        </div>
+      </div>
+
+      <!-- The Two Nulls: Shuffle & White Noise -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Sequence Structure Tests</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-null="orbit" class="null-btn py-1.5 rounded-lg text-[10px] font-mono font-semibold bg-rose-500/25 text-rose-200 border border-rose-400/50">Chaotic Orbit</button>
+          <button type="button" data-null="shuffle" class="null-btn py-1.5 rounded-lg text-[10px] font-mono font-semibold bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700">Shuffle</button>
+          <button type="button" data-null="white" class="null-btn py-1.5 rounded-lg text-[10px] font-mono font-semibold bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-slate-700">White Noise</button>
+        </div>
+        <p class="text-[10px] text-slate-400 leading-snug">
+          <strong>Shuffle</strong> keeps the exact same intervals &amp; histogram, destroying only sequential order.
+        </p>
+      </div>
+
+      <!-- Mappings -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+          <span>Interval → Pitch</span>
+          <input id="map-pitch" type="checkbox" checked class="accent-rose-400 w-3.5 h-3.5" />
+        </label>
+        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer">
+          <span>Threshold Gap → Velocity</span>
+          <input id="map-vel" type="checkbox" checked class="accent-rose-400 w-3.5 h-3.5" />
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-rose-500/40 text-xs font-mono text-rose-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. DETERMINISTIC PRNG & CHAOTIC DYNAMICAL SYSTEMS
+      // =========================================================================
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return () => {
+          a |= 0; a = (a + 0x6D2B79F5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      const params = {
+        sys: 'logistic', // 'logistic' | 'rossler' | 'lorenz'
+        r: 3.8280,       // Logistic r [2.8..4.0], Rossler c [2.5..6.0], Lorenz rho [14..36]
+        threshNorm: 0.50,
+        rate: 18,        // iterations / sec (or flow speed)
+        seed: 1337,
+        nullMode: 'orbit', // 'orbit' | 'shuffle' | 'white'
+        mapPitch: true,
+        mapVel: true,
+      };
+
+      const state = {
+        x: 0.3, y: 0.1, z: 0.1,
+        px: 0.3 + 1e-7, py: 0.1, pz: 0.1, // shadow orbit for Lyapunov
+        prevVal: 0.3,
+        lyapSum: 0,
+        lyapCount: 0,
+        lyapunov: 0,
+        simTime: 0,
+        stepAccum: 0,
+        lastHitTime: null,
+        hits: 0,
+        running: true,
+        sweepActive: false,
+        sweepTimer: 0,
+        orbitIois: [],
+        activeIois: [],
+        shuffledPool: [],
+        nextNullTime: 0,
+        trail: [],
+        ringWaves: [],
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function getThresholdValue() {
+        if (params.sys === 'logistic') return params.threshNorm;
+        if (params.sys === 'rossler') return 0.3 + params.threshNorm * 4.5;
+        return -5.0 + params.threshNorm * 22.0; // Lorenz x
+      }
+
+      function resetToSeed() {
+        const rng = mulberry32(params.seed);
+        if (params.sys === 'logistic') {
+          state.x = 0.15 + rng() * 0.70;
+          state.y = state.x;
+          state.z = state.x;
+          state.prevVal = state.x;
+        } else if (params.sys === 'rossler') {
+          state.x = (rng() - 0.5) * 2.0;
+          state.y = (rng() - 0.5) * 2.0;
+          state.z = 0.1 + rng() * 0.5;
+          state.prevVal = state.z;
+        } else {
+          state.x = 1.0 + (rng() - 0.5) * 4.0;
+          state.y = 1.0 + (rng() - 0.5) * 4.0;
+          state.z = 20.0 + (rng() - 0.5) * 4.0;
+          state.prevVal = state.x;
+        }
+        state.px = state.x + 1e-7;
+        state.py = state.y;
+        state.pz = state.z;
+        state.lyapSum = 0;
+        state.lyapCount = 0;
+        state.lyapunov = 0;
+        state.simTime = 0;
+        state.stepAccum = 0;
+        state.lastHitTime = null;
+        state.hits = 0;
+        state.orbitIois = [];
+        state.activeIois = [];
+        state.shuffledPool = [];
+        state.nextNullTime = 0;
+        state.trail = [];
+        state.ringWaves = [];
+        if (audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      }
+
+      function rk4Step(x, y, z, dt, deriv) {
+        const k1 = deriv(x, y, z);
+        const k2 = deriv(x + 0.5 * dt * k1[0], y + 0.5 * dt * k1[1], z + 0.5 * dt * k1[2]);
+        const k3 = deriv(x + 0.5 * dt * k2[0], y + 0.5 * dt * k2[1], z + 0.5 * dt * k2[2]);
+        const k4 = deriv(x + dt * k3[0], y + dt * k3[1], z + dt * k3[2]);
+        return [
+          x + (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]),
+          y + (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]),
+          z + (dt / 6) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]),
+        ];
+      }
+
+      function stepChaos(dtStep, onCross) {
+        const thresh = getThresholdValue();
+        let val = 0;
+
+        if (params.sys === 'logistic') {
+          const prevX = state.x;
+          state.z = state.y;
+          state.y = prevX;
+          state.x = params.r * prevX * (1.0 - prevX);
+          const deriv = Math.abs(params.r * (1.0 - 2.0 * prevX));
+          if (deriv > 1e-12) {
+            state.lyapSum += Math.log(deriv);
+            state.lyapCount++;
+            state.lyapunov = state.lyapSum / state.lyapCount;
+          }
+          val = state.x;
+          state.simTime += dtStep;
+          if (state.prevVal < thresh && val >= thresh) {
+            onCross(val - thresh, state.simTime);
+          }
+          state.prevVal = val;
+        } else if (params.sys === 'rossler') {
+          const c = params.r;
+          const deriv = (x, y, z) => [-y - z, x + 0.2 * y, 0.2 + z * (x - c)];
+          const h = 0.025;
+          const subSteps = 4;
+          for (let s = 0; s < subSteps; s++) {
+            const [nx, ny, nz] = rk4Step(state.x, state.y, state.z, h, deriv);
+            const [pnx, pny, pnz] = rk4Step(state.px, state.py, state.pz, h, deriv);
+            state.x = nx; state.y = ny; state.z = nz;
+            const d = Math.hypot(pnx - nx, pny - ny, pnz - nz);
+            if (d > 1e-12) {
+              state.lyapSum += Math.log(d / 1e-7);
+              state.lyapCount += h;
+              state.lyapunov = state.lyapSum / state.lyapCount;
+              const scale = 1e-7 / d;
+              state.px = nx + (pnx - nx) * scale;
+              state.py = ny + (pny - ny) * scale;
+              state.pz = nz + (pnz - nz) * scale;
+            }
+            state.simTime += dtStep / subSteps;
+            val = state.z;
+            if (state.prevVal < thresh && val >= thresh) {
+              onCross(val - thresh, state.simTime);
+            }
+            state.prevVal = val;
+          }
+        } else {
+          const rho = params.r;
+          const deriv = (x, y, z) => [10.0 * (y - x), x * (rho - z) - y, x * y - (8.0 / 3.0) * z];
+          const h = 0.008;
+          const subSteps = 4;
+          for (let s = 0; s < subSteps; s++) {
+            const [nx, ny, nz] = rk4Step(state.x, state.y, state.z, h, deriv);
+            const [pnx, pny, pnz] = rk4Step(state.px, state.py, state.pz, h, deriv);
+            state.x = nx; state.y = ny; state.z = nz;
+            const d = Math.hypot(pnx - nx, pny - ny, pnz - nz);
+            if (d > 1e-12) {
+              state.lyapSum += Math.log(d / 1e-7);
+              state.lyapCount += h;
+              state.lyapunov = state.lyapSum / state.lyapCount;
+              const scale = 1e-7 / d;
+              state.px = nx + (pnx - nx) * scale;
+              state.py = ny + (pny - ny) * scale;
+              state.pz = nz + (pnz - nz) * scale;
+            }
+            state.simTime += dtStep / subSteps;
+            val = state.x;
+            if (state.prevVal < thresh && val >= thresh) {
+              onCross(val - thresh, state.simTime);
+            }
+            state.prevVal = val;
+          }
+        }
+      }
+
+      function detectPeriod(iois) {
+        if (iois.length < 10) return 'Sampling...';
+        const tail = iois.slice(-18);
+        const tol = 3.5;
+        for (const p of [1, 2, 3, 4, 6, 8]) {
+          if (tail.length < p * 2 + 2) continue;
+          let ok = true;
+          for (let i = tail.length - 1; i >= tail.length - p * 2; i--) {
+            if (Math.abs(tail[i] - tail[i - p]) > tol) { ok = false; break; }
+          }
+          if (ok) return `Period-${p}`;
+        }
+        return 'Aperiodic';
+      }
+
+      function lag1Correlation(arr) {
+        if (arr.length < 8) return 0;
+        let sum = 0;
+        for (const v of arr) sum += v;
+        const mean = sum / arr.length;
+        let num = 0, den = 0;
+        for (let i = 0; i < arr.length; i++) {
+          const d = arr[i] - mean;
+          den += d * d;
+          if (i < arr.length - 1) num += d * (arr[i + 1] - mean);
+        }
+        return den > 1e-6 ? num / den : 0;
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO CLOCK-SYNCHRONIZED DRY PERCUSSION
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let simAudioOffset = 0;
+      const LOOKAHEAD = 0.045;
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.8;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500/25 text-rose-200 border border-rose-400/60 hover:bg-rose-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) {
+          initAudio();
+        } else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleDrumHit(ioiMs, gapNorm, exactSimTime) {
+        state.hits++;
+        state.ringWaves.push({ r: 0.1, op: 0.9 });
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.30) return;
+
+        const pitchNorm = Math.max(0, Math.min(1, ioiMs / 450));
+        const freq = params.mapPitch ? (1250 - pitchNorm * 950) : 520;
+        const vel = params.mapVel ? (0.16 + 0.36 * Math.min(1, Math.max(0, gapNorm))) : 0.30;
+
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, playTime);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(80, freq * 0.48), playTime + 0.016);
+
+        g.gain.setValueAtTime(vel, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + 0.018);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(playTime);
+        osc.stop(playTime + 0.022);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        const saved = { x: state.x, y: state.y, z: state.z, px: state.px, py: state.py, pz: state.pz, prevVal: state.prevVal, simTime: state.simTime, lastHitTime: state.lastHitTime };
+        resetToSeed();
+        const events = [];
+        const dtStep = 1.0 / params.rate;
+        let lastT = null;
+        while (state.simTime < dur - 0.03) {
+          stepChaos(dtStep, (gap, tEv) => {
+            const ioi = lastT !== null ? (tEv - lastT) * 1000 : 180;
+            lastT = tEv;
+            events.push({ t: tEv, ioi, gap });
+          });
+        }
+        Object.assign(state, saved);
+
+        for (const ev of events) {
+          const start = Math.floor(ev.t * sr);
+          const pNorm = Math.max(0, Math.min(1, ev.ioi / 450));
+          const freq = params.mapPitch ? (1250 - pNorm * 950) : 520;
+          const vel = params.mapVel ? (0.18 + 0.34 * Math.min(1, Math.abs(ev.gap))) : 0.30;
+          const len = Math.floor(sr * 0.018);
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const env = Math.exp(-tt / 0.004) * vel;
+            const sig = env * Math.sin(2 * Math.PI * freq * tt);
+            left[start + j] += sig;
+            right[start + j] += sig;
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `strange_drum_${params.sys}_seed${params.seed}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s 44.1 kHz stereo WAV (${events.length} hits)`);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D ATTRACTOR & POINCARÉ PLANE
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.06);
+
+      const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.55, phi: 1.05, radius: 5.2, target: new THREE.Vector3(0, 0, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.7));
+      const grid = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      grid.position.y = -1.8;
+      scene.add(grid);
+
+      const TRAIL_MAX = 600;
+      const trailPositions = new Float32Array(TRAIL_MAX * 3);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+      const trailLine = new THREE.Line(
+        trailGeo,
+        new THREE.LineBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.88 })
+      );
+      scene.add(trailLine);
+
+      const orbitHead = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      scene.add(orbitHead);
+
+      // Poincaré Threshold Plane
+      const planeMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.4, 3.4),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.16 })
+      );
+      scene.add(planeMesh);
+
+      const ringPool = Array.from({ length: 8 }, () => {
+        const m = new THREE.Mesh(
+          new THREE.RingGeometry(0.08, 0.11, 32),
+          new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+        );
+        m.visible = false;
+        scene.add(m);
+        return m;
+      });
+
+      function mapStateTo3D(x, y, z) {
+        if (params.sys === 'logistic') {
+          return [(x - 0.5) * 3.0, (y - 0.5) * 3.0, (z - 0.5) * 3.0];
+        } else if (params.sys === 'rossler') {
+          return [x * 0.16, (z - 2.0) * 0.18, y * 0.16];
+        } else {
+          return [x * 0.085, (z - 24.0) * 0.085, y * 0.085];
+        }
+      }
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.5, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.5, Math.min(11.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. 2D RETURN MAP & SEQUENCE CHARTS
+      // =========================================================================
+      const retCanvas = document.getElementById('return-canvas');
+      const retCtx = retCanvas.getContext('2d');
+      const seqCanvas = document.getElementById('seq-canvas');
+      const seqCtx = seqCanvas.getContext('2d');
+
+      function drawCharts() {
+        const w = retCanvas.width = retCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = retCanvas.height = retCanvas.clientHeight * (window.devicePixelRatio || 1);
+        retCtx.clearRect(0, 0, w, h);
+
+        const iois = state.activeIois;
+        if (iois.length >= 3) {
+          const maxMs = Math.max(120, Math.max(...iois) * 1.1);
+          retCtx.fillStyle = params.nullMode === 'orbit' ? '#f43f5e' : (params.nullMode === 'shuffle' ? '#f59e0b' : '#22d3ee');
+          for (let i = 0; i < iois.length - 1; i++) {
+            const x = (iois[i] / maxMs) * (w - 16) + 8;
+            const y = h - (iois[i + 1] / maxMs) * (h - 16) - 8;
+            retCtx.fillRect(x - 1.5, y - 1.5, 3.5, 3.5);
+          }
+        }
+
+        const sw = seqCanvas.width = seqCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const sh = seqCanvas.height = seqCanvas.clientHeight * (window.devicePixelRatio || 1);
+        seqCtx.clearRect(0, 0, sw, sh);
+        if (iois.length >= 2) {
+          const tail = iois.slice(-60);
+          const maxMs = Math.max(120, Math.max(...tail) * 1.1);
+          seqCtx.strokeStyle = '#38bdf8';
+          seqCtx.lineWidth = 1.5;
+          seqCtx.beginPath();
+          tail.forEach((v, idx) => {
+            const x = (idx / Math.max(1, tail.length - 1)) * (sw - 8) + 4;
+            const y = sh - (v / maxMs) * (sh - 10) - 5;
+            if (idx === 0) seqCtx.moveTo(x, y);
+            else seqCtx.lineTo(x, y);
+          });
+          seqCtx.stroke();
+        }
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS
+      // =========================================================================
+      const ctrlR = document.getElementById('ctrl-r');
+
+      function configureSystem(sys) {
+        params.sys = sys;
+        if (sys === 'logistic') {
+          ctrlR.min = '2.80'; ctrlR.max = '4.00'; ctrlR.step = '0.0005'; ctrlR.value = '3.8280';
+          params.r = 3.8280;
+          document.getElementById('lbl-r-name').textContent = 'Parameter r';
+        } else if (sys === 'rossler') {
+          ctrlR.min = '2.50'; ctrlR.max = '6.00'; ctrlR.step = '0.01'; ctrlR.value = '5.70';
+          params.r = 5.70;
+          document.getElementById('lbl-r-name').textContent = 'Parameter c';
+        } else {
+          ctrlR.min = '14.0'; ctrlR.max = '36.0'; ctrlR.step = '0.1'; ctrlR.value = '28.0';
+          params.r = 28.0;
+          document.getElementById('lbl-r-name').textContent = 'Rayleigh ρ';
+        }
+        document.getElementById('lbl-r').textContent = params.r.toFixed(sys === 'logistic' ? 4 : 2);
+        document.querySelectorAll('.sys-btn').forEach((b) => {
+          b.className = 'sys-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+        });
+        document.querySelector(`[data-sys="${sys}"]`).className = 'sys-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-rose-500/25 text-rose-200 border border-rose-400/50';
+        resetToSeed();
+      }
+
+      document.querySelectorAll('.sys-btn').forEach((btn) => {
+        btn.addEventListener('click', () => configureSystem(btn.dataset.sys));
+      });
+
+      ctrlR.addEventListener('input', () => {
+        params.r = parseFloat(ctrlR.value);
+        document.getElementById('lbl-r').textContent = params.r.toFixed(params.sys === 'logistic' ? 4 : 2);
+      });
+
+      document.getElementById('ctrl-thresh').addEventListener('input', (e) => {
+        params.threshNorm = parseFloat(e.target.value);
+        document.getElementById('lbl-thresh').textContent = params.threshNorm.toFixed(2);
+      });
+
+      document.getElementById('ctrl-rate').addEventListener('input', (e) => {
+        params.rate = parseInt(e.target.value, 10);
+        document.getElementById('lbl-rate').textContent = `${params.rate} iter/s`;
+      });
+
+      document.getElementById('btn-apply-seed').addEventListener('click', () => {
+        const s = parseInt(document.getElementById('ctrl-seed').value, 10);
+        params.seed = isNaN(s) ? 1337 : Math.max(1, s);
+        resetToSeed();
+        showToast(`Reset to exact seed ${params.seed}`);
+      });
+
+      document.querySelectorAll('.null-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.nullMode = btn.dataset.null;
+          state.activeIois = [];
+          if (params.nullMode === 'shuffle') {
+            state.shuffledPool = [...state.orbitIois];
+            for (let i = state.shuffledPool.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [state.shuffledPool[i], state.shuffledPool[j]] = [state.shuffledPool[j], state.shuffledPool[i]];
+            }
+            document.getElementById('lbl-return-desc').textContent = 'Shuffled (Order Destroyed)';
+          } else if (params.nullMode === 'white') {
+            document.getElementById('lbl-return-desc').textContent = 'White Noise (Memoryless)';
+          } else {
+            document.getElementById('lbl-return-desc').textContent = 'Attractor Curve';
+          }
+          state.nextNullTime = state.simTime + 0.05;
+          document.querySelectorAll('.null-btn').forEach((b) => {
+            b.className = 'null-btn py-1.5 rounded-lg text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'null-btn py-1.5 rounded-lg text-[10px] font-mono font-semibold bg-rose-500/25 text-rose-200 border border-rose-400/50';
+        });
+      });
+
+      document.getElementById('map-pitch').addEventListener('change', (e) => { params.mapPitch = e.target.checked; });
+      document.getElementById('map-vel').addEventListener('change', (e) => { params.mapVel = e.target.checked; });
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+        if (state.running && audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      });
+      document.getElementById('btn-replay').addEventListener('click', () => {
+        resetToSeed();
+        showToast(`Replaying seed ${params.seed}`);
+      });
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.55; camState.phi = 1.05; camState.radius = 5.2; updateCamera();
+      });
+
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        if (state.sweepActive) {
+          state.sweepActive = false;
+          document.getElementById('btn-sweep').textContent = 'Sweep r (Periodic → Chaos → 3-Cycle)';
+          return;
+        }
+        state.sweepActive = true;
+        state.sweepTimer = 0;
+        params.r = parseFloat(ctrlR.min);
+        ctrlR.value = String(params.r);
+        document.getElementById('btn-sweep').textContent = 'Stop Sweep';
+      });
+
+      // =========================================================================
+      // 7. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+      let uiTick = 0;
+
+      function updateReadouts() {
+        document.getElementById('lbl-hits').textContent = `${state.hits} hits`;
+        const ly = state.lyapunov;
+        document.getElementById('val-lyap').textContent = `${ly >= 0 ? '+' : ''}${ly.toFixed(3)}`;
+
+        const pStr = detectPeriod(state.orbitIois);
+        document.getElementById('val-period').textContent = pStr;
+
+        const rho1 = Math.abs(lag1Correlation(state.activeIois));
+        document.getElementById('val-order-active').textContent = rho1.toFixed(3);
+
+        const mean = state.activeIois.length
+          ? state.activeIois.reduce((a, b) => a + b, 0) / state.activeIois.length
+          : 0;
+        document.getElementById('val-mean-ioi').textContent = mean > 0 ? `${mean.toFixed(0)} ms` : '--- ms';
+
+        const badge = document.getElementById('regime-badge');
+        if (params.sys === 'logistic' && params.r >= 3.820 && params.r <= 3.8285) {
+          badge.textContent = 'INTERMITTENCY';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50';
+        } else if (params.sys === 'logistic' && params.r > 3.8285 && params.r < 3.856 && pStr === 'Period-3') {
+          badge.textContent = 'PERIOD-3 WINDOW (λ < 0)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/50';
+        } else if (ly > 0.01) {
+          badge.textContent = 'CHAOTIC (λ > 0)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-400/50';
+        } else {
+          badge.textContent = `PERIODIC · ${pStr.toUpperCase()} (λ < 0)`;
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+        }
+        drawCharts();
+      }
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.running) {
+          let targetSim = state.simTime + dtReal;
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            targetSim = (audioCtx.currentTime + LOOKAHEAD) - simAudioOffset;
+            if (Math.abs(targetSim - state.simTime) > 0.3) {
+              simAudioOffset = audioCtx.currentTime - state.simTime;
+              targetSim = state.simTime + dtReal;
+            }
+          }
+
+          const dtStep = 1.0 / params.rate;
+          let guard = 0;
+          while (state.simTime < targetSim && guard < 25) {
+            guard++;
+            stepChaos(dtStep, (gap, tEv) => {
+              const ioiMs = state.lastHitTime !== null ? (tEv - state.lastHitTime) * 1000 : 150;
+              state.lastHitTime = tEv;
+              state.orbitIois.push(ioiMs);
+              if (state.orbitIois.length > 200) state.orbitIois.shift();
+
+              if (params.nullMode === 'orbit') {
+                state.activeIois.push(ioiMs);
+                if (state.activeIois.length > 200) state.activeIois.shift();
+                scheduleDrumHit(ioiMs, gap, tEv);
+              }
+            });
+
+            const p3 = mapStateTo3D(state.x, state.y, state.z);
+            state.trail.push(p3);
+            if (state.trail.length > TRAIL_MAX) state.trail.shift();
+          }
+
+          // Handle Shuffle or White-Noise Null playback
+          if (params.nullMode !== 'orbit') {
+            const meanMs = state.orbitIois.length
+              ? state.orbitIois.reduce((a, b) => a + b, 0) / state.orbitIois.length
+              : 180;
+            let nGuard = 0;
+            while (state.nextNullTime <= targetSim && nGuard < 15) {
+              nGuard++;
+              let waitMs = meanMs;
+              if (params.nullMode === 'shuffle' && state.shuffledPool.length > 0) {
+                waitMs = state.shuffledPool[Math.floor(Math.random() * state.shuffledPool.length)];
+              } else {
+                waitMs = -Math.log(Math.max(1e-9, Math.random())) * meanMs;
+              }
+              state.activeIois.push(waitMs);
+              if (state.activeIois.length > 200) state.activeIois.shift();
+              scheduleDrumHit(waitMs, 0.5, state.nextNullTime);
+              state.nextNullTime += Math.max(0.02, waitMs / 1000.0);
+            }
+          }
+
+          if (state.sweepActive) {
+            state.sweepTimer += dtReal;
+            if (state.sweepTimer >= 0.08) {
+              state.sweepTimer = 0;
+              const maxR = parseFloat(ctrlR.max);
+              const minR = parseFloat(ctrlR.min);
+              params.r = Math.min(maxR, params.r + (maxR - minR) * 0.004);
+              ctrlR.value = String(params.r);
+              document.getElementById('lbl-r').textContent = params.r.toFixed(params.sys === 'logistic' ? 4 : 2);
+              if (params.r >= maxR) {
+                state.sweepActive = false;
+                document.getElementById('btn-sweep').textContent = 'Sweep r (Periodic → Chaos → 3-Cycle)';
+              }
+            }
+          }
+        }
+
+        // Update 3D Trail & Poincaré Plane
+        for (let i = 0; i < state.trail.length; i++) {
+          trailPositions[i * 3] = state.trail[i][0];
+          trailPositions[i * 3 + 1] = state.trail[i][1];
+          trailPositions[i * 3 + 2] = state.trail[i][2];
+        }
+        trailGeo.setDrawRange(0, state.trail.length);
+        trailGeo.attributes.position.needsUpdate = true;
+        const head = mapStateTo3D(state.x, state.y, state.z);
+        orbitHead.position.set(head[0], head[1], head[2]);
+
+        const thresh = getThresholdValue();
+        if (params.sys === 'logistic') {
+          planeMesh.rotation.set(0, Math.PI / 2, 0);
+          planeMesh.position.set((thresh - 0.5) * 3.0, 0, 0);
+        } else if (params.sys === 'rossler') {
+          planeMesh.rotation.set(Math.PI / 2, 0, 0);
+          planeMesh.position.set(0, (thresh - 2.0) * 0.18, 0);
+        } else {
+          planeMesh.rotation.set(0, Math.PI / 2, 0);
+          planeMesh.position.set(thresh * 0.085, 0, 0);
+        }
+
+        for (let i = state.ringWaves.length - 1; i >= 0; i--) {
+          state.ringWaves[i].r += dtReal * 2.8;
+          state.ringWaves[i].op -= dtReal * 2.2;
+          if (state.ringWaves[i].op <= 0) state.ringWaves.splice(i, 1);
+        }
+        for (let i = 0; i < ringPool.length; i++) {
+          if (i < state.ringWaves.length) {
+            ringPool[i].visible = true;
+            ringPool[i].position.copy(planeMesh.position);
+            ringPool[i].rotation.copy(planeMesh.rotation);
+            const s = state.ringWaves[i].r * 4.5;
+            ringPool[i].scale.set(s, s, 1);
+            ringPool[i].material.opacity = state.ringWaves[i].op;
+          } else ringPool[i].visible = false;
+        }
+
+        uiTick++;
+        if (uiTick % 4 === 0) updateReadouts();
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__STRANGE_DRUM__)
+      // =========================================================================
+      window.__STRANGE_DRUM__ = {
+        getState: () => ({ ...params, lyapunov: state.lyapunov, hits: state.hits, period: detectPeriod(state.orbitIois) }),
+        verifySeedReproducibility: (seed = 1337, r = 3.828) => {
+          const saved = { ...params };
+          params.sys = 'logistic'; params.seed = seed; params.r = r;
+          const runOnce = () => {
+            resetToSeed();
+            const out = [];
+            for (let i = 0; i < 400; i++) stepChaos(1 / 18, (g, t) => out.push(t));
+            return out;
+          };
+          const a = runOnce();
+          const b = runOnce();
+          Object.assign(params, saved);
+          resetToSeed();
+          let maxDiff = 0;
+          for (let i = 0; i < a.length; i++) maxDiff = Math.max(maxDiff, Math.abs(a[i] - b[i]));
+          return { seed, count: a.length, maxDiffSec: maxDiff };
+        },
+        verifyShuffleOrder: () => {
+          const realRho = Math.abs(lag1Correlation(state.orbitIois));
+          const shuf = [...state.orbitIois];
+          for (let i = shuf.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuf[i], shuf[j]] = [shuf[j], shuf[i]];
+          }
+          const shufRho = Math.abs(lag1Correlation(shuf));
+          return { realOrderCorr: realRho, shuffledOrderCorr: shufRho };
+        },
+      };
+
+      resetToSeed();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
