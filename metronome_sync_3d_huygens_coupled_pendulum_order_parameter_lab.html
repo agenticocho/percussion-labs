@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>METRONOME-SYNC 3D — Huygens Coupled Pendulum &amp; Order-Parameter Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .lab-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider-amber::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+    .lab-slider-amber::-moz-range-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.5);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]" id="header-pulse"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">METRONOME-SYNC 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-cyan-300 border border-slate-700/70">RK4 · 1 kHz</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Huygens–Pantaleone Coupled Pendulum &amp; Order-Parameter Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="sync-state-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-slate-800/90 text-slate-300 border border-slate-700">
+        UNSYNCHRONIZED
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-reset" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Cold Start
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition" title="Export 8-second 44.1 kHz 16-bit stereo WAV of current coupling state">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Plots Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Order Parameters</span>
+        <span id="sim-time-readout" class="text-[11px] font-mono text-slate-400">t = 0.0 s</span>
+      </div>
+
+      <!-- r_inphase -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-mono text-cyan-300">r<sub>inphase</sub> = |Σ e<sup>iφᵢ</sup>| / N</span>
+          <span id="val-r-in" class="font-mono font-semibold text-cyan-300">0.000</span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-slate-800/90 overflow-hidden">
+          <div id="bar-r-in" class="h-full bg-cyan-400 transition-all duration-75" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- r_anti -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-mono text-amber-300">r<sub>anti</sub> = |Σ (−1)<sup>i</sup> e<sup>iφᵢ</sup>| / N</span>
+          <span id="val-r-anti" class="font-mono font-semibold text-amber-300">0.000</span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-slate-800/90 overflow-hidden">
+          <div id="bar-r-anti" class="h-full bg-amber-400 transition-all duration-75" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Telemetry Grid -->
+      <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Time-to-Lock</div>
+          <div id="val-lock-time" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">--.- s</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Beam x</div>
+          <div id="val-beam-x" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">0.00 mm</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Mean IOI</div>
+          <div id="val-mean-ioi" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">--- ms</div>
+        </div>
+      </div>
+
+      <!-- Order Parameter Plot (Time Series or Kappa Sweep) -->
+      <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span id="plot-title" class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Order Parameter Trace</span>
+          <div class="flex items-center gap-2 text-[10px] font-mono">
+            <span class="text-cyan-300">● In</span>
+            <span class="text-amber-300">● Anti</span>
+          </div>
+        </div>
+        <div class="relative w-full h-28 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="order-chart" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Inter-Onset Interval Histogram -->
+      <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">IOI Histogram (0–700 ms)</span>
+          <span id="ioi-mode-label" class="text-[10px] font-mono text-slate-400">Broad</span>
+        </div>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="ioi-chart" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-72 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Coupling &amp; Mechanics</span>
+        <span class="text-[10px] font-mono text-slate-500">Pantaleone Model</span>
+      </div>
+
+      <!-- N Metronomes -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-n" class="text-slate-300 font-medium">N Metronomes</label>
+          <span id="lbl-n" class="font-mono text-cyan-300 font-semibold">2</span>
+        </div>
+        <input id="ctrl-n" type="range" min="2" max="12" step="1" value="2" class="lab-slider" />
+      </div>
+
+      <!-- Coupling kappa -->
+      <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-kappa" class="text-slate-200 font-semibold">Coupling κ <span class="text-slate-500 font-normal">(Nm / M<sub>tot</sub>)</span></label>
+          <span id="lbl-kappa" class="font-mono text-amber-300 font-semibold">0.25</span>
+        </div>
+        <input id="ctrl-kappa" type="range" min="0.00" max="0.85" step="0.01" value="0.25" class="lab-slider lab-slider-amber" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+          Sweep κ (0.00 → 0.85)
+        </button>
+      </div>
+
+      <!-- Detuning spread -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-spread" class="text-slate-300 font-medium">Detuning Spread</label>
+          <span id="lbl-spread" class="font-mono text-slate-200">1.0%</span>
+        </div>
+        <input id="ctrl-spread" type="range" min="0.0" max="3.0" step="0.1" value="1.0" class="lab-slider" />
+      </div>
+
+      <!-- Escapement force -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-esc" class="text-slate-300 font-medium">Escapement Force</label>
+          <span id="lbl-esc" class="font-mono text-slate-200">0.100</span>
+        </div>
+        <input id="ctrl-esc" type="range" min="0.02" max="0.20" step="0.005" value="0.10" class="lab-slider" />
+      </div>
+
+      <!-- Damping beta -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-beta" class="text-slate-300 font-medium">Damping β</label>
+          <span id="lbl-beta" class="font-mono text-slate-200">0.15 s⁻¹</span>
+        </div>
+        <input id="ctrl-beta" type="range" min="0.04" max="0.35" step="0.01" value="0.15" class="lab-slider" />
+      </div>
+
+      <!-- Equations & Hint -->
+      <div class="pt-2 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-1 leading-relaxed">
+        <div>θ̈ᵢ = −βθ̇ᵢ − (g/Lᵢ)sinθᵢ − (ẍ/Lᵢ)cosθᵢ + esc</div>
+        <div>ẍ = −Σ mLᵢ(θ̈ᵢcosθᵢ − θ̇ᵢ²sinθᵢ) / M<sub>beam</sub></div>
+        <div class="text-slate-500 pt-1">Drag to orbit · Scroll to zoom · Watch rhythm emerge from coupling.</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-cyan-500/40 text-xs font-mono text-cyan-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. PHYSICS ENGINE (Pantaleone Coupled Metronomes, RK4 @ 1 kHz)
+      // =========================================================================
+      const G = 9.81;
+      const OMEGA_0 = 2.0 * Math.PI * 1.0; // 1.0 Hz full cycle -> 120 BPM clicks
+      const L_0 = G / (OMEGA_0 * OMEGA_0); // ~0.2485 m
+      const M_BOB = 0.10; // kg per pendulum bob
+      const THETA_ESC = 0.05; // rad escapement trigger threshold
+      const DT = 0.001; // 1 kHz fixed timestep
+
+      const params = {
+        N: 2,
+        kappa: 0.25,
+        spread: 0.010, // 1.0%
+        escForce: 0.10,
+        beta: 0.15,
+      };
+
+      const state = {
+        theta: [],
+        omega: [],
+        L: [],
+        wNat: [],
+        x: 0,
+        vx: 0,
+        simTime: 0,
+        running: true,
+        rIn: 0,
+        rAnti: 0,
+        syncState: 'UNSYNCHRONIZED',
+        lockStartTime: null,
+        timeToLock: null,
+        // History buffers
+        traceIn: [],
+        traceAnti: [],
+        sweepActive: false,
+        sweepKappa: 0,
+        sweepTimer: 0,
+        sweepData: [], // { kappa, rIn, rAnti }
+        // Click / IOI tracking
+        lastClickTime: null,
+        rawClicks: [], // { time, idx, dir }
+        ioiBuffer: [], // ms between fused beat events
+        lastFusedClickTime: null,
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function computeLengths() {
+        state.L = new Array(params.N);
+        state.wNat = new Array(params.N);
+        for (let i = 0; i < params.N; i++) {
+          const frac = params.N > 1 ? (2.0 * i / (params.N - 1) - 1.0) : 0.0;
+          const w = OMEGA_0 * (1.0 + params.spread * frac);
+          state.wNat[i] = w;
+          state.L[i] = G / (w * w);
+        }
+      }
+
+      function resetColdStart(preserveSweep = false) {
+        computeLengths();
+        state.theta = new Array(params.N);
+        state.omega = new Array(params.N);
+        for (let i = 0; i < params.N; i++) {
+          // Deterministic incoherent initial phases
+          const phi = (2.39996 * i + 0.7) % (2.0 * Math.PI);
+          const amp = 0.28 + 0.06 * Math.sin(i * 1.9 + 0.3);
+          state.theta[i] = amp * Math.cos(phi);
+          state.omega[i] = -amp * OMEGA_0 * Math.sin(phi);
+        }
+        state.x = 0;
+        state.vx = 0;
+        state.simTime = 0;
+        state.lockStartTime = null;
+        state.timeToLock = null;
+        state.traceIn = [];
+        state.traceAnti = [];
+        state.rawClicks = [];
+        state.ioiBuffer = [];
+        state.lastFusedClickTime = null;
+        if (!preserveSweep) {
+          state.sweepActive = false;
+          document.getElementById('btn-sweep').textContent = 'Sweep κ (0.00 → 0.85)';
+          document.getElementById('plot-title').textContent = 'Order Parameter Trace';
+        }
+        computeOrderParameters();
+        if (audioCtx) {
+          simAudioOffset = audioCtx.currentTime - state.simTime;
+        }
+      }
+
+      function computeAccelerations(th, om, xVal, vxVal, outAth) {
+        const N = params.N;
+        const kappa = params.kappa;
+        const beta = params.beta;
+        const L = state.L;
+
+        if (kappa <= 1e-6) {
+          for (let i = 0; i < N; i++) {
+            outAth[i] = -beta * om[i] - (G / L[i]) * Math.sin(th[i]);
+          }
+          return 0.0;
+        }
+
+        const totalPendMass = N * M_BOB;
+        const M_total = totalPendMass / kappa;
+        const M_board = M_total - totalPendMass;
+
+        // Very weak beam centering/rolling friction so beam stays in frame without suppressing anti-phase
+        let num = -0.02 * xVal - 0.02 * vxVal;
+        let denom = M_board;
+
+        for (let i = 0; i < N; i++) {
+          const alpha = -beta * om[i] - (G / L[i]) * Math.sin(th[i]);
+          outAth[i] = alpha;
+          const c = Math.cos(th[i]);
+          const s = Math.sin(th[i]);
+          num -= M_BOB * L[i] * (alpha * c - om[i] * om[i] * s);
+          denom += M_BOB * s * s;
+        }
+
+        const ax = num / denom;
+        for (let i = 0; i < N; i++) {
+          outAth[i] -= (ax / L[i]) * Math.cos(th[i]);
+        }
+        return ax;
+      }
+
+      // Pre-allocated RK4 scratch arrays to avoid GC in 1 kHz loop
+      let k1_th = [], k1_om = [], k2_th = [], k2_om = [], k3_th = [], k3_om = [], k4_th = [], k4_om = [];
+      let tmp_th = [], tmp_om = [], prev_th = [];
+
+      function ensureScratch(N) {
+        if (k1_th.length === N) return;
+        k1_th = new Float64Array(N); k1_om = new Float64Array(N);
+        k2_th = new Float64Array(N); k2_om = new Float64Array(N);
+        k3_th = new Float64Array(N); k3_om = new Float64Array(N);
+        k4_th = new Float64Array(N); k4_om = new Float64Array(N);
+        tmp_th = new Float64Array(N); tmp_om = new Float64Array(N);
+        prev_th = new Float64Array(N);
+      }
+
+      function stepPhysicsRK4(dt, onEscapement) {
+        const N = params.N;
+        ensureScratch(N);
+        const th = state.theta;
+        const om = state.omega;
+        const x = state.x;
+        const vx = state.vx;
+
+        for (let i = 0; i < N; i++) prev_th[i] = th[i];
+
+        // k1
+        for (let i = 0; i < N; i++) k1_th[i] = om[i];
+        const k1_vx = computeAccelerations(th, om, x, vx, k1_om);
+        const k1_x = vx;
+
+        // k2
+        for (let i = 0; i < N; i++) {
+          tmp_th[i] = th[i] + 0.5 * dt * k1_th[i];
+          tmp_om[i] = om[i] + 0.5 * dt * k1_om[i];
+        }
+        const x2 = x + 0.5 * dt * k1_x;
+        const vx2 = vx + 0.5 * dt * k1_vx;
+        for (let i = 0; i < N; i++) k2_th[i] = tmp_om[i];
+        const k2_vx = computeAccelerations(tmp_th, tmp_om, x2, vx2, k2_om);
+        const k2_x = vx2;
+
+        // k3
+        for (let i = 0; i < N; i++) {
+          tmp_th[i] = th[i] + 0.5 * dt * k2_th[i];
+          tmp_om[i] = om[i] + 0.5 * dt * k2_om[i];
+        }
+        const x3 = x + 0.5 * dt * k2_x;
+        const vx3 = vx + 0.5 * dt * k2_vx;
+        for (let i = 0; i < N; i++) k3_th[i] = tmp_om[i];
+        const k3_vx = computeAccelerations(tmp_th, tmp_om, x3, vx3, k3_om);
+        const k3_x = vx3;
+
+        // k4
+        for (let i = 0; i < N; i++) {
+          tmp_th[i] = th[i] + dt * k3_th[i];
+          tmp_om[i] = om[i] + dt * k3_om[i];
+        }
+        const x4 = x + dt * k3_x;
+        const vx4 = vx + dt * k3_vx;
+        for (let i = 0; i < N; i++) k4_th[i] = tmp_om[i];
+        const k4_vx = computeAccelerations(tmp_th, tmp_om, x4, vx4, k4_om);
+        const k4_x = vx4;
+
+        // Combine
+        const dt6 = dt / 6.0;
+        for (let i = 0; i < N; i++) {
+          th[i] += dt6 * (k1_th[i] + 2 * k2_th[i] + 2 * k3_th[i] + k4_th[i]);
+          om[i] += dt6 * (k1_om[i] + 2 * k2_om[i] + 2 * k3_om[i] + k4_om[i]);
+        }
+        state.x += dt6 * (k1_x + 2 * k2_x + 2 * k3_x + k4_x);
+        state.vx += dt6 * (k1_vx + 2 * k2_vx + 2 * k3_vx + k4_vx);
+        state.simTime += dt;
+
+        // Escapement impulse & sub-step click interpolation
+        const J = params.escForce;
+        for (let i = 0; i < N; i++) {
+          if (prev_th[i] < THETA_ESC && th[i] >= THETA_ESC && om[i] > 0) {
+            om[i] += J;
+            const frac = (THETA_ESC - prev_th[i]) / Math.max(1e-9, th[i] - prev_th[i]);
+            const exactTime = state.simTime - dt * (1.0 - frac);
+            onEscapement(i, 1, exactTime);
+          } else if (prev_th[i] > -THETA_ESC && th[i] <= -THETA_ESC && om[i] < 0) {
+            om[i] -= J;
+            const frac = (prev_th[i] - (-THETA_ESC)) / Math.max(1e-9, prev_th[i] - th[i]);
+            const exactTime = state.simTime - dt * (1.0 - frac);
+            onEscapement(i, -1, exactTime);
+          }
+        }
+      }
+
+      function computeOrderParameters() {
+        const N = params.N;
+        let reIn = 0, imIn = 0;
+        let reAnti = 0, imAnti = 0;
+        for (let i = 0; i < N; i++) {
+          const phi = Math.atan2(-state.omega[i] / state.wNat[i], state.theta[i]);
+          const c = Math.cos(phi);
+          const s = Math.sin(phi);
+          reIn += c;
+          imIn += s;
+          const sign = (i % 2 === 0) ? 1 : -1;
+          reAnti += sign * c;
+          imAnti += sign * s;
+        }
+        state.rIn = Math.hypot(reIn, imIn) / N;
+        state.rAnti = Math.hypot(reAnti, imAnti) / N;
+
+        const rMax = Math.max(state.rIn, state.rAnti);
+        if (state.rIn >= 0.90 && state.rIn > state.rAnti + 0.05) {
+          state.syncState = 'IN-PHASE LOCKED';
+        } else if (state.rAnti >= 0.90 && state.rAnti > state.rIn + 0.05) {
+          state.syncState = 'ANTI-PHASE LOCKED';
+        } else if (rMax >= 0.72) {
+          state.syncState = 'PARTIAL SYNC';
+        } else {
+          state.syncState = 'UNSYNCHRONIZED';
+        }
+
+        if (rMax >= 0.90) {
+          if (state.lockStartTime === null) {
+            state.lockStartTime = state.simTime;
+          } else if (state.timeToLock === null && state.simTime - state.lockStartTime >= 1.2) {
+            state.timeToLock = state.lockStartTime;
+          }
+        } else {
+          state.lockStartTime = null;
+        }
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO CLOCK-SYNCHRONIZED ESCAPEMENT CLICK ENGINE
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let noiseBuffer = null;
+      let simAudioOffset = 0;
+      const AUDIO_LOOKAHEAD = 0.045; // 45 ms Web Audio clock lookahead
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.75;
+          masterGain.connect(audioCtx.destination);
+
+          // Pre-generate 20 ms white noise burst buffer for crisp mechanical escapement clicks
+          const len = Math.floor(audioCtx.sampleRate * 0.02);
+          noiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+          const data = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < len; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.0022));
+          }
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 hover:bg-cyan-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) {
+          initAudio();
+        } else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleEscapementClick(idx, dir, exactSimTime) {
+        // Record IOI (group simultaneous clicks within 18 ms into one audible beat for clean histogram)
+        const nowMs = exactSimTime * 1000.0;
+        if (state.lastFusedClickTime !== null) {
+          const delta = nowMs - state.lastFusedClickTime;
+          if (delta > 18.0) {
+            if (delta < 750.0) {
+              state.ioiBuffer.push(delta);
+              if (state.ioiBuffer.length > 160) state.ioiBuffer.shift();
+            }
+            state.lastFusedClickTime = nowMs;
+          }
+        } else {
+          state.lastFusedClickTime = nowMs;
+        }
+
+        // Flash 3D pendulum indicator
+        if (pendulumMeshes[idx]) {
+          pendulumMeshes[idx].flash = 1.0;
+        }
+
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.25) return;
+
+        // Pitch rises slightly with N so more metronomes sound denser rather than louder
+        const N = params.N;
+        const baseFreq = 1050 + 95 * N + (dir > 0 ? 70 : -50) + (idx - (N - 1) / 2) * 18;
+        const gainAmp = 0.42 / Math.sqrt(N);
+
+        // Short filtered impulse (~5 ms)
+        const src = audioCtx.createBufferSource();
+        src.buffer = noiseBuffer;
+
+        const bp = audioCtx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(baseFreq, playTime);
+        bp.Q.setValueAtTime(5.5, playTime);
+
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(gainAmp, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + 0.008);
+
+        src.connect(bp);
+        bp.connect(g);
+        g.connect(masterGain);
+
+        src.start(playTime);
+        src.stop(playTime + 0.012);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        // Snapshot current physics state and run 8s offline at 1 kHz
+        const snap = {
+          th: Array.from(state.theta),
+          om: Array.from(state.omega),
+          x: state.x,
+          vx: state.vx,
+          simTime: state.simTime,
+        };
+
+        const clicks = [];
+        const steps = Math.floor(dur / DT);
+        for (let s = 0; s < steps; s++) {
+          stepPhysicsRK4(DT, (idx, dir, tEv) => {
+            clicks.push({ t: tEv - snap.simTime, idx, dir });
+          });
+        }
+
+        // Restore live state
+        state.theta = snap.th;
+        state.omega = snap.om;
+        state.x = snap.x;
+        state.vx = snap.vx;
+        state.simTime = snap.simTime;
+
+        const N = params.N;
+        const amp = 0.45 / Math.sqrt(N);
+        const clickSamples = Math.floor(sr * 0.010);
+
+        for (const c of clicks) {
+          if (c.t < 0 || c.t >= dur - 0.015) continue;
+          const startIdx = Math.floor(c.t * sr);
+          const freq = 1050 + 95 * N + (c.dir > 0 ? 70 : -50) + (c.idx - (N - 1) / 2) * 18;
+          const pan = N > 1 ? (c.idx / (N - 1)) * 0.7 - 0.35 : 0; // subtle stereo spread
+          const gL = amp * Math.cos((pan + 1) * Math.PI * 0.25);
+          const gR = amp * Math.sin((pan + 1) * Math.PI * 0.25);
+
+          for (let j = 0; j < clickSamples; j++) {
+            const tt = j / sr;
+            const env = Math.exp(-tt / 0.0018);
+            const sig = env * (0.65 * Math.sin(2 * Math.PI * freq * tt) + 0.35 * Math.sin(2 * Math.PI * freq * 1.47 * tt));
+            left[startIdx + j] += sig * gL;
+            right[startIdx + j] += sig * gR;
+          }
+        }
+
+        // Encode 16-bit PCM WAV
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true);
+        view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, totalSamples * 4, true);
+
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `metronome_sync_N${N}_k${params.kappa.toFixed(2)}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s 44.1 kHz stereo WAV (${clicks.length} clicks)`);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D SCENE (Moving Beam, Rollers & N Metronomes)
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.075);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = {
+        theta: 0.0,
+        phi: 1.24,
+        radius: 4.4,
+        target: new THREE.Vector3(0, 0.45, 0),
+        dragging: false,
+        lastX: 0,
+        lastY: 0,
+      };
+
+      function updateCamera() {
+        const sinPhi = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * sinPhi * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * sinPhi * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      // Lighting
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.55));
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 1.15);
+      keyLight.position.set(3.5, 6.0, 4.5);
+      keyLight.castShadow = true;
+      keyLight.shadow.mapSize.set(1024, 1024);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.55);
+      rimLight.position.set(-4.0, 2.5, -3.5);
+      scene.add(rimLight);
+
+      const warmFill = new THREE.PointLight(0xf59e0b, 0.35, 10);
+      warmFill.position.set(2.5, 1.2, 2.0);
+      scene.add(warmFill);
+
+      // Laboratory Bench & Reference Grid
+      const benchGeo = new THREE.BoxGeometry(10, 0.18, 2.6);
+      const benchMat = new THREE.MeshStandardMaterial({ color: 0x0b1220, roughness: 0.85, metalness: 0.2 });
+      const bench = new THREE.Mesh(benchGeo, benchMat);
+      bench.position.y = -0.19;
+      bench.receiveShadow = true;
+      scene.add(bench);
+
+      const gridHelper = new THREE.GridHelper(14, 28, 0x1e293b, 0x0f172a);
+      gridHelper.position.y = -0.098;
+      scene.add(gridHelper);
+
+      // Center zero-reference marker on the bench
+      const zeroMarker = new THREE.Mesh(
+        new THREE.BoxGeometry(0.015, 0.01, 0.9),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.5 })
+      );
+      zeroMarker.position.set(0, -0.092, 0);
+      scene.add(zeroMarker);
+
+      // Rollers (2 cylindrical cans under the beam)
+      const ROLLER_R = 0.055;
+      const rollerGeo = new THREE.CylinderGeometry(ROLLER_R, ROLLER_R, 0.62, 24);
+      rollerGeo.rotateX(Math.PI / 2);
+      const rollerMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.85 });
+      const rollerStripeMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+      const rollers = [-1.15, 1.15].map((rx) => {
+        const grp = new THREE.Group();
+        const cyl = new THREE.Mesh(rollerGeo, rollerMat);
+        cyl.castShadow = true;
+        grp.add(cyl);
+        // Stripe to make rotation visibly unmistakable
+        const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.012, ROLLER_R * 2.04, 0.63), rollerStripeMat);
+        grp.add(stripe);
+        grp.position.set(rx, -0.045, 0);
+        scene.add(grp);
+        return grp;
+      });
+
+      // Moving Shared Beam
+      const beamGroup = new THREE.Group();
+      beamGroup.position.y = 0.045;
+      scene.add(beamGroup);
+
+      const beamMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(3.4, 0.065, 0.55),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.75 })
+      );
+      beamMesh.castShadow = true;
+      beamMesh.receiveShadow = true;
+      beamGroup.add(beamMesh);
+
+      const beamAccent = new THREE.Mesh(
+        new THREE.BoxGeometry(3.42, 0.012, 0.56),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.35 })
+      );
+      beamAccent.position.y = 0.032;
+      beamGroup.add(beamAccent);
+
+      // Metronome Meshes Container
+      let pendulumMeshes = [];
+      const metroContainer = new THREE.Group();
+      metroContainer.position.y = 0.0325;
+      beamGroup.add(metroContainer);
+
+      function rebuildMetronomes3D() {
+        while (metroContainer.children.length > 0) {
+          metroContainer.remove(metroContainer.children[0]);
+        }
+        pendulumMeshes = [];
+
+        const N = params.N;
+        const beamWidth = Math.max(2.2, Math.min(4.8, 0.55 * N + 0.6));
+        beamMesh.scale.x = beamWidth / 3.4;
+        beamAccent.scale.x = beamWidth / 3.4;
+        rollers[0].position.x = -beamWidth * 0.35;
+        rollers[1].position.x = beamWidth * 0.35;
+
+        const span = beamWidth - 0.55;
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x161f30, roughness: 0.6, metalness: 0.35 });
+        const rodMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.2, metalness: 0.9 });
+        const bobMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.75 });
+
+        // Adjust camera radius smoothly if N is large
+        camState.radius = Math.max(3.8, 2.6 + N * 0.25);
+        updateCamera();
+
+        for (let i = 0; i < N; i++) {
+          const xPos = N > 1 ? (-span / 2 + (i / (N - 1)) * span) : 0;
+          const unit = new THREE.Group();
+          unit.position.set(xPos, 0, 0);
+
+          // Tapered housing
+          const housing = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.06, 0.11, 0.42, 4),
+            bodyMat
+          );
+          housing.rotation.y = Math.PI / 4;
+          housing.position.y = 0.21;
+          housing.castShadow = true;
+          unit.add(housing);
+
+          // Pivot group at base
+          const pivot = new THREE.Group();
+          pivot.position.set(0, 0.07, 0.085);
+          unit.add(pivot);
+
+          // Pendulum rod
+          const rodLen = 0.68;
+          const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, rodLen, 10), rodMat);
+          rod.position.y = rodLen * 0.5;
+          rod.castShadow = true;
+          pivot.add(rod);
+
+          // Sliding bob reflecting detuned length L_i
+          const bobHeight = 0.32 + (state.L[i] - L_0) * 4.5;
+          const bob = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.055, 0.032), bobMat);
+          bob.position.y = Math.max(0.18, Math.min(0.60, bobHeight));
+          bob.castShadow = true;
+          pivot.add(bob);
+
+          // Glowing LED tip
+          const ledMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+          const led = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 12), ledMat);
+          led.position.y = rodLen + 0.01;
+          pivot.add(led);
+
+          metroContainer.add(unit);
+          pendulumMeshes.push({ pivot, ledMat, flash: 0 });
+        }
+      }
+
+      // Orbit / Zoom mouse & touch handlers
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true;
+        camState.lastX = e.clientX;
+        camState.lastY = e.clientY;
+        if (!audioCtx) initAudio(); // First user gesture starts audio
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX;
+        camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.25, Math.min(1.48, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.0, Math.min(10.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. 2D CHARTS (Order Parameter Trace/Sweep & IOI Histogram)
+      // =========================================================================
+      const orderCanvas = document.getElementById('order-chart');
+      const orderCtx = orderCanvas.getContext('2d');
+      const ioiCanvas = document.getElementById('ioi-chart');
+      const ioiCtx = ioiCanvas.getContext('2d');
+
+      function drawOrderChart() {
+        const w = orderCanvas.width = orderCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = orderCanvas.height = orderCanvas.clientHeight * (window.devicePixelRatio || 1);
+        orderCtx.clearRect(0, 0, w, h);
+
+        // Grid lines at 0.5 and 0.9
+        orderCtx.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+        orderCtx.lineWidth = 1;
+        [0.1, 0.5, 0.9].forEach((val) => {
+          const y = h - val * (h - 8) - 4;
+          orderCtx.beginPath();
+          orderCtx.moveTo(0, y);
+          orderCtx.lineTo(w, y);
+          orderCtx.stroke();
+        });
+
+        const data = state.sweepActive || state.sweepData.length > 0 ? state.sweepData : null;
+        if (data && data.length > 1 && document.getElementById('plot-title').textContent.includes('Sweep')) {
+          const plotLine = (key, color) => {
+            orderCtx.strokeStyle = color;
+            orderCtx.lineWidth = 2;
+            orderCtx.beginPath();
+            data.forEach((pt, idx) => {
+              const px = (pt.kappa / 0.85) * (w - 8) + 4;
+              const py = h - pt[key] * (h - 10) - 5;
+              if (idx === 0) orderCtx.moveTo(px, py);
+              else orderCtx.lineTo(px, py);
+            });
+            orderCtx.stroke();
+          };
+          plotLine('rIn', '#22d3ee');
+          plotLine('rAnti', '#f59e0b');
+        } else if (state.traceIn.length > 1) {
+          const plotTrace = (arr, color) => {
+            orderCtx.strokeStyle = color;
+            orderCtx.lineWidth = 2;
+            orderCtx.beginPath();
+            const len = arr.length;
+            for (let i = 0; i < len; i++) {
+              const px = (i / Math.max(1, len - 1)) * w;
+              const py = h - arr[i] * (h - 10) - 5;
+              if (i === 0) orderCtx.moveTo(px, py);
+              else orderCtx.lineTo(px, py);
+            }
+            orderCtx.stroke();
+          };
+          plotTrace(state.traceIn, '#22d3ee');
+          plotTrace(state.traceAnti, '#f59e0b');
+        }
+      }
+
+      function drawIOIChart() {
+        const w = ioiCanvas.width = ioiCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = ioiCanvas.height = ioiCanvas.clientHeight * (window.devicePixelRatio || 1);
+        ioiCtx.clearRect(0, 0, w, h);
+
+        const bins = 28; // 0 to 700 ms -> 25 ms per bin
+        const counts = new Array(bins).fill(0);
+        let maxCount = 1;
+        let sumIoi = 0;
+
+        for (const v of state.ioiBuffer) {
+          sumIoi += v;
+          const b = Math.min(bins - 1, Math.max(0, Math.floor(v / 25)));
+          counts[b]++;
+          if (counts[b] > maxCount) maxCount = counts[b];
+        }
+
+        const barW = w / bins;
+        const isAnti = state.syncState === 'ANTI-PHASE LOCKED';
+        const isIn = state.syncState === 'IN-PHASE LOCKED';
+        ioiCtx.fillStyle = isAnti ? '#f59e0b' : (isIn ? '#22d3ee' : '#64748b');
+
+        for (let i = 0; i < bins; i++) {
+          const bh = (counts[i] / maxCount) * (h - 12);
+          ioiCtx.fillRect(i * barW + 1, h - bh - 2, Math.max(1, barW - 2), bh);
+        }
+
+        // Reference ticks at 250 ms (anti-phase) and 500 ms (unison)
+        ioiCtx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ioiCtx.setLineDash([3, 3]);
+        [250, 500].forEach((ms) => {
+          const x = (ms / 700) * w;
+          ioiCtx.beginPath();
+          ioiCtx.moveTo(x, 0);
+          ioiCtx.lineTo(x, h);
+          ioiCtx.stroke();
+        });
+        ioiCtx.setLineDash([]);
+
+        const meanEl = document.getElementById('val-mean-ioi');
+        const modeEl = document.getElementById('ioi-mode-label');
+        if (state.ioiBuffer.length > 0) {
+          const mean = sumIoi / state.ioiBuffer.length;
+          meanEl.textContent = `${mean.toFixed(0)} ms`;
+          if (isAnti) modeEl.textContent = 'Spike @ T/4 (Double-time)';
+          else if (isIn) modeEl.textContent = 'Spike @ T/2 (Unison)';
+          else modeEl.textContent = 'Broad (Unsynced)';
+        } else {
+          meanEl.textContent = '--- ms';
+          modeEl.textContent = 'Sampling...';
+        }
+      }
+
+      // =========================================================================
+      // 6. UI BINDINGS & SWEEP CONTROLLER
+      // =========================================================================
+      const ctrlN = document.getElementById('ctrl-n');
+      const ctrlKappa = document.getElementById('ctrl-kappa');
+      const ctrlSpread = document.getElementById('ctrl-spread');
+      const ctrlEsc = document.getElementById('ctrl-esc');
+      const ctrlBeta = document.getElementById('ctrl-beta');
+
+      ctrlN.addEventListener('input', () => {
+        params.N = parseInt(ctrlN.value, 10);
+        document.getElementById('lbl-n').textContent = String(params.N);
+        resetColdStart();
+        rebuildMetronomes3D();
+      });
+
+      ctrlKappa.addEventListener('input', () => {
+        params.kappa = parseFloat(ctrlKappa.value);
+        document.getElementById('lbl-kappa').textContent = params.kappa.toFixed(2);
+      });
+
+      ctrlSpread.addEventListener('input', () => {
+        params.spread = parseFloat(ctrlSpread.value) / 100.0;
+        document.getElementById('lbl-spread').textContent = `${parseFloat(ctrlSpread.value).toFixed(1)}%`;
+        computeLengths();
+        rebuildMetronomes3D();
+      });
+
+      ctrlEsc.addEventListener('input', () => {
+        params.escForce = parseFloat(ctrlEsc.value);
+        document.getElementById('lbl-esc').textContent = params.escForce.toFixed(3);
+      });
+
+      ctrlBeta.addEventListener('input', () => {
+        params.beta = parseFloat(ctrlBeta.value);
+        document.getElementById('lbl-beta').textContent = `${params.beta.toFixed(2)} s⁻¹`;
+      });
+
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+        if (state.running && audioCtx) {
+          simAudioOffset = audioCtx.currentTime - state.simTime;
+        }
+      });
+      document.getElementById('btn-reset').addEventListener('click', () => resetColdStart());
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.0;
+        camState.phi = 1.24;
+        camState.radius = Math.max(3.8, 2.6 + params.N * 0.25);
+        updateCamera();
+      });
+
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        if (state.sweepActive) {
+          state.sweepActive = false;
+          document.getElementById('btn-sweep').textContent = 'Sweep κ (0.00 → 0.85)';
+          return;
+        }
+        state.sweepActive = true;
+        state.sweepKappa = 0.0;
+        state.sweepTimer = 0;
+        state.sweepData = [];
+        params.kappa = 0.0;
+        ctrlKappa.value = '0.00';
+        document.getElementById('lbl-kappa').textContent = '0.00';
+        document.getElementById('btn-sweep').textContent = 'Stop Sweep';
+        document.getElementById('plot-title').textContent = 'κ Sweep: r vs Coupling';
+        resetColdStart(true);
+      });
+
+      // =========================================================================
+      // 7. MAIN DECOUPLED ANIMATION & SIMULATION LOOP
+      // =========================================================================
+      let lastFramePerf = performance.now();
+      let uiCounter = 0;
+
+      function updateUI() {
+        document.getElementById('sim-time-readout').textContent = `t = ${state.simTime.toFixed(1)} s`;
+        document.getElementById('val-r-in').textContent = state.rIn.toFixed(3);
+        document.getElementById('val-r-anti').textContent = state.rAnti.toFixed(3);
+        document.getElementById('bar-r-in').style.width = `${(state.rIn * 100).toFixed(1)}%`;
+        document.getElementById('bar-r-anti').style.width = `${(state.rAnti * 100).toFixed(1)}%`;
+
+        const beamMm = state.x * 1000.0;
+        document.getElementById('val-beam-x').textContent = `${beamMm >= 0 ? '+' : ''}${beamMm.toFixed(2)} mm`;
+
+        const lockEl = document.getElementById('val-lock-time');
+        lockEl.textContent = state.timeToLock !== null ? `${state.timeToLock.toFixed(1)} s` : '--.- s';
+
+        const badge = document.getElementById('sync-state-badge');
+        badge.textContent = state.syncState;
+        if (state.syncState === 'IN-PHASE LOCKED') {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+        } else if (state.syncState === 'ANTI-PHASE LOCKED') {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50';
+        } else if (state.syncState === 'PARTIAL SYNC') {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/50';
+        } else {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-slate-800/90 text-slate-300 border border-slate-700';
+        }
+
+        drawOrderChart();
+        drawIOIChart();
+      }
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0.0, (now - lastFramePerf) / 1000.0));
+        lastFramePerf = now;
+
+        if (state.running) {
+          let stepsNeeded = 0;
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            const targetSimTime = (audioCtx.currentTime + AUDIO_LOOKAHEAD) - simAudioOffset;
+            const behind = targetSimTime - state.simTime;
+            if (behind > 0.25 || behind < -0.25) {
+              simAudioOffset = audioCtx.currentTime - state.simTime;
+              stepsNeeded = Math.round(dtReal / DT);
+            } else {
+              stepsNeeded = Math.max(0, Math.min(80, Math.floor(behind / DT)));
+            }
+          } else {
+            stepsNeeded = Math.round(dtReal / DT);
+          }
+
+          for (let s = 0; s < stepsNeeded; s++) {
+            stepPhysicsRK4(DT, scheduleEscapementClick);
+
+            // Handle live kappa sweep (0.00 -> 0.85 over ~28 seconds)
+            if (state.sweepActive) {
+              state.sweepTimer += DT;
+              if (state.sweepTimer >= 0.05) {
+                state.sweepTimer = 0;
+                computeOrderParameters();
+                state.sweepData.push({ kappa: params.kappa, rIn: state.rIn, rAnti: state.rAnti });
+                params.kappa = Math.min(0.85, params.kappa + 0.0015);
+                ctrlKappa.value = params.kappa.toFixed(2);
+                document.getElementById('lbl-kappa').textContent = params.kappa.toFixed(2);
+                if (params.kappa >= 0.85) {
+                  state.sweepActive = false;
+                  document.getElementById('btn-sweep').textContent = 'Sweep κ (0.00 → 0.85)';
+                  showToast('κ Sweep complete');
+                }
+              }
+            }
+          }
+
+          computeOrderParameters();
+
+          uiCounter++;
+          if (uiCounter % 4 === 0) {
+            state.traceIn.push(state.rIn);
+            state.traceAnti.push(state.rAnti);
+            if (state.traceIn.length > 180) state.traceIn.shift();
+            if (state.traceAnti.length > 180) state.traceAnti.shift();
+            updateUI();
+          }
+        }
+
+        // Update 3D scene (exaggerate beam displacement visually by 8x so mm-scale recoil is crystal clear)
+        const visualX = state.x * 8.0;
+        beamGroup.position.x = visualX;
+        const rollAngle = -visualX / ROLLER_R;
+        rollers[0].rotation.z = rollAngle;
+        rollers[1].rotation.z = rollAngle;
+
+        const isAnti = state.syncState === 'ANTI-PHASE LOCKED';
+        const isIn = state.syncState === 'IN-PHASE LOCKED';
+        for (let i = 0; i < params.N; i++) {
+          const pm = pendulumMeshes[i];
+          if (!pm) continue;
+          pm.pivot.rotation.z = -state.theta[i];
+          pm.flash = Math.max(0, pm.flash - dtReal * 5.0);
+          if (pm.flash > 0.1) {
+            pm.ledMat.color.setHex(0xffffff);
+          } else if (isAnti) {
+            pm.ledMat.color.setHex(i % 2 === 0 ? 0xf59e0b : 0xfb7185);
+          } else if (isIn) {
+            pm.ledMat.color.setHex(0x22d3ee);
+          } else {
+            pm.ledMat.color.setHex(0x475569);
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__METRONOME_SYNC__)
+      // =========================================================================
+      window.__METRONOME_SYNC__ = {
+        getState: () => ({
+          N: params.N,
+          kappa: params.kappa,
+          spread: params.spread,
+          escForce: params.escForce,
+          beta: params.beta,
+          simTime: state.simTime,
+          rIn: state.rIn,
+          rAnti: state.rAnti,
+          syncState: state.syncState,
+          timeToLock: state.timeToLock,
+          beamX: state.x,
+          ioiBuffer: [...state.ioiBuffer],
+          sweepData: [...state.sweepData],
+        }),
+        // Synchronous headless-capable steady-state sweep for verification harnesses
+        measureKappaCurve: (N = 2, kappas = [0.02, 0.08, 0.15, 0.25, 0.40, 0.60, 0.80], simSeconds = 25.0) => {
+          const saved = { ...params };
+          params.N = N;
+          const results = [];
+          for (const k of kappas) {
+            params.kappa = k;
+            resetColdStart();
+            const steps = Math.floor(simSeconds / DT);
+            let sumIn = 0, sumAnti = 0, samples = 0;
+            for (let s = 0; s < steps; s++) {
+              stepPhysicsRK4(DT, () => {});
+              if (s > steps * 0.75 && s % 50 === 0) {
+                computeOrderParameters();
+                sumIn += state.rIn;
+                sumAnti += state.rAnti;
+                samples++;
+              }
+            }
+            results.push({
+              kappa: k,
+              r_inphase: sumIn / Math.max(1, samples),
+              r_anti: sumAnti / Math.max(1, samples),
+              timeToLock: state.timeToLock,
+            });
+          }
+          Object.assign(params, saved);
+          resetColdStart();
+          rebuildMetronomes3D();
+          return results;
+        },
+      };
+
+      // Boot
+      resetColdStart();
+      rebuildMetronomes3D();
+      updateUI();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
