@@ -1,0 +1,2618 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MARIMBA-3D — Arch-Carved Bar 1:4:10 Harmonic Physics, Quarter-Wave Resonator &amp; 4-Mallet Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#04060a',
+              900: '#090d16',
+              800: '#111827',
+              700: '#1e293b',
+              600: '#334155'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; user-select: none; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #04060a;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(9, 13, 22, 0.6); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #04060a;
+      margin-top: -5px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+      transition: transform 0.1s ease, background-color 0.1s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+      background: #fbbf24;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6) !important;
+    }
+    .slider-rose::-webkit-slider-thumb {
+      background: #f43f5e !important;
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.6) !important;
+    }
+    .slider-purple::-webkit-slider-thumb {
+      background: #c084fc !important;
+      box-shadow: 0 0 8px rgba(192, 132, 252, 0.6) !important;
+    }
+
+    .hud-glass {
+      background: linear-gradient(180deg, rgba(13, 18, 30, 0.88) 0%, rgba(7, 10, 18, 0.94) 100%);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 73, 107, 0.48);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+    }
+
+    @keyframes pulseEmerald {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+      50% { box-shadow: 0 0 16px 3px rgba(16, 185, 129, 0.3); }
+    }
+    .playing-glow { animation: pulseEmerald 1.5s infinite; }
+
+    .step-active {
+      transform: translateY(-2px);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.55);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden select-none flex flex-col p-2.5 gap-2">
+
+  <!-- FULL-SCREEN 3D WEBGL CONCERT MARIMBA VIEWPORT -->
+  <div id="webglContainer" class="fixed inset-0 w-full h-full z-0 cursor-pointer"></div>
+
+  <!-- 2D FLOATING BAR NOTE LABELS OVERLAY -->
+  <div id="barLabelsOverlay" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- TOP STUDIO HEADER & TRANSPORT BAR (Flex child 1: Non-overlapping) -->
+  <header class="relative z-30 hud-glass rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <!-- Left: Brand Identity & Hornbostel-Sachs Classification -->
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/25 via-rose-500/20 to-sky-500/25 border border-amber-500/50 flex items-center justify-center shadow-inner shrink-0">
+        <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="5" width="3.5" height="14" rx="1"></rect>
+          <rect x="8" y="6" width="3.5" height="12" rx="1"></rect>
+          <rect x="13" y="7" width="3.5" height="10" rx="1"></rect>
+          <rect x="18" y="8" width="3.5" height="8" rx="1"></rect>
+          <line x1="2" y1="9" x2="22" y2="10.5" stroke="#38bdf8" stroke-width="1.4"></line>
+          <line x1="2" y1="15" x2="22" y2="13.5" stroke="#38bdf8" stroke-width="1.4"></line>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">MARIMBA-3D // ARCH-BAR &amp; RESONATOR LAB</h1>
+          <span class="hidden xl:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/15 text-amber-300 border border-amber-500/30">111.212 • 1:4:10 Free-Free Arch + λ/4 Stopped Pipes</span>
+        </div>
+        <div class="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+          <span id="hdrActiveArchetype" class="text-amber-300 font-semibold">5-Octave Concert Grand (Honduras Rosewood)</span>
+          <span>•</span>
+          <span id="hdrModalRatios" class="text-sky-300">Modes: 1.00 : 4.00 : 10.08 | Node: 0.224L</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Camera Presets, Octave Register Shift & Nodal Line Overlay -->
+    <div class="flex flex-wrap items-center gap-1.5 bg-obsidian-950/85 border border-slate-800 rounded-xl px-2 py-1">
+      <span class="text-[10px] font-mono uppercase text-slate-400 px-1 hidden sm:inline">Cam:</span>
+      <button type="button" data-cam="player" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono font-semibold bg-amber-500 text-slate-950 transition">Player View</button>
+      <button type="button" data-cam="arch" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition">Arch Profile</button>
+      <button type="button" data-cam="tubes" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition">λ/4 Resonators</button>
+      <button type="button" data-cam="top" class="cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition">Nodal Top</button>
+
+      <div class="h-4 w-[1px] bg-slate-800 mx-0.5"></div>
+
+      <!-- 5-Octave Register Selector (C2 Bass to C6 Treble) -->
+      <div class="flex items-center gap-1">
+        <span class="text-[10px] font-mono text-slate-400 hidden md:inline">Reg:</span>
+        <select id="selectOctaveBase" class="bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] font-mono text-amber-300 outline-none">
+          <option value="36">Bass C2–C4 (65.7 Hz)</option>
+          <option value="48" selected>Mid C3–C5 (131 Hz)</option>
+          <option value="60">Treble C4–C6 (262 Hz)</option>
+        </select>
+      </div>
+
+      <button id="btnToggleNodalLines" type="button" class="px-2 py-1 rounded-lg text-[11px] font-mono bg-sky-500/20 text-sky-300 border border-sky-500/40 transition" title="Show Chladni Salt-Node Lines (0.224L, 0.50L, Torsional)">
+        Chladni Nodes: ON
+      </button>
+      <button id="btnToggleLabels" type="button" class="px-2 py-1 rounded-lg text-[11px] font-mono bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700 transition">
+        Labels: ON
+      </button>
+    </div>
+
+    <!-- Right: Master Sequencer Transport & Quick WAV Export -->
+    <div class="flex flex-wrap items-center gap-1.5 bg-obsidian-950/85 border border-slate-800 rounded-xl px-2.5 py-1">
+      <button id="btnPlayToggle" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-md shadow-emerald-500/20">
+        <svg id="iconPlay" class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+        <svg id="iconStop" class="w-3.5 h-3.5 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+        <span id="labelPlayToggle">PLAY</span>
+      </button>
+
+      <button id="btnStepOnce" type="button" class="px-2 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700 text-[11px] font-mono transition" title="Step 1 Repertoire Note">
+        STEP &rarr;
+      </button>
+
+      <div class="flex items-center gap-2 px-1.5 border-l border-r border-slate-800">
+        <div class="text-right min-w-[52px]">
+          <div class="flex items-baseline justify-end gap-0.5">
+            <span id="bpmReadout" class="font-mono text-sm font-extrabold text-amber-400">116</span>
+            <span class="text-[9px] font-mono text-slate-400">BPM</span>
+          </div>
+          <div id="tempoMarkingLabel" class="text-[9px] text-slate-400 leading-none">Concert Flow</div>
+        </div>
+        <input id="sliderBpm" type="range" min="45" max="210" value="116" class="w-20 sm:w-24" />
+      </div>
+
+      <button id="btnTapTempo" type="button" class="px-2 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 border border-slate-700 text-[10px] font-mono transition">TAP</button>
+
+      <button id="btnQuickExportWav" type="button" class="px-2.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-[11px] font-bold transition">
+        💾 WAV
+      </button>
+    </div>
+  </header>
+
+  <!-- MIDDLE WORKSPACE STAGE (Flex child 2: Guaranteed below header & above footer) -->
+  <div class="relative flex-1 min-h-0 w-full z-20 pointer-events-none">
+
+    <!-- Dock Collapse Toggle Bar -->
+    <div class="absolute top-0 left-0 right-0 flex items-center justify-between pointer-events-none z-30">
+      <button id="btnToggleLeftDock" type="button" class="pointer-events-auto hud-glass px-2.5 py-1 rounded-lg text-[10px] font-mono text-amber-300 hover:text-white border border-amber-500/40 transition">
+        ◀ Bar Arch, Nodes &amp; λ/4 Resonators
+      </button>
+      <button id="btnToggleRightDock" type="button" class="pointer-events-auto hud-glass px-2.5 py-1 rounded-lg text-[10px] font-mono text-sky-300 hover:text-white border border-sky-500/40 transition">
+        4-Mallet Repertoire &amp; WAV Lab ▶
+      </button>
+    </div>
+
+    <!-- LEFT FLOATING DOCK: 6 MARIMBA ARCHETYPES, PARABOLIC ARCH 1:4:10 TUNING & QUARTER-WAVE RESONATORS -->
+    <aside id="leftDock" class="pointer-events-auto absolute top-8 bottom-0 left-0 w-[350px] sm:w-[390px] hud-glass rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto transition-transform duration-200">
+      <!-- Left Dock Sub-Tabs -->
+      <div class="grid grid-cols-3 gap-1 bg-obsidian-950/90 p-1 rounded-xl border border-slate-800 shrink-0">
+        <button type="button" data-left-tab="instruments" class="left-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 transition">1. Marimbas</button>
+        <button type="button" data-left-tab="barphysics" class="left-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">2. 1:4:10 Arch</button>
+        <button type="button" data-left-tab="resonators" class="left-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">3. λ/4 &amp; Charleo</button>
+      </div>
+
+      <!-- LEFT TAB 1: 6 HISTORICAL & MODERN MARIMBA ARCHETYPES + 4-MALLET GRIP -->
+      <div id="leftTabInstruments" class="flex flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-amber-300">6 Historical &amp; Concert Marimbas</h2>
+            <p class="text-[10px] text-slate-400">Bar wood species, arch profile, resonator tubes &amp; charleo buzz</p>
+          </div>
+          <button id="btnWildcardMarimba" type="button" class="px-2 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[10px] font-mono text-amber-300 transition">
+            🎲 Wildcard
+          </button>
+        </div>
+
+        <div id="archetypeGrid" class="grid grid-cols-2 gap-1.5">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Strike Zone Along Bar Length (Sweet Spot 0.34L vs Center 0.50L vs Node 0.224L vs Edge) -->
+        <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Bar Strike Position (x / L)</span>
+            <span id="lblActiveStrikeZone" class="text-[10px] font-mono text-sky-300">Off-Center Sweet Spot (0.34L)</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1">
+            <button type="button" data-zone="sweet" class="zone-btn py-1.5 rounded-lg border text-[10px] font-bold bg-sky-500/20 border-sky-400 text-white transition" title="Off-Center (0.34L): Fullest 1:4:10 tone">
+              Sweet 0.34L
+            </button>
+            <button type="button" data-zone="center" class="zone-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-slate-300 transition" title="Center (0.50L): Node for 4f1, articulate fundamental">
+              Center 0.50L
+            </button>
+            <button type="button" data-zone="node" class="zone-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-rose-300 transition" title="Suspension Cord Node (0.224L): Mutes fundamental f1!">
+              Node 0.224L
+            </button>
+            <button type="button" data-zone="corner" class="zone-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-purple-300 transition" title="Extreme Front/Corner Edge: Excites Torsional Modes">
+              Corner Edge
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5 pt-1">
+            <div>
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Mallet Yarn &amp; Core</label>
+              <select id="selectMalletType" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 outline-none">
+                <option value="graduated" selected>Graduated 4-Mallet Yarn Set</option>
+                <option value="soft_bass">Extra-Soft Heavy Bass Yarn</option>
+                <option value="two_tone">Two-Toned Dynamic Core Yarn</option>
+                <option value="hard_cord">Hard Concert Treble Cord</option>
+                <option value="wood_rattan">Uncovered Rosewood / Wax Head</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">4-Mallet Grip &amp; Voicing</label>
+              <select id="selectMalletVoicing" class="w-full bg-obsidian-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-100 outline-none">
+                <option value="single">Single Mallet Strike</option>
+                <option value="stevens_chord">4-Mallet Stevens Grip Chord</option>
+                <option value="stevens_roll">4-Mallet Ripple Roll (1-3-2-4)</option>
+                <option value="octaves">Double-Octave Spread (1 &amp; 4)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Acoustic Sliders -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Arch Undercut Depth</span>
+              <span id="valArchDepth" class="font-mono text-amber-400 font-bold">100% (1:4:10)</span>
+            </div>
+            <input id="sliderArchDepth" type="range" min="0" max="100" value="100" class="w-full" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">λ/4 Tube Coupling</span>
+              <span id="valTubeMix" class="font-mono text-sky-400 font-bold">86%</span>
+            </div>
+            <input id="sliderTubeMix" type="range" min="0" max="100" value="86" class="w-full slider-cyan" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Charleo / Mirliton Buzz</span>
+              <span id="valCharleo" class="font-mono text-rose-400 font-bold">0% (Clean)</span>
+            </div>
+            <input id="sliderCharleo" type="range" min="0" max="100" value="0" class="w-full slider-rose" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Bar Ring / Sustain</span>
+              <span id="valBarSustain" class="font-mono text-emerald-400 font-bold">64%</span>
+            </div>
+            <input id="sliderBarSustain" type="range" min="20" max="100" value="64" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LEFT TAB 2: EULER-BERNOULLI ARCH UNDERCUT 1:4:10 PHYSICS & BORK DECAY LAW -->
+      <div id="leftTabBarphysics" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-300">Free-Free Bar Eigenmode Inspector</span>
+            <span class="text-[10px] font-mono text-slate-400">La Favre / Bork (1995)</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            Carving the parabolic underside arch lowers <code class="text-amber-300">f1</code> and shifts the uniform beam ratios (<code class="text-slate-300">1 : 2.76 : 5.40</code>) to <code class="text-sky-300">1 : 4.00 : 10.08</code>. Per Bork's Law, the 2nd partial (<code class="text-sky-300">4f1</code>) decays 4× faster and the 3rd (<code class="text-purple-300">10f1</code>) 10× faster than <code class="text-amber-300">f1</code>.
+          </p>
+
+          <!-- Live Calculated Modal Readout Table -->
+          <div class="grid grid-cols-3 gap-1.5 text-center font-mono pt-1">
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">Mode 1 (f1)</div>
+              <div id="readoutF1" class="text-xs font-bold text-amber-400">131.5 Hz</div>
+              <div id="readoutAmp1" class="text-[8px] text-emerald-400">Amp: 96%</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">Mode 2 (f2)</div>
+              <div id="readoutF2" class="text-xs font-bold text-sky-400">525.8 Hz</div>
+              <div id="readoutAmp2" class="text-[8px] text-sky-300">4.00× (τ/4)</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">Mode 3 (f3)</div>
+              <div id="readoutF3" class="text-xs font-bold text-purple-400">1325 Hz</div>
+              <div id="readoutAmp3" class="text-[8px] text-purple-300">10.08× (τ/10)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive 2D Bar Cross-Section & Eigenmode Wave Canvas -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-sky-300">Parabolic Arch Profile &amp; Nodes (0.224L / 0.50L)</span>
+            <span id="lblStrikeCoord" class="text-[9px] font-mono text-amber-300">x/L = 0.34</span>
+          </div>
+          <p class="text-[9px] text-slate-400">Click anywhere along the bar profile below to move the mallet strike point across the nodes and antinodes:</p>
+          <div class="relative h-28 w-full bg-obsidian-900 rounded-lg border border-slate-800 overflow-hidden cursor-pointer">
+            <canvas id="archProfileCanvas" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Pitch Standard (A4=440 vs A4=442 Orchestral) & Torsional Mode Slider -->
+        <div class="grid grid-cols-2 gap-2">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Concert Pitch (A4)</span>
+              <span id="valA4Pitch" class="font-mono text-amber-400 font-bold">442 Hz</span>
+            </div>
+            <input id="sliderA4Pitch" type="range" min="432" max="446" value="442" class="w-full" />
+          </div>
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2">
+            <div class="flex justify-between text-[11px] mb-1">
+              <span class="text-slate-300">Torsional Edge Mode</span>
+              <span id="valTorsional" class="font-mono text-purple-300 font-bold">24%</span>
+            </div>
+            <input id="sliderTorsional" type="range" min="0" max="100" value="24" class="w-full slider-purple" />
+          </div>
+        </div>
+      </div>
+
+      <!-- LEFT TAB 3: QUARTER-WAVE RESONATOR TUBES, TEMPERATURE DETUNING & CHARLEO MIRLITON -->
+      <div id="leftTabResonators" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-sky-300">Stopped λ/4 Pipe &amp; End Correction</span>
+            <span class="text-[10px] font-mono text-emerald-400">L = c/(4f1) - 0.61R</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-relaxed">
+            Closed-bottom resonator pipes support only <strong>odd harmonics (1, 3, 5)</strong>, amplifying <code class="text-amber-300">1f1</code> while rejecting the bar's even <code class="text-sky-300">4f1</code> and <code class="text-purple-300">10f1</code> partials. Room temperature shifts sound speed <code class="text-emerald-300">c(T)</code>, requiring stop-plug adjustment.
+          </p>
+
+          <div class="grid grid-cols-2 gap-1.5 text-center font-mono">
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">C3 Pipe Length (λ/4)</div>
+              <div id="readoutPipeLen" class="text-xs font-bold text-sky-400">63.4 cm</div>
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800 rounded-lg p-1.5">
+              <div class="text-[9px] text-slate-400">Bar-Pipe Phase Lock</div>
+              <div id="readoutPipeLock" class="text-xs font-bold text-emerald-400">99% Locked</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Ambient Hall Temperature (T)</span>
+              <span id="valRoomTemp" class="font-mono text-amber-400 font-bold">22°C (c = 344.6 m/s)</span>
+            </div>
+            <input id="sliderRoomTemp" type="range" min="8" max="40" value="22" class="w-full" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="text-slate-300">Resonator Stop-Plug Offset</span>
+              <button id="btnAutoTunePlugs" type="button" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-mono">
+                Auto-Match Temp
+              </button>
+            </div>
+            <input id="sliderPlugOffset" type="range" min="-25" max="25" value="0" class="w-full slider-cyan" />
+            <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-0.5">
+              <span>-25 mm (Cold Hall)</span>
+              <span id="valPlugOffset" class="text-sky-300">0 mm</span>
+              <span>+25 mm (Warm Hall)</span>
+            </div>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300">Concert Hall Acoustic Space</span>
+              <span id="valHallReverb" class="font-mono text-emerald-400 font-bold">34%</span>
+            </div>
+            <input id="sliderHallReverb" type="range" min="0" max="85" value="34" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT FLOATING DOCK: 12 MARIMBA REPERTOIRE ETUDES, STEP SEQUENCER, SPECTRUM & WAV EXPORTER -->
+    <aside id="rightDock" class="pointer-events-auto absolute top-8 bottom-0 right-0 w-[355px] sm:w-[415px] hud-glass rounded-2xl p-3 flex flex-col gap-2.5 overflow-y-auto transition-transform duration-200">
+      <!-- Right Dock Navigation Tabs -->
+      <div class="grid grid-cols-3 gap-1 bg-obsidian-950/90 p-1 rounded-xl border border-slate-800 shrink-0">
+        <button type="button" data-right-tab="sequencer" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 transition">1. 4-Mallet Sequencer</button>
+        <button type="button" data-right-tab="repertoire" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">2. 12 Repertoire</button>
+        <button type="button" data-right-tab="export" class="right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition">3. Spectrum &amp; WAV</button>
+      </div>
+
+      <!-- RIGHT TAB 1: ACTIVE REPERTOIRE SEQUENCER & CHROMATIC KEYBOARD STRIP -->
+      <div id="rightTabSequencer" class="flex flex-col gap-2.5">
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span id="activeEtudeBadge" class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 font-mono text-[10px] font-bold text-amber-300">ETUDE #1</span>
+                <span id="activeEtudeStyle" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px]">5-Octave Solo Repertoire</span>
+              </div>
+              <h2 id="activeEtudeTitle" class="text-base font-extrabold text-white mt-1">Bach Cello Suite No. 1 Prelude (C2–C5)</h2>
+              <p id="activeEtudeDesc" class="text-[11px] text-slate-400 leading-snug">Iconic 16th-note bariolage arpeggio showcasing resonant bass fundamentals and 1:4:10 upper-partial clarity.</p>
+            </div>
+            <button id="btnRandomEtude" type="button" class="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-[10px] font-mono text-amber-300 shrink-0 transition">
+              🎲 Etude
+            </button>
+          </div>
+
+          <!-- SVG 4-Mallet Voicing & Strike-Zone Contour -->
+          <div class="bg-obsidian-900/90 border border-slate-800 rounded-xl p-1.5">
+            <div class="flex items-center justify-between text-[9px] font-mono text-slate-400 px-1 mb-0.5">
+              <span>4-Mallet Voicing Contour (Click step to audition)</span>
+              <span class="text-amber-300">Gold=Single • <span class="text-sky-300">Cyan=Chord/Dyad</span> • <span class="text-emerald-300">Roll</span></span>
+            </div>
+            <div class="w-full overflow-x-auto">
+              <svg id="sequencerSvg" viewBox="0 0 680 108" class="w-full h-24 min-w-[420px]"></svg>
+            </div>
+          </div>
+
+          <!-- Interactive Step Grid -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-300">Interactive Step Sequencer (Click to Audition / Edit)</span>
+              <button id="btnResetEtude" type="button" class="text-[10px] font-mono text-sky-400 hover:underline">Reset Etude</button>
+            </div>
+            <div id="stepGridContainer" class="grid grid-cols-4 gap-1.5 max-h-[210px] overflow-y-auto pr-0.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Audition Bar Strip -->
+        <div class="bg-obsidian-950/85 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Quick Bar Audition Strip</span>
+            <span class="text-[9px] font-mono text-slate-400">Click 3D Bars or Keys [A–L, W–P]</span>
+          </div>
+          <div id="quickBarStrip" class="flex flex-wrap gap-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT TAB 2: 12 MARIMBA REPERTOIRE ETUDES, CHORALES & TRADITIONAL DANCES -->
+      <div id="rightTabRepertoire" class="hidden flex-col gap-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-200">12 Marimba Repertoire &amp; Acoustic Studies</span>
+          <span class="text-[10px] font-mono text-amber-300">12 / 12</span>
+        </div>
+        <div id="repertoireListContainer" class="space-y-1.5 max-h-[410px] overflow-y-auto pr-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- RIGHT TAB 3: REAL-TIME 1:4:10 SPECTRUM & 44.1kHz WAV EXPORTER -->
+      <div id="rightTabExport" class="hidden flex-col gap-2.5">
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-300">1:4:10 Modal Spectrum &amp; Resonator Scope</span>
+            <span class="text-[9px] font-mono text-emerald-400">44.1 kHz FFT</span>
+          </div>
+          <div class="relative h-28 w-full bg-obsidian-900 rounded-lg border border-slate-800 overflow-hidden">
+            <canvas id="spectrumCanvas" class="w-full h-full"></canvas>
+          </div>
+        </div>
+
+        <!-- Lossless WAV Loop & Sample Pack Exporter -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">44.1 kHz 16-Bit Stereo WAV Exporter</h3>
+              <p class="text-[10px] text-slate-400">OfflineAudioContext 1:4:10 bar + λ/4 resonator + charleo bounce</p>
+            </div>
+            <button id="btnExportJsonPreset" type="button" class="px-2 py-1 rounded bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[10px] font-mono text-slate-300">
+              .JSON Patch
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btnExportLoopWav" type="button" class="px-2.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md">
+              💾 Export Repertoire Loop
+            </button>
+            <button id="btnExportChoraleWav" type="button" class="px-2.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md">
+              🎼 Export 4-Mallet Chorale
+            </button>
+          </div>
+
+          <div>
+            <div class="text-[10px] font-mono uppercase text-slate-400 mb-1">Export Marimba Articulation One-Shots (.WAV)</div>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button type="button" data-oneshot="sweet_spot" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-amber-300 transition">SweetSpot_034L.wav</button>
+              <button type="button" data-oneshot="center_hit" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-sky-300 transition">Center_050L.wav</button>
+              <button type="button" data-oneshot="node_deadspot" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-rose-300 transition">Node_0224L.wav</button>
+              <button type="button" data-oneshot="corner_torsion" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-purple-300 transition">CornerTorsion.wav</button>
+              <button type="button" data-oneshot="stevens_chord" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-emerald-300 transition">4MalletChord.wav</button>
+              <button type="button" data-oneshot="charleo_buzz" class="oneshot-btn py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-cyan-300 transition">CharleoBuzz.wav</button>
+            </div>
+          </div>
+
+          <div class="space-y-1.5 pt-1 border-t border-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase text-slate-400">Rendered Sample Vault</span>
+              <span id="vaultCountLabel" class="text-[10px] font-mono text-slate-500">0 files</span>
+            </div>
+            <div id="sampleVaultList" class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+              <div class="text-[11px] text-slate-500 bg-obsidian-900/60 border border-slate-800/80 rounded-lg p-2 text-center">
+                Click any WAV button above to synthesize a 44.1 kHz stereo marimba file for preview &amp; download.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- BOTTOM FLOATING 4-MALLET ARTICULATION DECK & LIVE TELEMETRY (Flex child 3) -->
+  <footer class="relative z-30 hud-glass rounded-2xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+    <div class="flex flex-wrap items-center gap-1.5">
+      <button id="btnTrigSweetSpot" type="button" class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-xs font-mono font-bold transition">
+        Sweet Spot (0.34L) <span class="text-[10px] opacity-75">[Z]</span>
+      </button>
+      <button id="btnTrigCenter" type="button" class="px-2.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-mono font-semibold transition">
+        Center (No 4f1) <span class="text-[10px] opacity-75">[X]</span>
+      </button>
+      <button id="btnTrigNode" type="button" class="px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-xs font-mono font-semibold transition">
+        Node 0.224L (Muted) <span class="text-[10px] opacity-75">[N]</span>
+      </button>
+      <button id="btnTrigCorner" type="button" class="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/50 text-purple-200 text-xs font-mono font-semibold transition">
+        Corner Torsional <span class="text-[10px] opacity-75">[V]</span>
+      </button>
+      <button id="btnTrig4Chord" type="button" class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 text-emerald-200 text-xs font-mono font-bold transition">
+        4-Mallet Chord <span class="text-[10px] opacity-75">[C]</span>
+      </button>
+      <button id="btnTrigRippleRoll" type="button" class="px-2.5 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/35 border border-teal-400/50 text-teal-200 text-xs font-mono font-bold transition">
+        Stevens Roll (1-3-2-4) <span class="text-[10px] opacity-75">[R]</span>
+      </button>
+      <button id="btnTrigShaftClick" type="button" class="px-2.5 py-1.5 rounded-xl bg-slate-700/45 hover:bg-slate-700/70 border border-slate-500/50 text-slate-200 text-xs font-mono transition">
+        Rattan Shaft Click <span class="text-[10px] opacity-75">[B]</span>
+      </button>
+    </div>
+
+    <div class="flex items-center gap-3 bg-obsidian-950/90 border border-slate-800 px-3 py-1 rounded-xl">
+      <div id="lastStrikeTelemetry" class="text-[11px] font-mono text-slate-300">
+        Bar: C3 (131.5 Hz) • Spot: 0.34L • f2=526 Hz (4.00×) • f3=1325 Hz (10.08×)
+      </div>
+      <div class="h-4 w-[1px] bg-slate-800 hidden sm:block"></div>
+      <div class="hidden sm:flex items-center gap-1.5 text-[11px] font-mono text-amber-300">
+        <span>Click any 3D Bar (Center / Sweet Spot / Node / Edge)</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- TOAST NOTIFICATION BANNER -->
+  <div id="toastBanner" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2 rounded-xl bg-obsidian-900/95 border border-amber-500/60 text-xs font-mono font-semibold text-amber-200 shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Loaded Marimba</span>
+  </div>
+
+  <!-- COMPLETE APPLICATION LOGIC: 1:4:10 ARCH-BAR PHYSICS + QUARTER-WAVE RESONATORS + 3D WEBGL + WAV -->
+  <script>
+    // =========================================================================
+    // 1. PITCH UTILITIES & 6 HISTORICAL / CONCERT MARIMBA ARCHETYPES
+    // =========================================================================
+    const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const IS_ACCIDENTAL = [false, true, false, true, false, false, true, false, true, false, true, false];
+
+    function midiToFreq(midi, a4 = 442) {
+      return a4 * Math.pow(2, (midi - 69) / 12);
+    }
+
+    function midiToName(midi) {
+      const name = NOTE_NAMES[midi % 12];
+      const oct = Math.floor(midi / 12) - 1;
+      return `${name}${oct}`;
+    }
+
+    const MARIMBA_ARCHETYPES = {
+      concert_rosewood: {
+        name: "5-Octave Concert Grand (Honduras Rosewood)",
+        short: "Concert Rosewood",
+        woodDesc: "Dalbergia stevensonii (Janka 2200 lbf), 1:4:10 arch, brass λ/4 pipes",
+        archDepth: 100, tubeMix: 88, charleo: 0, sustain: 66, a4: 442,
+        mallet: "graduated", resShape: "brass_cyl",
+        naturalHex: 0x7c2d12, accidentalHex: 0x451a03, tubeHex: 0xd97706
+      },
+      studio_padauk: {
+        name: "4.3-Octave Studio Marimba (African Padauk)",
+        short: "Studio Padauk",
+        woodDesc: "Pterocarpus soyauxii warm crimson grain, aluminum resonators",
+        archDepth: 96, tubeMix: 82, charleo: 0, sustain: 62, a4: 440,
+        mallet: "graduated", resShape: "alu_cyl",
+        naturalHex: 0xb91c1c, accidentalHex: 0x7f1d1d, tubeHex: 0x94a3b8
+      },
+      guatemala_hormigo: {
+        name: "Guatemalan / Chiapas Marimba Doble (Hormigo + Charleo)",
+        short: "Chiapas Hormigo",
+        woodDesc: "Platymiscium dimorphandrum + tapered wooden cajones with wax charleo buzz",
+        archDepth: 82, tubeMix: 90, charleo: 78, sustain: 58, a4: 440,
+        mallet: "two_tone", resShape: "wood_cajon",
+        naturalHex: 0x92400e, accidentalHex: 0x5c240a, tubeHex: 0x78350f
+      },
+      colombia_chonta: {
+        name: "Pacific Marimba de Chonta (Peach-Palm + Guadua Bamboo)",
+        short: "Marimba de Chonta",
+        woodDesc: "UNESCO Afro-Colombian/Esmeraldas peach-palm slats over bamboo tubes",
+        archDepth: 68, tubeMix: 85, charleo: 22, sustain: 54, a4: 440,
+        mallet: "soft_bass", resShape: "bamboo_cyl",
+        naturalHex: 0x3f2314, accidentalHex: 0x29150b, tubeHex: 0xa16207
+      },
+      african_gyil: {
+        name: "West African Gyil / Balafon (Calabash Gourd Mirlitons)",
+        short: "African Gyil Gourd",
+        woodDesc: "Kiln-dried Lega bars over spherical calabash gourds with spider-silk buzz",
+        archDepth: 62, tubeMix: 84, charleo: 88, sustain: 52, a4: 440,
+        mallet: "wood_rattan", resShape: "gourd",
+        naturalHex: 0x713f12, accidentalHex: 0x422006, tubeHex: 0xd97706
+      },
+      corps_kelon: {
+        name: "Field Corps Synthetic Marimba (Kelon / Acoustalon)",
+        short: "Synthetic Kelon",
+        woodDesc: "Weatherproof fiberglass composite bars, bright attack & extended sustain",
+        archDepth: 100, tubeMix: 86, charleo: 0, sustain: 84, a4: 442,
+        mallet: "hard_cord", resShape: "alu_cyl",
+        naturalHex: 0x1e293b, accidentalHex: 0x0f172a, tubeHex: 0xcbd5e1
+      }
+    };
+
+    // =========================================================================
+    // 2. 12 ICONIC MARIMBA REPERTOIRE ETUDES, CHORALES & ACOUSTIC STUDIES
+    //    Step properties:
+    //      semi: semitone offset [0..24] relative to current octave base
+    //      voicing: 'single' | 'dyad3' | 'dyad5' | 'oct' | 'stevens4' | 'roll4' | 'dead_node' | 'corner_torsion'
+    //      uSpot: strike position along bar length [0.04..0.50] (0.34=sweet, 0.50=center, 0.224=node)
+    //      vel: 0.35 to 1.0
+    //      dur: duration in 16th-note units
+    // =========================================================================
+    const MARIMBA_REPERTOIRE = [
+      {
+        id: 1, name: "Bach Cello Suite No. 1 Prelude (C2–C5 Bariolage)", style: "5-Octave Solo Canon",
+        desc: "Classic 16th-note cello prelude transcription showcasing warm bass resonator projection and 1:4:10 harmonic clarity.",
+        steps: [
+          {semi:0,voicing:'single',uSpot:0.34,vel:0.94,dur:1.0},{semi:7,voicing:'single',uSpot:0.34,vel:0.76,dur:1.0},{semi:16,voicing:'single',uSpot:0.34,vel:0.84,dur:1.0},{semi:14,voicing:'single',uSpot:0.34,vel:0.78,dur:1.0},
+          {semi:16,voicing:'single',uSpot:0.34,vel:0.82,dur:1.0},{semi:7,voicing:'single',uSpot:0.34,vel:0.74,dur:1.0},{semi:16,voicing:'single',uSpot:0.34,vel:0.80,dur:1.0},{semi:7,voicing:'single',uSpot:0.34,vel:0.72,dur:1.0},
+          {semi:0,voicing:'single',uSpot:0.34,vel:0.92,dur:1.0},{semi:9,voicing:'single',uSpot:0.34,vel:0.78,dur:1.0},{semi:17,voicing:'single',uSpot:0.34,vel:0.86,dur:1.0},{semi:16,voicing:'single',uSpot:0.34,vel:0.80,dur:1.0},
+          {semi:17,voicing:'single',uSpot:0.34,vel:0.84,dur:1.0},{semi:9,voicing:'single',uSpot:0.34,vel:0.76,dur:1.0},{semi:17,voicing:'single',uSpot:0.34,vel:0.82,dur:1.0},{semi:9,voicing:'single',uSpot:0.34,vel:0.74,dur:1.0}
+        ]
+      },
+      {
+        id: 2, name: "Steve Reich 'Marimba Phase' (12/8 Minimalist Ostinato)", style: "Minimalist Phase",
+        desc: "Hypnotic 12-note interlocking phase pattern alternating sweet-spot and center-bar articulations.",
+        steps: [
+          {semi:4,voicing:'single',uSpot:0.34,vel:0.90,dur:0.8},{semi:6,voicing:'single',uSpot:0.50,vel:0.78,dur:0.8},{semi:11,voicing:'single',uSpot:0.34,vel:0.86,dur:0.8},
+          {semi:13,voicing:'single',uSpot:0.34,vel:0.92,dur:0.8},{semi:14,voicing:'single',uSpot:0.50,vel:0.80,dur:0.8},{semi:6,voicing:'single',uSpot:0.34,vel:0.76,dur:0.8},
+          {semi:4,voicing:'single',uSpot:0.34,vel:0.88,dur:0.8},{semi:13,voicing:'single',uSpot:0.34,vel:0.90,dur:0.8},{semi:11,voicing:'single',uSpot:0.50,vel:0.82,dur:0.8},
+          {semi:6,voicing:'single',uSpot:0.34,vel:0.78,dur:0.8},{semi:14,voicing:'single',uSpot:0.34,vel:0.92,dur:0.8},{semi:13,voicing:'single',uSpot:0.50,vel:0.84,dur:0.8}
+        ]
+      },
+      {
+        id: 3, name: "Leigh Howard Stevens 'Rhythmic Caprice' Permutations", style: "Musser-Stevens 4-Mallet",
+        desc: "Virtuoso 4-mallet independent permutation patterns combining double vertical chords with rapid single-hand rolls.",
+        steps: [
+          {semi:0,voicing:'stevens4',uSpot:0.34,vel:0.96,dur:1.0},{semi:7,voicing:'single',uSpot:0.34,vel:0.74,dur:0.75},{semi:12,voicing:'single',uSpot:0.34,vel:0.78,dur:0.75},{semi:16,voicing:'dyad3',uSpot:0.34,vel:0.88,dur:1.0},
+          {semi:2,voicing:'stevens4',uSpot:0.34,vel:0.94,dur:1.0},{semi:9,voicing:'single',uSpot:0.34,vel:0.76,dur:0.75},{semi:14,voicing:'single',uSpot:0.34,vel:0.80,dur:0.75},{semi:17,voicing:'dyad3',uSpot:0.34,vel:0.90,dur:1.0},
+          {semi:4,voicing:'roll4',uSpot:0.34,vel:0.95,dur:2.0},{semi:7,voicing:'stevens4',uSpot:0.34,vel:0.98,dur:1.5}
+        ]
+      },
+      {
+        id: 4, name: "Paul Creston 1940 Concertino (Vigorous Theme)", style: "Orchestral Concerto",
+        desc: "Energetic rhythmically driven theme from the first solo marimba concerto (1940), featuring crisp octaves and accents.",
+        steps: [
+          {semi:0,voicing:'oct',uSpot:0.50,vel:0.96,dur:1.0},{semi:4,voicing:'dyad3',uSpot:0.34,vel:0.84,dur:1.0},{semi:7,voicing:'oct',uSpot:0.34,vel:0.92,dur:1.5},
+          {semi:9,voicing:'dyad3',uSpot:0.34,vel:0.86,dur:0.75},{semi:7,voicing:'single',uSpot:0.50,vel:0.80,dur:0.75},{semi:4,voicing:'dyad5',uSpot:0.34,vel:0.88,dur:1.0},
+          {semi:2,voicing:'oct',uSpot:0.34,vel:0.94,dur:1.5},{semi:7,voicing:'stevens4',uSpot:0.34,vel:0.98,dur:2.0}
+        ]
+      },
+      {
+        id: 5, name: "Keiko Abe 'Prism' Mystic 4/6-Mallet Impression", style: "Contemporary Japanese",
+        desc: "Dramatic dynamic contrasts pairing sustained 4-mallet ripple rolls with rapid chromatic flourishes.",
+        steps: [
+          {semi:2,voicing:'roll4',uSpot:0.34,vel:0.92,dur:2.5},{semi:3,voicing:'single',uSpot:0.34,vel:0.75,dur:0.5},{semi:6,voicing:'single',uSpot:0.34,vel:0.80,dur:0.5},{semi:9,voicing:'single',uSpot:0.34,vel:0.85,dur:0.5},
+          {semi:14,voicing:'stevens4',uSpot:0.34,vel:0.98,dur:2.0},{semi:10,voicing:'dyad5',uSpot:0.34,vel:0.86,dur:1.0},{semi:6,voicing:'roll4',uSpot:0.34,vel:0.90,dur:2.5}
+        ]
+      },
+      {
+        id: 6, name: "Warm 4-Mallet Ripple Chorale (1-3-2-4 Legato Roll)", style: "Lyrical Chorale",
+        desc: "Lush 4-voice chorale using staggered Musser-Stevens 1-3-2-4 hand-to-hand ripple rolls for organ-like sustain.",
+        steps: [
+          {semi:0,voicing:'roll4',uSpot:0.34,vel:0.86,dur:3.0},{semi:5,voicing:'roll4',uSpot:0.34,vel:0.88,dur:3.0},
+          {semi:4,voicing:'roll4',uSpot:0.34,vel:0.84,dur:3.0},{semi:9,voicing:'roll4',uSpot:0.34,vel:0.90,dur:3.0},
+          {semi:2,voicing:'roll4',uSpot:0.34,vel:0.86,dur:3.0},{semi:7,voicing:'roll4',uSpot:0.34,vel:0.92,dur:3.0}
+        ]
+      },
+      {
+        id: 7, name: "Guatemalan / Chiapas 'Son Chapín' (Charleo Dance)", style: "Central American Folk",
+        desc: "Traditional 6/8 Guatemalan/Chiapas marimba dance in parallel thirds & sixths (best with Hormigo + Charleo Buzz!).",
+        steps: [
+          {semi:0,voicing:'dyad3',uSpot:0.34,vel:0.92,dur:1.5},{semi:4,voicing:'dyad3',uSpot:0.34,vel:0.84,dur:0.75},{semi:7,voicing:'dyad3',uSpot:0.34,vel:0.88,dur:0.75},
+          {semi:9,voicing:'dyad3',uSpot:0.34,vel:0.94,dur:1.5},{semi:7,voicing:'dyad3',uSpot:0.34,vel:0.86,dur:1.5},
+          {semi:5,voicing:'dyad3',uSpot:0.34,vel:0.90,dur:1.0},{semi:4,voicing:'dyad3',uSpot:0.34,vel:0.84,dur:1.0},{semi:2,voicing:'dyad3',uSpot:0.34,vel:0.82,dur:1.0},{semi:0,voicing:'roll4',uSpot:0.34,vel:0.95,dur:2.0}
+        ]
+      },
+      {
+        id: 8, name: "Pacific 'Currulao' Marimba de Chonta (6/8 Bamboo)", style: "Afro-Colombian UNESCO",
+        desc: "Syncopated 6/8 currulao combining low bordón bass ostinato with high requinto bamboo-resonated variations.",
+        steps: [
+          {semi:0,voicing:'oct',uSpot:0.34,vel:0.95,dur:1.5},{semi:3,voicing:'single',uSpot:0.50,vel:0.78,dur:0.75},{semi:7,voicing:'dyad5',uSpot:0.34,vel:0.88,dur:0.75},
+          {semi:10,voicing:'single',uSpot:0.34,vel:0.92,dur:1.0},{semi:7,voicing:'single',uSpot:0.50,vel:0.80,dur:1.0},{semi:3,voicing:'dyad3',uSpot:0.34,vel:0.86,dur:1.0},
+          {semi:5,voicing:'oct',uSpot:0.34,vel:0.94,dur:1.5},{semi:7,voicing:'dyad5',uSpot:0.34,vel:0.90,dur:1.5}
+        ]
+      },
+      {
+        id: 9, name: "West African Gyil / Balafon Pentatonic Groove", style: "Gourd Mirliton Tradition",
+        desc: "Driving pentatonic balafon groove where calabash gourd resonators and spider-silk mirlitons buzz sympathetically.",
+        steps: [
+          {semi:0,voicing:'oct',uSpot:0.34,vel:0.96,dur:1.0},{semi:2,voicing:'single',uSpot:0.34,vel:0.80,dur:1.0},{semi:4,voicing:'dyad5',uSpot:0.34,vel:0.90,dur:1.0},{semi:7,voicing:'single',uSpot:0.34,vel:0.84,dur:1.0},
+          {semi:9,voicing:'oct',uSpot:0.34,vel:0.94,dur:1.0},{semi:12,voicing:'single',uSpot:0.34,vel:0.88,dur:1.0},{semi:9,voicing:'dyad5',uSpot:0.34,vel:0.86,dur:1.0},{semi:7,voicing:'single',uSpot:0.34,vel:0.80,dur:1.0}
+        ]
+      },
+      {
+        id: 10, name: "1982 Studio Pop-Fusion Syncopated Groove", style: "Studio Session Hook",
+        desc: "Crisp studio marimba riff inspired by classic 1970s/1980s records ('Moonlight Feels Right', 'Africa', 'Love My Way').",
+        steps: [
+          {semi:0,voicing:'dyad5',uSpot:0.50,vel:0.92,dur:1.0},{semi:4,voicing:'single',uSpot:0.34,vel:0.78,dur:0.5},{semi:7,voicing:'dyad3',uSpot:0.34,vel:0.88,dur:1.5},
+          {semi:9,voicing:'dyad5',uSpot:0.34,vel:0.94,dur:1.0},{semi:11,voicing:'single',uSpot:0.50,vel:0.82,dur:1.0},{semi:12,voicing:'stevens4',uSpot:0.34,vel:0.96,dur:1.5},{semi:7,voicing:'dyad3',uSpot:0.34,vel:0.84,dur:1.5}
+        ]
+      },
+      {
+        id: 11, name: "Nodal Dead-Spot (0.224L) vs. Sweet-Spot (0.34L) Study", style: "Spatial Eigenmode Demo",
+        desc: "Strikes the same bar at Off-Center (0.34L), Center (0.50L), Suspension Node (0.224L muted!), and Corner Edge (Torsional).",
+        steps: [
+          {semi:0,voicing:'single',uSpot:0.34,vel:0.96,dur:2.0},{semi:0,voicing:'single',uSpot:0.50,vel:0.96,dur:2.0},{semi:0,voicing:'dead_node',uSpot:0.224,vel:0.96,dur:2.0},{semi:0,voicing:'corner_torsion',uSpot:0.04,vel:0.96,dur:2.0},
+          {semi:7,voicing:'single',uSpot:0.34,vel:0.96,dur:2.0},{semi:7,voicing:'single',uSpot:0.50,vel:0.96,dur:2.0},{semi:7,voicing:'dead_node',uSpot:0.224,vel:0.96,dur:2.0},{semi:7,voicing:'corner_torsion',uSpot:0.04,vel:0.96,dur:2.0}
+        ]
+      },
+      {
+        id: 12, name: "1:4:10 Harmonic Arch Strobe Calibration Run", style: "Acoustic Builder Test",
+        desc: "Chromatically walks up the register testing fundamental-to-resonator lock and 1:4:10 triple-tuned overtone balance.",
+        steps: [
+          {semi:0,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},{semi:2,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},{semi:4,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},{semi:5,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},
+          {semi:7,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},{semi:9,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},{semi:11,voicing:'single',uSpot:0.34,vel:0.95,dur:1.5},{semi:12,voicing:'stevens4',uSpot:0.34,vel:0.98,dur:2.5}
+        ]
+      }
+    ];
+
+    // =========================================================================
+    // 3. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      archetypeKey: "concert_rosewood",
+      octaveBaseMidi: 48,      // 36 = C2 Bass, 48 = C3 Mid, 60 = C4 Treble (25 bars rendered: 2 full octaves)
+      strikeZonePreset: "sweet",// 'sweet' (0.34L) | 'center' (0.50L) | 'node' (0.224L) | 'corner' (0.04L)
+      strikeUSpot: 0.34,       // Exact longitudinal coordinate u = x/L in [0.02, 0.98]
+      malletType: "graduated", // 'graduated' | 'soft_bass' | 'two_tone' | 'hard_cord' | 'wood_rattan'
+      malletVoicing: "single", // 'single' | 'stevens_chord' | 'stevens_roll' | 'octaves'
+
+      // Coupled Bar & Quarter-Wave Resonator Physics
+      archDepthPct: 100,       // 0% (Uniform 1:2.76:5.40) -> 65% (1:3:6) -> 100% (Concert 1:4:10)
+      tubeMixPct: 86,          // 0% (No resonators) -> 100% (Full quarter-wave tube amplification)
+      charleoPct: 0,           // 0% (Clean) -> 100% (Chiapas/Gyil wax mirliton buzz membrane)
+      barSustainPct: 64,       // 20% to 100%
+      a4Hz: 442,               // 432 to 446 Hz
+      torsionalPct: 24,        // 0% to 100%
+      roomTempC: 22,           // 8°C to 40°C (controls sound speed c = 331.3 + 0.606*T)
+      plugOffsetMm: 0,         // -25 mm to +25 mm resonator stop plug adjustment
+      hallReverbPct: 34,       // 0% to 85%
+
+      // Sequencer & Repertoire
+      selectedEtudeId: 1,
+      customSteps: [],
+      isPlaying: false,
+      bpm: 116,
+      currentStepIndex: -1,
+
+      // 3D Scene & Visual Overlays
+      cameraPreset: "player",
+      showNodalLines: true,
+      showLabels: true,
+      activeBarExcitations: {}, // barIdx -> { startTime, vel, uSpot }
+      malletAnims: [
+        { hitTime: -999, x: -3.5, y: 0.9, z: 1.1 }, // Mallet 1 (Left Outer)
+        { hitTime: -999, x: -1.2, y: 0.9, z: 0.8 }, // Mallet 2 (Left Inner)
+        { hitTime: -999, x: 1.2,  y: 0.9, z: 0.8 }, // Mallet 3 (Right Inner)
+        { hitTime: -999, x: 3.5,  y: 0.9, z: 1.1 }  // Mallet 4 (Right Outer)
+      ],
+      lastStruckBarIdx: 0,
+
+      // WAV Sample Vault
+      renderedVault: []
+    };
+
+    // =========================================================================
+    // 4. FREE-FREE ARCH-CARVED BAR & QUARTER-WAVE RESONATOR PHYSICS SOLVER
+    //    Grounded in La Favre, Bork (1995) & Rossing (1982)
+    // =========================================================================
+    function computeBarAndResonatorPhysics(f1 = 131.5, uSpot = state.strikeUSpot, isCorner = false) {
+      // 1. Transverse Modal Ratios as a function of Underside Parabolic Arch Undercut Depth (0% to 100%)
+      //    0% (Flat plank): 1 : 2.756 : 5.404 : 8.933
+      //    65% (Shallow arch): 1 : 3.00 : 6.00 : 12.0
+      //    100% (Deep Concert Marimba arch): 1 : 4.00 : 10.08 : 19.60
+      const a = state.archDepthPct / 100;
+      let r2, r3, r4;
+      if (a <= 0.65) {
+        const t = a / 0.65;
+        r2 = 2.756 + t * (3.00 - 2.756);
+        r3 = 5.404 + t * (6.00 - 5.404);
+        r4 = 8.933 + t * (12.0 - 8.933);
+      } else {
+        const t = (a - 0.65) / 0.35;
+        r2 = 3.00 + t * (4.00 - 3.00);
+        r3 = 6.00 + t * (10.08 - 6.00);
+        r4 = 12.0 + t * (19.60 - 12.0);
+      }
+
+      // 2. Spatial Eigenfunction Excitation Weights at strike coordinate uSpot = x/L in [0, 1]
+      //    Mode 1 (1f1): Nodes at u = 0.224 and u = 0.776; Antinode at Center u = 0.50 and Ends u = 0, 1
+      const distFromNode1 = Math.min(Math.abs(uSpot - 0.224), Math.abs(uSpot - 0.776));
+      const ampMode1 = distFromNode1 < 0.035
+        ? 0.06 + (distFromNode1 / 0.035) * 0.20 // Nodal Dead-Spot suppression!
+        : Math.min(1.0, Math.abs(Math.sin(Math.PI * ((uSpot - 0.224) / 0.552))));
+
+      //    Mode 2 (4f1): Exact Node at Center u = 0.50! Antinodes around u = 0.34 and u = 0.66
+      const distFromCenter = Math.abs(uSpot - 0.50);
+      const ampMode2 = distFromCenter < 0.03
+        ? 0.05 // Suppressed when struck dead-center!
+        : Math.min(1.0, Math.abs(Math.sin(2 * Math.PI * (uSpot - 0.50))) * 1.15);
+
+      //    Mode 3 (10.08f1): Antinode at Center u = 0.50, four nodes along length
+      const ampMode3 = Math.max(0.15, Math.abs(Math.cos(3 * Math.PI * (uSpot - 0.50))));
+
+      //    Torsional Modes (3.62 f1 and 9.06 f1): Strongly excited when struck near corner/edge
+      const torsionBoost = isCorner || uSpot < 0.08 || uSpot > 0.92 ? 0.88 : (state.torsionalPct / 100) * 0.25;
+
+      // 3. Stopped Quarter-Wave Resonator Tube Physics (L_eff = c(T)/(4*f1) - 0.61*R)
+      const soundSpeed = 331.3 + 0.606 * state.roomTempC; // m/s
+      const tubeRadiusM = 0.032; // 64mm diameter tube
+      const endCorrectionM = 0.61 * tubeRadiusM;
+      const idealPipeLenM = soundSpeed / (4 * f1) - endCorrectionM;
+
+      // Temperature & Stop-Plug Detuning Calculation:
+      // At reference 22°C (c = 344.65 m/s) and plugOffset = 0mm, pipe is 100% locked to bar.
+      const refSpeed = 331.3 + 0.606 * 22;
+      const fixedPhysicalLenM = refSpeed / (4 * f1) - endCorrectionM - (state.plugOffsetMm / 1000);
+      const actualPipeFreq = soundSpeed / (4 * (fixedPhysicalLenM + endCorrectionM));
+      const detuneRatio = Math.abs(actualPipeFreq - f1) / f1;
+      // Lorentzian resonance coupling curve (Q_pipe ≈ 18)
+      const pipeLockFactor = 1.0 / (1.0 + Math.pow(detuneRatio * 28, 2));
+
+      return {
+        f1,
+        f2: f1 * r2,
+        f3: f1 * r3,
+        f4: f1 * r4,
+        r2, r3, r4,
+        ampMode1,
+        ampMode2,
+        ampMode3,
+        torsionBoost,
+        soundSpeed,
+        idealPipeLenCm: idealPipeLenM * 100,
+        pipeLockFactor
+      };
+    }
+
+    // =========================================================================
+    // 5. WEB AUDIO API COUPLED ARCH-BAR, QUARTER-WAVE PIPE & CHARLEO SYNTHESIS
+    // =========================================================================
+    let audioCtx = null;
+    let analyserNode = null;
+    let masterOutNode = null;
+    let convolverNode = null;
+    let reverbWetGain = null;
+    let noiseBufferCache = null;
+
+    function createHallImpulse(ctx, durationSec = 2.0, decay = 2.9) {
+      const sr = ctx.sampleRate;
+      const len = Math.floor(sr * durationSec);
+      const buf = ctx.createBuffer(2, len, sr);
+      for (let c = 0; c < 2; c++) {
+        const d = buf.getChannelData(c);
+        for (let i = 0; i < len; i++) {
+          d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+        }
+      }
+      return buf;
+    }
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtx();
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 512;
+        analyserNode.smoothingTimeConstant = 0.74;
+
+        masterOutNode = audioCtx.createGain();
+        masterOutNode.gain.value = 0.86;
+
+        convolverNode = audioCtx.createConvolver();
+        convolverNode.buffer = createHallImpulse(audioCtx, 2.0, 2.9);
+        reverbWetGain = audioCtx.createGain();
+        reverbWetGain.gain.value = (state.hallReverbPct / 100) * 0.38;
+
+        masterOutNode.connect(analyserNode);
+        masterOutNode.connect(convolverNode);
+        convolverNode.connect(reverbWetGain);
+        reverbWetGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function getNoiseBuffer(ctx) {
+      if (noiseBufferCache && noiseBufferCache.sampleRate === ctx.sampleRate) return noiseBufferCache;
+      const sr = ctx.sampleRate;
+      const buf = ctx.createBuffer(1, Math.floor(sr * 0.6), sr);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      noiseBufferCache = buf;
+      return buf;
+    }
+
+    /**
+     * Synthesizes a single Marimba Bar + Quarter-Wave Resonator + Charleo Mirliton strike.
+     * Models:
+     *   - Free-free arch-carved transverse modes (f1, f2 = r2*f1, f3 = r3*f1, f4 = r4*f1)
+     *   - Bork's Inverse Decay Law: τ_n = τ_1 / (f_n / f_1) (Mode 2 decays 4× faster, Mode 3 decays 10× faster!)
+     *   - Spatial strike-point eigenfunction weights at uSpot = x/L (Center 0.50L vs Sweet 0.34L vs Node 0.224L)
+     *   - Quarter-wave closed resonator pipe amplification of odd harmonics (1f1) & radiation damping tradeoff
+     *   - Graduated yarn mallet low-pass contact filtering (Soft Bass Yarn vs Two-Toned vs Hard Cord vs Wood/Shaft)
+     *   - Optional Charleo / Calabash Mirliton nonlinear buzz membrane
+     */
+    function synthesizeMarimbaBarStrike(ctx, destNode, when, options = {}) {
+      const {
+        midi = 48,
+        velocity = 0.88,
+        uSpot = state.strikeUSpot,
+        isCorner = false,
+        isDeadStroke = false,
+        isShaftClick = false,
+        panPos = 0.0
+      } = options;
+
+      const safeWhen = Math.max(ctx.currentTime || 0, when);
+      const f1 = midiToFreq(midi, state.a4Hz);
+      const phys = computeBarAndResonatorPhysics(f1, uSpot, isCorner);
+
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.setValueAtTime(Math.max(0.04, Math.min(1.25, velocity * 0.62)), safeWhen);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(Math.max(-0.85, Math.min(0.85, panPos)), safeWhen);
+        voiceGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        voiceGain.connect(destNode);
+      }
+
+      // SPECIAL ARTICULATION: RATTAN / BIRCH MALLET SHAFT CLICK ON BAR EDGE
+      if (isShaftClick) {
+        const clickFreqs = [f1 * 1.0, 1480, 2760, 4120];
+        clickFreqs.forEach((cf, i) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = i === 0 ? 'sine' : 'triangle';
+          osc.frequency.setValueAtTime(cf, safeWhen);
+          g.gain.setValueAtTime(i === 0 ? 0.25 : 0.42 / i, safeWhen);
+          g.gain.exponentialRampToValueAtTime(0.0008, safeWhen + (i === 0 ? 0.08 : 0.025));
+          osc.connect(g);
+          g.connect(voiceGain);
+          osc.start(safeWhen);
+          osc.stop(safeWhen + 0.09);
+        });
+        return;
+      }
+
+      // Mallet Hardness & Graduated Register Brightness Filter
+      // Soft yarn damps high modes (f2, f3) unless struck hard ('two_tone' core!)
+      let malletBrightness = 0.65;
+      if (state.malletType === 'soft_bass') malletBrightness = 0.28;
+      else if (state.malletType === 'two_tone') malletBrightness = 0.25 + Math.pow(velocity, 1.8) * 0.75;
+      else if (state.malletType === 'hard_cord') malletBrightness = 0.92;
+      else if (state.malletType === 'wood_rattan') malletBrightness = 1.25;
+      else {
+        // Graduated 4-mallet set: softer in C2-C3 bass, brighter in C5-C6 treble
+        malletBrightness = Math.max(0.30, Math.min(1.0, (midi - 32) / 42));
+      }
+
+      // Quarter-Wave Resonator Tube Coupling (Amplifies 1f1 fundamental and trades decay time for projection)
+      const tubeCoupling = (state.tubeMixPct / 100) * phys.pipeLockFactor;
+      const fundamentalPipeBoost = 1.0 + tubeCoupling * 1.15;
+
+      // Base Fundamental Decay Time τ_1 (Lower bass bars ring longer; resonator radiation slightly shortens τ_1)
+      const pitchDecayScale = Math.max(0.28, Math.min(1.65, 220 / f1));
+      const sustainNorm = state.barSustainPct / 100;
+      const radDamping = 1.0 - tubeCoupling * 0.28;
+      const tau1 = (0.35 + sustainNorm * 1.45) * pitchDecayScale * radDamping * (isDeadStroke ? 0.14 : 1.0);
+
+      // 1. TRANSVERSE BAR MODES: Mode 1 (f1), Mode 2 (r2*f1 ≈ 4f1), Mode 3 (r3*f1 ≈ 10.08f1), Mode 4 (19.6f1)
+      //    Governed by Bork's Inverse Decay Law: τ_n = τ_1 / (f_n / f_1)
+      const modeSpecs = [
+        {
+          freq: phys.f1,
+          amp: phys.ampMode1 * fundamentalPipeBoost * 0.88,
+          tau: tau1
+        },
+        {
+          freq: phys.f2,
+          amp: phys.ampMode2 * malletBrightness * 0.48,
+          tau: Math.max(0.028, tau1 / phys.r2) // Decays 4× faster than f1!
+        },
+        {
+          freq: phys.f3,
+          amp: phys.ampMode3 * Math.pow(malletBrightness, 1.3) * 0.28,
+          tau: Math.max(0.015, tau1 / phys.r3) // Decays 10× faster than f1!
+        },
+        {
+          freq: phys.f4,
+          amp: phys.ampMode2 * Math.pow(malletBrightness, 1.6) * 0.12,
+          tau: Math.max(0.009, tau1 / phys.r4)
+        }
+      ];
+
+      modeSpecs.forEach((m, idx) => {
+        if (m.amp < 0.005 || m.freq > 15500) return;
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = idx === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(m.freq, safeWhen);
+
+        const attackTime = idx === 0 ? 0.0025 : 0.0012;
+        g.gain.setValueAtTime(0.0008, safeWhen);
+        g.gain.linearRampToValueAtTime(Math.min(1.1, m.amp), safeWhen + attackTime);
+        g.gain.exponentialRampToValueAtTime(0.0006, safeWhen + attackTime + m.tau);
+
+        osc.connect(g);
+        g.connect(voiceGain);
+        osc.start(safeWhen);
+        osc.stop(safeWhen + attackTime + m.tau + 0.015);
+      });
+
+      // 2. UNTUNED TORSIONAL BAR MODES (~3.62 f1 and ~9.06 f1, strong on Corner / Edge strikes!)
+      if (phys.torsionBoost > 0.04) {
+        const torsFreqs = [f1 * 3.62, f1 * 9.06];
+        torsFreqs.forEach((tf, idx) => {
+          if (tf > 14000) return;
+          const tOsc = ctx.createOscillator();
+          const tGain = ctx.createGain();
+          tOsc.type = 'sine';
+          tOsc.frequency.setValueAtTime(tf, safeWhen);
+          const tTau = Math.max(0.025, tau1 / (idx === 0 ? 3.6 : 9.0));
+          tGain.gain.setValueAtTime(phys.torsionBoost * (idx === 0 ? 0.36 : 0.22), safeWhen);
+          tGain.gain.exponentialRampToValueAtTime(0.0006, safeWhen + tTau);
+          tOsc.connect(tGain);
+          tGain.connect(voiceGain);
+          tOsc.start(safeWhen);
+          tOsc.stop(safeWhen + tTau + 0.01);
+        });
+      }
+
+      // 3. CHARLEO / CALABASH MIRLITON WAX-MEMBRANE SYMPATHETIC BUZZ (Guatemalan/Chiapas & African Gyil)
+      const charleoNorm = state.charleoPct / 100;
+      if (charleoNorm > 0.02 && phys.ampMode1 > 0.2) {
+        const buzzSrc = ctx.createBufferSource();
+        buzzSrc.buffer = getNoiseBuffer(ctx);
+
+        // Amplitude-modulate the mirliton noise at the bar's fundamental frequency f1!
+        const modOsc = ctx.createOscillator();
+        modOsc.type = 'sawtooth';
+        modOsc.frequency.setValueAtTime(f1 * 2, safeWhen);
+
+        const bpBuzz = ctx.createBiquadFilter();
+        bpBuzz.type = 'bandpass';
+        bpBuzz.frequency.setValueAtTime(Math.min(4200, Math.max(1100, f1 * 6.5)), safeWhen);
+        bpBuzz.Q.setValueAtTime(2.4, safeWhen);
+
+        const gBuzz = ctx.createGain();
+        const buzzDecay = Math.max(0.08, tau1 * 0.72);
+        const buzzPeak = charleoNorm * 0.42 * tubeCoupling;
+        gBuzz.gain.setValueAtTime(0.001, safeWhen);
+        gBuzz.gain.linearRampToValueAtTime(buzzPeak, safeWhen + 0.008);
+        gBuzz.gain.exponentialRampToValueAtTime(0.0006, safeWhen + buzzDecay);
+
+        buzzSrc.connect(bpBuzz);
+         modOsc.connect(bpBuzz);
+        bpBuzz.connect(gBuzz);
+        gBuzz.connect(voiceGain);
+
+        buzzSrc.start(safeWhen);
+        modOsc.start(safeWhen);
+        buzzSrc.stop(safeWhen + buzzDecay + 0.015);
+        modOsc.stop(safeWhen + buzzDecay + 0.015);
+      }
+
+      // 4. WOODEN BAR & YARN MALLET CONTACT TRANSIENT
+      const nSrc = ctx.createBufferSource();
+      nSrc.buffer = getNoiseBuffer(ctx);
+      const bpClick = ctx.createBiquadFilter();
+      bpClick.type = 'bandpass';
+      bpClick.frequency.setValueAtTime(850 + malletBrightness * 2400, safeWhen);
+      bpClick.Q.setValueAtTime(1.8, safeWhen);
+
+      const gClick = ctx.createGain();
+      gClick.gain.setValueAtTime(0.18 + malletBrightness * 0.28, safeWhen);
+      gClick.gain.exponentialRampToValueAtTime(0.0008, safeWhen + 0.014);
+
+      nSrc.connect(bpClick);
+      bpClick.connect(gClick);
+      gClick.connect(voiceGain);
+      nSrc.start(safeWhen);
+      nSrc.stop(safeWhen + 0.018);
+    }
+
+    // =========================================================================
+    // 6. FULL-SCREEN 3D WEBGL CONCERT MARIMBA & ARCH-UNDERCUT VISUALIZER
+    // =========================================================================
+    let scene, camera, renderer, raycaster, mouseVec;
+    let marimbaGroup, barMeshes = [], resonatorMeshes = [], malletGroups = [];
+
+    const camOrbit = {
+      theta: 0.0,
+      phi: 0.78,
+      radius: 10.6,
+      targetTheta: 0.0,
+      targetPhi: 0.78,
+      targetRadius: 10.6,
+      lookY: -0.2,
+      isDragging: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    const NUM_BARS = 25; // 2 full chromatic octaves visible at once (e.g. C3 to C5)
+
+    function createArchCarvedBarGeometry(barWidth, barLength, barThick, archDepthNorm) {
+      // Builds a 3D box with subdivided Z segments whose underside vertices are carved into a parabolic arch!
+      const geo = new THREE.BoxGeometry(barWidth, barThick, barLength, 2, 2, 20);
+      const pos = geo.attributes.position;
+
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const u = (z / barLength) + 0.5; // 0 (back) to 1 (front)
+
+        // Carve parabolic arch on bottom vertices (y < 0) between the nodal points [0.18, 0.82]
+        if (y < 0 && u > 0.16 && u < 0.84) {
+          const archNorm = Math.sin(((u - 0.16) / 0.68) * Math.PI);
+          const carveLift = Math.pow(archNorm, 1.35) * barThick * 0.68 * archDepthNorm;
+          pos.setY(i, y + carveLift);
+        }
+      }
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function initThreeJsScene() {
+      const container = document.getElementById('webglContainer');
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x04060a);
+      scene.fog = new THREE.FogExp2(0x04060a, 0.022);
+
+      camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.72));
+      const keyLight = new THREE.DirectionalLight(0xfffbeb, 1.25);
+      keyLight.position.set(5, 11, 8);
+      scene.add(keyLight);
+
+      const cyanRim = new THREE.PointLight(0x38bdf8, 0.9, 25);
+      cyanRim.position.set(-8, 4, -5);
+      scene.add(cyanRim);
+
+      const warmUnder = new THREE.PointLight(0xf59e0b, 0.85, 22);
+      warmUnder.position.set(0, -4, 5);
+      scene.add(warmUnder);
+
+      const floorGrid = new THREE.GridHelper(30, 30, 0x1e293b, 0x090d16);
+      floorGrid.position.y = -3.8;
+      scene.add(floorGrid);
+
+      marimbaGroup = new THREE.Group();
+      scene.add(marimbaGroup);
+
+      buildMarimba3DModel();
+      buildFourMallets3D();
+      initViewportPointerControls();
+    }
+
+    function buildMarimba3DModel() {
+      while (marimbaGroup.children.length > 0) {
+        marimbaGroup.remove(marimbaGroup.children[0]);
+      }
+      barMeshes = [];
+      resonatorMeshes = [];
+
+      const arch = MARIMBA_ARCHETYPES[state.archetypeKey] || MARIMBA_ARCHETYPES.concert_rosewood;
+      const archDepthNorm = state.archDepthPct / 100;
+
+      // Count natural bars to center keyboard horizontally
+      let natIndex = 0;
+      const totalNats = 15; // 2 octaves inclusive (C to C = 15 naturals)
+      const natSpacing = 0.56;
+      const startX = -((totalNats - 1) * natSpacing) / 2;
+
+      for (let s = 0; s < NUM_BARS; s++) {
+        const midi = state.octaveBaseMidi + s;
+        const semi = midi % 12;
+        const isAcc = IS_ACCIDENTAL[semi];
+
+        // Bar dimensions decrease smoothly from bass (left) to treble (right)
+        const prog = s / (NUM_BARS - 1);
+        const barW = 0.46 - prog * 0.11;
+        const barLen = 2.45 - prog * 0.88;
+        const barThick = 0.14;
+
+        let xPos = 0;
+        if (!isAcc) {
+          xPos = startX + natIndex * natSpacing;
+          natIndex++;
+        } else {
+          xPos = startX + (natIndex - 0.5) * natSpacing;
+        }
+
+        const yPos = isAcc ? 0.58 : 0.32;
+        const zPos = isAcc ? -0.95 : 0.65;
+
+        // 1. 3D Parabolic Arch-Carved Marimba Bar
+        const barGeo = createArchCarvedBarGeometry(barW, barLen, barThick, archDepthNorm);
+        const barColor = isAcc ? arch.accidentalHex : arch.naturalHex;
+        const barMat = new THREE.MeshStandardMaterial({
+          color: barColor,
+          emissive: 0x000000,
+          roughness: state.archetypeKey === 'corps_kelon' ? 0.22 : 0.42,
+          metalness: state.archetypeKey === 'corps_kelon' ? 0.35 : 0.08
+        });
+        const barMesh = new THREE.Mesh(barGeo, barMat);
+        barMesh.position.set(xPos, yPos, zPos);
+        barMesh.name = "marimbaBar";
+        barMesh.userData = {
+          barIdx: s,
+          midi,
+          name: midiToName(midi),
+          isAcc,
+          barLen,
+          baseY: yPos,
+          baseColor: barColor
+        };
+        marimbaGroup.add(barMesh);
+        barMeshes.push(barMesh);
+
+        // 2. Chladni Nodal Line Stripes on Top Surface (Nodes at 0.224L, 0.776L, and Center 0.50L for 4f1)
+        if (state.showNodalLines) {
+          const nodePositions = [-0.5 + 0.224, 0.0, -0.5 + 0.776];
+          nodePositions.forEach((nRel, nIdx) => {
+            const stripeGeo = new THREE.PlaneGeometry(barW * 0.94, 0.022);
+            stripeGeo.rotateX(-Math.PI / 2);
+            const stripeCol = nIdx === 1 ? 0x38bdf8 : 0xf59e0b; // Gold = 0.224L fundamental nodes, Cyan = 0.50L 4f1 node
+            const stripeMat = new THREE.MeshBasicMaterial({ color: stripeCol, transparent: true, opacity: 0.65 });
+            const stripe = new THREE.Mesh(stripeGeo, stripeMat);
+            stripe.position.set(xPos, yPos + barThick * 0.51, zPos + nRel * barLen);
+            marimbaGroup.add(stripe);
+          });
+        }
+
+        // 3. Graduated Quarter-Wave Resonator Tube / Cajón / Gourd Beneath Each Bar
+        const pipeLen = Math.max(0.45, (2.65 - prog * 1.85) * (1.0 - (state.plugOffsetMm / 250)));
+        let resMesh;
+        const resMat = new THREE.MeshStandardMaterial({
+          color: arch.tubeHex,
+          emissive: 0x000000,
+          metalness: (arch.resShape === 'brass_cyl' || arch.resShape === 'alu_cyl') ? 0.82 : 0.15,
+          roughness: (arch.resShape === 'brass_cyl' || arch.resShape === 'alu_cyl') ? 0.22 : 0.58
+        });
+
+        if (arch.resShape === 'gourd') {
+          const gourdGeo = new THREE.SphereGeometry(barW * 0.58, 18, 16);
+          gourdGeo.scale(1.0, 1.45, 1.0);
+          resMesh = new THREE.Mesh(gourdGeo, resMat);
+          resMesh.position.set(xPos, yPos - 0.52, zPos);
+        } else if (arch.resShape === 'wood_cajon') {
+          const cajonGeo = new THREE.CylinderGeometry(barW * 0.44, barW * 0.28, pipeLen, 4);
+          cajonGeo.rotateY(Math.PI / 4);
+          resMesh = new THREE.Mesh(cajonGeo, resMat);
+          resMesh.position.set(xPos, yPos - 0.15 - pipeLen / 2, zPos);
+        } else {
+          const cylGeo = new THREE.CylinderGeometry(barW * 0.40, barW * 0.40, pipeLen, 20);
+          resMesh = new THREE.Mesh(cylGeo, resMat);
+          resMesh.position.set(xPos, yPos - 0.15 - pipeLen / 2, zPos);
+        }
+
+        // Add Glowing Charleo Wax Mirliton Ring at the bottom of the resonator when Charleo > 0%
+        if (state.charleoPct > 0) {
+          const charGeo = new THREE.TorusGeometry(barW * 0.22, 0.025, 10, 20);
+          const charMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+          const charRing = new THREE.Mesh(charGeo, charMat);
+          charRing.position.set(xPos, yPos - 0.15 - pipeLen * 0.85, zPos + barW * 0.36);
+          marimbaGroup.add(charRing);
+        }
+
+        marimbaGroup.add(resMesh);
+        resonatorMeshes.push(resMesh);
+      }
+
+      // Frame Rails & Suspension Cords along the 0.224L and 0.776L Nodal Lines
+      const railGeo = new THREE.BoxGeometry(totalNats * natSpacing + 0.8, 0.08, 0.12);
+      const railMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+      [-0.25, 1.55, -1.75, -0.15].forEach((rz, idx) => {
+        const rail = new THREE.Mesh(railGeo, railMat);
+        rail.position.set(0, idx >= 2 ? 0.45 : 0.18, rz);
+        marimbaGroup.add(rail);
+      });
+
+      buildBarLabelsDOM();
+    }
+
+    function buildFourMallets3D() {
+      malletGroups.forEach(g => scene.remove(g));
+      malletGroups = [];
+
+      const yarnColors = [0x38bdf8, 0x0284c7, 0xf59e0b, 0xfbbf24]; // Mallets 1, 2 (Left), 3, 4 (Right)
+      for (let m = 0; m < 4; m++) {
+        const grp = new THREE.Group();
+        const shaftGeo = new THREE.CylinderGeometry(0.028, 0.032, 2.8, 10);
+        shaftGeo.rotateX(Math.PI / 2);
+        shaftGeo.translate(0, 0, 1.4);
+        const shaftMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.4 });
+        grp.add(new THREE.Mesh(shaftGeo, shaftMat));
+
+        const headGeo = new THREE.SphereGeometry(0.13, 16, 14);
+        headGeo.scale(1.0, 0.88, 1.18);
+        const headMat = new THREE.MeshStandardMaterial({
+          color: yarnColors[m],
+          emissive: yarnColors[m],
+          emissiveIntensity: 0.32,
+          roughness: 0.75
+        });
+        grp.add(new THREE.Mesh(headGeo, headMat));
+
+        scene.add(grp);
+        malletGroups.push(grp);
+      }
+    }
+
+    function buildBarLabelsDOM() {
+      const overlay = document.getElementById('barLabelsOverlay');
+      if (!overlay) return;
+      overlay.innerHTML = '';
+
+      barMeshes.forEach((mesh, idx) => {
+        const { name, isAcc } = mesh.userData;
+        const badge = document.createElement('div');
+        badge.id = `barLabel_${idx}`;
+        badge.className = `absolute -translate-x-1/2 -translate-y-1/2 px-1 py-0.2 rounded text-[8.5px] font-mono border ${
+          isAcc ? 'bg-obsidian-950/90 text-amber-300 border-amber-500/40' : 'bg-obsidian-950/85 text-sky-200 border-slate-700'
+        }`;
+        badge.textContent = name;
+        overlay.appendChild(badge);
+      });
+    }
+
+    function update3DSceneAndLabels(nowSec) {
+      const overlay = document.getElementById('barLabelsOverlay');
+      if (overlay) {
+        overlay.style.display = state.showLabels ? 'block' : 'none';
+      }
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const tempVec = new THREE.Vector3();
+
+      barMeshes.forEach((mesh, idx) => {
+        const exc = state.activeBarExcitations[idx];
+        const res = resonatorMeshes[idx];
+        let glow = 0;
+        let yDisp = 0;
+
+        if (exc) {
+          const dt = nowSec - exc.startTime;
+          if (dt >= 0 && dt < 0.95) {
+            const env = Math.exp(-dt * 5.2) * exc.vel;
+            glow = env * 1.35;
+            yDisp = -Math.sin(dt * 65) * env * 0.042;
+          } else if (dt >= 0.95) {
+            delete state.activeBarExcitations[idx];
+          }
+        }
+
+        mesh.position.y = mesh.userData.baseY + yDisp;
+        mesh.material.emissive.setHex(0xf59e0b);
+        mesh.material.emissiveIntensity = glow;
+
+        if (res) {
+          res.material.emissive.setHex(0x38bdf8);
+          res.material.emissiveIntensity = glow * (state.tubeMixPct / 100) * 0.85;
+        }
+
+        if (state.showLabels) {
+          const lbl = document.getElementById(`barLabel_${idx}`);
+          if (lbl) {
+            tempVec.copy(mesh.position);
+            tempVec.z += mesh.userData.barLen * 0.42;
+            tempVec.y += 0.12;
+            tempVec.project(camera);
+            if (tempVec.z < 1.0) {
+              lbl.style.left = `${(tempVec.x * 0.5 + 0.5) * w}px`;
+              lbl.style.top = `${(-(tempVec.y * 0.5) + 0.5) * h}px`;
+            }
+          }
+        }
+      });
+
+      // Animate 4 Yarn Mallets
+      malletGroups.forEach((grp, mIdx) => {
+        const anim = state.malletAnims[mIdx];
+        if (!grp || !anim) return;
+        const dt = nowSec - anim.hitTime;
+        const lift = (dt >= 0 && dt < 0.14) ? Math.sin((dt / 0.14) * Math.PI * 0.5) * 0.48 : 0.52;
+        grp.position.set(anim.x, anim.y + lift, anim.z);
+        grp.rotation.set(-0.26 - lift * 0.32, (mIdx - 1.5) * 0.12, 0);
+      });
+    }
+
+    // =========================================================================
+    // 7. TRIGGER BAR OR 4-MALLET VOICING + TELEMETRY UPDATE
+    // =========================================================================
+    function triggerMarimbaNote(barIdx, options = {}) {
+      const ctx = ensureAudioContext();
+      const safeIdx = ((barIdx % NUM_BARS) + NUM_BARS) % NUM_BARS;
+      const barMesh = barMeshes[safeIdx];
+      if (!barMesh) return;
+
+      state.lastStruckBarIdx = safeIdx;
+      const { midi, name, barLen } = barMesh.userData;
+      const uSpot = options.uSpot !== undefined ? options.uSpot : state.strikeUSpot;
+      const vel = options.vel || 0.90;
+      const voicing = options.voicing || state.malletVoicing;
+      const isCorner = voicing === 'corner_torsion' || options.isCorner || false;
+      const isDead = voicing === 'dead_node' || options.isDeadStroke || false;
+      const isShaft = options.isShaftClick || false;
+
+      const now = ctx.currentTime;
+      const nowSec = performance.now() / 1000;
+
+      const fireSingleBar = (bIdx, delaySec, vScale, malletSlot, customU = uSpot) => {
+        const targetIdx = Math.min(NUM_BARS - 1, Math.max(0, bIdx));
+        const bMesh = barMeshes[targetIdx];
+        if (!bMesh) return;
+        const bMidi = bMesh.userData.midi;
+        const panPos = ((targetIdx / (NUM_BARS - 1)) * 2 - 1) * 0.65;
+
+        synthesizeMarimbaBarStrike(ctx, masterOutNode, now + delaySec, {
+          midi: bMidi,
+          velocity: vel * vScale,
+          uSpot: customU,
+          isCorner,
+          isDeadStroke: isDead,
+          isShaftClick: isShaft,
+          panPos
+        });
+
+        state.activeBarExcitations[targetIdx] = { startTime: nowSec + delaySec, vel: vel * vScale, uSpot: customU };
+        const hitZ = bMesh.position.z + (customU - 0.5) * bMesh.userData.barLen;
+        state.malletAnims[malletSlot % 4] = {
+          hitTime: nowSec + delaySec,
+          x: bMesh.position.x,
+          y: bMesh.position.y + 0.08,
+          z: hitZ
+        };
+      };
+
+      if (voicing === 'stevens_chord' || voicing === 'stevens4') {
+        // 4-Mallet Musser-Stevens Chord (Root, 5th, 10th, Octave+5th)
+        [0, 4, 7, 12].forEach((offset, m) => fireSingleBar(safeIdx + offset, m * 0.008, 0.88, m));
+      } else if (voicing === 'stevens_roll' || voicing === 'roll4') {
+        // Staggered 1-3-2-4 Marimba Ripple Roll
+        const pattern = [
+          { off: 0, dt: 0.00, m: 0 },
+          { off: 7, dt: 0.045, m: 2 },
+          { off: 4, dt: 0.090, m: 1 },
+          { off: 12, dt: 0.135, m: 3 },
+          { off: 0, dt: 0.180, m: 0 },
+          { off: 7, dt: 0.225, m: 2 }
+        ];
+        pattern.forEach(p => fireSingleBar(safeIdx + p.off, p.dt, 0.82, p.m));
+      } else if (voicing === 'dyad3') {
+        fireSingleBar(safeIdx, 0, 0.92, 1);
+        fireSingleBar(safeIdx + 4, 0.008, 0.86, 2);
+      } else if (voicing === 'dyad5') {
+        fireSingleBar(safeIdx, 0, 0.92, 1);
+        fireSingleBar(safeIdx + 7, 0.008, 0.86, 2);
+      } else if (voicing === 'oct' || voicing === 'octaves') {
+        fireSingleBar(safeIdx, 0, 0.94, 0);
+        fireSingleBar(safeIdx + 12, 0.006, 0.90, 3);
+      } else {
+        const mSlot = safeIdx < 8 ? 0 : (safeIdx < 13 ? 1 : (safeIdx < 18 ? 2 : 3));
+        fireSingleBar(safeIdx, 0, 1.0, mSlot, voicing === 'dead_node' ? 0.224 : (voicing === 'corner_torsion' ? 0.04 : uSpot));
+      }
+
+      updateBarPhysicsReadouts(midi, name, voicing === 'dead_node' ? 0.224 : uSpot, isCorner);
+    }
+
+    function updateBarPhysicsReadouts(midi = state.octaveBaseMidi, name = "C3", uSpot = state.strikeUSpot, isCorner = false) {
+      const f1 = midiToFreq(midi, state.a4Hz);
+      const phys = computeBarAndResonatorPhysics(f1, uSpot, isCorner);
+
+      document.getElementById('hdrModalRatios').textContent =
+        `Modes: 1.00 : ${phys.r2.toFixed(2)} : ${phys.r3.toFixed(2)} | Node: 0.224L`;
+
+      const elF1 = document.getElementById('readoutF1');
+      const elF2 = document.getElementById('readoutF2');
+      const elF3 = document.getElementById('readoutF3');
+      if (elF1) elF1.textContent = `${phys.f1.toFixed(1)} Hz`;
+      if (elF2) elF2.textContent = `${phys.f2.toFixed(0)} Hz`;
+      if (elF3) elF3.textContent = `${phys.f3.toFixed(0)} Hz`;
+
+      const elA1 = document.getElementById('readoutAmp1');
+      const elA2 = document.getElementById('readoutAmp2');
+      const elA3 = document.getElementById('readoutAmp3');
+      if (elA1) elA1.textContent = `Amp: ${Math.round(phys.ampMode1 * 100)}%`;
+      if (elA2) elA2.textContent = `${phys.r2.toFixed(2)}× (${Math.round(phys.ampMode2 * 100)}%)`;
+      if (elA3) elA3.textContent = `${phys.r3.toFixed(2)}× (${Math.round(phys.ampMode3 * 100)}%)`;
+
+      const elPipeLen = document.getElementById('readoutPipeLen');
+      const elPipeLock = document.getElementById('readoutPipeLock');
+      if (elPipeLen) elPipeLen.textContent = `${phys.idealPipeLenCm.toFixed(1)} cm`;
+      if (elPipeLock) elPipeLock.textContent = `${Math.round(phys.pipeLockFactor * 100)}% Locked`;
+
+      const spotName = Math.abs(uSpot - 0.224) < 0.04 || Math.abs(uSpot - 0.776) < 0.04
+        ? "Node 0.224L (Muted f1)"
+        : (Math.abs(uSpot - 0.50) < 0.04 ? "Center 0.50L (No 4f1)" : (uSpot < 0.10 ? "Corner Torsional" : `Sweet ${uSpot.toFixed(2)}L`));
+
+      const tele = document.getElementById('lastStrikeTelemetry');
+      if (tele) {
+        tele.textContent = `Bar: ${name} (${f1.toFixed(1)} Hz) • ${spotName} • f2=${Math.round(phys.f2)} Hz (${phys.r2.toFixed(2)}×)`;
+      }
+
+      drawArchProfileCanvas(uSpot, phys);
+    }
+
+    // =========================================================================
+    // 8. 2D ARCH PROFILE CANVAS & REAL-TIME SPECTRUM RENDERER
+    // =========================================================================
+    const archCanvas = document.getElementById('archProfileCanvas');
+    const archCtx = archCanvas.getContext('2d');
+    const specCanvas = document.getElementById('spectrumCanvas');
+    const specCtx = specCanvas.getContext('2d');
+    const fftBins = new Uint8Array(128);
+    const timeBins = new Uint8Array(128);
+
+    function drawArchProfileCanvas(uSpot, phys) {
+      if (!archCanvas) return;
+      const w = archCanvas.clientWidth || 320;
+      const h = archCanvas.clientHeight || 105;
+      if (archCanvas.width !== w) archCanvas.width = w;
+      if (archCanvas.height !== h) archCanvas.height = h;
+
+      archCtx.clearRect(0, 0, w, h);
+
+      const padX = 18;
+      const barW = w - padX * 2;
+      const topY = 26;
+      const fullThick = 34;
+      const archNorm = state.archDepthPct / 100;
+
+      // Draw Arch-Carved Wooden Bar Cross-Section
+      archCtx.beginPath();
+      archCtx.moveTo(padX, topY);
+      archCtx.lineTo(padX + barW, topY);
+      archCtx.lineTo(padX + barW, topY + fullThick);
+
+      for (let i = 40; i >= 0; i--) {
+        const u = i / 40;
+        const x = padX + u * barW;
+        let carve = 0;
+        if (u > 0.16 && u < 0.84) {
+          const s = Math.sin(((u - 0.16) / 0.68) * Math.PI);
+          carve = Math.pow(s, 1.35) * (fullThick * 0.68) * archNorm;
+        }
+        archCtx.lineTo(x, topY + fullThick - carve);
+      }
+      archCtx.closePath();
+      archCtx.fillStyle = 'rgba(180, 83, 9, 0.55)';
+      archCtx.fill();
+      archCtx.strokeStyle = '#f59e0b';
+      archCtx.lineWidth = 1.6;
+      archCtx.stroke();
+
+      // Draw Nodal Suspension Points (0.224L and 0.776L) & Center 4f1 Node (0.50L)
+      const nodes = [
+        { u: 0.224, col: '#f43f5e', lbl: 'Node 0.224L' },
+        { u: 0.500, col: '#38bdf8', lbl: '0.50L (4f1 Node)' },
+        { u: 0.776, col: '#f43f5e', lbl: 'Node 0.776L' }
+      ];
+      nodes.forEach(nd => {
+        const nx = padX + nd.u * barW;
+        archCtx.setLineDash([3, 3]);
+        archCtx.strokeStyle = nd.col;
+        archCtx.beginPath();
+        archCtx.moveTo(nx, 8);
+        archCtx.lineTo(nx, h - 14);
+        archCtx.stroke();
+        archCtx.setLineDash([]);
+
+        archCtx.fillStyle = nd.col;
+        archCtx.font = '8.5px JetBrains Mono';
+        archCtx.textAlign = 'center';
+        archCtx.fillText(nd.lbl, nx, h - 4);
+      });
+
+      // Draw Active Mallet Strike Marker at uSpot
+      const sx = padX + uSpot * barW;
+      archCtx.beginPath();
+      archCtx.arc(sx, topY - 6, 5.5, 0, Math.PI * 2);
+      archCtx.fillStyle = '#10b981';
+      archCtx.fill();
+      archCtx.strokeStyle = '#ffffff';
+      archCtx.lineWidth = 1.5;
+      archCtx.stroke();
+    }
+
+    function initViewportPointerControls() {
+      const container = document.getElementById('webglContainer');
+
+      container.addEventListener('pointerdown', (e) => {
+        const rect = container.getBoundingClientRect();
+        mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouseVec, camera);
+        const hits = raycaster.intersectObjects(barMeshes, false);
+
+        if (hits.length > 0) {
+          const hit = hits[0];
+          const barMesh = hit.object;
+          const { barIdx, barLen } = barMesh.userData;
+
+          // Calculate exact longitudinal strike spot uSpot = x/L in [0.02, 0.98] from 3D hit point!
+          const localPt = barMesh.worldToLocal(hit.point.clone());
+          const uHit = Math.max(0.03, Math.min(0.97, (localPt.z / barLen) + 0.5));
+          const isCornerHit = Math.abs(localPt.x) > 0.16 && (uHit < 0.12 || uHit > 0.88);
+
+          state.strikeUSpot = uHit;
+          document.getElementById('lblStrikeCoord').textContent = `x/L = ${uHit.toFixed(2)}`;
+          triggerMarimbaNote(barIdx, { uSpot: uHit, isCorner: isCornerHit, vel: 0.92 });
+          return;
+        }
+
+        camOrbit.isDragging = true;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!camOrbit.isDragging) return;
+        const dx = e.clientX - camOrbit.lastX;
+        const dy = e.clientY - camOrbit.lastY;
+        camOrbit.lastX = e.clientX;
+        camOrbit.lastY = e.clientY;
+
+        camOrbit.targetTheta -= dx * 0.007;
+        camOrbit.targetPhi = Math.max(0.15, Math.min(Math.PI - 0.18, camOrbit.targetPhi - dy * 0.007));
+      });
+
+      window.addEventListener('pointerup', () => {
+        camOrbit.isDragging = false;
+      });
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camOrbit.targetRadius = Math.max(5.5, Math.min(17.5, camOrbit.targetRadius + e.deltaY * 0.005));
+      }, { passive: false });
+
+      window.addEventListener('resize', () => {
+        if (!renderer || !camera) return;
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    function setCameraPreset(preset) {
+      state.cameraPreset = preset;
+      if (preset === 'player') {
+        camOrbit.targetTheta = 0.0;
+        camOrbit.targetPhi = 0.76;
+        camOrbit.targetRadius = 10.6;
+      } else if (preset === 'arch') {
+        camOrbit.targetTheta = 0.42;
+        camOrbit.targetPhi = 1.48;
+        camOrbit.targetRadius = 8.4;
+      } else if (preset === 'tubes') {
+        camOrbit.targetTheta = -0.35;
+        camOrbit.targetPhi = 1.72;
+        camOrbit.targetRadius = 10.4;
+      } else if (preset === 'top') {
+        camOrbit.targetTheta = 0.0;
+        camOrbit.targetPhi = 0.18;
+        camOrbit.targetRadius = 10.8;
+      }
+
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        const active = btn.getAttribute('data-cam') === preset;
+        btn.className = active
+          ? 'cam-btn px-2 py-1 rounded-lg text-[11px] font-mono font-semibold bg-amber-500 text-slate-950 transition'
+          : 'cam-btn px-2 py-1 rounded-lg text-[11px] font-mono text-slate-300 hover:bg-obsidian-800 transition';
+      });
+    }
+
+    function renderLoop(nowMs) {
+      const nowSec = nowMs / 1000;
+
+      camOrbit.theta += (camOrbit.targetTheta - camOrbit.theta) * 0.12;
+      camOrbit.phi += (camOrbit.targetPhi - camOrbit.phi) * 0.12;
+      camOrbit.radius += (camOrbit.targetRadius - camOrbit.radius) * 0.12;
+
+      if (camera) {
+        camera.position.x = camOrbit.radius * Math.sin(camOrbit.phi) * Math.sin(camOrbit.theta);
+        camera.position.y = camOrbit.radius * Math.cos(camOrbit.phi);
+        camera.position.z = camOrbit.radius * Math.sin(camOrbit.phi) * Math.cos(camOrbit.theta);
+        camera.lookAt(0, camOrbit.lookY, 0);
+      }
+
+      update3DSceneAndLabels(nowSec);
+      if (renderer && scene && camera) {
+        renderer.render(scene, camera);
+      }
+
+      if (specCanvas && specCanvas.offsetParent !== null) {
+        const w = specCanvas.clientWidth || 320;
+        const h = specCanvas.clientHeight || 110;
+        if (specCanvas.width !== w) specCanvas.width = w;
+        if (specCanvas.height !== h) specCanvas.height = h;
+
+        specCtx.clearRect(0, 0, w, h);
+        if (analyserNode) {
+          analyserNode.getByteFrequencyData(fftBins);
+          analyserNode.getByteTimeDomainData(timeBins);
+
+          const barW = w / 48;
+          for (let i = 0; i < 48; i++) {
+            const v = fftBins[i] / 255;
+            const bh = v * (h * 0.80);
+            specCtx.fillStyle = i < 10 ? 'rgba(245, 158, 11, 0.82)' : (i < 26 ? 'rgba(56, 189, 248, 0.72)' : 'rgba(192, 132, 252, 0.70)');
+            specCtx.fillRect(i * barW, h - bh, barW - 1.5, bh);
+          }
+
+          specCtx.beginPath();
+          specCtx.strokeStyle = '#10b981';
+          specCtx.lineWidth = 1.5;
+          for (let i = 0; i < 64; i++) {
+            const x = (i / 63) * w;
+            const y = (timeBins[i] / 255) * h;
+            if (i === 0) specCtx.moveTo(x, y);
+            else specCtx.lineTo(x, y);
+          }
+          specCtx.stroke();
+        }
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // =========================================================================
+    // 9. SEQUENCER, REPERTOIRE BROWSER & LOSSLESS 44.1kHz WAV EXPORTER
+    // =========================================================================
+    let transportTimerId = null;
+
+    function selectEtudeById(id) {
+      const et = MARIMBA_REPERTOIRE.find(r => r.id === id) || MARIMBA_REPERTOIRE[0];
+      state.selectedEtudeId = et.id;
+      state.customSteps = et.steps.map(s => ({ ...s }));
+      state.currentStepIndex = -1;
+
+      document.getElementById('activeEtudeBadge').textContent = `ETUDE #${et.id}`;
+      document.getElementById('activeEtudeStyle').textContent = et.style;
+      document.getElementById('activeEtudeTitle').textContent = et.name;
+      document.getElementById('activeEtudeDesc').textContent = et.desc;
+
+      renderRepertoireList();
+      renderSequencerSvgAndGrid();
+    }
+
+    function renderSequencerSvgAndGrid() {
+      const steps = state.customSteps;
+      const svg = document.getElementById('sequencerSvg');
+      const grid = document.getElementById('stepGridContainer');
+      if (!svg || !grid) return;
+
+      const W = 680;
+      const padX = 36;
+      const usableW = W - padX * 2;
+      const n = steps.length;
+
+      let svgHtml = `
+        <line x1="16" y1="26" x2="${W - 16}" y2="26" stroke="#1e293b" stroke-width="1" />
+        <line x1="16" y1="52" x2="${W - 16}" y2="52" stroke="#1e293b" stroke-width="1" />
+        <line x1="16" y1="78" x2="${W - 16}" y2="78" stroke="#1e293b" stroke-width="1" />
+      `;
+
+      steps.forEach((st, idx) => {
+        const x = n === 1 ? W / 2 : padX + (idx / (n - 1)) * usableW;
+        const isCurrent = state.currentStepIndex === idx;
+        const y = Math.max(16, 82 - (st.semi % 25) * 2.8);
+        const col = isCurrent ? '#10b981' : (st.voicing === 'roll4' ? '#10b981' : (st.voicing !== 'single' ? '#38bdf8' : '#f59e0b'));
+
+        if (isCurrent) {
+          svgHtml += `<rect x="${x - 14}" y="4" width="28" height="100" rx="5" fill="rgba(16, 185, 129, 0.18)" stroke="#10b981" stroke-width="1" />`;
+        }
+
+        const noteLbl = midiToName(state.octaveBaseMidi + (st.semi % 25));
+        svgHtml += `
+          <g class="cursor-pointer seq-svg-node" data-idx="${idx}">
+            <line x1="${x}" y1="${y}" x2="${x}" y2="88" stroke="${col}" stroke-width="1.5" />
+            <circle cx="${x}" cy="${y}" r="5.5" fill="${col}" />
+            <text x="${x}" y="101" text-anchor="middle" fill="${col}" font-size="9" font-family="JetBrains Mono" font-weight="bold">${noteLbl}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+      svg.querySelectorAll('.seq-svg-node').forEach(el => {
+        el.addEventListener('click', () => auditionStep(parseInt(el.getAttribute('data-idx'), 10)));
+      });
+
+      grid.innerHTML = '';
+      steps.forEach((st, idx) => {
+        const isCurrent = state.currentStepIndex === idx;
+        const noteLbl = midiToName(state.octaveBaseMidi + (st.semi % 25));
+        const vShort = st.voicing.slice(0, 6).toUpperCase();
+
+        const card = document.createElement('div');
+        card.className = `rounded-xl border p-1.5 transition flex flex-col justify-between gap-1 ${
+          isCurrent ? 'step-active bg-emerald-500/20 border-emerald-400 text-white' : 'bg-obsidian-900/90 border-slate-800 text-slate-200'
+        }`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-[9px] font-mono text-slate-400">
+            <span>#${idx + 1}</span>
+            <span class="text-sky-300">${vShort}</span>
+          </div>
+          <button type="button" data-step-play="${idx}" class="py-0.5 text-center font-mono text-sm font-extrabold text-amber-300 hover:text-white">
+            ${noteLbl}
+          </button>
+          <div class="flex gap-1">
+            <button type="button" data-step-pitch="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-950 text-[8px] font-mono text-slate-300 border border-slate-700">Bar+</button>
+            <button type="button" data-step-voice="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-950 text-[8px] font-mono text-purple-300 border border-slate-700">Voice</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll('button[data-step-play]').forEach(btn => {
+        btn.addEventListener('click', () => auditionStep(parseInt(btn.getAttribute('data-step-play'), 10)));
+      });
+      grid.querySelectorAll('button[data-step-pitch]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-step-pitch'), 10);
+          state.customSteps[idx].semi = (state.customSteps[idx].semi + 1) % 25;
+          auditionStep(idx);
+          renderSequencerSvgAndGrid();
+        });
+      });
+      grid.querySelectorAll('button[data-step-voice]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-step-voice'), 10);
+          const order = ['single', 'dyad3', 'dyad5', 'oct', 'stevens4', 'roll4', 'dead_node', 'corner_torsion'];
+          const cur = state.customSteps[idx].voicing;
+          state.customSteps[idx].voicing = order[(order.indexOf(cur) + 1) % order.length];
+          auditionStep(idx);
+          renderSequencerSvgAndGrid();
+        });
+      });
+    }
+
+    function auditionStep(idx) {
+      const st = state.customSteps[idx];
+      if (!st) return;
+      state.currentStepIndex = idx;
+      triggerMarimbaNote(st.semi % 25, {
+        voicing: st.voicing,
+        uSpot: st.uSpot || 0.34,
+        vel: st.vel || 0.90
+      });
+      renderSequencerSvgAndGrid();
+    }
+
+    function startTransport() {
+      ensureAudioContext();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.currentStepIndex = -1;
+
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.add('playing-glow');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP';
+
+      scheduleNextTransportStep();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (transportTimerId) {
+        clearTimeout(transportTimerId);
+        transportTimerId = null;
+      }
+      state.currentStepIndex = -1;
+      const btn = document.getElementById('btnPlayToggle');
+      btn.classList.remove('playing-glow');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'PLAY';
+      renderSequencerSvgAndGrid();
+    }
+
+    function scheduleNextTransportStep() {
+      if (!state.isPlaying) return;
+      state.currentStepIndex = (state.currentStepIndex + 1) % state.customSteps.length;
+      const step = state.customSteps[state.currentStepIndex];
+      const baseStepSec = (60 / state.bpm) * 0.25;
+      const stepDurSec = baseStepSec * (step.dur || 1.0);
+
+      auditionStep(state.currentStepIndex);
+      transportTimerId = setTimeout(scheduleNextTransportStep, stepDurSec * 1000);
+    }
+
+    function applyMarimbaArchetype(key, triggerSample = true) {
+      const arch = MARIMBA_ARCHETYPES[key];
+      if (!arch) return;
+      state.archetypeKey = key;
+      state.archDepthPct = arch.archDepth;
+      state.tubeMixPct = arch.tubeMix;
+      state.charleoPct = arch.charleo;
+      state.barSustainPct = arch.sustain;
+      state.a4Hz = arch.a4;
+      state.malletType = arch.mallet;
+
+      document.getElementById('hdrActiveArchetype').textContent = arch.name;
+      document.getElementById('sliderArchDepth').value = state.archDepthPct;
+      document.getElementById('valArchDepth').textContent = `${state.archDepthPct}%`;
+      document.getElementById('sliderTubeMix').value = state.tubeMixPct;
+      document.getElementById('valTubeMix').textContent = `${state.tubeMixPct}%`;
+      document.getElementById('sliderCharleo').value = state.charleoPct;
+      document.getElementById('valCharleo').textContent = `${state.charleoPct}%`;
+      document.getElementById('sliderBarSustain').value = state.barSustainPct;
+      document.getElementById('valBarSustain').textContent = `${state.barSustainPct}%`;
+      document.getElementById('sliderA4Pitch').value = state.a4Hz;
+      document.getElementById('valA4Pitch').textContent = `${state.a4Hz} Hz`;
+      document.getElementById('selectMalletType').value = state.malletType;
+
+      renderArchetypeGrid();
+      buildMarimba3DModel();
+      renderQuickBarStrip();
+      updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+
+      if (triggerSample) {
+        triggerMarimbaNote(0, { voicing: 'dyad5', vel: 0.92 });
+        showToast(`Loaded ${arch.short}`);
+      }
+    }
+
+    function renderArchetypeGrid() {
+      const grid = document.getElementById('archetypeGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      Object.entries(MARIMBA_ARCHETYPES).forEach(([key, arch]) => {
+        const active = state.archetypeKey === key;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2 rounded-xl border text-left transition ${
+          active ? 'bg-amber-500/20 border-amber-400 text-white shadow-sm' : 'bg-obsidian-950/80 hover:bg-obsidian-900 border-slate-800 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="text-[11px] font-bold truncate">${arch.short}</div>
+          <div class="text-[9px] font-mono text-slate-400 truncate mt-0.5">Arch ${arch.archDepth}% • Charleo ${arch.charleo}%</div>
+        `;
+        btn.addEventListener('click', () => applyMarimbaArchetype(key, true));
+        grid.appendChild(btn);
+      });
+    }
+
+    function renderQuickBarStrip() {
+      const strip = document.getElementById('quickBarStrip');
+      if (!strip) return;
+      strip.innerHTML = '';
+
+      const diatonicSemis = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24];
+      diatonicSemis.forEach((semi) => {
+        const midi = state.octaveBaseMidi + semi;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-2 py-1 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700 text-[10px] font-mono text-amber-300 transition';
+        btn.textContent = midiToName(midi);
+        btn.addEventListener('click', () => triggerMarimbaNote(semi, { vel: 0.92 }));
+        strip.appendChild(btn);
+      });
+    }
+
+    function renderRepertoireList() {
+      const container = document.getElementById('repertoireListContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      MARIMBA_REPERTOIRE.forEach((et) => {
+        const active = et.id === state.selectedEtudeId;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2 rounded-xl border transition flex items-center justify-between gap-2 ${
+          active ? 'bg-amber-500/20 border-amber-400 text-white' : 'bg-obsidian-950/75 hover:bg-obsidian-800 border-slate-800 text-slate-300'
+        }`;
+        btn.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[10px] font-bold text-amber-400">#${et.id}</span>
+              <span class="text-xs font-bold truncate">${et.name}</span>
+            </div>
+            <div class="text-[10px] text-slate-400 truncate">${et.style}</div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-obsidian-900 text-sky-300 border border-slate-800 shrink-0">Load</span>
+        `;
+        btn.addEventListener('click', () => {
+          selectEtudeById(et.id);
+          auditionStep(0);
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels;
+      const sampleRate = audioBuffer.sampleRate;
+      const numFrames = audioBuffer.length;
+      const blockAlign = numChannels * 2;
+      const dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(buffer);
+
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      };
+
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const channels = [];
+      for (let c = 0; c < numChannels; c++) channels.push(audioBuffer.getChannelData(c));
+
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function renderAndDownloadWav({ title, mode = 'loop', oneShotType = 'sweet_spot' }) {
+      const sampleRate = 44100;
+      const baseStepSec = (60 / state.bpm) * 0.25;
+
+      let totalDurationSec = 2.4;
+      if (mode === 'loop') {
+        let barSec = 0;
+        state.customSteps.forEach(s => { barSec += baseStepSec * (s.dur || 1); });
+        totalDurationSec = Math.max(2.2, barSec * 2 + 1.5);
+      } else if (mode === 'chorale') {
+        totalDurationSec = 4.8;
+      }
+
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offlineCtx = new OfflineCtx(2, Math.ceil(totalDurationSec * sampleRate), sampleRate);
+
+      const baseM = state.octaveBaseMidi;
+
+      if (mode === 'oneshot') {
+        const t0 = 0.05;
+        if (oneShotType === 'sweet_spot') {
+          synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0, { midi: baseM, velocity: 0.95, uSpot: 0.34 });
+        } else if (oneShotType === 'center_hit') {
+          synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0, { midi: baseM, velocity: 0.95, uSpot: 0.50 });
+        } else if (oneShotType === 'node_deadspot') {
+          synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0, { midi: baseM, velocity: 0.95, uSpot: 0.224 });
+        } else if (oneShotType === 'corner_torsion') {
+          synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0, { midi: baseM, velocity: 0.95, uSpot: 0.04, isCorner: true });
+        } else if (oneShotType === 'stevens_chord') {
+          [0, 4, 7, 12].forEach((off, i) => {
+            synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0 + i * 0.01, { midi: baseM + off, velocity: 0.90, uSpot: 0.34, panPos: (i - 1.5) * 0.3 });
+          });
+        } else if (oneShotType === 'charleo_buzz') {
+          const prevChar = state.charleoPct;
+          state.charleoPct = Math.max(85, prevChar);
+          synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0, { midi: baseM, velocity: 0.95, uSpot: 0.34 });
+          synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, t0 + 0.01, { midi: baseM + 4, velocity: 0.90, uSpot: 0.34 });
+          state.charleoPct = prevChar;
+        }
+      } else if (mode === 'chorale') {
+        const chords = [[0, 4, 7, 12], [5, 9, 12, 17], [7, 11, 14, 19], [0, 7, 12, 16]];
+        chords.forEach((ch, cIdx) => {
+          const cStart = 0.06 + cIdx * 1.05;
+          for (let r = 0; r < 8; r++) {
+            const noteOff = ch[r % 4];
+            synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, cStart + r * 0.11, {
+              midi: baseM + noteOff,
+              velocity: 0.82,
+              uSpot: 0.34,
+              panPos: ((r % 4) - 1.5) * 0.3
+            });
+          }
+        });
+      } else {
+        let cursor = 0.06;
+        for (let b = 0; b < 2; b++) {
+          state.customSteps.forEach((st) => {
+            const dur = baseStepSec * (st.dur || 1);
+            const m = baseM + (st.semi % 25);
+            const u = st.voicing === 'dead_node' ? 0.224 : (st.voicing === 'corner_torsion' ? 0.04 : (st.uSpot || 0.34));
+            synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, cursor, {
+              midi: m,
+              velocity: st.vel || 0.90,
+              uSpot: u,
+              isCorner: st.voicing === 'corner_torsion',
+              panPos: (((st.semi % 25) / 24) * 2 - 1) * 0.6
+            });
+            if (st.voicing === 'dyad3') {
+              synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, cursor + 0.008, { midi: m + 4, velocity: 0.84, uSpot: u });
+            } else if (st.voicing === 'dyad5') {
+              synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, cursor + 0.008, { midi: m + 7, velocity: 0.84, uSpot: u });
+            } else if (st.voicing === 'oct') {
+              synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, cursor + 0.006, { midi: m + 12, velocity: 0.88, uSpot: u });
+            } else if (st.voicing === 'stevens4' || st.voicing === 'roll4') {
+              [4, 7, 12].forEach((off, i) => {
+                synthesizeMarimbaBarStrike(offlineCtx, offlineCtx.destination, cursor + (i + 1) * 0.032, { midi: m + off, velocity: 0.82, uSpot: u });
+              });
+            }
+            cursor += dur;
+          });
+        }
+      }
+
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${state.bpm}bpm.wav`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = safeFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      state.renderedVault.unshift({ name: safeFilename, url });
+      renderSampleVaultUI();
+      showToast(`Exported 44.1kHz WAV: ${safeFilename}`);
+    }
+
+    function renderSampleVaultUI() {
+      const container = document.getElementById('sampleVaultList');
+      document.getElementById('vaultCountLabel').textContent = `${state.renderedVault.length} files`;
+      if (state.renderedVault.length === 0) return;
+
+      container.innerHTML = '';
+      state.renderedVault.slice(0, 6).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'bg-obsidian-900 border border-slate-800 rounded-lg p-1.5 space-y-1';
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[10px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[9px] font-mono shrink-0">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastText');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('hidden');
+      clearTimeout(banner._hideTimer);
+      banner._hideTimer = setTimeout(() => banner.classList.add('hidden'), 2600);
+    }
+
+    // =========================================================================
+    // 10. UI EVENT LISTENERS & KEYBOARD SHORTCUTS
+    // =========================================================================
+    function initAllListeners() {
+      // Left Dock Tabs
+      document.querySelectorAll('.left-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-left-tab');
+          document.getElementById('leftTabInstruments').classList.toggle('hidden', target !== 'instruments');
+          document.getElementById('leftTabInstruments').classList.toggle('flex', target === 'instruments');
+          document.getElementById('leftTabBarphysics').classList.toggle('hidden', target !== 'barphysics');
+          document.getElementById('leftTabBarphysics').classList.toggle('flex', target === 'barphysics');
+          document.getElementById('leftTabResonators').classList.toggle('hidden', target !== 'resonators');
+          document.getElementById('leftTabResonators').classList.toggle('flex', target === 'resonators');
+
+          document.querySelectorAll('.left-tab-btn').forEach(b => {
+            const active = b.getAttribute('data-left-tab') === target;
+            b.className = active
+              ? 'left-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-amber-500 text-slate-950 transition'
+              : 'left-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition';
+          });
+          updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+        });
+      });
+
+      // Right Dock Tabs
+      document.querySelectorAll('.right-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-right-tab');
+          document.getElementById('rightTabSequencer').classList.toggle('hidden', target !== 'sequencer');
+          document.getElementById('rightTabSequencer').classList.toggle('flex', target === 'sequencer');
+          document.getElementById('rightTabRepertoire').classList.toggle('hidden', target !== 'repertoire');
+          document.getElementById('rightTabRepertoire').classList.toggle('flex', target === 'repertoire');
+          document.getElementById('rightTabExport').classList.toggle('hidden', target !== 'export');
+          document.getElementById('rightTabExport').classList.toggle('flex', target === 'export');
+
+          document.querySelectorAll('.right-tab-btn').forEach(b => {
+            const active = b.getAttribute('data-right-tab') === target;
+            b.className = active
+              ? 'right-tab-btn py-1.5 rounded-lg text-[11px] font-bold bg-sky-500 text-slate-950 transition'
+              : 'right-tab-btn py-1.5 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-white transition';
+          });
+        });
+      });
+
+      // Dock Collapse Toggles
+      let leftOpen = true, rightOpen = true;
+      document.getElementById('btnToggleLeftDock').addEventListener('click', () => {
+        leftOpen = !leftOpen;
+        document.getElementById('leftDock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-108%)';
+      });
+      document.getElementById('btnToggleRightDock').addEventListener('click', () => {
+        rightOpen = !rightOpen;
+        document.getElementById('rightDock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(108%)';
+      });
+
+      // Camera Presets, Octave Register, Nodal Lines & Labels
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        btn.addEventListener('click', () => setCameraPreset(btn.getAttribute('data-cam')));
+      });
+
+      document.getElementById('selectOctaveBase').addEventListener('change', (e) => {
+        state.octaveBaseMidi = parseInt(e.target.value, 10);
+        buildMarimba3DModel();
+        renderQuickBarStrip();
+        renderSequencerSvgAndGrid();
+        triggerMarimbaNote(0, { vel: 0.92 });
+      });
+
+      document.getElementById('btnToggleNodalLines').addEventListener('click', (e) => {
+        state.showNodalLines = !state.showNodalLines;
+        e.currentTarget.textContent = `Chladni Nodes: ${state.showNodalLines ? 'ON' : 'OFF'}`;
+        buildMarimba3DModel();
+      });
+
+      document.getElementById('btnToggleLabels').addEventListener('click', (e) => {
+        state.showLabels = !state.showLabels;
+        e.currentTarget.textContent = `Labels: ${state.showLabels ? 'ON' : 'OFF'}`;
+      });
+
+      // Bar Strike Zone Preset Buttons
+      document.querySelectorAll('.zone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const z = btn.getAttribute('data-zone');
+          state.strikeZonePreset = z;
+          if (z === 'sweet') state.strikeUSpot = 0.34;
+          else if (z === 'center') state.strikeUSpot = 0.50;
+          else if (z === 'node') state.strikeUSpot = 0.224;
+          else if (z === 'corner') state.strikeUSpot = 0.04;
+
+          const lblMap = {
+            sweet: 'Off-Center Sweet Spot (0.34L)',
+            center: 'Center Antinode (0.50L — No 4f1)',
+            node: 'Suspension Node (0.224L — Muted f1)',
+            corner: 'Corner Edge (Torsional Modes)'
+          };
+          document.getElementById('lblActiveStrikeZone').textContent = lblMap[z];
+          document.querySelectorAll('.zone-btn').forEach(b => {
+            const active = b.getAttribute('data-zone') === z;
+            b.className = active
+              ? 'zone-btn py-1.5 rounded-lg border text-[10px] font-bold bg-sky-500/20 border-sky-400 text-white transition'
+              : 'zone-btn py-1.5 rounded-lg border text-[10px] font-medium bg-obsidian-900 border-slate-800 text-slate-300 transition';
+          });
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: state.strikeUSpot, isCorner: z === 'corner', vel: 0.94 });
+        });
+      });
+
+      // Interactive Click on 2D Arch Profile Canvas
+      archCanvas.addEventListener('pointerdown', (e) => {
+        const rect = archCanvas.getBoundingClientRect();
+        const uClick = Math.max(0.03, Math.min(0.97, (e.clientX - rect.left - 18) / (rect.width - 36)));
+        state.strikeUSpot = uClick;
+        document.getElementById('lblStrikeCoord').textContent = `x/L = ${uClick.toFixed(2)}`;
+        triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: uClick, isCorner: uClick < 0.08 || uClick > 0.92, vel: 0.94 });
+      });
+
+      document.getElementById('selectMalletType').addEventListener('change', (e) => {
+        state.malletType = e.target.value;
+        triggerMarimbaNote(state.lastStruckBarIdx, { vel: 0.92 });
+      });
+
+      document.getElementById('selectMalletVoicing').addEventListener('change', (e) => {
+        state.malletVoicing = e.target.value;
+        triggerMarimbaNote(state.lastStruckBarIdx, { voicing: state.malletVoicing, vel: 0.92 });
+      });
+
+      document.getElementById('btnWildcardMarimba').addEventListener('click', () => {
+        const keys = Object.keys(MARIMBA_ARCHETYPES);
+        applyMarimbaArchetype(keys[Math.floor(Math.random() * keys.length)], true);
+      });
+
+      // Sliders: Arch Depth, Tube Mix, Charleo, Sustain, A4 Pitch, Torsional, Room Temp, Plug Offset, Hall Reverb
+      document.getElementById('sliderArchDepth').addEventListener('input', (e) => {
+        state.archDepthPct = parseInt(e.target.value, 10);
+        const tag = state.archDepthPct > 85 ? '1:4:10' : (state.archDepthPct > 50 ? '1:3:6' : 'Uncut');
+        document.getElementById('valArchDepth').textContent = `${state.archDepthPct}% (${tag})`;
+        buildMarimba3DModel();
+        updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+      });
+
+      document.getElementById('sliderTubeMix').addEventListener('input', (e) => {
+        state.tubeMixPct = parseInt(e.target.value, 10);
+        document.getElementById('valTubeMix').textContent = `${state.tubeMixPct}%`;
+      });
+
+      document.getElementById('sliderCharleo').addEventListener('input', (e) => {
+        state.charleoPct = parseInt(e.target.value, 10);
+        document.getElementById('valCharleo').textContent = state.charleoPct === 0 ? '0% (Clean)' : `${state.charleoPct}% Buzz`;
+        buildMarimba3DModel();
+      });
+
+      document.getElementById('sliderBarSustain').addEventListener('input', (e) => {
+        state.barSustainPct = parseInt(e.target.value, 10);
+        document.getElementById('valBarSustain').textContent = `${state.barSustainPct}%`;
+      });
+
+      document.getElementById('sliderA4Pitch').addEventListener('input', (e) => {
+        state.a4Hz = parseInt(e.target.value, 10);
+        document.getElementById('valA4Pitch').textContent = `${state.a4Hz} Hz`;
+        updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+      });
+
+      document.getElementById('sliderTorsional').addEventListener('input', (e) => {
+        state.torsionalPct = parseInt(e.target.value, 10);
+        document.getElementById('valTorsional').textContent = `${state.torsionalPct}%`;
+      });
+
+      document.getElementById('sliderRoomTemp').addEventListener('input', (e) => {
+        state.roomTempC = parseInt(e.target.value, 10);
+        const c = (331.3 + 0.606 * state.roomTempC).toFixed(1);
+        document.getElementById('valRoomTemp').textContent = `${state.roomTempC}°C (c = ${c} m/s)`;
+        updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+      });
+
+      document.getElementById('sliderPlugOffset').addEventListener('input', (e) => {
+        state.plugOffsetMm = parseInt(e.target.value, 10);
+        document.getElementById('valPlugOffset').textContent = `${state.plugOffsetMm >= 0 ? '+' : ''}${state.plugOffsetMm} mm`;
+        buildMarimba3DModel();
+        updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+      });
+
+      document.getElementById('btnAutoTunePlugs').addEventListener('click', () => {
+        // Compensate stop-plug offset for room temperature delta from 22°C
+        state.plugOffsetMm = Math.round((state.roomTempC - 22) * 1.15);
+        document.getElementById('sliderPlugOffset').value = state.plugOffsetMm;
+        document.getElementById('valPlugOffset').textContent = `${state.plugOffsetMm >= 0 ? '+' : ''}${state.plugOffsetMm} mm`;
+        buildMarimba3DModel();
+        updateBarPhysicsReadouts(state.octaveBaseMidi, midiToName(state.octaveBaseMidi), state.strikeUSpot);
+        triggerMarimbaNote(0, { vel: 0.92 });
+        showToast('Resonator stop plugs matched to hall temperature!');
+      });
+
+      document.getElementById('sliderHallReverb').addEventListener('input', (e) => {
+        state.hallReverbPct = parseInt(e.target.value, 10);
+        document.getElementById('valHallReverb').textContent = `${state.hallReverbPct}%`;
+        if (reverbWetGain && audioCtx) {
+          reverbWetGain.gain.setValueAtTime((state.hallReverbPct / 100) * 0.38, audioCtx.currentTime);
+        }
+      });
+
+      // Transport Controls
+      document.getElementById('btnPlayToggle').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        else startTransport();
+      });
+      document.getElementById('btnStepOnce').addEventListener('click', () => {
+        if (state.isPlaying) stopTransport();
+        auditionStep((state.currentStepIndex + 1) % state.customSteps.length);
+      });
+      document.getElementById('sliderBpm').addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value, 10);
+        document.getElementById('bpmReadout').textContent = state.bpm;
+      });
+
+      let tapTimes = [];
+      document.getElementById('btnTapTempo').addEventListener('click', () => {
+        const now = performance.now();
+        tapTimes = tapTimes.filter(t => now - t < 2500);
+        tapTimes.push(now);
+        if (tapTimes.length >= 2) {
+          let sum = 0;
+          for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i - 1]);
+          state.bpm = Math.max(45, Math.min(210, Math.round(60000 / (sum / (tapTimes.length - 1)))));
+          document.getElementById('bpmReadout').textContent = state.bpm;
+          document.getElementById('sliderBpm').value = state.bpm;
+        }
+        triggerMarimbaNote(0, { vel: 0.90 });
+      });
+
+      document.getElementById('btnRandomEtude').addEventListener('click', () => {
+        const pick = MARIMBA_REPERTOIRE[Math.floor(Math.random() * MARIMBA_REPERTOIRE.length)];
+        selectEtudeById(pick.id);
+        auditionStep(0);
+        showToast(`Loaded Etude #${pick.id}: ${pick.name}`);
+      });
+
+      document.getElementById('btnResetEtude').addEventListener('click', () => {
+        selectEtudeById(state.selectedEtudeId);
+        showToast('Restored canonical etude');
+      });
+
+      // Bottom Articulation Deck Buttons
+      document.getElementById('btnTrigSweetSpot').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.34, voicing: 'single', vel: 0.95 }));
+      document.getElementById('btnTrigCenter').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.50, voicing: 'single', vel: 0.95 }));
+      document.getElementById('btnTrigNode').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.224, voicing: 'dead_node', vel: 0.95 }));
+      document.getElementById('btnTrigCorner').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.04, voicing: 'corner_torsion', isCorner: true, vel: 0.95 }));
+      document.getElementById('btnTrig4Chord').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.34, voicing: 'stevens4', vel: 0.95 }));
+      document.getElementById('btnTrigRippleRoll').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.34, voicing: 'roll4', vel: 0.92 }));
+      document.getElementById('btnTrigShaftClick').addEventListener('click', () => triggerMarimbaNote(state.lastStruckBarIdx, { isShaftClick: true, vel: 0.95 }));
+
+      // Computer Keyboard Piano Mapping (A S D F G H J K L = Naturals; W E T Y U O P = Accidentals)
+      const keyToSemi = {
+        a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15
+      };
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        const k = e.key.toLowerCase();
+        if (k === ' ') {
+          e.preventDefault();
+          if (state.isPlaying) stopTransport();
+          else startTransport();
+        } else if (keyToSemi[k] !== undefined) {
+          triggerMarimbaNote(keyToSemi[k], { vel: 0.92 });
+        } else if (k === 'z') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.34, voicing: 'single', vel: 0.95 });
+        } else if (k === 'x') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.50, voicing: 'single', vel: 0.95 });
+        } else if (k === 'n') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.224, voicing: 'dead_node', vel: 0.95 });
+        } else if (k === 'v') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.04, voicing: 'corner_torsion', isCorner: true, vel: 0.95 });
+        } else if (k === 'c') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.34, voicing: 'stevens4', vel: 0.95 });
+        } else if (k === 'r') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { uSpot: 0.34, voicing: 'roll4', vel: 0.92 });
+        } else if (k === 'b') {
+          triggerMarimbaNote(state.lastStruckBarIdx, { isShaftClick: true, vel: 0.95 });
+        }
+      });
+
+      // WAV Exporters
+      const exportLoopFn = () => {
+        const et = MARIMBA_REPERTOIRE.find(r => r.id === state.selectedEtudeId) || MARIMBA_REPERTOIRE[0];
+        renderAndDownloadWav({ title: `marimba3d_${state.archetypeKey}_${et.name}`, mode: 'loop' });
+      };
+      document.getElementById('btnQuickExportWav').addEventListener('click', exportLoopFn);
+      document.getElementById('btnExportLoopWav').addEventListener('click', exportLoopFn);
+      document.getElementById('btnExportChoraleWav').addEventListener('click', () => {
+        renderAndDownloadWav({ title: `marimba3d_${state.archetypeKey}_4mallet_chorale`, mode: 'chorale' });
+      });
+
+      document.querySelectorAll('.oneshot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const shot = btn.getAttribute('data-oneshot');
+          renderAndDownloadWav({ title: `marimba3d_${state.archetypeKey}_${shot}`, mode: 'oneshot', oneShotType: shot });
+        });
+      });
+
+      document.getElementById('btnExportJsonPreset').addEventListener('click', () => {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          lab: "MARIMBA-3D Arch-Carved Bar 1:4:10 & Quarter-Wave Resonator Lab",
+          archetype: state.archetypeKey,
+          octaveBaseMidi: state.octaveBaseMidi,
+          physics: {
+            archDepthPct: state.archDepthPct,
+            tubeMixPct: state.tubeMixPct,
+            charleoBuzzPct: state.charleoPct,
+            barSustainPct: state.barSustainPct,
+            a4Hz: state.a4Hz,
+            roomTempC: state.roomTempC,
+            plugOffsetMm: state.plugOffsetMm
+          },
+          etudeId: state.selectedEtudeId,
+          bpm: state.bpm,
+          customSteps: state.customSteps
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `marimba3d_patch_${state.archetypeKey}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Exported JSON Marimba Patch');
+      });
+    }
+
+    // Boot Application
+    window.addEventListener('load', () => {
+      initThreeJsScene();
+      applyMarimbaArchetype('concert_rosewood', false);
+      selectEtudeById(1);
+      initAllListeners();
+      requestAnimationFrame(renderLoop);
+    });
+  </script>
+</body>
+</html>

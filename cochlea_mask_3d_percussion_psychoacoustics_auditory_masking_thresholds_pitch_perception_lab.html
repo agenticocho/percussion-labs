@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>COCHLEA-MASK 3D — Percussion Psychoacoustics, Auditory Masking Thresholds & Pitch Perception Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-obsidian: #04060c;
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #04060c; color: #f1f5f9;
+      font-family: 'Inter', sans-serif; overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .glass-dock {
+      background: rgba(8, 12, 22, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.75);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.45); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.45); border-radius: 3px; }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 999px;
+      background: rgba(51, 65, 85, 0.85); outline: none;
+    }
+    input[type="range"].range-masker::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #f59e0b; border: 2px solid #fffbeb;
+      cursor: pointer; box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
+    }
+    input[type="range"].range-probe::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #22d3ee; border: 2px solid #ecfeff;
+      cursor: pointer; box-shadow: 0 0 8px rgba(34, 211, 238, 0.85);
+    }
+    .mode-pill-active {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.25), rgba(245, 158, 11, 0.20));
+      border-color: rgba(34, 211, 238, 0.85) !important;
+      color: #ecfeff !important;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.28);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden bg-[#04060c] text-slate-100">
+
+  <!-- Full-Screen 3D WebGL Canvas Layer -->
+  <div id="canvas-container" class="fixed inset-0 z-0 cursor-crosshair"></div>
+
+  <!-- Non-Overlapping 3-Row Flex Viewport HUD -->
+  <div class="relative z-10 w-full h-full flex flex-col justify-between pointer-events-none">
+
+    <!-- ROW 1: Top Header Bar -->
+    <header class="shrink-0 w-full px-3 py-2 bg-slate-950/88 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-teal-500 to-amber-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-300/40">
+          <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+            <path d="M12 12c0-3 2.5-5.5 5.5-5.5S23 9 23 12c0 4.5-3.5 8-8 8-6 0-11-5-11-11C4 4 8 1 13 1"/>
+            <circle cx="12" cy="12" r="2" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-sm md:text-base font-bold tracking-tight text-white">COCHLEA-MASK 3D</h1>
+            <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Greenwood + Zwicker ERB</span>
+            <span id="header-status-pill" class="text-[10px] font-mono-tech px-2 py-0.5 rounded font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">PROBE BURIED (-8.4 dB)</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight hidden sm:block">
+            Percussion Psychoacoustics: Two Tones (Masker $M$ vs. Probe $P$), Moving 3D Basilar Masking Threshold $T_M(f,t)$ &amp; Virtual Pitch Perception
+          </p>
+        </div>
+      </div>
+
+      <!-- 4 Core Psychoacoustic Experiment Paradigms -->
+      <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+        <button data-paradigm="simultaneous" class="paradigm-btn px-2 py-1 rounded text-[11px] font-medium transition mode-pill-active">1. Upward Spread Masking</button>
+        <button data-paradigm="temporal" class="paradigm-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">2. Forward/Backward Δt</button>
+        <button data-paradigm="virtual_pitch" class="paradigm-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">3. Missing-f0 Virtual Pitch</button>
+        <button data-paradigm="critical_band" class="paradigm-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">4. Critical-Band Beats &amp; 2f1−f2</button>
+      </div>
+
+      <!-- Live Telemetry & 3D Geometry View Switch -->
+      <div class="flex items-center gap-2">
+        <div class="hidden xl:flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] font-mono-tech">
+          <div><span class="text-slate-400">Δz:</span> <span id="hud-bark-sep" class="text-amber-300 font-semibold">+1.8 Bark</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Threshold $T_M(f_P)$:</span> <span id="hud-thresh-db" class="text-rose-400 font-semibold">62.4 dB</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Margin $\Delta L$:</span> <span id="hud-margin-db" class="text-cyan-300 font-semibold">-8.4 dB</span></div>
+        </div>
+
+        <button id="btn-3d-topology" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 transition" title="Switch between Uncoiled Basilar Ribbon and 2.5-Turn Spiral Cochlea">
+          3D View: Basilar Ribbon
+        </button>
+        <button id="btn-cam-reset" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          Reset View
+        </button>
+        <button id="btn-info-modal" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition">
+          Psychoacoustics Guide
+        </button>
+      </div>
+    </header>
+
+    <!-- ROW 2: Middle Interactive Stage with Non-Overlapping Dock Toggles & Side Docks -->
+    <div class="relative flex-1 min-h-0 w-full pointer-events-none">
+
+      <!-- Dock Toggle Pill Buttons Along Top of Stage -->
+      <div class="absolute top-2 left-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-left-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-amber-300 border border-amber-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          <span id="left-dock-arrow">◀</span> Masker vs. Probe Controls
+        </button>
+      </div>
+
+      <div class="absolute top-2 right-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-right-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-cyan-300 border border-cyan-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          Moving Threshold Curves &amp; Lab <span id="right-dock-arrow">▶</span>
+        </button>
+      </div>
+
+      <!-- Center Floating Live Audibility Verdict Banner -->
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        <div id="verdict-banner-box" class="px-4 py-1.5 rounded-full bg-slate-950/88 border border-rose-500/45 backdrop-blur-md flex items-center gap-3 shadow-xl transition-colors duration-200">
+          <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">Perceptual State:</span>
+          <span id="live-verdict-text" class="text-xs md:text-sm font-display font-bold text-rose-300 tracking-wide">
+            PROBE BURIED BY MASKER — Submerged 8.4 dB Below Moving Threshold
+          </span>
+          <span id="live-place-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-900 text-cyan-300 border border-cyan-500/30">
+            Apex x=0.31 → 0.39
+          </span>
+        </div>
+        <div class="text-[10px] font-mono-tech text-slate-400 mt-1 bg-slate-950/65 px-3 py-0.5 rounded-full border border-slate-800/80">
+          Drag Sliders or 2D Masking Map to Move Threshold Live • Hold <span class="text-cyan-300">[P]</span> Solo Probe • Hold <span class="text-amber-300">[M]</span> Solo Masker • <span class="text-emerald-300">[Space]</span> Fire Both • <span class="text-purple-300">[B]</span> Auto-Sweep Threshold
+        </div>
+      </div>
+
+      <!-- LEFT DOCK: Masker (M) vs. Probe (P) Percussion Voices, Temporal Gap & Virtual Pitch Controls -->
+      <aside id="left-dock" class="absolute top-10 bottom-2 left-3 z-20 w-84 w-[335px] max-w-[92vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <!-- Instant Audition Mode Bar (Both / Solo Probe / Solo Masker / Auto-Békésy Sweep) -->
+        <div class="p-2 bg-slate-950/80 border-b border-slate-800/80 rounded-t-xl shrink-0">
+          <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+            <span>LISTENING ISOLATION MODE (HEAR WHAT WAS BURIED)</span>
+            <span id="listen-mode-label" class="text-emerald-300 font-bold">M + P COMBINED</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1">
+            <button data-listen="both" class="listen-btn py-1.5 rounded text-[10px] font-mono-tech font-bold border border-slate-700 transition mode-pill-active">M+P Both</button>
+            <button data-listen="probe" class="listen-btn py-1.5 rounded text-[10px] font-mono-tech font-semibold border border-slate-700 bg-slate-900/80 text-cyan-300 hover:border-cyan-400 transition">Solo Probe</button>
+            <button data-listen="masker" class="listen-btn py-1.5 rounded text-[10px] font-mono-tech font-semibold border border-slate-700 bg-slate-900/80 text-amber-300 hover:border-amber-400 transition">Solo Masker</button>
+            <button id="btn-bekesy-sweep" class="py-1.5 rounded text-[10px] font-mono-tech font-semibold border border-purple-500/40 bg-purple-500/15 text-purple-300 hover:bg-purple-500/25 transition">Auto-Sweep</button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- VOICE 1: MASKER PERCUSSION SOURCE (M) — AMBER -->
+          <div class="p-2.5 rounded-lg bg-gradient-to-br from-amber-500/12 via-slate-900/90 to-slate-950 border border-amber-500/35 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-display font-bold text-amber-300 text-xs uppercase tracking-wider">1. Masker Voice (M — The Burier)</span>
+              <span id="masker-bark-badge" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">2.4 Bark • ERB 52 Hz</span>
+            </div>
+
+            <select id="select-masker-inst" class="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-2 py-1.5 text-xs text-amber-100">
+              <option value="taiko">Ō-Daiko Bass Drum (Low-Freq Upward Masker)</option>
+              <option value="timpani">28" Symphonic Timpani (Harmonic Kettle Masker)</option>
+              <option value="tamtam">Chau Tam-Tam Gong (Broadband Shimmer Masker)</option>
+              <option value="subkick">808 Sub-Kick Impact (Pure Fundamental Masker)</option>
+              <option value="marimba_low">Bass Marimba Bar (1:4:10 Arch-Tuned Masker)</option>
+              <option value="notched_noise">Critical-Band / Notched Noise Exciter</option>
+            </select>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Masker Frequency ($f_M$)</span>
+                <span id="lbl-masker-freq" class="font-mono-tech text-amber-300 font-semibold">240 Hz (x=0.26)</span>
+              </div>
+              <input id="slider-masker-freq" type="range" min="60" max="2400" step="1" value="240" class="w-full range-masker" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Masker Intensity Level ($L_M$)</span>
+                <span id="lbl-masker-level" class="font-mono-tech text-amber-300 font-bold">84.0 dB SPL</span>
+              </div>
+              <input id="slider-masker-level" type="range" min="15" max="100" step="0.5" value="84" class="w-full range-masker" />
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-0.5">
+                <span>Quiet (Symmetrical)</span>
+                <span>Loud (Shallow Upward Spread)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- VOICE 2: PROBE PERCUSSION TARGET (P) — CYAN -->
+          <div class="p-2.5 rounded-lg bg-gradient-to-br from-cyan-500/12 via-slate-900/90 to-slate-950 border border-cyan-500/35 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-display font-bold text-cyan-300 text-xs uppercase tracking-wider">2. Probe Target (P — Buried/Emerged)</span>
+              <span id="probe-bark-badge" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300">4.2 Bark • ERB 70 Hz</span>
+            </div>
+
+            <select id="select-probe-inst" class="w-full bg-slate-950 border border-cyan-500/40 rounded-lg px-2 py-1.5 text-xs text-cyan-100">
+              <option value="marimba_probe">Rosewood Marimba / Xylophone Tone</option>
+              <option value="ghost_snare">Ghost Snare Wire Tap (Transient Probe)</option>
+              <option value="crotale">Bronze Crotale / Antique Cymbal Ping</option>
+              <option value="steelpan">Steelpan Harmonic Tone Field (1:2:3)</option>
+              <option value="chime_virtual">Tubular Chime (2:3:4:5 Missing-f0 Complex)</option>
+              <option value="pure_burst">Pure Gaussian Tone Burst (Audiometric)</option>
+            </select>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Probe Frequency ($f_P$)</span>
+                <span id="lbl-probe-freq" class="font-mono-tech text-cyan-300 font-semibold">420 Hz (x=0.36)</span>
+              </div>
+              <input id="slider-probe-freq" type="range" min="80" max="3600" step="1" value="420" class="w-full range-probe" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Probe Intensity Level ($L_P$)</span>
+                <span id="lbl-probe-level" class="font-mono-tech text-cyan-300 font-bold">54.0 dB SPL</span>
+              </div>
+              <input id="slider-probe-level" type="range" min="5" max="95" step="0.5" value="54" class="w-full range-probe" />
+            </div>
+          </div>
+
+          <!-- TEMPORAL MASKING OFFSET Δt & MISSING FUNDAMENTAL CONTROLS -->
+          <div class="p-2.5 rounded-lg bg-slate-900/85 border border-slate-800 space-y-2.5">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-emerald-300 font-semibold">Temporal Offset $\Delta t = t_P - t_M$</span>
+                <span id="lbl-delta-t" class="font-mono-tech text-emerald-300 font-bold">0 ms (Simultaneous)</span>
+              </div>
+              <input id="slider-delta-t" type="range" min="-25" max="220" step="1" value="0" class="w-full range-probe" />
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-0.5">
+                <span>-25ms (Pre-Mask)</span>
+                <span>0ms (Simultaneous)</span>
+                <span>+220ms (Recovered)</span>
+              </div>
+            </div>
+
+            <!-- Missing Fundamental & Cochlear Distortion Controls -->
+            <div class="pt-1 border-t border-slate-800/80 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-300">Probe Fundamental ($f_0$) Energy</span>
+                <button id="btn-toggle-missing-f0" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 text-slate-300 border border-slate-700 hover:border-cyan-400 transition">
+                  f0 Present (Normal)
+                </button>
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] mb-0.5">
+                  <span class="text-slate-300">Spectral Notch Width (Off-Freq Rescue)</span>
+                  <span id="lbl-notch-width" class="font-mono-tech text-amber-300">0.00 ERB</span>
+                </div>
+                <input id="slider-notch-width" type="range" min="0" max="3.0" step="0.05" value="0" class="w-full range-masker" />
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] mb-0.5">
+                  <span class="text-slate-300">Cochlear Outer Hair Cell Gain ($\text{OHC } Q_{\text{ERB}}$)</span>
+                  <span id="lbl-ohc-gain" class="font-mono-tech text-cyan-300">100% (Normal Sharp Tuning)</span>
+                </div>
+                <input id="slider-ohc-gain" type="range" min="20" max="100" step="1" value="100" class="w-full range-probe" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- RIGHT DOCK: Real-Time Moving Masking-Threshold Curve, Temporal Recovery & Preset Experiments -->
+      <aside id="right-dock" class="absolute top-10 bottom-2 right-3 z-20 w-[395px] max-w-[94vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">Moving Masking Threshold &amp; Cochlear Map</h2>
+            <p class="text-[10px] text-slate-400">Drag inside Top Graph to Reposition Probe $(f_P, L_P)$ Relative to Threshold</p>
+          </div>
+          <span id="audibility-badge-right" class="px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">BURIED</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- Canvas 1: Interactive Simultaneous Masking Audiogram T_M(f) vs Probe (f_P, L_P) -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-amber-300">1. Spectral Masking Curve $T_M(f)$ &amp; Upward Spread</span>
+              <span id="curve-slope-readout" class="text-[10px] font-mono-tech text-slate-400">Upper Slope: -7.4 dB/Bark</span>
+            </div>
+            <canvas id="canvas-spectral-masking" width="355" height="135" class="w-full h-32 rounded bg-[#050811] border border-slate-800/80 cursor-pointer"></canvas>
+            <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-1">
+              <span>Amber Curve: Moving Threshold $T_M(f,t)$</span>
+              <span>Cyan Pin: Probe $(f_P, L_P)$ — Drag Me!</span>
+            </div>
+          </div>
+
+          <!-- Canvas 2: Temporal Masking Envelope T_M(Δt) (Backward Pre-Masking & Forward Recovery) -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-emerald-300">2. Temporal Recovery Curve $T_M(\Delta t)$ ($\tau_{\text{fwd}} = 65\text{ ms}$)</span>
+              <span id="temporal-horizon-readout" class="text-[10px] font-mono-tech text-emerald-400">Emerges at Δt ≥ +54 ms</span>
+            </div>
+            <canvas id="canvas-temporal-masking" width="355" height="105" class="w-full h-24 rounded bg-[#050811] border border-slate-800/80 cursor-pointer"></canvas>
+            <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-1">
+              <span>Click/Drag Horizontally to Scrub $\Delta t \in [-25, +220]\text{ ms}$</span>
+              <span id="virtual-pitch-readout" class="text-purple-300">Residue Pitch: 420 Hz</span>
+            </div>
+          </div>
+
+          <!-- 12 Curated Percussion Psychoacoustic Experiments -->
+          <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-cyan-300">12 Psychoacoustic Percussion Experiments</span>
+              <span class="text-[10px] font-mono-tech text-slate-400">Load &amp; Hear</span>
+            </div>
+            <select id="select-experiment" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-cyan-200 font-medium">
+              <optgroup label="Simultaneous Spectral Masking (Upward Spread)">
+                <option value="upward_buried">1. Upward Spread: Loud Taiko (240 Hz) Buries Marimba (420 Hz)</option>
+                <option value="upward_emerged">2. Threshold Rescue: Drop Taiko by 18 dB → Marimba Emerges!</option>
+                <option value="downward_immune">3. Apical Asymmetry: Loud High Crotale (1600 Hz) Cannot Mask 350 Hz</option>
+                <option value="notch_rescue">4. Off-Frequency Notch Rescue: Spectral Notch Unmasks Probe</option>
+              </optgroup>
+              <optgroup label="Temporal Masking (Forward &amp; Backward Δt)">
+                <option value="forward_buried">5. Forward Masking: Kick Buries Ghost Snare at Δt = +15 ms</option>
+                <option value="forward_recovered">6. Neural Recovery: Same Ghost Snare at Δt = +85 ms Pops Out!</option>
+                <option value="backward_paradox">7. Backward Pre-Masking Paradox: Probe at Δt = −12 ms Before Hit</option>
+              </optgroup>
+              <optgroup label="Pitch Perception &amp; Critical-Band Phenomena">
+                <option value="missing_f0_chime">8. Missing-f0 Tubular Chime: Phantom 220 Hz Pitch from 440/660/880 Hz</option>
+                <option value="missing_f0_masked">9. Licklider (1954) Proof: Masking 220 Hz Region Does Not Erase Phantom Pitch</option>
+                <option value="critical_roughness">10. Critical-Band Beating &amp; Roughness (Δz = 0.4 Bark)</option>
+                <option value="cubic_distortion">11. Tartini / Cochlear Cubic Difference Tone (2f1 − f2)</option>
+                <option value="ohc_loss">12. Cochlear Outer Hair Cell Loss (Broadened ERB Filter Swamping)</option>
+              </optgroup>
+            </select>
+
+            <div class="p-2 rounded bg-slate-950/90 border border-cyan-500/25 text-[11px] leading-snug">
+              <div id="exp-title" class="font-semibold text-cyan-300">Upward Spread of Masking (Zwicker &amp; Fastl)</div>
+              <div id="exp-desc" class="text-[10px] text-slate-300 mt-0.5">
+                At 84 dB SPL, the 240 Hz Taiko excites a broad basal-to-apical traveling wave whose shallow upper slope (-7.4 dB/Bark) elevates the threshold at 420 Hz to 62.4 dB SPL—completely burying the 54 dB Marimba probe. Press <strong>Solo Probe [P]</strong> to prove the 420 Hz tone is really playing!
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <!-- ROW 3: Bottom Transport, Direct Audition Comparison Buttons & Lossless WAV Export -->
+    <footer class="shrink-0 w-full px-3 py-2 bg-slate-950/92 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <!-- Direct Playable Psychoacoustic Triggers -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="btn-fire-both" class="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-cyan-500 hover:from-amber-400 hover:to-cyan-400 text-slate-950 font-bold text-xs shadow-lg transition flex items-center gap-1.5">
+          <span>⚡ Strike Masker + Probe</span>
+          <span class="text-[10px] font-mono-tech opacity-85">[Space]</span>
+        </button>
+        <button id="btn-fire-probe" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/45 font-semibold text-xs transition">
+          Hear Probe Alone [P]
+        </button>
+        <button id="btn-fire-masker" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/45 font-semibold text-xs transition">
+          Hear Masker Alone [M]
+        </button>
+        <button id="btn-ab-compare" class="px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-400/45 font-semibold text-xs transition" title="Plays Probe Alone -> Masker+Probe (Buried) -> Masker+Probe (Unmasked)">
+          ▶ A/B/C Proof Sequence
+        </button>
+      </div>
+
+      <!-- Repeating Pulse Transport -->
+      <div class="flex items-center gap-2">
+        <button id="btn-pulse-loop" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+          <span id="pulse-icon">▶</span>
+          <span id="pulse-text">Start Continuous Pulse</span>
+        </button>
+        <div class="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+          <span class="text-[10px] font-mono-tech text-slate-400">Rate</span>
+          <input id="slider-bpm" type="range" min="50" max="160" value="92" class="w-20 range-probe" />
+          <span id="lbl-bpm" class="text-xs font-mono-tech text-cyan-300 w-10 text-right">92 BPM</span>
+        </div>
+      </div>
+
+      <!-- Lossless 44.1 kHz 16-Bit Stereo WAV Export -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-export-pair" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-xs font-mono-tech transition">
+          ⬇ WAV Current Pair
+        </button>
+        <button id="btn-export-proof" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/40 text-xs font-mono-tech transition">
+          ⬇ Export A/B/C Proof (WAV)
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- PSYCHOACOUSTICS & COCHLEAR MECHANICS MODAL -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-slate-950/82 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-dock max-w-2xl w-full rounded-2xl border border-cyan-500/40 p-5 space-y-3 text-xs text-slate-200 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 class="font-display text-base font-bold text-cyan-300">Percussion Psychoacoustics — How the Cochlea &amp; Auditory Cortex Hear Vibration</h3>
+          <p class="text-[11px] text-slate-400">Greenwood Tonotopic Map • Glasberg &amp; Moore $\text{ERB}_N$ • Zwicker Upward Spread • Temporal &amp; Virtual Pitch</p>
+        </div>
+        <button id="btn-close-modal" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-tech">✕ ESC</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-amber-300">1. Upward Spread of Simultaneous Masking</h4>
+          <p class="text-slate-300">
+            Sound waves enter the fluid-filled cochlea at the stiff high-frequency base and travel toward the flexible low-frequency apex ($f(x) = 165.4(10^{2.1x}-0.88)\text{ Hz}$). Because low-frequency traveling waves must pass through higher-frequency regions before peaking and cutting off steeply, a loud bass drum or taiko creates a shallow high-frequency excitation tail ($S_U = [-24 - 0.23/f + 0.2 L_M]\text{ dB/Bark}$) that easily buries higher-pitched percussion, whereas high-pitched tones cannot mask lower ones.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-emerald-300">2. Forward &amp; Backward Temporal Masking</h4>
+          <p class="text-slate-300">
+            Auditory masking persists in time even when two percussion hits do not overlap physically. After a loud impact, inner hair cell neurotransmitter depletion and auditory-nerve adaptation keep the threshold elevated for $100\text{–}200\text{ ms}$ (<strong>Forward Masking</strong>, $\tau_{\text{fwd}} \approx 65\text{ ms}$), burying ghost notes played too soon after a downbeat. Even more counterintuitively, a loud hit can mask a faint click played up to $20\text{ ms}$ <em>before</em> it (<strong>Backward Pre-Masking</strong>) due to faster neural latency of intense stimuli.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-cyan-300">3. Missing Fundamental &amp; Virtual Pitch</h4>
+          <p class="text-slate-300">
+            Orchestral chimes (tubular bells) and timpani radiate strong overtones in ratios near $2:3:4:5$ while their actual fundamental $f_0$ is weak, mistuned, or absent. Yet we hear a clear pitch at $f_0$ (<strong>Virtual / Residue Pitch</strong>). As Licklider (1954) proved, even when you inject low-frequency masking noise that completely buries the $f_0$ place on the basilar membrane, the phantom pitch at $f_0$ remains audible because the brain extracts periodicity from the upper resolved harmonics.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-purple-300">4. Critical Bandwidth ($\text{ERB}_N$) &amp; Outer Hair Cells</h4>
+          <p class="text-slate-300">
+            Each auditory filter has an Equivalent Rectangular Bandwidth $\text{ERB}(f) = 24.7(4.37 f_{\text{kHz}} + 1)\text{ Hz}$ ($\approx 0.9\text{ mm}$ along the basilar membrane). Active electromotility of cochlear Outer Hair Cells (OHCs) sharpens filter tuning by $2\text{–}3\times$ and generates nonlinear cubic difference tones ($2f_1 - f_2$). Reducing OHC gain broadens critical bands and causes severe upward masking swamping.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. PSYCHOACOUSTIC FORMULAS (GREENWOOD, ZWICKER BARK, GLASBERG-MOORE ERB)
+    // =========================================================================
+
+    // Greenwood (1990) frequency -> fractional basilar membrane distance x in [0, 1] from apex (20 Hz) to base (20 kHz)
+    function freqToGreenwoodX(fHz) {
+      const clamped = Math.max(20, Math.min(20000, fHz));
+      return Math.max(0, Math.min(1, Math.log10(clamped / 165.4 + 0.88) / 2.1));
+    }
+
+    function greenwoodXToFreq(x) {
+      const cx = Math.max(0, Math.min(1, x));
+      return 165.4 * (Math.pow(10, 2.1 * cx) - 0.88);
+    }
+
+    // Zwicker & Terhardt (1980) Bark scale z(f) in [0, 24]
+    function freqToBark(fHz) {
+      return 13.0 * Math.atan(0.00076 * fHz) + 3.5 * Math.atan(Math.pow(fHz / 7500.0, 2));
+    }
+
+    // Glasberg & Moore (1990) Equivalent Rectangular Bandwidth ERB(f) in Hz
+    function freqToERBHz(fHz) {
+      return 24.7 * (4.37 * (fHz / 1000.0) + 1.0);
+    }
+
+    // Quiet absolute threshold approximation T_quiet(f) in dB SPL (ISO 226 / Terhardt formula)
+    function quietThresholdDb(fHz) {
+      const fk = Math.max(0.04, Math.min(16.0, fHz / 1000.0));
+      const t = 3.64 * Math.pow(fk, -0.8) - 6.5 * Math.exp(-0.6 * Math.pow(fk - 3.3, 2)) + 0.001 * Math.pow(fk, 4);
+      return Math.max(4.0, Math.min(65.0, t + 10.0)); // Normalized studio quiet floor
+    }
+
+    // =========================================================================
+    // 2. APPLICATION STATE & EXPERIMENT PRESETS
+    // =========================================================================
+    const state = {
+      paradigm: 'simultaneous',
+      listenMode: 'both',       // 'both' | 'probe' | 'masker'
+      bekesySweepActive: false,
+      bekesyDir: 1,
+      topologyView: 'ribbon',   // 'ribbon' (3D Uncoiled Basilar + Threshold Veil) | 'spiral' (3D Spiral Cochlea)
+      maskerInst: 'taiko',
+      maskerFreq: 240,
+      maskerLevel: 84.0,        // dB SPL
+      probeInst: 'marimba_probe',
+      probeFreq: 420,
+      probeLevel: 54.0,         // dB SPL
+      deltaTMs: 0,              // t_probe - t_masker in ms (-25 to +220)
+      missingF0: false,         // When true, probe fundamental f0 is removed (only 2f0, 3f0, 4f0, 5f0 play)
+      notchWidthERB: 0.0,       // Spectral notch width around probe frequency in ERBs
+      ohcGainPct: 100,          // Cochlear Outer Hair Cell active sharpness (100% = normal, 20% = impaired broad filters)
+      bpm: 92,
+      isLooping: false,
+      // Live dynamic threshold decay animation after a strike
+      maskerEnvelope: 1.0,      // Instantaneous envelope for 3D threshold veil animation
+      probeEnvelope: 0.0,
+      lastStrikeTime: 0
+    };
+
+    const EXPERIMENTS = {
+      upward_buried: {
+        paradigm: 'simultaneous',
+        maskerInst: 'taiko', maskerFreq: 240, maskerLevel: 84,
+        probeInst: 'marimba_probe', probeFreq: 420, probeLevel: 54,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '1. Upward Spread of Masking: Taiko (240 Hz) Buries Marimba (420 Hz)',
+        desc: 'At 84 dB SPL, the 240 Hz Taiko excites a broad cochlear traveling wave whose shallow upper slope (-7.4 dB/Bark) elevates the threshold at 420 Hz to 62.4 dB SPL—submerging the 54 dB Marimba probe. Hold [P] (Solo Probe) to verify the 420 Hz Marimba tone is genuinely playing!'
+      },
+      upward_emerged: {
+        paradigm: 'simultaneous',
+        maskerInst: 'taiko', maskerFreq: 240, maskerLevel: 64,
+        probeInst: 'marimba_probe', probeFreq: 420, probeLevel: 54,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '2. Nonlinear Threshold Rescue: Dropping Masker by 20 dB Unmasks Probe',
+        desc: 'Lowering the Taiko from 84 dB to 64 dB SPL steepens its upper excitation slope from -7.4 to -11.4 dB/Bark. The threshold at 420 Hz drops to 35.2 dB SPL, allowing the 54 dB Marimba probe to emerge clearly (+18.8 dB SL) above the veil!'
+      },
+      downward_immune: {
+        paradigm: 'simultaneous',
+        maskerInst: 'tamtam', maskerFreq: 1600, maskerLevel: 86,
+        probeInst: 'marimba_probe', probeFreq: 350, probeLevel: 48,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '3. Apical Asymmetry: High-Frequency Masker (1600 Hz) Cannot Mask 350 Hz',
+        desc: 'Because cochlear traveling waves cut off steeply (-27 dB/Bark) past their characteristic place toward the low-frequency apex, even an 86 dB 1600 Hz masker leaves the 350 Hz probe completely unmasked (+34 dB SL).'
+      },
+      notch_rescue: {
+        paradigm: 'simultaneous',
+        maskerInst: 'notched_noise', maskerFreq: 420, maskerLevel: 82,
+        probeInst: 'pure_burst', probeFreq: 420, probeLevel: 52,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 1.8, ohcGainPct: 100,
+        title: '4. Patterson Notched-Noise Filter Rescue (1.8 ERB Spectral Notch)',
+        desc: 'Carving a 1.8 ERB spectral notch around the 420 Hz auditory filter removes masker energy from the listener\'s critical band, dropping the threshold curtain inside the notch so the 52 dB probe emerges.'
+      },
+      forward_buried: {
+        paradigm: 'temporal',
+        maskerInst: 'subkick', maskerFreq: 180, maskerLevel: 88,
+        probeInst: 'ghost_snare', probeFreq: 260, probeLevel: 52,
+        deltaTMs: 14, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '5. Temporal Forward Masking: Kick Buries Ghost Snare at Δt = +14 ms',
+        desc: 'Even though the Ghost Snare strikes 14 ms AFTER the Kick impact, auditory-nerve adaptation keeps the post-stimulus threshold elevated at 61.5 dB SPL—making the ghost note inaudible.'
+      },
+      forward_recovered: {
+        paradigm: 'temporal',
+        maskerInst: 'subkick', maskerFreq: 180, maskerLevel: 88,
+        probeInst: 'ghost_snare', probeFreq: 260, probeLevel: 52,
+        deltaTMs: 85, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '6. Forward-Masking Recovery: Ghost Snare Emerges at Δt = +85 ms',
+        desc: 'Delaying the Ghost Snare to Δt = +85 ms allows inner hair cell synapses to recover along the τ = 65 ms exponential decay curve, dropping the threshold to 33.4 dB so both hits are heard distinctly.'
+      },
+      backward_paradox: {
+        paradigm: 'temporal',
+        maskerInst: 'taiko', maskerFreq: 250, maskerLevel: 90,
+        probeInst: 'ghost_snare', probeFreq: 280, probeLevel: 46,
+        deltaTMs: -10, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '7. Backward Pre-Masking Paradox: Probe Played 10 ms BEFORE Masker Vanishes!',
+        desc: 'The faint 46 dB probe strikes 10 ms BEFORE the loud 90 dB Taiko hit—yet because intense neural impulses propagate faster up the auditory pathway, the loud hit overtakes and masks the earlier sound!'
+      },
+      missing_f0_chime: {
+        paradigm: 'virtual_pitch',
+        maskerInst: 'taiko', maskerFreq: 110, maskerLevel: 25,
+        probeInst: 'chime_virtual', probeFreq: 220, probeLevel: 68,
+        deltaTMs: 0, missingF0: true, notchWidthERB: 0, ohcGainPct: 100,
+        title: '8. Missing-Fundamental Tubular Chime: Phantom Pitch at 220 Hz (A3)',
+        desc: 'The 220 Hz fundamental is 100% removed—only harmonics 440, 660, 880, and 1100 Hz are radiated. Yet your auditory cortex synthesizes an unmistakable virtual pitch at the missing 220 Hz common divisor!'
+      },
+      missing_f0_masked: {
+        paradigm: 'virtual_pitch',
+        maskerInst: 'notched_noise', maskerFreq: 220, maskerLevel: 84,
+        probeInst: 'chime_virtual', probeFreq: 220, probeLevel: 68,
+        deltaTMs: 0, missingF0: true, notchWidthERB: 0, ohcGainPct: 100,
+        title: '9. Licklider (1954) Proof: Burying the 220 Hz Place Does NOT Erase Virtual Pitch',
+        desc: 'An 84 dB masker completely buries the 220 Hz region on the basilar membrane. Yet because the upper harmonics (440–1100 Hz) emerge above the threshold slope, you STILL hear the 220 Hz pitch—proving virtual pitch is computed centrally, not by distortion at the 220 Hz cochlear place!'
+      },
+      critical_roughness: {
+        paradigm: 'critical_band',
+        maskerInst: 'marimba_low', maskerFreq: 400, maskerLevel: 74,
+        probeInst: 'marimba_probe', probeFreq: 432, probeLevel: 72,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '10. Critical-Band Roughness & Beating (Δf = 32 Hz < ERB = 69 Hz)',
+        desc: 'When two percussion tones fall inside the same 1.0 Bark / ERB auditory filter (Δz = 0.31 Bark), the basilar membrane cannot resolve them into separate peaks, producing rapid 32 Hz amplitude modulation roughness.'
+      },
+      cubic_distortion: {
+        paradigm: 'critical_band',
+        maskerInst: 'crotale', maskerFreq: 1000, maskerLevel: 80,
+        probeInst: 'crotale', probeFreq: 1200, probeLevel: 80,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 0, ohcGainPct: 100,
+        title: '11. Cochlear Nonlinearity: Cubic Difference Tone (2f1 − f2 = 800 Hz)',
+        desc: 'Two high-level metallic tones at f1 = 1000 Hz and f2 = 1200 Hz drive nonlinear Outer Hair Cell mechanics on the basilar membrane, generating an audible combination tone at 2f1 − f2 = 800 Hz.'
+      },
+      ohc_loss: {
+        paradigm: 'simultaneous',
+        maskerInst: 'taiko', maskerFreq: 240, maskerLevel: 74,
+        probeInst: 'marimba_probe', probeFreq: 520, probeLevel: 56,
+        deltaTMs: 0, missingF0: false, notchWidthERB: 0, ohcGainPct: 30,
+        title: '12. Outer Hair Cell Loss (OHC Gain = 30% → 3× Broadened ERB Filters)',
+        desc: 'Simulating cochlear outer hair cell impairment broadens auditory filter bandwidths by ~2.5×, causing the 240 Hz masker excitation to spread wildly upward and bury a 520 Hz probe that normal hearing easily resolves.'
+      }
+    };
+
+    // =========================================================================
+    // 3. EXACT MASKING THRESHOLD SURFACE T_M(f, Δt) COMPUTATION
+    // =========================================================================
+    function computeMaskedThresholdAt(fHz, deltaTMs = state.deltaTMs, envWeight = 1.0) {
+      const tQuiet = quietThresholdDb(fHz);
+      if (state.listenMode === 'probe') return tQuiet;
+
+      const zProbe = freqToBark(fHz);
+      const zMasker = freqToBark(state.maskerFreq);
+      const dz = zProbe - zMasker;
+
+      // Outer hair cell tuning sharpness factor (1.0 normal, <1.0 broadens slopes)
+      const ohcSharpness = 0.35 + 0.65 * (state.ohcGainPct / 100.0);
+
+      // Asymmetric Zwicker excitation slopes (dB per Bark)
+      let slopeDbPerBark;
+      if (dz < 0) {
+        // Steep apical roll-off (-27 dB/Bark normal)
+        slopeDbPerBark = 27.0 * ohcSharpness;
+      } else {
+        // Level-dependent upward spread of masking: flatter at higher masker levels L_M
+        const fk = Math.max(0.08, state.maskerFreq / 1000.0);
+        const rawUpper = (-24.0 - 0.23 / fk + 0.20 * Math.min(96.0, state.maskerLevel));
+        slopeDbPerBark = Math.min(-4.2, rawUpper * ohcSharpness);
+      }
+
+      // Multi-partial excitation if Masker is Tam-Tam or Timpani
+      let excitationDb = state.maskerLevel + (dz < 0 ? slopeDbPerBark * dz : slopeDbPerBark * dz);
+
+      if (state.maskerInst === 'tamtam') {
+        // Broadband shimmer raises high-frequency masking floor
+        const shimmerTail = (state.maskerLevel - 14) - Math.abs(zProbe - (zMasker + 3.2)) * 5.2;
+        excitationDb = Math.max(excitationDb, shimmerTail);
+      } else if (state.maskerInst === 'timpani') {
+        // 1.5x and 2.0x harmonic partials contribute secondary masking peaks
+        const z15 = freqToBark(state.maskerFreq * 1.5);
+        const z20 = freqToBark(state.maskerFreq * 2.0);
+        const ex15 = (state.maskerLevel - 8) - Math.abs(zProbe - z15) * 14 * ohcSharpness;
+        const ex20 = (state.maskerLevel - 13) - Math.abs(zProbe - z20) * 15 * ohcSharpness;
+        excitationDb = Math.max(excitationDb, ex15, ex20);
+      }
+
+      // Apply Patterson spectral notch around Probe frequency if notchWidthERB > 0
+      if (state.notchWidthERB > 0.02) {
+        const erbAtProbe = freqToERBHz(state.probeFreq);
+        const distERB = Math.abs(fHz - state.probeFreq) / Math.max(10, erbAtProbe * 0.5);
+        if (distERB < state.notchWidthERB) {
+          const notchDepthDb = 24.0 * ohcSharpness * (1.0 - Math.pow(distERB / state.notchWidthERB, 2));
+          excitationDb -= notchDepthDb;
+        }
+      }
+
+      // Temporal Masking Attenuation factor eta(Δt)
+      let temporalFactor = 1.0;
+      if (deltaTMs < 0) {
+        // Backward (pre-) masking decays rapidly with τ_back ≈ 8.5 ms
+        temporalFactor = Math.exp(-Math.abs(deltaTMs) / 8.5);
+      } else if (deltaTMs > 0) {
+        // Forward (post-) masking decays with τ_fwd ≈ 65 ms
+        temporalFactor = Math.exp(-deltaTMs / 65.0);
+      }
+
+      const maskedElevation = Math.max(0, (excitationDb - tQuiet) * temporalFactor * envWeight);
+      // Power-law combination of quiet threshold and masking excitation
+      const totalThresh = 10 * Math.log10(Math.pow(10, tQuiet / 10) + Math.pow(10, (tQuiet + maskedElevation) / 10));
+      return Math.min(105.0, totalThresh);
+    }
+
+    // Evaluate Probe Audibility Margin ΔL = L_P - T_M(f_P, Δt)
+    function evaluateProbeAudibility() {
+      // If missingF0 is enabled on a harmonic complex, evaluate both at f0 and at the strongest audible upper partial (2*f0 or 3*f0)
+      const threshAtF0 = computeMaskedThresholdAt(state.probeFreq, state.deltaTMs, 1.0);
+      let effectiveProbeFreq = state.probeFreq;
+      let effectiveThresh = threshAtF0;
+
+      if (state.missingF0) {
+        // Upper partials 2*f0, 3*f0, 4*f0 carry the virtual pitch residue
+        const t2 = computeMaskedThresholdAt(state.probeFreq * 2, state.deltaTMs, 1.0);
+        const t3 = computeMaskedThresholdAt(state.probeFreq * 3, state.deltaTMs, 1.0);
+        effectiveThresh = Math.min(t2, t3) + 3.0;
+        effectiveProbeFreq = t2 < t3 ? state.probeFreq * 2 : state.probeFreq * 3;
+      }
+
+      const marginDb = state.probeLevel - effectiveThresh;
+      return {
+        threshAtF0,
+        effectiveThresh,
+        effectiveProbeFreq,
+        marginDb,
+        isAudible: marginDb >= 0.0
+      };
+    }
+
+    // =========================================================================
+    // 4. WEB AUDIO API PSYCHOACOUSTIC PERCUSSION SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.88;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Convert dB SPL (10..100 dB) to Web Audio linear amplitude with true dynamic range
+    // Plus psychoacoustic cochlear suppression when Masker & Probe overlap within the same critical band
+    function dbSplToLinearGain(dbSpl, suppressionDb = 0) {
+      const effectiveDb = Math.max(0, dbSpl - suppressionDb);
+      if (effectiveDb <= 6) return 0.0001;
+      // Map 95 dB SPL -> 0.58 linear, with realistic 45 dB dynamic span so buried tones genuinely vanish in mix
+      return 0.58 * Math.pow(10, (effectiveDb - 95.0) / 26.0);
+    }
+
+    function triggerMaskerVoice(targetCtx, startTime, destNode) {
+      const fM = state.maskerFreq;
+      const gainM = dbSplToLinearGain(state.maskerLevel);
+      const inst = state.maskerInst;
+
+      if (inst === 'notched_noise') {
+        // Synthesize critical-band or notched Gaussian noise burst (280 ms)
+        const dur = 0.34;
+        const len = Math.floor(targetCtx.sampleRate * dur);
+        const buf = targetCtx.createBuffer(1, len, targetCtx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) {
+          const env = i < 800 ? (i / 800) : Math.exp(-(i - 800) / (targetCtx.sampleRate * 0.14));
+          data[i] = (Math.random() * 2 - 1) * env;
+        }
+        const src = targetCtx.createBufferSource();
+        src.buffer = buf;
+
+        const bp = targetCtx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(fM, startTime);
+        bp.Q.value = 1.6;
+
+        const g = targetCtx.createGain();
+        g.gain.setValueAtTime(gainM * 1.15, startTime);
+
+        if (state.notchWidthERB > 0.05) {
+          const notch = targetCtx.createBiquadFilter();
+          notch.type = 'notch';
+          notch.frequency.setValueAtTime(state.probeFreq, startTime);
+          notch.Q.value = Math.max(0.6, 3.2 / state.notchWidthERB);
+          src.connect(bp);
+          bp.connect(notch);
+          notch.connect(g);
+        } else {
+          src.connect(bp);
+          bp.connect(g);
+        }
+        g.connect(destNode);
+        src.start(startTime);
+        return;
+      }
+
+      // Modal ratios for Percussion Masker archetypes
+      let ratios = [1.0, 1.58, 2.12];
+      let decaySec = 0.42;
+      if (inst === 'taiko') {
+        ratios = [1.0, 1.48, 2.02, 2.56];
+        decaySec = 0.48;
+      } else if (inst === 'timpani') {
+        ratios = [1.0, 1.50, 1.98, 2.44];
+        decaySec = 0.65;
+      } else if (inst === 'tamtam') {
+        ratios = [1.0, 1.34, 1.78, 2.38, 3.14, 4.12];
+        decaySec = 0.75;
+      } else if (inst === 'subkick') {
+        ratios = [1.0, 2.0];
+        decaySec = 0.36;
+      } else if (inst === 'marimba_low') {
+        ratios = [1.0, 4.0, 10.0];
+        decaySec = 0.44;
+      }
+
+      ratios.forEach((r, idx) => {
+        const osc = targetCtx.createOscillator();
+        const g = targetCtx.createGain();
+        osc.type = idx === 0 ? 'sine' : (inst === 'tamtam' ? 'sawtooth' : 'triangle');
+        const freq = fM * r;
+        // Slight pitch-drop transient on drum impact
+        osc.frequency.setValueAtTime(freq * (idx === 0 && (inst === 'taiko' || inst === 'subkick') ? 1.18 : 1.02), startTime);
+        osc.frequency.exponentialRampToValueAtTime(freq, startTime + 0.035);
+
+        const pAmp = (gainM / Math.pow(idx + 1, 0.95)) * (idx === 0 ? 1.0 : 0.48);
+        const mDur = decaySec / Math.pow(idx + 1, 0.45);
+        g.gain.setValueAtTime(0.0001, startTime);
+        g.gain.linearRampToValueAtTime(Math.max(0.0002, pAmp), startTime + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, startTime + mDur);
+
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(startTime);
+        osc.stop(startTime + mDur + 0.03);
+      });
+    }
+
+    function triggerProbeVoice(targetCtx, startTime, destNode, includeMaskerSuppression = true) {
+      const fP = state.probeFreq;
+      const inst = state.probeInst;
+
+      // Calculate physical cochlear two-tone suppression when Masker & Probe are active together
+      let suppressionDb = 0;
+      if (includeMaskerSuppression && state.listenMode === 'both') {
+        const aud = evaluateProbeAudibility();
+        if (aud.marginDb < 0) {
+          // Cochlear two-tone suppression attenuates neural drive below masked threshold
+          suppressionDb = Math.min(35.0, Math.abs(aud.marginDb) * 1.45);
+        }
+      }
+
+      const gainP = dbSplToLinearGain(state.probeLevel, suppressionDb);
+
+      // Select harmonic/modal structure for Probe Percussion
+      let partials = [{ ratio: 1.0, weight: 1.0 }];
+      let decaySec = 0.28;
+
+      if (inst === 'marimba_probe') {
+        partials = [
+          { ratio: 1.0, weight: 1.0 },
+          { ratio: 4.0, weight: 0.35 },
+          { ratio: 10.0, weight: 0.12 }
+        ];
+        decaySec = 0.26;
+      } else if (inst === 'ghost_snare') {
+        partials = [
+          { ratio: 1.0, weight: 0.85 },
+          { ratio: 1.59, weight: 0.55 },
+          { ratio: 2.14, weight: 0.35 }
+        ];
+        decaySec = 0.16;
+      } else if (inst === 'crotale') {
+        partials = [
+          { ratio: 1.0, weight: 1.0 },
+          { ratio: 2.76, weight: 0.38 },
+          { ratio: 5.40, weight: 0.16 }
+        ];
+        decaySec = 0.42;
+      } else if (inst === 'steelpan') {
+        partials = [
+          { ratio: 1.0, weight: 1.0 },
+          { ratio: 2.0, weight: 0.52 },
+          { ratio: 3.0, weight: 0.28 }
+        ];
+        decaySec = 0.34;
+      } else if (inst === 'chime_virtual') {
+        // Tubular chime harmonics: 1f0 (toggleable), 2f0, 3f0, 4f0, 5f0
+        partials = [
+          { ratio: 1.0, weight: state.missingF0 ? 0.0 : 0.9 },
+          { ratio: 2.0, weight: 0.88 },
+          { ratio: 3.0, weight: 0.76 },
+          { ratio: 4.0, weight: 0.54 },
+          { ratio: 5.0, weight: 0.32 }
+        ];
+        decaySec = 0.48;
+      } else if (inst === 'pure_burst') {
+        partials = [
+          { ratio: 1.0, weight: state.missingF0 ? 0.0 : 1.0 },
+          ...(state.missingF0 ? [
+            { ratio: 2.0, weight: 0.85 },
+            { ratio: 3.0, weight: 0.70 },
+            { ratio: 4.0, weight: 0.50 }
+          ] : [])
+        ];
+        decaySec = 0.22;
+      }
+
+      partials.forEach((p, idx) => {
+        if (p.weight <= 0.001) return;
+        const pFreq = fP * p.ratio;
+        if (pFreq > 16000) return;
+
+        // Per-partial masking check so upper harmonics can emerge even when f0 is buried!
+        let partGain = gainP * p.weight;
+        if (includeMaskerSuppression && state.listenMode === 'both') {
+          const pThresh = computeMaskedThresholdAt(pFreq, state.deltaTMs, 1.0);
+          const pMargin = state.probeLevel - pThresh;
+          const pSupp = pMargin < 0 ? Math.min(36.0, Math.abs(pMargin) * 1.5) : 0;
+          partGain = dbSplToLinearGain(state.probeLevel, pSupp) * p.weight;
+        }
+
+        const osc = targetCtx.createOscillator();
+        const g = targetCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(pFreq, startTime);
+
+        const pDur = decaySec / Math.pow(idx + 1, 0.32);
+        g.gain.setValueAtTime(0.0001, startTime);
+        g.gain.linearRampToValueAtTime(Math.max(0.00015, partGain), startTime + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, startTime + pDur);
+
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(startTime);
+        osc.stop(startTime + pDur + 0.02);
+      });
+
+      // If Ghost Snare, add a crisp snare-wire burst filtered around 2.8 kHz
+      if (inst === 'ghost_snare') {
+        const sLen = Math.floor(targetCtx.sampleRate * 0.055);
+        const sBuf = targetCtx.createBuffer(1, sLen, targetCtx.sampleRate);
+        const sData = sBuf.getChannelData(0);
+        for (let i = 0; i < sLen; i++) {
+          sData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (targetCtx.sampleRate * 0.012));
+        }
+        const sSrc = targetCtx.createBufferSource();
+        sSrc.buffer = sBuf;
+        const sBp = targetCtx.createBiquadFilter();
+        sBp.type = 'bandpass';
+        sBp.frequency.value = 2600;
+        const sGain = targetCtx.createGain();
+        sGain.gain.value = gainP * 0.55;
+        sSrc.connect(sBp);
+        sBp.connect(sGain);
+        sGain.connect(destNode);
+        sSrc.start(startTime);
+      }
+
+      // If Paradigm 4 (Critical-Band / Cubic Difference Tone 2f1 - f2) and both high-level tones are close, add cochlear distortion product
+      if (state.paradigm === 'critical_band' && includeMaskerSuppression && state.listenMode === 'both') {
+        const f1 = Math.min(state.maskerFreq, state.probeFreq);
+        const f2 = Math.max(state.maskerFreq, state.probeFreq);
+        const cdtFreq = 2 * f1 - f2;
+        if (cdtFreq > 60 && f2 / f1 < 1.45 && state.maskerLevel > 65 && state.probeLevel > 65) {
+          const cdtOsc = targetCtx.createOscillator();
+          const cdtGain = targetCtx.createGain();
+          cdtOsc.type = 'sine';
+          cdtOsc.frequency.setValueAtTime(cdtFreq, startTime);
+          const cdtAmp = dbSplToLinearGain(Math.min(state.maskerLevel, state.probeLevel) - 18) * (state.ohcGainPct / 100);
+          cdtGain.gain.setValueAtTime(0.0001, startTime);
+          cdtGain.gain.linearRampToValueAtTime(cdtAmp, startTime + 0.01);
+          cdtGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.32);
+          cdtOsc.connect(cdtGain);
+          cdtGain.connect(destNode);
+          cdtOsc.start(startTime);
+          cdtOsc.stop(startTime + 0.35);
+        }
+      }
+    }
+
+    function firePsychoacousticEvent(modeOverride = null) {
+      initAudio();
+      const mode = modeOverride || state.listenMode;
+      const now = audioCtx.currentTime + 0.03;
+
+      // Handle negative Δt (backward pre-masking where Probe occurs BEFORE Masker)
+      const dtSec = state.deltaTMs / 1000.0;
+      const tMasker = dtSec < 0 ? now + Math.abs(dtSec) : now;
+      const tProbe  = dtSec < 0 ? now : now + dtSec;
+
+      if (mode === 'both' || mode === 'masker') {
+        triggerMaskerVoice(audioCtx, tMasker, masterGain);
+        state.maskerEnvelope = 1.35;
+      }
+      if (mode === 'both' || mode === 'probe') {
+        triggerProbeVoice(audioCtx, tProbe, masterGain, mode === 'both');
+        state.probeEnvelope = 1.35;
+      }
+      state.lastStrikeTime = performance.now();
+      updateAllReadouts();
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D BASILAR MEMBRANE & MOVING MASKING-THRESHOLD VEIL SCENE
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x04060c, 0.036);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+    let camSpherical = { radius: 11.2, theta: 0.18, phi: 1.12 };
+    let camTarget = new THREE.Vector3(0, 0.4, 0);
+
+    function updateCameraFromSpherical() {
+      camera.position.x = camTarget.x + camSpherical.radius * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+      camera.position.z = camTarget.z + camSpherical.radius * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.lookAt(camTarget);
+    }
+    updateCameraFromSpherical();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.75));
+    const dirLight = new THREE.DirectionalLight(0xf8fafc, 1.25);
+    dirLight.position.set(6, 10, 7);
+    scene.add(dirLight);
+
+    const maskerPointLight = new THREE.PointLight(0xf59e0b, 1.4, 16);
+    maskerPointLight.position.set(-2, 3, 2);
+    scene.add(maskerPointLight);
+
+    const probePointLight = new THREE.PointLight(0x22d3ee, 1.4, 16);
+    probePointLight.position.set(2, 3, 2);
+    scene.add(probePointLight);
+
+    const gridHelper = new THREE.GridHelper(24, 24, 0x1e293b, 0x0f172a);
+    gridHelper.position.y = -2.2;
+    scene.add(gridHelper);
+
+    const stageGroup = new THREE.Group();
+    scene.add(stageGroup);
+
+    // 3D Objects for real-time deformation
+    const RIB_COUNT = 64;
+    let basilarRibs = [];
+    let thresholdRibbonMesh = null;
+    let thresholdWireMesh = null;
+    let maskerSpireGroup = null;
+    let probeSpireGroup = null;
+    let probeCapMesh = null;
+    let phantomPitchRing = null;
+
+    // Map Greenwood x in [0.05..0.82] (approx 50 Hz to 5000 Hz) to 3D position (X, Z)
+    function placeTo3DCoords(normU) {
+      if (state.topologyView === 'spiral') {
+        // 2.5-turn Archimedes / Logarithmic Cochlear Spiral from Base (outer) to Apex (center top)
+        const angle = normU * Math.PI * 4.5;
+        const r = 3.6 - (1.0 - normU) * 2.5;
+        return {
+          x: Math.cos(angle) * r,
+          z: Math.sin(angle) * r,
+          baseY: -1.2 + (1.0 - normU) * 1.1,
+          rotY: -angle
+        };
+      } else {
+        // Uncoiled 35 mm Tonotopic Basilar Membrane Ribbon (-4.6 to +4.6 along X)
+        return {
+          x: (normU - 0.5) * 9.2,
+          z: 0,
+          baseY: -1.45,
+          rotY: 0
+        };
+      }
+    }
+
+    function freqToNormStageU(fHz) {
+      const fMin = 55;
+      const fMax = 4500;
+      const clamped = Math.max(fMin, Math.min(fMax, fHz));
+      return (Math.log10(clamped) - Math.log10(fMin)) / (Math.log10(fMax) - Math.log10(fMin));
+    }
+
+    function normStageUToFreq(u) {
+      const fMin = 55;
+      const fMax = 4500;
+      return fMin * Math.pow(fMax / fMin, Math.max(0, Math.min(1, u)));
+    }
+
+    function dbToHeightY(dbSpl) {
+      // Map 0..100 dB SPL to height 0..3.6 units above basilar membrane
+      return Math.max(0.05, (dbSpl / 100.0) * 3.6);
+    }
+
+    function build3DCochlearScene() {
+      while (stageGroup.children.length > 0) {
+        stageGroup.remove(stageGroup.children[0]);
+      }
+      basilarRibs = [];
+
+      // 1. 64 Tonotopic Basilar Membrane Cross-Fibers + Organ of Corti Stereocilia
+      for (let i = 0; i < RIB_COUNT; i++) {
+        const u = i / (RIB_COUNT - 1);
+        const fAtRib = normStageUToFreq(u);
+        const coords = placeTo3DCoords(u);
+        // Apical fibers (low freq, u->0) are wider and more compliant; basal fibers (high freq, u->1) are narrower and stiff
+        const fiberDepth = 1.65 - u * 0.95;
+
+        const ribGeo = new THREE.BoxGeometry(0.09, 0.06, fiberDepth);
+        const ribMat = new THREE.MeshStandardMaterial({
+          color: 0x1e293b,
+          emissive: 0x0f172a,
+          roughness: 0.4,
+          metalness: 0.25
+        });
+        const ribMesh = new THREE.Mesh(ribGeo, ribMat);
+        ribMesh.position.set(coords.x, coords.baseY, coords.z);
+        ribMesh.rotation.y = coords.rotY;
+        ribMesh.userData = { u, fAtRib, baseY: coords.baseY, baseX: coords.x, baseZ: coords.z };
+        stageGroup.add(ribMesh);
+        basilarRibs.push(ribMesh);
+      }
+
+      // 2. Dynamic 3D Translucent Moving Masking-Threshold Curtain T_M(f, t)
+      const curtainGeo = new THREE.PlaneGeometry(9.2, 1.0, RIB_COUNT - 1, 1);
+      const curtainMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.38,
+        transparent: true,
+        opacity: 0.42,
+        side: THREE.DoubleSide
+      });
+      thresholdRibbonMesh = new THREE.Mesh(curtainGeo, curtainMat);
+      stageGroup.add(thresholdRibbonMesh);
+
+      // Glowing Upper Crest Line of the Moving Masking Threshold
+      const wireGeo = new THREE.PlaneGeometry(9.2, 0.06, RIB_COUNT - 1, 1);
+      const wireMat = new THREE.MeshBasicMaterial({
+        color: 0xfbbf24,
+        side: THREE.DoubleSide
+      });
+      thresholdWireMesh = new THREE.Mesh(wireGeo, wireMat);
+      stageGroup.add(thresholdWireMesh);
+
+      // 3. Masker Percussion Voice Spire (Amber)
+      maskerSpireGroup = new THREE.Group();
+      const mPillarGeo = new THREE.CylinderGeometry(0.14, 0.22, 1.0, 20);
+      mPillarGeo.translate(0, 0.5, 0);
+      const mPillarMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0xb45309,
+        emissiveIntensity: 0.55,
+        roughness: 0.25
+      });
+      const mPillar = new THREE.Mesh(mPillarGeo, mPillarMat);
+      mPillar.name = 'spire_pillar';
+      maskerSpireGroup.add(mPillar);
+
+      const mRingGeo = new THREE.TorusGeometry(0.32, 0.035, 12, 32);
+      mRingGeo.rotateX(Math.PI / 2);
+      const mRing = new THREE.Mesh(mRingGeo, mPillarMat);
+      mRing.name = 'spire_ring';
+      maskerSpireGroup.add(mRing);
+      stageGroup.add(maskerSpireGroup);
+
+      // 4. Probe Percussion Target Spire (Cyan when Audible, Rose/Dimmed when Submerged beneath Threshold Veil!)
+      probeSpireGroup = new THREE.Group();
+      const pPillarGeo = new THREE.CylinderGeometry(0.12, 0.18, 1.0, 20);
+      pPillarGeo.translate(0, 0.5, 0);
+      const pPillarMat = new THREE.MeshStandardMaterial({
+        color: 0x22d3ee,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.7,
+        roughness: 0.2
+      });
+      const pPillar = new THREE.Mesh(pPillarGeo, pPillarMat);
+      pPillar.name = 'probe_pillar';
+      probeSpireGroup.add(pPillar);
+
+      const pCapGeo = new THREE.SphereGeometry(0.21, 20, 20);
+      probeCapMesh = new THREE.Mesh(pCapGeo, pPillarMat.clone());
+      probeSpireGroup.add(probeCapMesh);
+      stageGroup.add(probeSpireGroup);
+
+      // 5. Missing-Fundamental Virtual Pitch Halo Ring at f0 place
+      const vRingGeo = new THREE.TorusGeometry(0.38, 0.035, 12, 36);
+      vRingGeo.rotateX(Math.PI / 2);
+      const vRingMat = new THREE.MeshBasicMaterial({
+        color: 0xc084fc,
+        wireframe: true
+      });
+      phantomPitchRing = new THREE.Mesh(vRingGeo, vRingMat);
+      phantomPitchRing.visible = state.missingF0;
+      stageGroup.add(phantomPitchRing);
+
+      update3DThresholdAndSpires(0);
+    }
+
+    function update3DThresholdAndSpires(elapsed) {
+      if (!thresholdRibbonMesh) return;
+
+      // Compute dynamic temporal envelope after last strike so the threshold veil visibly breathes and settles
+      const msSinceStrike = performance.now() - state.lastStrikeTime;
+      const dynamicPulse = msSinceStrike < 650 ? (0.85 + 0.15 * Math.exp(-msSinceStrike / 180)) : 1.0;
+
+      // Update 3D Moving Threshold Veil vertices
+      const pos = thresholdRibbonMesh.geometry.attributes.position;
+      const wirePos = thresholdWireMesh.geometry.attributes.position;
+
+      for (let i = 0; i < RIB_COUNT; i++) {
+        const u = i / (RIB_COUNT - 1);
+        const fHz = normStageUToFreq(u);
+        const coords = placeTo3DCoords(u);
+        const threshDb = computeMaskedThresholdAt(fHz, state.deltaTMs, dynamicPulse);
+        const hY = dbToHeightY(threshDb);
+
+        // Top row of PlaneGeometry is indices 0..RIB_COUNT-1, bottom row is RIB_COUNT..2*RIB_COUNT-1
+        pos.setXYZ(i, coords.x, coords.baseY + hY, coords.z);
+        pos.setXYZ(i + RIB_COUNT, coords.x, coords.baseY, coords.z);
+
+        wirePos.setXYZ(i, coords.x, coords.baseY + hY + 0.03, coords.z);
+        wirePos.setXYZ(i + RIB_COUNT, coords.x, coords.baseY + hY - 0.03, coords.z);
+
+        // Animate basilar membrane rib displacement and color based on excitation
+        const rib = basilarRibs[i];
+        if (rib) {
+          const distM = Math.abs(u - freqToNormStageU(state.maskerFreq));
+          const distP = Math.abs(u - freqToNormStageU(state.probeFreq));
+          const waveM = Math.exp(-distM * 14) * Math.sin(elapsed * 28 - u * 18) * state.maskerEnvelope * 0.12;
+          const waveP = Math.exp(-distP * 18) * Math.sin(elapsed * 38 - u * 24) * state.probeEnvelope * 0.10;
+          rib.position.y = coords.baseY + waveM + waveP;
+
+          const normEx = Math.min(1, threshDb / 95.0);
+          rib.material.color.setRGB(0.12 + normEx * 0.75, 0.18 + (1 - Math.min(1, distP * 12)) * 0.65, 0.28 + (1 - Math.min(1, distP * 12)) * 0.65);
+        }
+      }
+      pos.needsUpdate = true;
+      wirePos.needsUpdate = true;
+
+      // Position Masker Spire
+      const uM = freqToNormStageU(state.maskerFreq);
+      const cM = placeTo3DCoords(uM);
+      const hM = dbToHeightY(state.maskerLevel);
+      maskerSpireGroup.position.set(cM.x, cM.baseY, cM.z + (state.topologyView === 'ribbon' ? -0.32 : 0));
+      const mPillar = maskerSpireGroup.getObjectByName('spire_pillar');
+      const mRing = maskerSpireGroup.getObjectByName('spire_ring');
+      if (mPillar) mPillar.scale.y = hM;
+      if (mRing) mRing.position.y = hM;
+
+      // Position Probe Spire & Color by Audibility (Submerged vs Emerged!)
+      const aud = evaluateProbeAudibility();
+      const uP = freqToNormStageU(state.probeFreq);
+      const cP = placeTo3DCoords(uP);
+      const hP = dbToHeightY(state.probeLevel);
+      // Offset Z slightly in temporal mode to visualize Δt separation
+      const zOffset = state.topologyView === 'ribbon' ? (0.28 + (state.deltaTMs / 120) * 0.45) : 0;
+      probeSpireGroup.position.set(cP.x, cP.baseY, cP.z + zOffset);
+
+      const pPillar = probeSpireGroup.getObjectByName('probe_pillar');
+      if (pPillar) {
+        pPillar.scale.y = hP;
+        if (aud.isAudible) {
+          pPillar.material.color.setHex(0x22d3ee);
+          pPillar.material.emissive.setHex(0x06b6d4);
+          probeCapMesh.material.color.setHex(0x67e8f9);
+          probeCapMesh.material.emissive.setHex(0x22d3ee);
+        } else {
+          // Submerged beneath threshold curtain -> dim crimson/rose warning
+          pPillar.material.color.setHex(0xf43f5e);
+          pPillar.material.emissive.setHex(0x881337);
+          probeCapMesh.material.color.setHex(0xfb7185);
+          probeCapMesh.material.emissive.setHex(0xbe123c);
+        }
+      }
+      if (probeCapMesh) {
+        probeCapMesh.position.y = hP + 0.12;
+      }
+
+      // Missing Fundamental Virtual Pitch Ring at f0 place
+      if (phantomPitchRing) {
+        phantomPitchRing.visible = state.missingF0;
+        phantomPitchRing.position.set(cP.x, cP.baseY + hP + 0.25, cP.z);
+        phantomPitchRing.rotation.z = elapsed * 2.5;
+      }
+    }
+
+    build3DCochlearScene();
+
+    // 3D Orbit Camera Controls
+    let isOrbitDragging = false;
+    let prevX = 0, prevY = 0;
+    container.addEventListener('pointerdown', (e) => {
+      isOrbitDragging = true;
+      prevX = e.clientX;
+      prevY = e.clientY;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!isOrbitDragging) return;
+      const dx = e.clientX - prevX;
+      const dy = e.clientY - prevY;
+      prevX = e.clientX;
+      prevY = e.clientY;
+      camSpherical.theta -= dx * 0.006;
+      camSpherical.phi = Math.max(0.25, Math.min(Math.PI - 0.25, camSpherical.phi - dy * 0.006));
+      updateCameraFromSpherical();
+    });
+    window.addEventListener('pointerup', () => { isOrbitDragging = false; });
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camSpherical.radius = Math.max(5.5, Math.min(18.0, camSpherical.radius + e.deltaY * 0.005));
+      updateCameraFromSpherical();
+    }, { passive: false });
+
+    // =========================================================================
+    // 6. 2D INTERACTIVE SPECTRAL & TEMPORAL MASKING GRAPHS (DRAGGABLE PROBE)
+    // =========================================================================
+    const specCanvas = document.getElementById('canvas-spectral-masking');
+    const specCtx = specCanvas.getContext('2d');
+    const tempCanvas = document.getElementById('canvas-temporal-masking');
+    const tempCtx = tempCanvas.getContext('2d');
+
+    function drawSpectralMaskingCanvas() {
+      const w = specCanvas.width;
+      const h = specCanvas.height;
+      specCtx.clearRect(0, 0, w, h);
+
+      // Grid lines (20, 40, 60, 80 dB SPL)
+      [20, 40, 60, 80].forEach(db => {
+        const y = h - 14 - (db / 100) * (h - 22);
+        specCtx.strokeStyle = 'rgba(51, 65, 85, 0.45)';
+        specCtx.lineWidth = 1;
+        specCtx.beginPath();
+        specCtx.moveTo(0, y);
+        specCtx.lineTo(w, y);
+        specCtx.stroke();
+        specCtx.fillStyle = '#475569';
+        specCtx.font = '8px "JetBrains Mono", monospace';
+        specCtx.fillText(`${db}dB`, 3, y - 2);
+      });
+
+      // Quiet Threshold Curve T_quiet(f) (dashed slate)
+      specCtx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+      specCtx.setLineDash([3, 3]);
+      specCtx.beginPath();
+      for (let px = 0; px < w; px += 3) {
+        const u = px / w;
+        const f = normStageUToFreq(u);
+        const tq = quietThresholdDb(f);
+        const y = h - 14 - (tq / 100) * (h - 22);
+        if (px === 0) specCtx.moveTo(px, y);
+        else specCtx.lineTo(px, y);
+      }
+      specCtx.stroke();
+      specCtx.setLineDash([]);
+
+      // Moving Masked Threshold Fill & Curve T_M(f, Δt)
+      specCtx.beginPath();
+      specCtx.moveTo(0, h - 14);
+      for (let px = 0; px <= w; px += 2) {
+        const u = px / w;
+        const f = normStageUToFreq(u);
+        const tm = computeMaskedThresholdAt(f, state.deltaTMs, 1.0);
+        const y = h - 14 - (tm / 100) * (h - 22);
+        specCtx.lineTo(px, y);
+      }
+      specCtx.lineTo(w, h - 14);
+      specCtx.closePath();
+      const fillGrad = specCtx.createLinearGradient(0, 0, 0, h);
+      fillGrad.addColorStop(0, 'rgba(245, 158, 11, 0.40)');
+      fillGrad.addColorStop(1, 'rgba(245, 158, 11, 0.05)');
+      specCtx.fillStyle = fillGrad;
+      specCtx.fill();
+
+      // Threshold Crest Stroke
+      specCtx.strokeStyle = '#fbbf24';
+      specCtx.lineWidth = 2.2;
+      specCtx.beginPath();
+      for (let px = 0; px <= w; px += 2) {
+        const u = px / w;
+        const f = normStageUToFreq(u);
+        const tm = computeMaskedThresholdAt(f, state.deltaTMs, 1.0);
+        const y = h - 14 - (tm / 100) * (h - 22);
+        if (px === 0) specCtx.moveTo(px, y);
+        else specCtx.lineTo(px, y);
+      }
+      specCtx.stroke();
+
+      // Masker Pin (Amber Bar)
+      const mx = freqToNormStageU(state.maskerFreq) * w;
+      const my = h - 14 - (state.maskerLevel / 100) * (h - 22);
+      specCtx.strokeStyle = '#f59e0b';
+      specCtx.lineWidth = 3;
+      specCtx.beginPath();
+      specCtx.moveTo(mx, h - 14);
+      specCtx.lineTo(mx, my);
+      specCtx.stroke();
+      specCtx.fillStyle = '#fef3c7';
+      specCtx.beginPath();
+      specCtx.arc(mx, my, 4.5, 0, Math.PI * 2);
+      specCtx.fill();
+
+      // Probe Pin (Cyan if Audible, Rose if Buried) + Upper Harmonics if Missing-f0
+      const aud = evaluateProbeAudibility();
+      const px = freqToNormStageU(state.probeFreq) * w;
+      const py = h - 14 - (state.probeLevel / 100) * (h - 22);
+      const pColor = aud.isAudible ? '#22d3ee' : '#fb7185';
+
+      specCtx.strokeStyle = state.missingF0 ? 'rgba(192, 132, 252, 0.65)' : pColor;
+      specCtx.lineWidth = 2.5;
+      if (state.missingF0) specCtx.setLineDash([2, 2]);
+      specCtx.beginPath();
+      specCtx.moveTo(px, h - 14);
+      specCtx.lineTo(px, py);
+      specCtx.stroke();
+      specCtx.setLineDash([]);
+
+      specCtx.fillStyle = pColor;
+      specCtx.beginPath();
+      specCtx.arc(px, py, 5.5, 0, Math.PI * 2);
+      specCtx.fill();
+
+      // If Missing-f0, draw upper harmonics 2f0, 3f0, 4f0
+      if (state.missingF0) {
+        [2, 3, 4].forEach(mult => {
+          const hx = freqToNormStageU(state.probeFreq * mult) * w;
+          const hy = h - 14 - ((state.probeLevel - mult * 2) / 100) * (h - 22);
+          specCtx.strokeStyle = '#c084fc';
+          specCtx.lineWidth = 1.8;
+          specCtx.beginPath();
+          specCtx.moveTo(hx, h - 14);
+          specCtx.lineTo(hx, hy);
+          specCtx.stroke();
+        });
+      }
+
+      // Frequency Axis Labels
+      [100, 250, 500, 1000, 2000, 4000].forEach(fLbl => {
+        const lx = freqToNormStageU(fLbl) * w;
+        specCtx.fillStyle = '#94a3b8';
+        specCtx.font = '8px "JetBrains Mono", monospace';
+        specCtx.fillText(fLbl >= 1000 ? `${fLbl / 1000}k` : `${fLbl}`, lx - 8, h - 3);
+      });
+    }
+
+    function drawTemporalMaskingCanvas() {
+      const w = tempCanvas.width;
+      const h = tempCanvas.height;
+      tempCtx.clearRect(0, 0, w, h);
+
+      const minDt = -25;
+      const maxDt = 220;
+      function dtToX(dt) {
+        return ((dt - minDt) / (maxDt - minDt)) * w;
+      }
+
+      // Zero-lag line (Masker Onset Δt = 0 ms)
+      const xZero = dtToX(0);
+      tempCtx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      tempCtx.setLineDash([3, 3]);
+      tempCtx.beginPath();
+      tempCtx.moveTo(xZero, 4);
+      tempCtx.lineTo(xZero, h - 14);
+      tempCtx.stroke();
+      tempCtx.setLineDash([]);
+
+      // Temporal Masked Threshold Curve T_M(f_P, Δt) across Δt in [-25, +220] ms
+      tempCtx.strokeStyle = '#34d399';
+      tempCtx.lineWidth = 2;
+      tempCtx.beginPath();
+      let emergeDt = null;
+      for (let px = 0; px <= w; px += 2) {
+        const dt = minDt + (px / w) * (maxDt - minDt);
+        const tm = computeMaskedThresholdAt(state.probeFreq, dt, 1.0);
+        if (dt >= 0 && emergeDt === null && tm <= state.probeLevel) {
+          emergeDt = Math.round(dt);
+        }
+        const y = h - 14 - (tm / 100) * (h - 22);
+        if (px === 0) tempCtx.moveTo(px, y);
+        else tempCtx.lineTo(px, y);
+      }
+      tempCtx.stroke();
+
+      // Horizontal Probe Level Line L_P
+      const py = h - 14 - (state.probeLevel / 100) * (h - 22);
+      tempCtx.strokeStyle = 'rgba(34, 211, 238, 0.5)';
+      tempCtx.setLineDash([4, 3]);
+      tempCtx.beginPath();
+      tempCtx.moveTo(0, py);
+      tempCtx.lineTo(w, py);
+      tempCtx.stroke();
+      tempCtx.setLineDash([]);
+
+      // Current Probe Δt Pin
+      const curX = dtToX(state.deltaTMs);
+      const aud = evaluateProbeAudibility();
+      tempCtx.fillStyle = aud.isAudible ? '#22d3ee' : '#fb7185';
+      tempCtx.beginPath();
+      tempCtx.arc(curX, py, 5, 0, Math.PI * 2);
+      tempCtx.fill();
+
+      // Time labels
+      [-20, 0, 50, 100, 150, 200].forEach(tVal => {
+        const tx = dtToX(tVal);
+        tempCtx.fillStyle = '#94a3b8';
+        tempCtx.font = '8px "JetBrains Mono", monospace';
+        tempCtx.fillText(`${tVal}ms`, tx - 10, h - 3);
+      });
+
+      const horizonEl = document.getElementById('temporal-horizon-readout');
+      if (horizonEl) {
+        horizonEl.textContent = emergeDt !== null
+          ? (emergeDt === 0 ? 'Audible at Δt = 0 ms' : `Emerges at Δt ≥ +${emergeDt} ms`)
+          : 'Buried Across Window';
+      }
+    }
+
+    // Drag inside Spectral Canvas to move Probe (f_P, L_P) directly!
+    let isDraggingSpec = false;
+    function handleSpecDrag(e, fireSound = false) {
+      const rect = specCanvas.getBoundingClientRect();
+      const nx = Math.max(0.02, Math.min(0.98, (e.clientX - rect.left) / rect.width));
+      const ny = Math.max(0.06, Math.min(0.95, 1.0 - (e.clientY - rect.top) / rect.height));
+      state.probeFreq = Math.round(normStageUToFreq(nx));
+      state.probeLevel = Math.round(ny * 100 * 2) / 2;
+
+      document.getElementById('slider-probe-freq').value = state.probeFreq;
+      document.getElementById('slider-probe-level').value = state.probeLevel;
+      updateAllReadouts();
+      if (fireSound) firePsychoacousticEvent();
+    }
+    specCanvas.addEventListener('pointerdown', (e) => { isDraggingSpec = true; handleSpecDrag(e, true); });
+    window.addEventListener('pointermove', (e) => { if (isDraggingSpec) handleSpecDrag(e, false); });
+    window.addEventListener('pointerup', () => { isDraggingSpec = false; });
+
+    // Drag inside Temporal Canvas to scrub Δt directly!
+    let isDraggingTemp = false;
+    function handleTempDrag(e, fireSound = false) {
+      const rect = tempCanvas.getBoundingClientRect();
+      const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      state.deltaTMs = Math.round(-25 + nx * 245);
+      document.getElementById('slider-delta-t').value = state.deltaTMs;
+      updateAllReadouts();
+      if (fireSound) firePsychoacousticEvent();
+    }
+    tempCanvas.addEventListener('pointerdown', (e) => { isDraggingTemp = true; handleTempDrag(e, true); });
+    window.addEventListener('pointermove', (e) => { if (isDraggingTemp) handleTempDrag(e, false); });
+    window.addEventListener('pointerup', () => { isDraggingTemp = false; });
+
+    // =========================================================================
+    // 7. READOUTS, UI BINDINGS & LOSSLESS 44.1 kHz STEREO WAV EXPORT
+    // =========================================================================
+    function updateAllReadouts() {
+      const xM = freqToGreenwoodX(state.maskerFreq);
+      const xP = freqToGreenwoodX(state.probeFreq);
+      const zM = freqToBark(state.maskerFreq);
+      const zP = freqToBark(state.probeFreq);
+      const erbM = freqToERBHz(state.maskerFreq);
+      const erbP = freqToERBHz(state.probeFreq);
+      const dz = zP - zM;
+
+      document.getElementById('lbl-masker-freq').textContent = `${state.maskerFreq} Hz (x=${xM.toFixed(2)})`;
+      document.getElementById('lbl-masker-level').textContent = `${state.maskerLevel.toFixed(1)} dB SPL`;
+      document.getElementById('masker-bark-badge').textContent = `${zM.toFixed(1)} Bark • ERB ${Math.round(erbM)} Hz`;
+
+      document.getElementById('lbl-probe-freq').textContent = `${state.probeFreq} Hz (x=${xP.toFixed(2)})`;
+      document.getElementById('lbl-probe-level').textContent = `${state.probeLevel.toFixed(1)} dB SPL`;
+      document.getElementById('probe-bark-badge').textContent = `${zP.toFixed(1)} Bark • ERB ${Math.round(erbP)} Hz`;
+
+      const dtLabel = state.deltaTMs === 0
+        ? '0 ms (Simultaneous)'
+        : state.deltaTMs > 0
+          ? `+${state.deltaTMs} ms (Forward Masking)`
+          : `${state.deltaTMs} ms (Backward Pre-Mask)`;
+      document.getElementById('lbl-delta-t').textContent = dtLabel;
+      document.getElementById('lbl-notch-width').textContent = `${state.notchWidthERB.toFixed(2)} ERB`;
+      document.getElementById('lbl-ohc-gain').textContent = `${state.ohcGainPct}% (${state.ohcGainPct > 75 ? 'Normal Tuning' : 'Broadened ERB'})`;
+
+      const aud = evaluateProbeAudibility();
+      const marginStr = `${aud.marginDb >= 0 ? '+' : ''}${aud.marginDb.toFixed(1)} dB`;
+
+      document.getElementById('hud-bark-sep').textContent = `${dz >= 0 ? '+' : ''}${dz.toFixed(2)} Bark`;
+      document.getElementById('hud-thresh-db').textContent = `${aud.effectiveThresh.toFixed(1)} dB`;
+      document.getElementById('hud-margin-db').textContent = marginStr;
+      document.getElementById('live-place-badge').textContent = `Apex x=${xM.toFixed(2)} → ${xP.toFixed(2)}`;
+
+      const fk = Math.max(0.08, state.maskerFreq / 1000.0);
+      const upperSlope = (-24.0 - 0.23 / fk + 0.20 * Math.min(96.0, state.maskerLevel)) * (0.35 + 0.65 * (state.ohcGainPct / 100));
+      document.getElementById('curve-slope-readout').textContent = `Upper Slope: ${upperSlope.toFixed(1)} dB/Bark`;
+      document.getElementById('virtual-pitch-readout').textContent = state.missingF0
+        ? `Phantom Missing-f0: ${state.probeFreq} Hz`
+        : `Spectral Pitch: ${state.probeFreq} Hz`;
+
+      const headerPill = document.getElementById('header-status-pill');
+      const rightBadge = document.getElementById('audibility-badge-right');
+      const verdictText = document.getElementById('live-verdict-text');
+      const verdictBox = document.getElementById('verdict-banner-box');
+
+      if (aud.isAudible) {
+        headerPill.textContent = `PROBE AUDIBLE (${marginStr} SL)`;
+        headerPill.className = 'text-[10px] font-mono-tech px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        rightBadge.textContent = `AUDIBLE (${marginStr})`;
+        rightBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        verdictText.textContent = state.missingF0
+          ? `PHANTOM PITCH AUDIBLE (${state.probeFreq} Hz Residue Emerged ${marginStr} Above Veil)`
+          : `PROBE EMERGED ABOVE THRESHOLD — Audible at ${marginStr} Sensation Level`;
+        verdictText.className = 'text-xs md:text-sm font-display font-bold text-emerald-300 tracking-wide';
+        verdictBox.className = 'px-4 py-1.5 rounded-full bg-slate-950/88 border border-emerald-500/50 backdrop-blur-md flex items-center gap-3 shadow-xl transition-colors duration-200';
+      } else {
+        headerPill.textContent = `PROBE BURIED (${marginStr})`;
+        headerPill.className = 'text-[10px] font-mono-tech px-2 py-0.5 rounded font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        rightBadge.textContent = `BURIED (${marginStr})`;
+        rightBadge.className = 'px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        verdictText.textContent = `PROBE BURIED BY MASKER — Submerged ${Math.abs(aud.marginDb).toFixed(1)} dB Below Moving Threshold`;
+        verdictText.className = 'text-xs md:text-sm font-display font-bold text-rose-300 tracking-wide';
+        verdictBox.className = 'px-4 py-1.5 rounded-full bg-slate-950/88 border border-rose-500/50 backdrop-blur-md flex items-center gap-3 shadow-xl transition-colors duration-200';
+      }
+
+      drawSpectralMaskingCanvas();
+      drawTemporalMaskingCanvas();
+    }
+
+    function loadExperimentPreset(expKey) {
+      const ex = EXPERIMENTS[expKey];
+      if (!ex) return;
+      state.paradigm = ex.paradigm;
+      state.maskerInst = ex.maskerInst;
+      state.maskerFreq = ex.maskerFreq;
+      state.maskerLevel = ex.maskerLevel;
+      state.probeInst = ex.probeInst;
+      state.probeFreq = ex.probeFreq;
+      state.probeLevel = ex.probeLevel;
+      state.deltaTMs = ex.deltaTMs;
+      state.missingF0 = ex.missingF0;
+      state.notchWidthERB = ex.notchWidthERB;
+      state.ohcGainPct = ex.ohcGainPct;
+
+      // Sync UI elements
+      document.querySelectorAll('.paradigm-btn').forEach(b => {
+        b.classList.toggle('mode-pill-active', b.dataset.paradigm === ex.paradigm);
+      });
+      document.getElementById('select-masker-inst').value = ex.maskerInst;
+      document.getElementById('slider-masker-freq').value = ex.maskerFreq;
+      document.getElementById('slider-masker-level').value = ex.maskerLevel;
+      document.getElementById('select-probe-inst').value = ex.probeInst;
+      document.getElementById('slider-probe-freq').value = ex.probeFreq;
+      document.getElementById('slider-probe-level').value = ex.probeLevel;
+      document.getElementById('slider-delta-t').value = ex.deltaTMs;
+      document.getElementById('slider-notch-width').value = ex.notchWidthERB;
+      document.getElementById('slider-ohc-gain').value = ex.ohcGainPct;
+
+      const f0Btn = document.getElementById('btn-toggle-missing-f0');
+      f0Btn.textContent = ex.missingF0 ? 'Missing f0 (Phantom Pitch)' : 'f0 Present (Normal)';
+      f0Btn.className = ex.missingF0
+        ? 'px-2 py-0.5 rounded text-[10px] font-mono-tech bg-purple-500/25 text-purple-200 border border-purple-400/50 transition'
+        : 'px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 text-slate-300 border border-slate-700 transition';
+
+      document.getElementById('exp-title').textContent = ex.title;
+      document.getElementById('exp-desc').textContent = ex.desc;
+
+      updateAllReadouts();
+      firePsychoacousticEvent();
+    }
+
+    // Bind Top Paradigm Buttons
+    document.querySelectorAll('.paradigm-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = btn.dataset.paradigm;
+        if (p === 'simultaneous') loadExperimentPreset('upward_buried');
+        else if (p === 'temporal') loadExperimentPreset('forward_buried');
+        else if (p === 'virtual_pitch') loadExperimentPreset('missing_f0_chime');
+        else if (p === 'critical_band') loadExperimentPreset('critical_roughness');
+      });
+    });
+
+    // Bind Listening Isolation Buttons
+    document.querySelectorAll('.listen-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.listen-btn').forEach(b => b.classList.remove('mode-pill-active'));
+        btn.classList.add('mode-pill-active');
+        state.listenMode = btn.dataset.listen;
+        document.getElementById('listen-mode-label').textContent =
+          state.listenMode === 'both' ? 'M + P COMBINED' : state.listenMode === 'probe' ? 'SOLO PROBE ONLY' : 'SOLO MASKER ONLY';
+        updateAllReadouts();
+        firePsychoacousticEvent();
+      });
+    });
+
+    // Auto-Békésy Threshold Sweep
+    let bekesyInterval = null;
+    document.getElementById('btn-bekesy-sweep').addEventListener('click', (e) => {
+      state.bekesySweepActive = !state.bekesySweepActive;
+      e.target.classList.toggle('mode-pill-active', state.bekesySweepActive);
+      if (state.bekesySweepActive) {
+        bekesyInterval = setInterval(() => {
+          // Sweep Masker Level up and down so the threshold veil visibly submerges and unmasks the Probe!
+          state.maskerLevel += state.bekesyDir * 4.5;
+          if (state.maskerLevel >= 92) state.bekesyDir = -1;
+          if (state.maskerLevel <= 48) state.bekesyDir = 1;
+          document.getElementById('slider-masker-level').value = state.maskerLevel;
+          updateAllReadouts();
+          firePsychoacousticEvent('both');
+        }, 520);
+      } else if (bekesyInterval) {
+        clearInterval(bekesyInterval);
+        bekesyInterval = null;
+      }
+    });
+
+    // Bind Sliders & Selects
+    document.getElementById('select-masker-inst').addEventListener('change', (e) => {
+      state.maskerInst = e.target.value;
+      updateAllReadouts();
+      firePsychoacousticEvent();
+    });
+    document.getElementById('slider-masker-freq').addEventListener('input', (e) => {
+      state.maskerFreq = parseFloat(e.target.value);
+      updateAllReadouts();
+    });
+    document.getElementById('slider-masker-freq').addEventListener('change', () => firePsychoacousticEvent());
+
+    document.getElementById('slider-masker-level').addEventListener('input', (e) => {
+      state.maskerLevel = parseFloat(e.target.value);
+      updateAllReadouts();
+    });
+    document.getElementById('slider-masker-level').addEventListener('change', () => firePsychoacousticEvent());
+
+    document.getElementById('select-probe-inst').addEventListener('change', (e) => {
+      state.probeInst = e.target.value;
+      updateAllReadouts();
+      firePsychoacousticEvent();
+    });
+    document.getElementById('slider-probe-freq').addEventListener('input', (e) => {
+      state.probeFreq = parseFloat(e.target.value);
+      updateAllReadouts();
+    });
+    document.getElementById('slider-probe-freq').addEventListener('change', () => firePsychoacousticEvent());
+
+    document.getElementById('slider-probe-level').addEventListener('input', (e) => {
+      state.probeLevel = parseFloat(e.target.value);
+      updateAllReadouts();
+    });
+    document.getElementById('slider-probe-level').addEventListener('change', () => firePsychoacousticEvent());
+
+    document.getElementById('slider-delta-t').addEventListener('input', (e) => {
+      state.deltaTMs = parseInt(e.target.value, 10);
+      updateAllReadouts();
+    });
+    document.getElementById('slider-delta-t').addEventListener('change', () => firePsychoacousticEvent());
+
+    document.getElementById('btn-toggle-missing-f0').addEventListener('click', (e) => {
+      state.missingF0 = !state.missingF0;
+      e.target.textContent = state.missingF0 ? 'Missing f0 (Phantom Pitch)' : 'f0 Present (Normal)';
+      e.target.className = state.missingF0
+        ? 'px-2 py-0.5 rounded text-[10px] font-mono-tech bg-purple-500/25 text-purple-200 border border-purple-400/50 transition'
+        : 'px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 text-slate-300 border border-slate-700 transition';
+      updateAllReadouts();
+      firePsychoacousticEvent();
+    });
+
+    document.getElementById('slider-notch-width').addEventListener('input', (e) => {
+      state.notchWidthERB = parseFloat(e.target.value);
+      updateAllReadouts();
+    });
+    document.getElementById('slider-ohc-gain').addEventListener('input', (e) => {
+      state.ohcGainPct = parseInt(e.target.value, 10);
+      updateAllReadouts();
+    });
+
+    document.getElementById('select-experiment').addEventListener('change', (e) => {
+      loadExperimentPreset(e.target.value);
+    });
+
+    // Footer Trigger Buttons
+    document.getElementById('btn-fire-both').addEventListener('click', () => firePsychoacousticEvent('both'));
+    document.getElementById('btn-fire-probe').addEventListener('click', () => firePsychoacousticEvent('probe'));
+    document.getElementById('btn-fire-masker').addEventListener('click', () => firePsychoacousticEvent('masker'));
+
+    // A/B/C Psychoacoustic Proof Sequence: 1. Solo Probe -> 2. Masked Pair -> 3. Unmasked Pair (Masker -22 dB)
+    document.getElementById('btn-ab-compare').addEventListener('click', () => {
+      const savedLevel = state.maskerLevel;
+      // Step A: Solo Probe
+      firePsychoacousticEvent('probe');
+      // Step B: Combined with current Masker (650 ms later)
+      setTimeout(() => {
+        firePsychoacousticEvent('both');
+      }, 650);
+      // Step C: Combined with Reduced Masker so Probe emerges (1350 ms later)
+      setTimeout(() => {
+        state.maskerLevel = Math.max(25, savedLevel - 22);
+        document.getElementById('slider-masker-level').value = state.maskerLevel;
+        updateAllReadouts();
+        firePsychoacousticEvent('both');
+      }, 1350);
+      // Restore original level after demonstration
+      setTimeout(() => {
+        state.maskerLevel = savedLevel;
+        document.getElementById('slider-masker-level').value = savedLevel;
+        updateAllReadouts();
+      }, 2200);
+    });
+
+    // Continuous Pulse Loop
+    let pulseTimer = null;
+    function togglePulseLoop(force) {
+      state.isLooping = force !== undefined ? force : !state.isLooping;
+      if (pulseTimer) {
+        clearInterval(pulseTimer);
+        pulseTimer = null;
+      }
+      document.getElementById('pulse-icon').textContent = state.isLooping ? '■' : '▶';
+      document.getElementById('pulse-text').textContent = state.isLooping ? 'Stop Continuous Pulse' : 'Start Continuous Pulse';
+      if (state.isLooping) {
+        firePsychoacousticEvent();
+        const intervalMs = (60 / state.bpm) * 1000;
+        pulseTimer = setInterval(() => firePsychoacousticEvent(), intervalMs);
+      }
+    }
+    document.getElementById('btn-pulse-loop').addEventListener('click', () => togglePulseLoop());
+    document.getElementById('slider-bpm').addEventListener('input', (e) => {
+      state.bpm = parseInt(e.target.value, 10);
+      document.getElementById('lbl-bpm').textContent = `${state.bpm} BPM`;
+      if (state.isLooping) togglePulseLoop(true);
+    });
+
+    // 3D Topology Toggle (Uncoiled Basilar Ribbon vs Spiral Cochlea)
+    document.getElementById('btn-3d-topology').addEventListener('click', (e) => {
+      state.topologyView = state.topologyView === 'ribbon' ? 'spiral' : 'ribbon';
+      e.target.textContent = state.topologyView === 'ribbon' ? '3D View: Basilar Ribbon' : '3D View: Spiral Cochlea';
+      build3DCochlearScene();
+    });
+
+    document.getElementById('btn-cam-reset').addEventListener('click', () => {
+      camSpherical = { radius: 11.2, theta: 0.18, phi: 1.12 };
+      updateCameraFromSpherical();
+    });
+
+    // Modal & Side Docks
+    const infoModal = document.getElementById('info-modal');
+    document.getElementById('btn-info-modal').addEventListener('click', () => {
+      infoModal.classList.remove('hidden');
+      infoModal.classList.add('flex');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      infoModal.classList.add('hidden');
+      infoModal.classList.remove('flex');
+    });
+
+    let leftOpen = true, rightOpen = true;
+    document.getElementById('toggle-left-dock').addEventListener('click', () => {
+      leftOpen = !leftOpen;
+      document.getElementById('left-dock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-110%)';
+      document.getElementById('left-dock-arrow').textContent = leftOpen ? '◀' : '▶';
+    });
+    document.getElementById('toggle-right-dock').addEventListener('click', () => {
+      rightOpen = !rightOpen;
+      document.getElementById('right-dock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(110%)';
+      document.getElementById('right-dock-arrow').textContent = rightOpen ? '▶' : '◀';
+    });
+
+    // Lossless 44.1 kHz 16-bit Stereo WAV Exporter
+    function encodeWAV(audioBuffer) {
+      const numChannels = 2;
+      const sampleRate = audioBuffer.sampleRate;
+      const length = audioBuffer.length;
+      const buffer = new ArrayBuffer(44 + length * numChannels * 2);
+      const view = new DataView(buffer);
+      function writeStr(off, s) { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + length * numChannels * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, length * numChannels * 2, true);
+
+      const chL = audioBuffer.getChannelData(0);
+      const chR = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : chL;
+      let offset = 44;
+      for (let i = 0; i < length; i++) {
+        const sL = Math.max(-1, Math.min(1, chL[i]));
+        const sR = Math.max(-1, Math.min(1, chR[i]));
+        view.setInt16(offset, sL < 0 ? sL * 0x8000 : sL * 0x7FFF, true);
+        view.setInt16(offset + 2, sR < 0 ? sR * 0x8000 : sR * 0x7FFF, true);
+        offset += 4;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function exportWAVPsychoacoustic(isABCProof = false) {
+      const sr = 44100;
+      const dur = isABCProof ? 2.6 : 1.1;
+      const offline = new OfflineAudioContext(2, Math.ceil(sr * dur), sr);
+      const dtSec = Math.max(0, state.deltaTMs / 1000.0);
+
+      if (!isABCProof) {
+        triggerMaskerVoice(offline, 0.04, offline.destination);
+        triggerProbeVoice(offline, 0.04 + dtSec, offline.destination, true);
+      } else {
+        // 1. Probe Alone (0.05s) -> 2. Combined Masked (0.85s) -> 3. Combined Unmasked (1.65s)
+        triggerProbeVoice(offline, 0.05, offline.destination, false);
+        triggerMaskerVoice(offline, 0.85, offline.destination);
+        triggerProbeVoice(offline, 0.85 + dtSec, offline.destination, true);
+        const origL = state.maskerLevel;
+        state.maskerLevel = Math.max(25, origL - 22);
+        triggerMaskerVoice(offline, 1.65, offline.destination);
+        triggerProbeVoice(offline, 1.65 + dtSec, offline.destination, true);
+        state.maskerLevel = origL;
+      }
+
+      const rendered = await offline.startRendering();
+      const blob = encodeWAV(rendered);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = isABCProof
+        ? `cochlea_mask_${state.paradigm}_ABC_proof.wav`
+        : `cochlea_mask_${state.maskerFreq}Hz_vs_${state.probeFreq}Hz.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('btn-export-pair').addEventListener('click', () => exportWAVPsychoacoustic(false));
+    document.getElementById('btn-export-proof').addEventListener('click', () => exportWAVPsychoacoustic(true));
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'escape') {
+        infoModal.classList.add('hidden');
+        infoModal.classList.remove('flex');
+      } else if (k === ' ') {
+        e.preventDefault();
+        firePsychoacousticEvent('both');
+      } else if (k === 'p') {
+        firePsychoacousticEvent('probe');
+      } else if (k === 'm') {
+        firePsychoacousticEvent('masker');
+      } else if (k === 'b') {
+        document.getElementById('btn-bekesy-sweep').click();
+      }
+    });
+
+    // =========================================================================
+    // 8. MAIN RENDER & ANIMATION LOOP
+    // =========================================================================
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, clock.getDelta());
+      const elapsed = clock.getElapsedTime();
+
+      state.maskerEnvelope *= Math.exp(-dt * 4.2);
+      state.probeEnvelope *= Math.exp(-dt * 5.0);
+
+      update3DThresholdAndSpires(elapsed);
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateAllReadouts();
+    animate();
+  </script>
+</body>
+</html>

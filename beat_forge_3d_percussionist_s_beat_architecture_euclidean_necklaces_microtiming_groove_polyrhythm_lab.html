@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BEAT-FORGE 3D — Percussionist's Beat Architecture, Euclidean Necklaces, Microtiming Groove & Polyrhythm Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-obsidian: #04060b;
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #04060b; color: #f1f5f9;
+      font-family: 'Inter', sans-serif; overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .glass-dock {
+      background: rgba(8, 12, 22, 0.89);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.78);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.45); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.45); border-radius: 3px; }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 999px;
+      background: rgba(51, 65, 85, 0.85); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 13px; height: 13px; border-radius: 50%;
+      background: #f59e0b; border: 2px solid #fffbeb;
+      cursor: pointer; box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
+    }
+    .pill-active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.28), rgba(16, 185, 129, 0.22));
+      border-color: rgba(251, 191, 36, 0.85) !important;
+      color: #fef3c7 !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.28);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden bg-[#04060b] text-slate-100">
+
+  <!-- Full-Screen 3D WebGL Canvas Layer -->
+  <div id="canvas-container" class="fixed inset-0 z-0 cursor-crosshair"></div>
+
+  <!-- Non-Overlapping 3-Row Flex Viewport HUD -->
+  <div class="relative z-10 w-full h-full flex flex-col justify-between pointer-events-none">
+
+    <!-- ROW 1: Top Header Bar -->
+    <header class="shrink-0 w-full px-3 py-2 bg-slate-950/88 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 via-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/40">
+          <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <polygon points="12 2 21 8.5 17.5 19.5 6.5 19.5 3 8.5 12 2"/>
+            <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-sm md:text-base font-bold tracking-tight text-white">BEAT-FORGE 3D</h1>
+            <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Euclidean + Microtiming Pocket</span>
+            <span id="header-preset-badge" class="hidden sm:inline-block text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">J Dilla Neo-Soul Pocket</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight hidden sm:block">
+            Toussaint Euclidean Necklaces $E(k,n,r)$, Laid-Back Snare Asynchrony ($\Delta t\text{ ms}$), Non-Isochronous Swing &amp; Polyrhythmic Phase Geometry
+          </p>
+        </div>
+      </div>
+
+      <!-- Quick Groove Archetype Bar -->
+      <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+        <button data-preset="dilla_pocket" class="quick-preset-btn px-2 py-1 rounded text-[11px] font-medium transition pill-active">J Dilla Pocket</button>
+        <button data-preset="purdie_shuffle" class="quick-preset-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Purdie Shuffle</button>
+        <button data-preset="funky_drummer" class="quick-preset-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Funky Ghost Matrix</button>
+        <button data-preset="afrobeat_allen" class="quick-preset-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Tony Allen Afrobeat</button>
+        <button data-preset="ashanti_12_8" class="quick-preset-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Ashanti E(7,12)</button>
+        <button data-preset="samba_batucada" class="quick-preset-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Samba Batucada</button>
+      </div>
+
+      <!-- Live Telemetry & 3D Mode Switch -->
+      <div class="flex items-center gap-2">
+        <div class="hidden xl:flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] font-mono-tech">
+          <div><span class="text-slate-400">Swing:</span> <span id="hud-swing" class="text-amber-300 font-semibold">59% (Dilla)</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Snare Δt:</span> <span id="hud-snare-dt" class="text-emerald-300 font-semibold">+18 ms</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">LCM Cycle:</span> <span id="hud-lcm" class="text-cyan-300 font-semibold">16 steps</span></div>
+        </div>
+
+        <button id="btn-3d-mode" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 transition">
+          3D View: Euclidean Rings
+        </button>
+        <button id="btn-cam-reset" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          Reset View
+        </button>
+        <button id="btn-info-modal" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition">
+          Beat Theory &amp; Lore
+        </button>
+      </div>
+    </header>
+
+    <!-- ROW 2: Middle Interactive Stage with Non-Overlapping Dock Toggles & Side Docks -->
+    <div class="relative flex-1 min-h-0 w-full pointer-events-none">
+
+      <!-- Dock Toggle Pill Buttons Along Top of Stage -->
+      <div class="absolute top-2 left-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-left-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-amber-300 border border-amber-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          <span id="left-dock-arrow">◀</span> Microtiming Pocket &amp; Euclidean Lab
+        </button>
+      </div>
+
+      <div class="absolute top-2 right-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-right-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-emerald-300 border border-emerald-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          6-Track Matrix &amp; Groove Telemetry <span id="right-dock-arrow">▶</span>
+        </button>
+      </div>
+
+      <!-- Center Floating Beat Pulse & Syncopation Status Banner -->
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        <div class="px-4 py-1 rounded-full bg-slate-950/85 border border-amber-500/35 backdrop-blur-md flex items-center gap-3 shadow-xl">
+          <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">Pulse Step:</span>
+          <span id="live-step-counter" class="text-xs md:text-sm font-mono-tech font-bold text-amber-300">BAR 1 • BEAT 1.1</span>
+          <span class="text-slate-700">|</span>
+          <span id="live-syncopation-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            Syncopation S = 68% • Pocket Locked
+          </span>
+        </div>
+        <div class="text-[10px] font-mono-tech text-slate-400 mt-1 bg-slate-950/65 px-3 py-0.5 rounded-full border border-slate-800/80">
+          Click 3D Ring Nodes or Step Grid to Toggle (`Normal → Accent/Rimshot → Ghost → Off`) • Keys <span class="text-amber-300">[1–6]</span> Finger-Drum Live • <span class="text-emerald-300">[Space]</span> Play/Stop
+        </div>
+      </div>
+
+      <!-- LEFT DOCK: Microtiming Pocket Engine, Euclidean Generator & Polyrhythm Controls -->
+      <aside id="left-dock" class="absolute top-10 bottom-2 left-3 z-20 w-[335px] max-w-[92vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-amber-300">1. Microtiming Pocket &amp; Feel Engine</h2>
+            <p class="text-[10px] text-slate-400">Non-Isochronous Swing &amp; Asynchrony Offsets ($\Delta t$ in ms)</p>
+          </div>
+          <button id="btn-quantize-reset" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="Snap all microtiming offsets to 0 ms rigid grid">
+            Snap Grid (0ms)
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- 12 Iconic Percussion Beat & World Groove Presets -->
+          <div class="p-2.5 rounded-lg bg-slate-900/85 border border-slate-800 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-amber-300">12 Iconic Percussion Groove Blueprints</span>
+              <span class="text-[10px] font-mono-tech text-slate-400">Load Beat</span>
+            </div>
+            <select id="select-groove-preset" class="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-2 py-1.5 text-xs text-amber-100 font-medium">
+              <optgroup label="Microtiming Pocket &amp; Funk/Soul Masters">
+                <option value="dilla_pocket">1. J Dilla "Drunk" Neo-Soul Pocket (59% Swing, +18ms Snare)</option>
+                <option value="purdie_shuffle">2. Bernard Purdie / Rosanna Half-Time Triplet Shuffle</option>
+                <option value="funky_drummer">3. Clyde Stubblefield "Funky Drummer" Ghost-Note Matrix</option>
+                <option value="amen_break">4. Gregory Coleman "Amen Break" Syncopated Breakbeat</option>
+              </optgroup>
+              <optgroup label="Toussaint Euclidean World Timelines E(k,n)">
+                <option value="afrobeat_allen">5. Tony Allen Afrobeat Polyrhythmic Engine</option>
+                <option value="son_clave">6. Afro-Cuban 3-2 Son Clave + Tumbao E(3,8)+E(2,8)</option>
+                <option value="ashanti_12_8">7. West African Ashanti E(7,12) Bell Cycle (12/8)</option>
+                <option value="samba_batucada">8. Brazilian Samba Batucada (E(7,16) + 4th-16th Drive)</option>
+                <option value="bossa_necklace">9. Bossa Nova Euclidean Necklace E(5,16)</option>
+              </optgroup>
+              <optgroup label="Odd-Meter Aksak, Polymeter &amp; Polyrhythms">
+                <option value="balkan_aksak">10. Balkan Aksak 7/8 (2+2+3 Rachenitsa) Groove</option>
+                <option value="polymeter_5_4">11. King Crimson / Meshuggah 5-against-4 Polymeter</option>
+                <option value="polyrhythm_4_3_2">12. Pure 4:3:2 Hemiola &amp; Cross-Rhythm Phase Lab</option>
+              </optgroup>
+            </select>
+            <p id="preset-lore-blurb" class="text-[10px] text-slate-400 leading-snug pt-0.5">
+              Unquantized MPC3000 microtiming: 59% quintuplet-leaning hi-hat swing paired with a +18 ms laid-back backbeat snare and slightly pushed (-6 ms) kick drum.
+            </p>
+          </div>
+
+          <!-- Microtiming Sliders: Swing %, Laid-Back Snare ms, Hat Shift ms, Samba 4th-16th -->
+          <div class="p-2.5 rounded-lg bg-gradient-to-br from-amber-500/10 via-slate-900/90 to-slate-950 border border-amber-500/30 space-y-2.5">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">16th Subdivision Swing ($\sigma_{\text{swing}}$)</span>
+                <span id="lbl-swing-pct" class="font-mono-tech text-amber-300 font-bold">59.0% (Quintuplet)</span>
+              </div>
+              <input id="slider-swing-pct" type="range" min="50" max="72" step="0.5" value="59" class="w-full" />
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-0.5">
+                <span>50% Straight</span>
+                <span>58% MPC</span>
+                <span>62% Dilla</span>
+                <span>66.7% Triplet</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Backbeat Snare Pocket ($\Delta t_{\text{snare}}$)</span>
+                <span id="lbl-snare-offset" class="font-mono-tech text-emerald-300 font-bold">+18.0 ms (Laid-Back)</span>
+              </div>
+              <input id="slider-snare-offset" type="range" min="-30" max="45" step="0.5" value="18" class="w-full" />
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-0.5">
+                <span>-30ms Rushed</span>
+                <span>0ms Grid</span>
+                <span>+19ms JND</span>
+                <span>+45ms Drunk</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Kick Drum Micro-Push ($\Delta t_{\text{kick}}$)</span>
+                <span id="lbl-kick-offset" class="font-mono-tech text-cyan-300 font-bold">-6.0 ms (Pushed)</span>
+              </div>
+              <input id="slider-kick-offset" type="range" min="-25" max="25" step="0.5" value="-6" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Hi-Hat / Shaker Feel ($\Delta t_{\text{hat}}$)</span>
+                <span id="lbl-hat-offset" class="font-mono-tech text-purple-300 font-bold">+7.0 ms</span>
+              </div>
+              <input id="slider-hat-offset" type="range" min="-25" max="25" step="0.5" value="7" class="w-full" />
+            </div>
+          </div>
+
+          <!-- Bjorklund Euclidean Necklace Generator E(k, n, rot) for Selected Track -->
+          <div class="p-2.5 rounded-lg bg-slate-900/90 border border-cyan-500/30 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-display font-bold text-cyan-300 text-[11px] uppercase tracking-wider">2. Euclidean Generator E(k, n, r)</span>
+              <span id="euc-formula-badge" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300">E(5, 16, r=0)</span>
+            </div>
+
+            <div>
+              <span class="text-[10px] text-slate-400 block mb-1">Target Voice Track to Sculpt</span>
+              <select id="select-euc-track" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-cyan-200">
+                <option value="0">Track 1: Sub/Acoustic Kick Drum</option>
+                <option value="1">Track 2: Snare / Rimshot / Ghost</option>
+                <option value="2">Track 3: Closed &amp; Open Hi-Hat</option>
+                <option value="3">Track 4: Tuned Tom / Conga</option>
+                <option value="4" selected>Track 5: Clave / Agogô Timeline Bell</option>
+                <option value="5">Track 6: Shaker / Tamborim Driver</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <div class="flex justify-between text-[10px] mb-0.5">
+                  <span class="text-slate-400">Hits $k$</span>
+                  <span id="lbl-euc-k" class="font-mono-tech text-cyan-300 font-bold">5</span>
+                </div>
+                <input id="slider-euc-k" type="range" min="0" max="16" step="1" value="5" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-[10px] mb-0.5">
+                  <span class="text-slate-400">Steps $n$</span>
+                  <span id="lbl-euc-n" class="font-mono-tech text-amber-300 font-bold">16</span>
+                </div>
+                <input id="slider-euc-n" type="range" min="3" max="16" step="1" value="16" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-[10px] mb-0.5">
+                  <span class="text-slate-400">Rotate $r$</span>
+                  <span id="lbl-euc-r" class="font-mono-tech text-emerald-300 font-bold">0</span>
+                </div>
+                <input id="slider-euc-r" type="range" min="0" max="15" step="1" value="0" class="w-full" />
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <span id="euc-pattern-string" class="text-[10px] font-mono-tech text-slate-300 tracking-widest">[x . . x . . x . . x . . x . . .]</span>
+              <button id="btn-apply-euclidean" class="px-2.5 py-1 rounded bg-cyan-500/25 hover:bg-cyan-500/35 text-cyan-200 border border-cyan-400/50 text-[10px] font-mono-tech font-semibold transition">
+                Apply E(k,n,r)
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- RIGHT DOCK: 6-Track Polyrhythmic Step Matrix + Microtiming Deviation Radar -->
+      <aside id="right-dock" class="absolute top-10 bottom-2 right-3 z-20 w-[415px] max-w-[95vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-emerald-300">6-Track Beat Matrix &amp; Groove Telemetry</h2>
+            <p class="text-[10px] text-slate-400">Click Step: <span class="text-amber-300">Normal</span> → <span class="text-rose-300">Accent/Rim/Open</span> → <span class="text-cyan-300">Ghost</span> → Off</p>
+          </div>
+          <button id="btn-clear-grid" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+            Clear All
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- 6-Track Interactive Step Sequencer Matrix -->
+          <div id="tracks-matrix-container" class="space-y-2"></div>
+
+          <!-- Canvas 1: Microtiming Pocket Deviation Radar (Δt_i vs ±20 ms JND Zone) -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-amber-300">Microtiming Pocket Phase Offset ($\Delta t$ vs $\pm 20\text{ ms}$ JND)</span>
+              <span id="jnd-status-readout" class="text-[10px] font-mono-tech text-emerald-400">In Pocket (&lt; 24 ms JND)</span>
+            </div>
+            <canvas id="canvas-pocket-radar" width="375" height="92" class="w-full h-24 rounded bg-[#050811] border border-slate-800/80"></canvas>
+          </div>
+
+          <!-- Canvas 2: Euclidean Necklace & Polyrhythmic Phase Convergence Scope -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-cyan-300">Polyrhythmic Sub-Pulse Energy &amp; Accent Hierarchy</span>
+              <span id="groove-density-readout" class="text-[10px] font-mono-tech text-cyan-400">Density: 24 hits/cycle</span>
+            </div>
+            <canvas id="canvas-groove-scope" width="375" height="78" class="w-full h-20 rounded bg-[#050811] border border-slate-800/80"></canvas>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <!-- ROW 3: Bottom Transport, Live Finger-Drumming Pads & Lossless WAV Export -->
+    <footer class="shrink-0 w-full px-3 py-2 bg-slate-950/92 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <!-- Live Finger-Drumming Pads [1..6] -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button data-pad="0" class="drum-pad-btn px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 text-amber-300 border border-amber-500/45 font-semibold text-xs transition">
+          Kick <span class="text-[10px] font-mono-tech opacity-75">[1]</span>
+        </button>
+        <button data-pad="1" class="drum-pad-btn px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 text-rose-300 border border-rose-500/45 font-semibold text-xs transition">
+          Snare/Rim <span class="text-[10px] font-mono-tech opacity-75">[2]</span>
+        </button>
+        <button data-pad="2" class="drum-pad-btn px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 text-cyan-300 border border-cyan-500/45 font-semibold text-xs transition">
+          Hi-Hat <span class="text-[10px] font-mono-tech opacity-75">[3]</span>
+        </button>
+        <button data-pad="3" class="drum-pad-btn px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/35 text-emerald-300 border border-emerald-500/45 font-semibold text-xs transition">
+          Tom/Conga <span class="text-[10px] font-mono-tech opacity-75">[4]</span>
+        </button>
+        <button data-pad="4" class="drum-pad-btn px-2.5 py-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 text-purple-300 border border-purple-500/45 font-semibold text-xs transition">
+          Clave/Bell <span class="text-[10px] font-mono-tech opacity-75">[5]</span>
+        </button>
+        <button data-pad="5" class="drum-pad-btn px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/35 text-indigo-300 border border-indigo-500/45 font-semibold text-xs transition">
+          Shaker <span class="text-[10px] font-mono-tech opacity-75">[6]</span>
+        </button>
+      </div>
+
+      <!-- Master Groove Sequencer Transport -->
+      <div class="flex items-center gap-2">
+        <button id="btn-play-toggle" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+          <span id="play-icon">▶</span>
+          <span id="play-text">Play Beat Loop</span>
+        </button>
+        <div class="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+          <span class="text-[10px] font-mono-tech text-slate-400">BPM</span>
+          <input id="slider-bpm" type="range" min="60" max="175" value="94" class="w-20" />
+          <span id="lbl-bpm" class="text-xs font-mono-tech text-amber-300 w-8 text-right">94</span>
+        </div>
+      </div>
+
+      <!-- Lossless 44.1 kHz 16-Bit Stereo WAV Export -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-export-kit" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-xs font-mono-tech transition">
+          ⬇ WAV Kit Hits
+        </button>
+        <button id="btn-export-loop" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/40 text-xs font-mono-tech transition">
+          ⬇ Export Groove Loop (WAV)
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- BEAT THEORY, EUCLIDEAN GEOMETRY & MICROTIMING MODAL -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-slate-950/82 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-dock max-w-2xl w-full rounded-2xl border border-amber-500/40 p-5 space-y-3 text-xs text-slate-200 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 class="font-display text-base font-bold text-amber-300">The Mathematics &amp; Physics of Percussion Beats &amp; Groove</h3>
+          <p class="text-[11px] text-slate-400">Toussaint Euclidean Necklaces $E(k,n)$ • Microtiming Asynchrony • Non-Isochronous Swing • Polyrhythms</p>
+        </div>
+        <button id="btn-close-modal" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-tech">✕ ESC</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-cyan-300">1. Euclidean Rhythms $E(k, n)$ (Toussaint 2005)</h4>
+          <p class="text-slate-300">
+            Computer scientist Godfried Toussaint proved that Bjorklund's neutron-accelerator timing algorithm—which distributes $k$ pulses across $n$ time steps as equidistantly as possible via Euclid's GCD algorithm—generates almost all foundational world percussion timelines: $E(3,8)$ Cuban <em>tresillo</em>, $E(5,8)$ <em>cinquillo</em>, $E(5,16)$ <em>Bossa Nova</em>, and $E(7,12)$ West African <em>Ashanti</em> bell patterns.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-amber-300">2. Microtiming Pocket &amp; Laid-Back Snare Delay</h4>
+          <p class="text-slate-300">
+            Human groove lives in systematic millisecond deviations from the rigid grid (Keil's <em>participatory discrepancies</em>). Empirical studies (Danielsen et al., 2015; JASA 2026) show that laid-back funk and neo-soul drummers delay snare backbeats by $+15\text{ to }+28\text{ ms}$ while pushing kick downbeats slightly early, hovering right near the human Just Noticeable Difference threshold ($\approx 19\text{–}24\text{ ms}$).
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-emerald-300">3. Non-Isochronous Swing (MPC &amp; J Dilla Time)</h4>
+          <p class="text-slate-300">
+            Rather than dividing 16th notes equally ($50:50$) or into rigid triplets ($66.7:33.3$), Roger Linn's MPC swing and J Dilla's unquantized drum programming explore intermediate quintuplet ($58\text{–}60\%$) and septuplet ($57\%$) subdivision ratios combined with independent voice phase offsets.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-purple-300">4. Ghost Notes &amp; Polyrhythmic Phase Cycles</h4>
+          <p class="text-slate-300">
+            Master funk drummers (Clyde Stubblefield, Bernard Purdie, Zigaboo Modeliste) weave $-14\text{ dB}$ ghost-note snare taps between accented rimshot backbeats. When tracks use different step lengths $n_i$ (polymeter) or cross-divisions $p:q$ (polyrhythm), they trace phase orbits that realign every $\text{LCM}(n_1,\dots,n_6)$ pulses.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. BJORKLUND / TOUSSAINT EUCLIDEAN RHYTHM ALGORITHM E(k, n, rot)
+    // =========================================================================
+    function generateEuclideanPattern(k, n, rotation = 0, hitValue = 1) {
+      const steps = Math.max(1, Math.min(32, Math.round(n)));
+      const pulses = Math.max(0, Math.min(steps, Math.round(k)));
+      if (pulses === 0) return new Array(steps).fill(0);
+      if (pulses >= steps) return new Array(steps).fill(hitValue);
+
+      const pattern = [];
+      for (let i = 0; i < steps; i++) {
+        // Exact Bresenham / Bjorklund maximally-even distribution
+        const val = Math.floor(((i + 1) * pulses) / steps) - Math.floor((i * pulses) / steps);
+        pattern.push(val ? hitValue : 0);
+      }
+      // Rotate pattern so downbeat aligns or shifts by rotation steps
+      // Find first '1' so canonical E(k,n) starts with an onset at step 0
+      const firstHit = pattern.indexOf(hitValue);
+      const canonical = firstHit > 0
+        ? pattern.slice(firstHit).concat(pattern.slice(0, firstHit))
+        : pattern;
+
+      const rot = ((rotation % steps) + steps) % steps;
+      const rotated = new Array(steps);
+      for (let i = 0; i < steps; i++) {
+        rotated[(i + rot) % steps] = canonical[i];
+      }
+      return rotated;
+    }
+
+    function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+    function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+    // =========================================================================
+    // 2. TRACK DEFINITIONS & 12 MASTER PERCUSSION GROOVE BLUEPRINTS
+    // =========================================================================
+    // Step states: 0 = Off, 1 = Normal Hit, 2 = Accent (Rimshot / Open Hat / High Agogô), 3 = Ghost Note (-14 dB)
+    const TRACK_META = [
+      { id: 'kick',   name: '1. Kick Drum',   short: 'KICK',  colorHex: 0xf59e0b, cssCol: 'amber',   ringRadius: 1.35 },
+      { id: 'snare',  name: '2. Snare / Rim', short: 'SNARE', colorHex: 0xf43f5e, cssCol: 'rose',    ringRadius: 2.05 },
+      { id: 'hihat',  name: '3. Hi-Hat Cymb', short: 'HIHAT', colorHex: 0x22d3ee, cssCol: 'cyan',    ringRadius: 2.75 },
+      { id: 'tom',    name: '4. Tom / Conga', short: 'CONGA', colorHex: 0x10b981, cssCol: 'emerald', ringRadius: 3.45 },
+      { id: 'clave',  name: '5. Clave / Bell',short: 'CLAVE', colorHex: 0xc084fc, cssCol: 'purple',  ringRadius: 4.15 },
+      { id: 'shaker', name: '6. Shaker Perc', short: 'SHAKE', colorHex: 0x818cf8, cssCol: 'indigo',  ringRadius: 4.85 }
+    ];
+
+    const GROOVE_PRESETS = {
+      dilla_pocket: {
+        name: 'J Dilla Neo-Soul Pocket',
+        bpm: 92, swingPct: 59.0, snareOffsetMs: 18.5, kickOffsetMs: -6.0, hatOffsetMs: 7.0,
+        blurb: 'Unquantized MPC3000 microtiming: 59% quintuplet-leaning hi-hat swing paired with a +18.5 ms laid-back backbeat snare and slightly pushed (-6 ms) kick drum.',
+        tracks: [
+          { n: 16, steps: [2,0,0,1, 0,0,0,0, 1,0,1,0, 0,0,3,0] }, // Kick
+          { n: 16, steps: [0,0,0,0, 2,0,0,3, 0,3,0,0, 2,0,0,3] }, // Snare (2=Rimshot backbeat, 3=Ghost)
+          { n: 16, steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,2,0] }, // Hi-hat (2=Open hat bark)
+          { n: 16, steps: [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,0,1] }, // Conga
+          { n: 16, steps: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0] }, // Clave E(5,16)
+          { n: 16, steps: [3,1,3,1, 3,1,3,1, 3,1,3,1, 3,1,3,1] }  // Shaker
+        ]
+      },
+      purdie_shuffle: {
+        name: 'Bernard Purdie Half-Time Shuffle',
+        bpm: 112, swingPct: 65.5, snareOffsetMs: 12.0, kickOffsetMs: 0.0, hatOffsetMs: 3.0,
+        blurb: '12/8 triplet shuffle feel (65.5% swing) with rolling ghost-note snare triplets tucked between a thunderous half-time rimshot on Beat 3.',
+        tracks: [
+          { n: 12, steps: [2,0,0, 0,0,1, 0,0,1, 0,1,0] },
+          { n: 12, steps: [0,3,0, 0,3,0, 2,3,0, 0,3,0] },
+          { n: 12, steps: [2,0,1, 2,0,1, 2,0,1, 2,0,1] },
+          { n: 12, steps: [0,0,0, 0,0,0, 0,0,0, 1,0,2] },
+          { n: 12, steps: [1,0,0, 1,0,0, 1,0,0, 1,0,0] },
+          { n: 12, steps: [1,3,1, 1,3,1, 1,3,1, 1,3,1] }
+        ]
+      },
+      funky_drummer: {
+        name: 'Clyde Stubblefield "Funky Drummer"',
+        bpm: 101, swingPct: 54.5, snareOffsetMs: 9.0, kickOffsetMs: -3.0, hatOffsetMs: 2.0,
+        blurb: 'James Brown\'s legendary 1969 breakbeat: dense 16th-note closed hi-hat drive, syncopated ghost-note snare chatter on steps 8 & 10, and an open hi-hat bark on the "and of 3" and "and of 4".',
+        tracks: [
+          { n: 16, steps: [2,0,1,0, 0,0,1,0, 0,0,2,0, 0,1,0,0] },
+          { n: 16, steps: [0,0,0,0, 2,0,0,3, 0,3,0,3, 2,0,3,3] },
+          { n: 16, steps: [1,1,1,1, 1,1,1,2, 1,1,1,1, 1,2,1,1] },
+          { n: 16, steps: [0,0,0,0, 0,0,0,0, 0,1,0,0, 0,0,1,0] },
+          { n: 16, steps: [1,0,0,1, 0,0,1,0, 0,0,1,0, 0,0,0,0] },
+          { n: 16, steps: [1,3,1,3, 1,3,1,3, 1,3,1,3, 1,3,1,3] }
+        ]
+      },
+      amen_break: {
+        name: 'Gregory Coleman "Amen Break" Dissection',
+        bpm: 136, swingPct: 53.0, snareOffsetMs: 6.0, kickOffsetMs: 0.0, hatOffsetMs: 0.0,
+        blurb: 'The Winstons\' 1969 6-second drum break that birthed Jungle and Drum & Bass: displaced backbeat snare on step 11 with rapid double-kick syncopation.',
+        tracks: [
+          { n: 16, steps: [2,0,1,0, 0,0,0,0, 0,0,1,1, 0,0,0,0] },
+          { n: 16, steps: [0,0,0,0, 2,0,0,3, 0,3,0,0, 0,0,2,3] },
+          { n: 16, steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 2,0,1,0] },
+          { n: 16, steps: [0,0,0,0, 0,0,0,0, 0,0,0,0, 1,0,0,1] },
+          { n: 16, steps: [2,0,0,0, 1,0,0,0, 2,0,0,0, 1,0,0,0] },
+          { n: 16, steps: [1,1,1,1, 1,1,1,1, 1,1,1,1, 1,1,1,1] }
+        ]
+      },
+      afrobeat_allen: {
+        name: 'Tony Allen Afrobeat Polyrhythmic Engine',
+        bpm: 114, swingPct: 56.0, snareOffsetMs: 11.0, kickOffsetMs: -4.0, hatOffsetMs: 4.0,
+        blurb: 'Feather-light four-on-the-floor kick syncopated with offbeat snare rimshots, conversational hi-hat openings, and an interlocking West African bell timeline.',
+        tracks: [
+          { n: 16, steps: [1,0,0,1, 1,0,0,0, 1,0,0,1, 1,0,0,0] },
+          { n: 16, steps: [0,0,3,0, 0,0,2,0, 0,3,0,2, 0,0,3,0] },
+          { n: 16, steps: [1,1,2,1, 1,0,2,1, 1,1,2,1, 1,0,2,1] },
+          { n: 16, steps: [0,0,1,0, 0,2,0,0, 0,0,1,0, 0,2,0,1] },
+          { n: 16, steps: [2,0,0,1, 0,1,0,2, 0,0,1,0, 2,0,1,0] },
+          { n: 16, steps: [1,3,1,3, 1,3,1,3, 1,3,1,3, 1,3,1,3] }
+        ]
+      },
+      son_clave: {
+        name: 'Afro-Cuban 3-2 Son Clave + Tumbao',
+        bpm: 108, swingPct: 52.0, snareOffsetMs: 4.0, kickOffsetMs: 0.0, hatOffsetMs: 0.0,
+        blurb: 'Combines Toussaint\'s E(3,8) tresillo on the "3-side" with E(2,8) on the "2-side", anchored by a pitched conga tumbao and Anticipated Bass (bombo-ponche) kick.',
+        tracks: [
+          { n: 16, steps: [0,0,0,1, 0,0,2,0, 0,0,0,1, 0,0,2,0] },
+          { n: 16, steps: [0,0,1,0, 0,2,0,0, 0,0,1,0, 2,0,0,0] },
+          { n: 16, steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0] },
+          { n: 16, steps: [1,0,3,0, 2,0,1,1, 1,0,3,0, 2,0,1,1] },
+          { n: 16, steps: [2,0,0,2, 0,0,2,0, 0,0,2,0, 2,0,0,0] },
+          { n: 16, steps: [1,3,3,1, 1,3,3,1, 1,3,3,1, 1,3,3,1] }
+        ]
+      },
+      ashanti_12_8: {
+        name: 'West African Ashanti E(7,12) Bell Cycle',
+        bpm: 118, swingPct: 50.0, snareOffsetMs: 5.0, kickOffsetMs: 0.0, hatOffsetMs: 0.0,
+        blurb: 'Toussaint\'s flagship Euclidean bell necklace E(7,12) = [x . x x . x . x x . x .] running over a 3-against-4 cross-rhythmic bass and conga foundation.',
+        tracks: [
+          { n: 12, steps: [2,0,0, 1,0,0, 2,0,0, 1,0,0] },
+          { n: 12, steps: [0,0,2, 0,0,3, 0,0,2, 0,3,0] },
+          { n: 12, steps: [1,0,0, 1,0,0, 1,0,0, 1,0,0] },
+          { n: 12, steps: [1,0,2, 0,1,0, 2,0,1, 0,2,0] },
+          { n: 12, steps: [2,0,1, 2,0,1, 0,2,1, 0,1,0] }, // E(7,12)
+          { n: 12, steps: [1,3,3, 1,3,3, 1,3,3, 1,3,3] }
+        ]
+      },
+      samba_batucada: {
+        name: 'Brazilian Samba Batucada (E(7,16) Tamborim)',
+        bpm: 122, swingPct: 55.5, snareOffsetMs: 8.0, kickOffsetMs: -5.0, hatOffsetMs: 11.0,
+        blurb: 'Surdo bass accenting beat 2, caixa snare batucada ghost-roll, two-tone agogô bell, and Toussaint\'s E(7,16) tamborim necklace.',
+        tracks: [
+          { n: 16, steps: [1,0,0,0, 2,0,0,1, 1,0,0,0, 2,0,0,1] },
+          { n: 16, steps: [2,3,3,2, 3,2,3,3, 2,3,3,2, 3,2,3,3] },
+          { n: 16, steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0] },
+          { n: 16, steps: [0,0,1,2, 0,0,1,0, 0,0,1,2, 0,0,1,0] },
+          { n: 16, steps: [2,0,0,1, 0,1,0,2, 0,1,0,1, 0,2,0,0] }, // E(7,16)
+          { n: 16, steps: [2,3,3,2, 2,3,3,2, 2,3,3,2, 2,3,3,2] }
+        ]
+      },
+      bossa_necklace: {
+        name: 'Bossa Nova Euclidean Necklace E(5,16)',
+        bpm: 116, swingPct: 53.5, snareOffsetMs: 7.0, kickOffsetMs: 0.0, hatOffsetMs: 3.0,
+        blurb: 'Antônio Carlos Jobim / João Gilberto clave necklace E(5,16) rotated to [x . . x . . x . . . x . . x . .] over a steady dotted-quarter surdo pulse.',
+        tracks: [
+          { n: 16, steps: [2,0,0,1, 1,0,0,1, 2,0,0,1, 1,0,0,1] },
+          { n: 16, steps: [2,0,0,2, 0,0,2,0, 0,0,2,0, 0,2,0,0] }, // E(5,16) rim click
+          { n: 16, steps: [1,3,1,3, 1,3,1,3, 1,3,1,3, 1,3,2,3] },
+          { n: 16, steps: [0,0,0,0, 0,0,1,0, 0,0,0,0, 0,0,2,0] },
+          { n: 16, steps: [1,0,0,1, 0,0,1,0, 0,0,1,0, 0,1,0,0] },
+          { n: 16, steps: [1,3,1,3, 1,3,1,3, 1,3,1,3, 1,3,1,3] }
+        ]
+      },
+      balkan_aksak: {
+        name: 'Balkan Aksak 7/8 (2+2+3 Rachenitsa)',
+        bpm: 132, swingPct: 50.0, snareOffsetMs: 4.0, kickOffsetMs: 0.0, hatOffsetMs: 0.0,
+        blurb: 'Asymmetric "limping" (aksak) 14-subdivision meter grouped as 2+2+3 (4+4+6 sixteenth steps), modeled by Euclidean E(3,7) / E(6,14).',
+        tracks: [
+          { n: 14, steps: [2,0,0,0, 1,0,0,0, 2,0,0,1,0,0] },
+          { n: 14, steps: [0,0,1,0, 0,0,2,0, 0,3,2,0,0,3] },
+          { n: 14, steps: [1,0,1,0, 1,0,1,0, 2,0,1,0,1,0] },
+          { n: 14, steps: [1,0,0,0, 1,0,0,0, 2,0,1,0,2,0] },
+          { n: 14, steps: [2,0,0,0, 2,0,0,0, 2,0,0,1,0,0] },
+          { n: 14, steps: [1,3,1,3, 1,3,1,3, 2,3,1,3,1,3] }
+        ]
+      },
+      polymeter_5_4: {
+        name: 'Polymetric 5-against-4 & 7-Step Phase Shift',
+        bpm: 110, swingPct: 50.0, snareOffsetMs: 0.0, kickOffsetMs: 0.0, hatOffsetMs: 0.0,
+        blurb: 'Each percussion ring runs a different step length (Kick n=10, Snare n=8, Clave n=7, Tom n=5), drifting in phase and realigning only every LCM = 280 pulses!',
+        tracks: [
+          { n: 10, steps: [2,0,0,1,0, 2,0,1,0,0] },
+          { n: 8,  steps: [0,0,2,0, 0,3,2,3] },
+          { n: 16, steps: [1,0,1,0, 1,0,1,2, 1,0,1,0, 1,0,1,2] },
+          { n: 5,  steps: [2,0,1,0,1] },
+          { n: 7,  steps: [2,0,1,0,2,0,1] },
+          { n: 12, steps: [1,3,1, 1,3,1, 1,3,1, 1,3,1] }
+        ]
+      },
+      polyrhythm_4_3_2: {
+        name: 'Pure 4:3:2 Hemiola & Cross-Rhythm Phase Lab',
+        bpm: 104, swingPct: 50.0, snareOffsetMs: 0.0, kickOffsetMs: 0.0, hatOffsetMs: 0.0,
+        blurb: 'Divides the 12-pulse cycle into exact integer factors: 2 pulses (Kick every 6), 3 pulses (Snare every 4), 4 pulses (Clave every 3), and 6 pulses (Hi-Hat every 2).',
+        tracks: [
+          { n: 12, steps: [2,0,0,0,0,0, 2,0,0,0,0,0] }, // 2-pulse
+          { n: 12, steps: [2,0,0,0, 2,0,0,0, 2,0,0,0] }, // 3-pulse
+          { n: 12, steps: [1,0,1,0, 1,0,1,0, 1,0,2,0] }, // 6-pulse
+          { n: 12, steps: [0,0,1,0, 0,2,0,0, 1,0,0,2] },
+          { n: 12, steps: [2,0,0, 2,0,0, 2,0,0, 2,0,0] }, // 4-pulse
+          { n: 12, steps: [1,3,3, 1,3,3, 1,3,3, 1,3,3] }
+        ]
+      }
+    };
+
+    // =========================================================================
+    // 3. APPLICATION STATE
+    // =========================================================================
+    const state = {
+      activePreset: 'dilla_pocket',
+      view3DMode: 'rings',       // 'rings' (Concentric Euclidean Necklaces) | 'torus' (Polyrhythmic Torus)
+      bpm: 92,
+      swingPct: 59.0,            // 50%..72%
+      snareOffsetMs: 18.5,       // -30..+45 ms
+      kickOffsetMs: -6.0,        // -25..+25 ms
+      hatOffsetMs: 7.0,          // -25..+25 ms
+      isPlaying: false,
+      globalTick: 0,
+      selectedEucTrack: 4,
+      eucK: 5,
+      eucN: 16,
+      eucR: 0,
+      tracks: JSON.parse(JSON.stringify(GROOVE_PRESETS.dilla_pocket.tracks)),
+      trackEnergy: [0, 0, 0, 0, 0, 0],
+      recentAsynchronyHistory: []
+    };
+
+    // =========================================================================
+    // 4. WEB AUDIO API 6-VOICE PHYSICAL PERCUSSION SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let activeOpenHatGain = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.86;
+
+        // Warm console saturation
+        const shaper = audioCtx.createWaveShaper();
+        const curve = new Float32Array(2048);
+        for (let i = 0; i < 2048; i++) {
+          const x = (i * 2) / 2048 - 1;
+          curve[i] = Math.tanh(x * 1.4);
+        }
+        shaper.curve = curve;
+        masterGain.connect(shaper);
+        shaper.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function triggerDrumVoice(targetCtx, destNode, trackIdx, stepType = 1, startTime = null) {
+      if (stepType === 0) return;
+      const now = startTime !== null ? startTime : targetCtx.currentTime;
+      const vel = stepType === 2 ? 1.0 : stepType === 3 ? 0.24 : 0.76;
+
+      if (trackIdx === 0) {
+        // TRACK 1: SUB / ACOUSTIC KICK DRUM
+        const osc = targetCtx.createOscillator();
+        const g = targetCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(stepType === 2 ? 165 : 138, now);
+        osc.frequency.exponentialRampToValueAtTime(52, now + 0.055);
+        osc.frequency.exponentialRampToValueAtTime(38, now + 0.28);
+
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(vel * 0.78, now + 0.003);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(now);
+        osc.stop(now + 0.34);
+
+        // Beater click transient
+        const clickOsc = targetCtx.createOscillator();
+        const clickG = targetCtx.createGain();
+        clickOsc.type = 'triangle';
+        clickOsc.frequency.setValueAtTime(920, now);
+        clickOsc.frequency.exponentialRampToValueAtTime(140, now + 0.018);
+        clickG.gain.setValueAtTime(vel * 0.28, now);
+        clickG.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
+        clickOsc.connect(clickG);
+        clickG.connect(destNode);
+        clickOsc.start(now);
+        clickOsc.stop(now + 0.025);
+
+      } else if (trackIdx === 1) {
+        // TRACK 2: SNARE DRUM (1=Normal, 2=Rimshot Counterhoop Accent, 3=Ghost Note)
+        const f0 = 186;
+        const bodyOsc = targetCtx.createOscillator();
+        const bodyG = targetCtx.createGain();
+        bodyOsc.type = 'triangle';
+        bodyOsc.frequency.setValueAtTime(f0 * 1.25, now);
+        bodyOsc.frequency.exponentialRampToValueAtTime(f0, now + 0.025);
+        bodyG.gain.setValueAtTime(0.0001, now);
+        bodyG.gain.linearRampToValueAtTime(vel * 0.48, now + 0.002);
+        bodyG.gain.exponentialRampToValueAtTime(0.0001, now + (stepType === 3 ? 0.09 : 0.16));
+        bodyOsc.connect(bodyG);
+        bodyG.connect(destNode);
+        bodyOsc.start(now);
+        bodyOsc.stop(now + 0.18);
+
+        // Snare wires burst
+        const wDur = stepType === 3 ? 0.085 : 0.21;
+        const wLen = Math.floor(targetCtx.sampleRate * wDur);
+        const wBuf = targetCtx.createBuffer(1, wLen, targetCtx.sampleRate);
+        const wData = wBuf.getChannelData(0);
+        for (let i = 0; i < wLen; i++) {
+          wData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (targetCtx.sampleRate * (stepType === 3 ? 0.022 : 0.055)));
+        }
+        const wSrc = targetCtx.createBufferSource();
+        wSrc.buffer = wBuf;
+        const wHp = targetCtx.createBiquadFilter();
+        wHp.type = 'highpass';
+        wHp.frequency.value = stepType === 3 ? 1800 : 1100;
+        const wG = targetCtx.createGain();
+        wG.gain.value = vel * 0.46;
+        wSrc.connect(wHp);
+        wHp.connect(wG);
+        wG.connect(destNode);
+        wSrc.start(now);
+
+        // If stepType === 2 (Rimshot Accent), add metallic counterhoop + hickory clave ping
+        if (stepType === 2) {
+          [590, 1180, 2140].forEach((rf, idx) => {
+            const rOsc = targetCtx.createOscillator();
+            const rG = targetCtx.createGain();
+            rOsc.type = 'sine';
+            rOsc.frequency.setValueAtTime(rf, now);
+            rG.gain.setValueAtTime(0.24 / (idx + 1), now);
+            rG.gain.exponentialRampToValueAtTime(0.0001, now + 0.065);
+            rOsc.connect(rG);
+            rG.connect(destNode);
+            rOsc.start(now);
+            rOsc.stop(now + 0.075);
+          });
+        }
+
+      } else if (trackIdx === 2) {
+        // TRACK 3: HI-HAT CYMBAL (1=Closed, 2=Open Bark with Choke, 3=Ghost Chick)
+        if (stepType !== 2 && activeOpenHatGain && targetCtx === audioCtx) {
+          try {
+            activeOpenHatGain.gain.cancelScheduledValues(now);
+            activeOpenHatGain.gain.setTargetAtTime(0.0001, now, 0.008);
+          } catch (_) {}
+        }
+        const isOpen = stepType === 2;
+        const hDur = isOpen ? 0.36 : stepType === 3 ? 0.032 : 0.058;
+        const hLen = Math.floor(targetCtx.sampleRate * hDur);
+        const hBuf = targetCtx.createBuffer(1, hLen, targetCtx.sampleRate);
+        const hData = hBuf.getChannelData(0);
+        for (let i = 0; i < hLen; i++) {
+          hData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (targetCtx.sampleRate * (isOpen ? 0.14 : 0.016)));
+        }
+        const hSrc = targetCtx.createBufferSource();
+        hSrc.buffer = hBuf;
+        const hBp = targetCtx.createBiquadFilter();
+        hBp.type = 'highpass';
+        hBp.frequency.value = 5800;
+        const hG = targetCtx.createGain();
+        hG.gain.setValueAtTime(vel * 0.34, now);
+        hSrc.connect(hBp);
+        hBp.connect(hG);
+        hG.connect(destNode);
+        hSrc.start(now);
+        if (isOpen && targetCtx === audioCtx) activeOpenHatGain = hG;
+
+      } else if (trackIdx === 3) {
+        // TRACK 4: TUNED TOM / CONGA (1=Low Open, 2=High Slap/Pitch Bend, 3=Muted Heel)
+        const baseF = stepType === 2 ? 235 : 158;
+        const osc = targetCtx.createOscillator();
+        const g = targetCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseF * 1.18, now);
+        osc.frequency.exponentialRampToValueAtTime(baseF, now + 0.04);
+        const dur = stepType === 3 ? 0.08 : 0.24;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(vel * 0.48, now + 0.003);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        osc.connect(g);
+        g.connect(destNode);
+        osc.start(now);
+        osc.stop(now + dur + 0.02);
+
+      } else if (trackIdx === 4) {
+        // TRACK 5: CLAVE / TWO-TONE AGOGÔ BELL (1=Low Bell 680Hz, 2=High Bell/Clave 940Hz, 3=Soft Wood)
+        const fBell = stepType === 2 ? 940 : 680;
+        [1.0, 2.42].forEach((ratio, idx) => {
+          const osc = targetCtx.createOscillator();
+          const g = targetCtx.createGain();
+          osc.type = idx === 0 ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(fBell * ratio, now);
+          const dur = idx === 0 ? 0.16 : 0.06;
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime((vel * 0.32) / (idx + 1), now + 0.002);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+          osc.connect(g);
+          g.connect(destNode);
+          osc.start(now);
+          osc.stop(now + dur + 0.02);
+        });
+
+      } else if (trackIdx === 5) {
+        // TRACK 6: GRANULAR SHAKER / TAMBORIM DRIVER
+        const sDur = 0.045;
+        const sLen = Math.floor(targetCtx.sampleRate * sDur);
+        const sBuf = targetCtx.createBuffer(1, sLen, targetCtx.sampleRate);
+        const sData = sBuf.getChannelData(0);
+        for (let i = 0; i < sLen; i++) {
+          const env = Math.sin((i / sLen) * Math.PI);
+          sData[i] = (Math.random() * 2 - 1) * env;
+        }
+        const sSrc = targetCtx.createBufferSource();
+        sSrc.buffer = sBuf;
+        const sBp = targetCtx.createBiquadFilter();
+        sBp.type = 'bandpass';
+        sBp.frequency.value = stepType === 2 ? 4200 : 6800;
+        sBp.Q.value = 2.2;
+        const sG = targetCtx.createGain();
+        sG.gain.value = vel * 0.25;
+        sSrc.connect(sBp);
+        sBp.connect(sG);
+        sG.connect(destNode);
+        sSrc.start(now);
+      }
+
+      if (targetCtx === audioCtx) {
+        state.trackEnergy[trackIdx] = Math.min(1.4, state.trackEnergy[trackIdx] + vel * 0.95);
+      }
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D CONCENTRIC EUCLIDEAN NECKLACE & POLYRHYTHMIC TORUS STAGE
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x04060b, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+    let camSpherical = { radius: 11.8, theta: 0.0, phi: 0.68 };
+    let camTarget = new THREE.Vector3(0, -0.15, 0);
+
+    function updateCameraFromSpherical() {
+      camera.position.x = camTarget.x + camSpherical.radius * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+      camera.position.z = camTarget.z + camSpherical.radius * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.lookAt(camTarget);
+    }
+    updateCameraFromSpherical();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.78));
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    topLight.position.set(4, 12, 6);
+    scene.add(topLight);
+
+    const centerGlowLight = new THREE.PointLight(0xf59e0b, 1.4, 15);
+    centerGlowLight.position.set(0, 1.5, 0);
+    scene.add(centerGlowLight);
+
+    const stageGroup = new THREE.Group();
+    scene.add(stageGroup);
+
+    let stepNodeMeshes = []; // For 3D raycast clicking and pulse animation
+    let trackPolygonLines = [];
+    let playheadSweeperGroup = null;
+
+    // Compute exact angular fraction (0..1) of step j in track i including Swing % and Microtiming Offset Δt_i (ms)
+    function computeStepPhaseFraction(trackIdx, stepIdx, nSteps) {
+      const baseStepFraction = stepIdx / nSteps;
+      // Swing shifts odd-numbered 16th steps later by (swingPct - 50)/50 * 0.5 of a step
+      const isOddSub = stepIdx % 2 === 1;
+      const swingShiftSteps = isOddSub ? ((state.swingPct - 50.0) / 50.0) * 0.5 : 0;
+
+      // Per-voice microtiming offset in ms converted to fraction of bar
+      const stepDurMs = 15000.0 / state.bpm;
+      const barDurMs = stepDurMs * nSteps;
+      let voiceMs = 0;
+      if (trackIdx === 0) voiceMs = state.kickOffsetMs;
+      else if (trackIdx === 1) voiceMs = state.snareOffsetMs;
+      else if (trackIdx === 2 || trackIdx === 5) voiceMs = state.hatOffsetMs;
+
+      const microFraction = voiceMs / barDurMs;
+      return (baseStepFraction + swingShiftSteps / nSteps + microFraction + 1.0) % 1.0;
+    }
+
+    function build3DBeatGeometry() {
+      while (stageGroup.children.length > 0) {
+        stageGroup.remove(stageGroup.children[0]);
+      }
+      stepNodeMeshes = [];
+      trackPolygonLines = [];
+
+      // Subtle Reference Grid
+      const grid = new THREE.GridHelper(20, 20, 0x1e293b, 0x0f172a);
+      grid.position.y = -0.5;
+      stageGroup.add(grid);
+
+      // Build 6 Concentric Rhythm Rings + Euclidean Polygons + Microtiming Step Nodes
+      state.tracks.forEach((tr, tIdx) => {
+        const meta = TRACK_META[tIdx];
+        const r = meta.ringRadius;
+        const n = tr.n;
+
+        // Base Torus Ring
+        const ringGeo = state.view3DMode === 'torus'
+          ? new THREE.TorusKnotGeometry(r * 0.58, 0.025, 96, 12, tIdx + 2, 3)
+          : new THREE.TorusGeometry(r, 0.022, 12, 96);
+        if (state.view3DMode !== 'torus') ringGeo.rotateX(Math.PI / 2);
+
+        const ringMat = new THREE.MeshStandardMaterial({
+          color: meta.colorHex,
+          emissive: meta.colorHex,
+          emissiveIntensity: 0.22,
+          transparent: true,
+          opacity: 0.45
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.y = state.view3DMode === 'torus' ? (tIdx - 2.5) * 0.35 : 0;
+        stageGroup.add(ringMesh);
+
+        // Quantized Grid Tick Marks vs Microtiming Shifted Step Nodes
+        const activeVertices = [];
+        for (let s = 0; s < n; s++) {
+          const val = tr.steps[s] || 0;
+          // Rigid quantized angle (0 at top -Z, clockwise)
+          const qAngle = (s / n) * Math.PI * 2 - Math.PI / 2;
+          const qX = Math.cos(qAngle) * r;
+          const qZ = Math.sin(qAngle) * r;
+
+          // Actual microtiming-shifted angle
+          const phaseFrac = computeStepPhaseFraction(tIdx, s, n);
+          const mAngle = phaseFrac * Math.PI * 2 - Math.PI / 2;
+          const mX = Math.cos(mAngle) * r;
+          const mZ = Math.sin(mAngle) * r;
+
+          // Small tick mark on rigid quantized grid
+          const tickGeo = new THREE.BoxGeometry(0.03, 0.03, 0.12);
+          const tickMat = new THREE.MeshBasicMaterial({ color: 0x475569 });
+          const tick = new THREE.Mesh(tickGeo, tickMat);
+          tick.position.set(qX, -0.02, qZ);
+          tick.rotation.y = -qAngle;
+          stageGroup.add(tick);
+
+          // Step Node Peg / Sphere at Microtiming-Shifted Coordinate
+          const nodeRadius = val === 2 ? 0.16 : val === 1 ? 0.125 : val === 3 ? 0.085 : 0.06;
+          const nodeHeight = val === 2 ? 0.42 : val === 1 ? 0.26 : val === 3 ? 0.14 : 0.06;
+          const nodeGeo = new THREE.CylinderGeometry(nodeRadius, nodeRadius * 1.15, nodeHeight, 16);
+          const nodeMat = new THREE.MeshStandardMaterial({
+            color: val > 0 ? meta.colorHex : 0x1e293b,
+            emissive: val > 0 ? meta.colorHex : 0x0f172a,
+            emissiveIntensity: val === 2 ? 0.85 : val === 1 ? 0.55 : val === 3 ? 0.28 : 0.05,
+            roughness: 0.25
+          });
+          const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+          nodeMesh.position.set(mX, nodeHeight / 2, mZ);
+          nodeMesh.userData = { trackIdx: tIdx, stepIdx: s, baseHeight: nodeHeight };
+          nodeMesh.name = 'step_node';
+          stageGroup.add(nodeMesh);
+          stepNodeMeshes.push(nodeMesh);
+
+          if (val === 1 || val === 2) {
+            activeVertices.push(new THREE.Vector3(mX, 0.08, mZ));
+          }
+        }
+
+        // Inscribed Euclidean Polygon connecting all active primary beats on this ring!
+        if (activeVertices.length >= 2) {
+          activeVertices.push(activeVertices[0].clone()); // close polygon
+          const polyGeo = new THREE.BufferGeometry().setFromPoints(activeVertices);
+          const polyMat = new THREE.LineBasicMaterial({
+            color: meta.colorHex,
+            transparent: true,
+            opacity: 0.88
+          });
+          const polyLine = new THREE.Line(polyGeo, polyMat);
+          stageGroup.add(polyLine);
+          trackPolygonLines.push(polyLine);
+        }
+      });
+
+      // Rotating Playhead Sweeper Arm
+      playheadSweeperGroup = new THREE.Group();
+      const armGeo = new THREE.BoxGeometry(5.1, 0.04, 0.04);
+      armGeo.translate(2.55, 0.12, 0);
+      const armMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      const armMesh = new THREE.Mesh(armGeo, armMat);
+      playheadSweeperGroup.add(armMesh);
+      playheadSweeperGroup.rotation.y = Math.PI / 2;
+      stageGroup.add(playheadSweeperGroup);
+    }
+
+    build3DBeatGeometry();
+
+    // 3D Raycast Clicking on Step Nodes + Orbit Camera Dragging
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let isDraggingOrbit = false;
+    let dragX = 0, dragY = 0;
+
+    container.addEventListener('pointerdown', (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(stepNodeMeshes, false);
+      if (hits.length > 0) {
+        const { trackIdx, stepIdx } = hits[0].object.userData;
+        cycleStepValue(trackIdx, stepIdx);
+        return;
+      }
+      isDraggingOrbit = true;
+      dragX = e.clientX;
+      dragY = e.clientY;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDraggingOrbit) return;
+      const dx = e.clientX - dragX;
+      const dy = e.clientY - dragY;
+      dragX = e.clientX;
+      dragY = e.clientY;
+      camSpherical.theta -= dx * 0.006;
+      camSpherical.phi = Math.max(0.22, Math.min(Math.PI * 0.48, camSpherical.phi - dy * 0.006));
+      updateCameraFromSpherical();
+    });
+    window.addEventListener('pointerup', () => { isDraggingOrbit = false; });
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camSpherical.radius = Math.max(6.0, Math.min(18.5, camSpherical.radius + e.deltaY * 0.005));
+      updateCameraFromSpherical();
+    }, { passive: false });
+
+    // =========================================================================
+    // 6. 6-TRACK STEP MATRIX UI & PRECISION MICROTIMING SCHEDULER
+    // =========================================================================
+    const matrixContainer = document.getElementById('tracks-matrix-container');
+
+    function cycleStepValue(trackIdx, stepIdx) {
+      initAudio();
+      const tr = state.tracks[trackIdx];
+      // Cycle: 0 (Off) -> 1 (Normal) -> 2 (Accent/Rimshot/Open) -> 3 (Ghost) -> 0
+      const nextVal = ((tr.steps[stepIdx] || 0) + 1) % 4;
+      tr.steps[stepIdx] = nextVal;
+      if (nextVal > 0) {
+        triggerDrumVoice(audioCtx, masterGain, trackIdx, nextVal);
+      }
+      renderTracksMatrix();
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    }
+
+    function renderTracksMatrix() {
+      matrixContainer.innerHTML = '';
+      state.tracks.forEach((tr, tIdx) => {
+        const meta = TRACK_META[tIdx];
+        const row = document.createElement('div');
+        row.className = 'p-1.5 rounded-lg bg-slate-900/80 border border-slate-800/90 space-y-1';
+
+        const activeHits = tr.steps.slice(0, tr.n).filter(v => v > 0).length;
+        const header = document.createElement('div');
+        header.className = 'flex items-center justify-between text-[10px] font-mono-tech';
+        header.innerHTML = `
+          <span class="font-bold text-${meta.cssCol}-300">${meta.name}</span>
+          <span class="text-slate-400">E(${activeHits}, ${tr.n})</span>
+        `;
+        row.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid gap-1';
+        grid.style.gridTemplateColumns = `repeat(${tr.n}, minmax(0, 1fr))`;
+
+        for (let s = 0; s < tr.n; s++) {
+          const val = tr.steps[s] || 0;
+          const isCurrent = state.isPlaying && (state.globalTick % tr.n) === s;
+          const btn = document.createElement('button');
+
+          let cellStyle = 'bg-slate-950 border-slate-800 text-slate-600';
+          let label = '·';
+          if (val === 1) {
+            cellStyle = `bg-${meta.cssCol}-500/30 border-${meta.cssCol}-400/70 text-${meta.cssCol}-200 font-bold`;
+            label = '●';
+          } else if (val === 2) {
+            cellStyle = 'bg-amber-400 text-slate-950 border-white font-extrabold shadow-sm';
+            label = '▲';
+          } else if (val === 3) {
+            cellStyle = 'bg-slate-800 border-cyan-500/40 text-cyan-300';
+            label = 'g';
+          }
+
+          btn.className = `h-6 rounded border text-[10px] font-mono-tech transition flex items-center justify-center ${cellStyle} ${isCurrent ? 'ring-2 ring-white scale-105' : ''}`;
+          btn.textContent = label;
+          btn.title = `${meta.short} Step ${s + 1}: Click to cycle Normal(●) / Accent(▲) / Ghost(g) / Off`;
+          btn.addEventListener('click', () => cycleStepValue(tIdx, s));
+          grid.appendChild(btn);
+        }
+        row.appendChild(grid);
+        matrixContainer.appendChild(row);
+      });
+    }
+
+    // Precision Microtiming Step Sequencer Engine
+    let stepTimerId = null;
+
+    function executeSequencerStep() {
+      initAudio();
+      const now = audioCtx.currentTime;
+      const stepSec = 15.0 / state.bpm; // 16th-note base step duration in seconds
+
+      state.tracks.forEach((tr, tIdx) => {
+        const sIdx = state.globalTick % tr.n;
+        const val = tr.steps[sIdx] || 0;
+        if (val > 0) {
+          // Calculate swing delay + per-voice microtiming offset in seconds
+          const isOdd = sIdx % 2 === 1;
+          const swingSec = isOdd ? ((state.swingPct - 50.0) / 50.0) * 0.5 * stepSec : 0;
+
+          let microMs = 0;
+          if (tIdx === 0) microMs = state.kickOffsetMs;
+          else if (tIdx === 1) microMs = state.snareOffsetMs;
+          else if (tIdx === 2 || tIdx === 5) microMs = state.hatOffsetMs;
+
+          // Base lookahead of 35 ms so negative ("pushed" early) offsets schedule cleanly in the future!
+          const fireTime = Math.max(now, now + 0.035 + swingSec + microMs / 1000.0);
+          triggerDrumVoice(audioCtx, masterGain, tIdx, val, fireTime);
+        }
+      });
+
+      const barNum = Math.floor(state.globalTick / 16) + 1;
+      const beatNum = Math.floor((state.globalTick % 16) / 4) + 1;
+      const subNum = (state.globalTick % 4) + 1;
+      document.getElementById('live-step-counter').textContent = `BAR ${barNum} • BEAT ${beatNum}.${subNum}`;
+
+      renderTracksMatrix();
+      state.globalTick++;
+    }
+
+    function toggleSequencerPlayback(forceState) {
+      const next = forceState !== undefined ? forceState : !state.isPlaying;
+      state.isPlaying = next;
+      if (stepTimerId) {
+        clearInterval(stepTimerId);
+        stepTimerId = null;
+      }
+      document.getElementById('play-icon').textContent = state.isPlaying ? '■' : '▶';
+      document.getElementById('play-text').textContent = state.isPlaying ? 'Stop Beat Loop' : 'Play Beat Loop';
+
+      if (state.isPlaying) {
+        state.globalTick = 0;
+        executeSequencerStep();
+        const stepMs = (15.0 / state.bpm) * 1000.0;
+        stepTimerId = setInterval(executeSequencerStep, stepMs);
+      } else {
+        renderTracksMatrix();
+      }
+    }
+
+    // =========================================================================
+    // 7. TELEMETRY CANVASES: MICROTIMING RADAR & SYNCOPATION / GROOVE SCOPE
+    // =========================================================================
+    const radarCanvas = document.getElementById('canvas-pocket-radar');
+    const radarCtx = radarCanvas.getContext('2d');
+    const scopeCanvas = document.getElementById('canvas-groove-scope');
+    const scopeCtx = scopeCanvas.getContext('2d');
+
+    function updateTelemetryCanvases() {
+      // Compute LCM across all active track step lengths
+      const totalLcm = state.tracks.reduce((acc, tr) => lcm(acc, tr.n), 1);
+      document.getElementById('hud-lcm').textContent = `${totalLcm} steps`;
+      document.getElementById('hud-swing').textContent = `${state.swingPct.toFixed(1)}%`;
+      document.getElementById('hud-snare-dt').textContent = `${state.snareOffsetMs >= 0 ? '+' : ''}${state.snareOffsetMs.toFixed(1)} ms`;
+
+      // Compute Longuet-Higgins & Lee Syncopation & Groove Density
+      let totalHits = 0;
+      let offbeatHits = 0;
+      state.tracks.forEach(tr => {
+        for (let i = 0; i < tr.n; i++) {
+          if (tr.steps[i] > 0) {
+            totalHits++;
+            if (i % 4 !== 0) offbeatHits++;
+          }
+        }
+      });
+      const syncPct = totalHits > 0 ? Math.round((offbeatHits / totalHits) * 100) : 0;
+      document.getElementById('live-syncopation-badge').textContent =
+        `Syncopation S = ${syncPct}% • Snare Δt = ${state.snareOffsetMs >= 0 ? '+' : ''}${state.snareOffsetMs.toFixed(1)}ms`;
+      document.getElementById('groove-density-readout').textContent = `Density: ${totalHits} hits/cycle`;
+
+      // 1. Draw Microtiming Pocket Deviation Radar (-40 ms to +45 ms)
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+      radarCtx.clearRect(0, 0, w, h);
+
+      const minMs = -40;
+      const maxMs = 45;
+      function msToX(ms) { return ((ms - minMs) / (maxMs - minMs)) * w; }
+
+      // Shaded ±22 ms JND Pocket Zone (JASA 2026 drum kit JND threshold ~19-24 ms)
+      const xJndL = msToX(-22);
+      const xJndR = msToX(22);
+      radarCtx.fillStyle = 'rgba(16, 185, 129, 0.11)';
+      radarCtx.fillRect(xJndL, 0, xJndR - xJndL, h);
+
+      const xZero = msToX(0);
+      radarCtx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+      radarCtx.setLineDash([3, 3]);
+      radarCtx.beginPath();
+      radarCtx.moveTo(xZero, 0);
+      radarCtx.lineTo(xZero, h);
+      radarCtx.stroke();
+      radarCtx.setLineDash([]);
+
+      // Plot Kick, Snare, Hi-Hat, and Swing 16th markers
+      const stepMs = 15000 / state.bpm;
+      const swingMs = ((state.swingPct - 50) / 50) * 0.5 * stepMs;
+      const markers = [
+        { label: 'Kick Δt', ms: state.kickOffsetMs, col: '#22d3ee', y: 18 },
+        { label: 'Snare Δt', ms: state.snareOffsetMs, col: '#f43f5e', y: 38 },
+        { label: 'Hat Δt', ms: state.hatOffsetMs, col: '#c084fc', y: 58 },
+        { label: 'Swing 16th', ms: swingMs, col: '#f59e0b', y: 76 }
+      ];
+
+      markers.forEach(m => {
+        const mx = msToX(Math.max(minMs, Math.min(maxMs, m.ms)));
+        radarCtx.strokeStyle = m.col;
+        radarCtx.lineWidth = 2.5;
+        radarCtx.beginPath();
+        radarCtx.moveTo(xZero, m.y);
+        radarCtx.lineTo(mx, m.y);
+        radarCtx.stroke();
+
+        radarCtx.fillStyle = m.col;
+        radarCtx.beginPath();
+        radarCtx.arc(mx, m.y, 4.5, 0, Math.PI * 2);
+        radarCtx.fill();
+
+        radarCtx.fillStyle = '#cbd5e1';
+        radarCtx.font = '9px "JetBrains Mono", monospace';
+        radarCtx.fillText(`${m.label}: ${m.ms >= 0 ? '+' : ''}${m.ms.toFixed(1)}ms`, 6, m.y - 4);
+      });
+
+      const jndStatus = document.getElementById('jnd-status-readout');
+      if (jndStatus) {
+        const maxDev = Math.max(Math.abs(state.snareOffsetMs), Math.abs(state.kickOffsetMs));
+        jndStatus.textContent = maxDev <= 24 ? 'Sub-JND Pocket Lock (≤24ms)' : 'Overt Drunk Flam (>24ms JND)';
+      }
+
+      // 2. Draw Polyrhythmic Sub-Pulse Energy Scope
+      const sw = scopeCanvas.width;
+      const sh = scopeCanvas.height;
+      scopeCtx.clearRect(0, 0, sw, sh);
+
+      const nRef = state.tracks[0].n || 16;
+      const colW = sw / nRef;
+      for (let s = 0; s < nRef; s++) {
+        let colWeight = 0;
+        state.tracks.forEach(tr => {
+          const v = tr.steps[s % tr.n] || 0;
+          colWeight += v === 2 ? 1.4 : v === 1 ? 1.0 : v === 3 ? 0.35 : 0;
+        });
+        const barH = Math.min(sh - 12, (colWeight / 5.5) * (sh - 12));
+        const x = s * colW;
+        scopeCtx.fillStyle = s % 4 === 0 ? 'rgba(245, 158, 11, 0.82)' : 'rgba(34, 211, 238, 0.65)';
+        scopeCtx.fillRect(x + 3, sh - 10 - barH, colW - 6, barH);
+        scopeCtx.fillStyle = '#64748b';
+        scopeCtx.font = '8px "JetBrains Mono", monospace';
+        scopeCtx.fillText(`${s + 1}`, x + 4, sh - 1);
+      }
+    }
+
+    // =========================================================================
+    // 8. UI EVENT BINDINGS & LOSSLESS 44.1 kHz STEREO WAV LOOP EXPORT
+    // =========================================================================
+    function loadGroovePreset(presetKey) {
+      const p = GROOVE_PRESETS[presetKey];
+      if (!p) return;
+      state.activePreset = presetKey;
+      state.bpm = p.bpm;
+      state.swingPct = p.swingPct;
+      state.snareOffsetMs = p.snareOffsetMs;
+      state.kickOffsetMs = p.kickOffsetMs;
+      state.hatOffsetMs = p.hatOffsetMs;
+      state.tracks = JSON.parse(JSON.stringify(p.tracks));
+
+      document.getElementById('header-preset-badge').textContent = p.name;
+      document.getElementById('select-groove-preset').value = presetKey;
+      document.getElementById('preset-lore-blurb').textContent = p.blurb;
+      document.getElementById('slider-bpm').value = p.bpm;
+      document.getElementById('lbl-bpm').textContent = p.bpm;
+
+      document.getElementById('slider-swing-pct').value = p.swingPct;
+      document.getElementById('lbl-swing-pct').textContent = `${p.swingPct.toFixed(1)}%`;
+      document.getElementById('slider-snare-offset').value = p.snareOffsetMs;
+      document.getElementById('lbl-snare-offset').textContent = `${p.snareOffsetMs >= 0 ? '+' : ''}${p.snareOffsetMs.toFixed(1)} ms`;
+      document.getElementById('slider-kick-offset').value = p.kickOffsetMs;
+      document.getElementById('lbl-kick-offset').textContent = `${p.kickOffsetMs >= 0 ? '+' : ''}${p.kickOffsetMs.toFixed(1)} ms`;
+      document.getElementById('slider-hat-offset').value = p.hatOffsetMs;
+      document.getElementById('lbl-hat-offset').textContent = `${p.hatOffsetMs >= 0 ? '+' : ''}${p.hatOffsetMs.toFixed(1)} ms`;
+
+      document.querySelectorAll('.quick-preset-btn').forEach(b => {
+        b.classList.toggle('pill-active', b.dataset.preset === presetKey);
+      });
+
+      renderTracksMatrix();
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+      if (state.isPlaying) toggleSequencerPlayback(true);
+    }
+
+    document.querySelectorAll('.quick-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => loadGroovePreset(btn.dataset.preset));
+    });
+    document.getElementById('select-groove-preset').addEventListener('change', (e) => {
+      loadGroovePreset(e.target.value);
+    });
+
+    // Microtiming Sliders
+    document.getElementById('slider-swing-pct').addEventListener('input', (e) => {
+      state.swingPct = parseFloat(e.target.value);
+      const tag = state.swingPct < 52 ? 'Straight' : state.swingPct < 60 ? 'Quintuplet' : 'Shuffle';
+      document.getElementById('lbl-swing-pct').textContent = `${state.swingPct.toFixed(1)}% (${tag})`;
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    document.getElementById('slider-snare-offset').addEventListener('input', (e) => {
+      state.snareOffsetMs = parseFloat(e.target.value);
+      const tag = state.snareOffsetMs > 2 ? 'Laid-Back' : state.snareOffsetMs < -2 ? 'Rushed' : 'On-Grid';
+      document.getElementById('lbl-snare-offset').textContent = `${state.snareOffsetMs >= 0 ? '+' : ''}${state.snareOffsetMs.toFixed(1)} ms (${tag})`;
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    document.getElementById('slider-kick-offset').addEventListener('input', (e) => {
+      state.kickOffsetMs = parseFloat(e.target.value);
+      document.getElementById('lbl-kick-offset').textContent = `${state.kickOffsetMs >= 0 ? '+' : ''}${state.kickOffsetMs.toFixed(1)} ms`;
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    document.getElementById('slider-hat-offset').addEventListener('input', (e) => {
+      state.hatOffsetMs = parseFloat(e.target.value);
+      document.getElementById('lbl-hat-offset').textContent = `${state.hatOffsetMs >= 0 ? '+' : ''}${state.hatOffsetMs.toFixed(1)} ms`;
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    document.getElementById('btn-quantize-reset').addEventListener('click', () => {
+      state.swingPct = 50.0;
+      state.snareOffsetMs = 0.0;
+      state.kickOffsetMs = 0.0;
+      state.hatOffsetMs = 0.0;
+      document.getElementById('slider-swing-pct').value = 50;
+      document.getElementById('lbl-swing-pct').textContent = '50.0% (Straight)';
+      document.getElementById('slider-snare-offset').value = 0;
+      document.getElementById('lbl-snare-offset').textContent = '0.0 ms (On-Grid)';
+      document.getElementById('slider-kick-offset').value = 0;
+      document.getElementById('lbl-kick-offset').textContent = '0.0 ms';
+      document.getElementById('slider-hat-offset').value = 0;
+      document.getElementById('lbl-hat-offset').textContent = '0.0 ms';
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    // Euclidean Generator E(k, n, r)
+    function updateEuclideanPreview() {
+      const k = parseInt(document.getElementById('slider-euc-k').value, 10);
+      const n = parseInt(document.getElementById('slider-euc-n').value, 10);
+      const r = parseInt(document.getElementById('slider-euc-r').value, 10);
+      state.eucK = Math.min(k, n);
+      state.eucN = n;
+      state.eucR = r;
+      document.getElementById('lbl-euc-k').textContent = state.eucK;
+      document.getElementById('lbl-euc-n').textContent = state.eucN;
+      document.getElementById('lbl-euc-r').textContent = state.eucR;
+      document.getElementById('euc-formula-badge').textContent = `E(${state.eucK}, ${state.eucN}, r=${state.eucR})`;
+
+      const pat = generateEuclideanPattern(state.eucK, state.eucN, state.eucR, 1);
+      document.getElementById('euc-pattern-string').textContent = `[${pat.map(v => v ? 'x' : '.').join(' ')}]`;
+    }
+
+    ['slider-euc-k', 'slider-euc-n', 'slider-euc-r'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updateEuclideanPreview);
+    });
+
+    document.getElementById('btn-apply-euclidean').addEventListener('click', () => {
+      const tIdx = parseInt(document.getElementById('select-euc-track').value, 10);
+      const pat = generateEuclideanPattern(state.eucK, state.eucN, state.eucR, 1);
+      state.tracks[tIdx].n = state.eucN;
+      state.tracks[tIdx].steps = pat;
+      renderTracksMatrix();
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    document.getElementById('btn-clear-grid').addEventListener('click', () => {
+      state.tracks.forEach(tr => { tr.steps = new Array(tr.n).fill(0); });
+      renderTracksMatrix();
+      build3DBeatGeometry();
+      updateTelemetryCanvases();
+    });
+
+    // Live Finger-Drum Pads
+    document.querySelectorAll('.drum-pad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        initAudio();
+        const tIdx = parseInt(btn.dataset.pad, 10);
+        triggerDrumVoice(audioCtx, masterGain, tIdx, 2);
+      });
+    });
+
+    document.getElementById('btn-play-toggle').addEventListener('click', () => toggleSequencerPlayback());
+    document.getElementById('slider-bpm').addEventListener('input', (e) => {
+      state.bpm = parseInt(e.target.value, 10);
+      document.getElementById('lbl-bpm').textContent = state.bpm;
+      if (state.isPlaying) toggleSequencerPlayback(true);
+      updateTelemetryCanvases();
+    });
+
+    document.getElementById('btn-3d-mode').addEventListener('click', (e) => {
+      state.view3DMode = state.view3DMode === 'rings' ? 'torus' : 'rings';
+      e.target.textContent = state.view3DMode === 'rings' ? '3D View: Euclidean Rings' : '3D View: Polyrhythm Torus';
+      build3DBeatGeometry();
+    });
+
+    document.getElementById('btn-cam-reset').addEventListener('click', () => {
+      camSpherical = { radius: 11.8, theta: 0.0, phi: 0.68 };
+      updateCameraFromSpherical();
+    });
+
+    // Modal & Side Docks
+    const infoModal = document.getElementById('info-modal');
+    document.getElementById('btn-info-modal').addEventListener('click', () => {
+      infoModal.classList.remove('hidden');
+      infoModal.classList.add('flex');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      infoModal.classList.add('hidden');
+      infoModal.classList.remove('flex');
+    });
+
+    let leftOpen = true, rightOpen = true;
+    document.getElementById('toggle-left-dock').addEventListener('click', () => {
+      leftOpen = !leftOpen;
+      document.getElementById('left-dock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-110%)';
+      document.getElementById('left-dock-arrow').textContent = leftOpen ? '◀' : '▶';
+    });
+    document.getElementById('toggle-right-dock').addEventListener('click', () => {
+      rightOpen = !rightOpen;
+      document.getElementById('right-dock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(110%)';
+      document.getElementById('right-dock-arrow').textContent = rightOpen ? '▶' : '◀';
+    });
+
+    // Lossless 44.1 kHz 16-bit Stereo WAV Exporter
+    function encodeWAV(audioBuffer) {
+      const numChannels = 2;
+      const sampleRate = audioBuffer.sampleRate;
+      const length = audioBuffer.length;
+      const buffer = new ArrayBuffer(44 + length * numChannels * 2);
+      const view = new DataView(buffer);
+      function writeStr(off, s) { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + length * numChannels * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, length * numChannels * 2, true);
+
+      const chL = audioBuffer.getChannelData(0);
+      const chR = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : chL;
+      let offset = 44;
+      for (let i = 0; i < length; i++) {
+        const sL = Math.max(-1, Math.min(1, chL[i]));
+        const sR = Math.max(-1, Math.min(1, chR[i]));
+        view.setInt16(offset, sL < 0 ? sL * 0x8000 : sL * 0x7FFF, true);
+        view.setInt16(offset + 2, sR < 0 ? sR * 0x8000 : sR * 0x7FFF, true);
+        offset += 4;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function exportGrooveWAV(isFullLoop = true) {
+      const sr = 44100;
+      const stepSec = 15.0 / state.bpm;
+      const totalSteps = isFullLoop ? 32 : 6; // 2 full bars for loop, or 6 kit hits
+      const dur = isFullLoop ? (totalSteps * stepSec + 0.45) : 2.6;
+      const offline = new OfflineAudioContext(2, Math.ceil(sr * dur), sr);
+
+      if (isFullLoop) {
+        for (let tick = 0; tick < totalSteps; tick++) {
+          const baseTime = 0.05 + tick * stepSec;
+          state.tracks.forEach((tr, tIdx) => {
+            const sIdx = tick % tr.n;
+            const val = tr.steps[sIdx] || 0;
+            if (val > 0) {
+              const isOdd = sIdx % 2 === 1;
+              const swingSec = isOdd ? ((state.swingPct - 50.0) / 50.0) * 0.5 * stepSec : 0;
+              let microMs = 0;
+              if (tIdx === 0) microMs = state.kickOffsetMs;
+              else if (tIdx === 1) microMs = state.snareOffsetMs;
+              else if (tIdx === 2 || tIdx === 5) microMs = state.hatOffsetMs;
+              const tHit = Math.max(0.01, baseTime + swingSec + microMs / 1000.0);
+              triggerDrumVoice(offline, offline.destination, tIdx, val, tHit);
+            }
+          });
+        }
+      } else {
+        for (let tIdx = 0; tIdx < 6; tIdx++) {
+          triggerDrumVoice(offline, offline.destination, tIdx, 2, 0.05 + tIdx * 0.4);
+        }
+      }
+
+      const rendered = await offline.startRendering();
+      const blob = encodeWAV(rendered);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = isFullLoop
+        ? `beat_forge_${state.activePreset}_${state.bpm}bpm_loop.wav`
+        : `beat_forge_6_voice_kit_oneshots.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('btn-export-loop').addEventListener('click', () => exportGrooveWAV(true));
+    document.getElementById('btn-export-kit').addEventListener('click', () => exportGrooveWAV(false));
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'escape') {
+        infoModal.classList.add('hidden');
+        infoModal.classList.remove('flex');
+      } else if (k === ' ') {
+        e.preventDefault();
+        toggleSequencerPlayback();
+      } else if (['1', '2', '3', '4', '5', '6'].includes(k)) {
+        initAudio();
+        triggerDrumVoice(audioCtx, masterGain, parseInt(k, 10) - 1, 2);
+      }
+    });
+
+    // =========================================================================
+    // 9. MAIN ANIMATION LOOP
+    // =========================================================================
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, clock.getDelta());
+
+      for (let i = 0; i < 6; i++) {
+        state.trackEnergy[i] *= Math.exp(-dt * 7.5);
+      }
+
+      // Rotate Playhead Sweeper & Pulse Active Step Nodes
+      if (playheadSweeperGroup) {
+        if (state.isPlaying) {
+          const barSec = (60.0 / state.bpm) * 4.0;
+          playheadSweeperGroup.rotation.y -= (dt / barSec) * Math.PI * 2;
+        }
+      }
+
+      stepNodeMeshes.forEach(mesh => {
+        const { trackIdx, stepIdx, baseHeight } = mesh.userData;
+        const tr = state.tracks[trackIdx];
+        const isCurrent = state.isPlaying && (state.globalTick % tr.n) === stepIdx;
+        const boost = isCurrent ? 1.55 : (1.0 + state.trackEnergy[trackIdx] * 0.35);
+        mesh.scale.set(boost, boost, boost);
+        mesh.position.y = (baseHeight * boost) / 2;
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    renderTracksMatrix();
+    updateTelemetryCanvases();
+    animate();
+  </script>
+</body>
+</html>

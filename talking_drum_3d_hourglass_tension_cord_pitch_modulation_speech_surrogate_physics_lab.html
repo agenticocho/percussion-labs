@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TALKING-DRUM 3D — Hourglass Tension-Cord Pitch-Modulation & Speech-Surrogate Physics Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-obsidian: #04060a;
+      --panel-bg: rgba(9, 13, 22, 0.88);
+      --border-amber: rgba(245, 158, 11, 0.28);
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #04060a; color: #f1f5f9;
+      font-family: 'Inter', sans-serif; overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .glass-dock {
+      background: rgba(8, 12, 20, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.72);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.45); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.45); border-radius: 3px; }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 999px;
+      background: rgba(51, 65, 85, 0.85); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #f59e0b; border: 2px solid #fffbeb;
+      cursor: pointer; box-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+    }
+    .tone-pill-active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.30), rgba(217, 119, 6, 0.18));
+      border-color: rgba(251, 191, 36, 0.85) !important;
+      color: #fef3c7 !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.32);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden bg-[#04060a] text-slate-100">
+
+  <!-- Full-Screen 3D WebGL Canvas Layer -->
+  <div id="canvas-container" class="fixed inset-0 z-0 cursor-crosshair"></div>
+
+  <!-- Non-Overlapping 3-Row Flex Viewport HUD -->
+  <div class="relative z-10 w-full h-full flex flex-col justify-between pointer-events-none">
+
+    <!-- ROW 1: Top Header Bar -->
+    <header class="shrink-0 w-full px-3 py-2 bg-slate-950/85 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 via-orange-600 to-yellow-600 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/40">
+          <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 2h12v3l-4 7 4 7v3H6v-3l4-7-4-7V2zm2 2v.4l3.7 6.5L8 17.4v.6h8v-.6l-3.7-6.5L16 4.4V4H8z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-sm md:text-base font-bold tracking-tight text-white">TALKING-DRUM 3D</h1>
+            <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">H-S 211.242.11</span>
+            <span id="header-archetype-badge" class="hidden sm:inline-block text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Ìyá Ìlù Dùndún (Yoruba)</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight hidden sm:block">
+            Hourglass Leather-Cord Tension Modulation $f_{01}(t) \propto \sqrt{T_0(1+\kappa S(t))}$, Coupled Dual-Head Venturi Throat &amp; West African Speech Surrogacy
+          </p>
+        </div>
+      </div>
+
+      <!-- Archetype Quick Selector -->
+      <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+        <button data-archetype="dundun" class="archetype-btn px-2 py-1 rounded text-[11px] font-medium transition tone-pill-active">Ìyá Ìlù Dùndún</button>
+        <button data-archetype="gangan" class="archetype-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Gángan (Fuji/Jùjú)</button>
+        <button data-archetype="tama" class="archetype-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Tama (Senegal)</button>
+        <button data-archetype="lunna" class="archetype-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Lunna (Dagomba)</button>
+        <button data-archetype="kalangu" class="archetype-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Kalangu (Hausa)</button>
+        <button data-archetype="dondo" class="archetype-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Dondo (Ashanti)</button>
+      </div>
+
+      <!-- Live Telemetry & Camera Controls -->
+      <div class="flex items-center gap-2">
+        <div class="hidden xl:flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] font-mono-tech">
+          <div><span class="text-slate-400">f01(t):</span> <span id="hud-freq" class="text-amber-400 font-semibold">110.0 Hz</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Tone:</span> <span id="hud-tone" class="text-emerald-400 font-semibold">Dò (Low)</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Tension T(t):</span> <span id="hud-tension" class="text-cyan-400 font-semibold">420 N/m</span></div>
+        </div>
+
+        <button id="btn-xray" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 transition" title="Toggle Hourglass Venturi Throat Cutaway">
+          X-Ray Throat: OFF
+        </button>
+        <button id="btn-cam-reset" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          Reset View
+        </button>
+        <button id="btn-info-modal" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition">
+          Acoustics &amp; Lore
+        </button>
+      </div>
+    </header>
+
+    <!-- ROW 2: Middle Interactive Stage with Non-Overlapping Dock Toggles & Side Docks -->
+    <div class="relative flex-1 min-h-0 w-full pointer-events-none">
+
+      <!-- Dock Toggle Pill Buttons Along Top of Stage -->
+      <div class="absolute top-2 left-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-left-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-amber-300 border border-amber-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          <span id="left-dock-arrow">◀</span> Hourglass &amp; Tension Lab
+        </button>
+      </div>
+
+      <div class="absolute top-2 right-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-right-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-emerald-300 border border-emerald-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          Speech Surrogacy &amp; Telemetry <span id="right-dock-arrow">▶</span>
+        </button>
+      </div>
+
+      <!-- Center Floating Live Speech Syllable Banner -->
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        <div class="px-3.5 py-1 rounded-full bg-slate-950/80 border border-amber-500/30 backdrop-blur-md flex items-center gap-3 shadow-lg">
+          <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">Live Speech Syllable:</span>
+          <span id="live-syllable-banner" class="text-xs md:text-sm font-display font-bold text-amber-300 tracking-wide">Dò — Open Low Stroke (110 Hz)</span>
+          <span id="live-glide-badge" class="text-[10px] font-mono-tech px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-400/30">+0.0 st</span>
+        </div>
+        <div class="text-[10px] font-mono-tech text-slate-400 mt-1 bg-slate-950/60 px-2.5 py-0.5 rounded-full border border-slate-800/70">
+          Click/Drag Head to Strike • Drag Leather Cords Up/Down or Hold <span class="text-amber-300">[1/2/3]</span> + <span class="text-cyan-300">[↑/↓]</span> to Bend Pitch Mid-Note • <span class="text-emerald-300">[Space/J/K/L]</span> Articulate
+        </div>
+      </div>
+
+      <!-- LEFT DOCK: Hourglass Anatomy, Live Arm-Squeeze & Articulation Controls -->
+      <aside id="left-dock" class="absolute top-10 bottom-2 left-3 z-20 w-80 max-w-[90vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <!-- Left Dock Tabs -->
+        <div class="grid grid-cols-3 gap-1 p-1.5 bg-slate-950/70 border-b border-slate-800/80 rounded-t-xl shrink-0">
+          <button data-ltab="tension" class="ltab-btn py-1.5 rounded text-[11px] font-semibold transition tone-pill-active">1. Arm Squeeze</button>
+          <button data-ltab="shell" class="ltab-btn py-1.5 rounded text-[11px] font-semibold text-slate-400 hover:text-white transition">2. Shell &amp; Hides</button>
+          <button data-ltab="stick" class="ltab-btn py-1.5 rounded text-[11px] font-semibold text-slate-400 hover:text-white transition">3. Ọ̀pá &amp; Saworo</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+          <!-- TAB 1: ARM SQUEEZE & TONAL PITCH BEND -->
+          <div id="ltab-tension" class="space-y-3">
+            <div class="p-2.5 rounded-lg bg-gradient-to-br from-amber-500/15 via-slate-900/90 to-slate-950 border border-amber-500/35">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-semibold text-amber-300 text-[11px] uppercase tracking-wider">Live Underarm Cord Squeeze S(t)</span>
+                <span id="val-arm-squeeze" class="font-mono-tech text-amber-300 font-bold">8% (Dò)</span>
+              </div>
+              <input id="slider-arm-squeeze" type="range" min="0" max="100" step="0.5" value="8" class="w-full my-1" />
+              <div class="flex justify-between text-[10px] font-mono-tech text-slate-400 mt-0.5">
+                <span>Slack (Dò)</span>
+                <span>Mid (Rè)</span>
+                <span>Tight (Mí+)</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                Move this slider (or drag the 3D leather <em>osán</em> cords) <strong>while a note is ringing</strong> to bend the membrane tension $T(t)$ and hear continuous vocal pitch inflection.
+              </p>
+            </div>
+
+            <!-- Yoruba 3-Tone Quick Pads + Contour Envelopes -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-semibold text-slate-300">Yoruba Speech-Tone Target (Dò – Rè – Mí)</span>
+                <span class="text-[10px] font-mono-tech text-slate-400">Keys: 1 / 2 / 3</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5">
+                <button data-tone="do" class="tone-target-btn py-2 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-center transition tone-pill-active">
+                  <div class="font-display font-bold text-sm">Dò (`)</div>
+                  <div class="text-[10px] font-mono-tech text-slate-400">Low • +0 st</div>
+                </button>
+                <button data-tone="re" class="tone-target-btn py-2 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-center transition hover:border-amber-500/40">
+                  <div class="font-display font-bold text-sm">Rè (—)</div>
+                  <div class="text-[10px] font-mono-tech text-slate-400">Mid • +5 st</div>
+                </button>
+                <button data-tone="mi" class="tone-target-btn py-2 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-center transition hover:border-amber-500/40">
+                  <div class="font-display font-bold text-sm">Mí (´)</div>
+                  <div class="text-[10px] font-mono-tech text-slate-400">High • +9 st</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Post-Strike Pitch-Glide Contour Selector -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[11px] font-semibold text-slate-300">Post-Strike Vocal Pitch Contour</span>
+                <span id="val-glide-time" class="text-[10px] font-mono-tech text-amber-300">190 ms</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button data-contour="level" class="contour-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition tone-pill-active">
+                  ━ Level Tone Hold
+                </button>
+                <button data-contour="rise" class="contour-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition hover:border-amber-500/40">
+                  ↗ Rising (Dò → Mí)
+                </button>
+                <button data-contour="fall" class="contour-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition hover:border-amber-500/40">
+                  ↘ Falling (Mí → Dò)
+                </button>
+                <button data-contour="scoop" class="contour-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition hover:border-amber-500/40">
+                  ⌒ Talking Scoop-Fall
+                </button>
+                <button data-contour="warble" class="contour-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition hover:border-amber-500/40">
+                  ∿ Arm Vibrato Warble
+                </button>
+                <button data-contour="question" class="contour-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition hover:border-amber-500/40">
+                  ⤴ Interrogative Inflection
+                </button>
+              </div>
+            </div>
+
+            <!-- 2D Interactive Arm-Squeeze & Strike Zone Pad -->
+            <div class="p-2 rounded-lg bg-slate-950/90 border border-slate-800">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-mono-tech uppercase text-slate-400">2D Live Pitch-Bend &amp; Radial Strike Pad</span>
+                <span id="pad-readout" class="text-[10px] font-mono-tech text-cyan-300">r/a=0.18 • S=8%</span>
+              </div>
+              <canvas id="xy-tension-pad" width="270" height="120" class="w-full h-28 rounded bg-slate-900 border border-slate-800 cursor-pointer"></canvas>
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-500 mt-1">
+                <span>X: Center (Warm) → Rim (Bright)</span>
+                <span>Y: Slack Dò → Tight Mí+</span>
+              </div>
+            </div>
+
+            <!-- Glide Duration & Pitch Bend Range -->
+            <div class="space-y-2 pt-1">
+              <div>
+                <div class="flex justify-between text-[11px] mb-0.5">
+                  <span class="text-slate-300">Post-Strike Squeeze Glide Time</span>
+                  <span id="lbl-glide-ms" class="font-mono-tech text-amber-300">190 ms</span>
+                </div>
+                <input id="slider-glide-ms" type="range" min="40" max="600" step="5" value="190" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] mb-0.5">
+                  <span class="text-slate-300">Max Cord Pitch-Bend Span ($\Delta\text{st}_{\max}$)</span>
+                  <span id="lbl-bend-range" class="font-mono-tech text-amber-300">+14.0 st</span>
+                </div>
+                <input id="slider-bend-range" type="range" min="5" max="18" step="0.5" value="14" class="w-full" />
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: SHELL & DUAL MEMBRANES -->
+          <div id="ltab-shell" class="space-y-3 hidden">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Base Slack Fundamental ($f_{01,\text{base}}$)</span>
+                <span id="lbl-base-freq" class="font-mono-tech text-amber-300">110.0 Hz (A2)</span>
+              </div>
+              <input id="slider-base-freq" type="range" min="75" max="280" step="0.5" value="110" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Hourglass Waist Constriction ($d_{\text{waist}}/d_{\text{head}}$)</span>
+                <span id="lbl-waist-ratio" class="font-mono-tech text-cyan-300">0.42 (Venturi Vocal)</span>
+              </div>
+              <input id="slider-waist-ratio" type="range" min="0.28" max="0.68" step="0.01" value="0.42" class="w-full" />
+              <p class="text-[10px] text-slate-400 mt-0.5">
+                Narrower waist increases acoustic velocity in the throat and deepens the `/o/–/a/` vocal formant cavity coupling.
+              </p>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Dual-Head Sympathetic Coupling ($\chi_{\text{bottom}}$)</span>
+                <span id="lbl-dual-coupling" class="font-mono-tech text-emerald-300">78%</span>
+              </div>
+              <input id="slider-dual-coupling" type="range" min="10" max="100" step="1" value="78" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Animal Hide Membrane Material</span>
+                <span id="lbl-hide-type" class="font-mono-tech text-amber-300">Unborn Kid Goatskin</span>
+              </div>
+              <select id="select-hide-type" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                <option value="goatskin">Thin Goatskin (Classic Yoruba Dùndún / Gángan)</option>
+                <option value="iguana">Ultra-Thin Iguana / Kidskin (Senegalese Tama)</option>
+                <option value="calfskin">Heavy Calfskin (Deep Ceremonial Ìyá Ìlù)</option>
+                <option value="antelope">Savanna Antelope Hide (Dagomba Lunna)</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Membrane Sustain Decay ($\tau_{60}$)</span>
+                <span id="lbl-sustain" class="font-mono-tech text-amber-300">1.45 s</span>
+              </div>
+              <input id="slider-sustain" type="range" min="0.35" max="3.0" step="0.05" value="1.45" class="w-full" />
+            </div>
+          </div>
+
+          <!-- TAB 3: CURVED Ọ̀PÁ STICK, HAND MUTING & SAWORO BELLS -->
+          <div id="ltab-stick" class="space-y-3 hidden">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-300 block mb-1.5">Strike Articulation Mode</span>
+              <div class="grid grid-cols-2 gap-1.5">
+                <button data-artic="opa_open" class="artic-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition tone-pill-active">
+                  1. Ọ̀pá Open Center
+                </button>
+                <button data-artic="opa_press" class="artic-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                  2. Ọ̀pá Press-Glide
+                </button>
+                <button data-artic="finger_tap" class="artic-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                  3. Free-Hand Finger
+                </button>
+                <button data-artic="muted_slap" class="artic-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                  4. Muted Slap (Kpa)
+                </button>
+                <button data-artic="flam_roll" class="artic-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                  5. Stick+Finger Flam
+                </button>
+                <button data-artic="rim_saworo" class="artic-btn py-1.5 px-2 rounded border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                  6. Rim + Saworo Bell
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Free-Hand Palm Muting ($D_{\text{hand}}$)</span>
+                <span id="lbl-hand-mute" class="font-mono-tech text-amber-300">12%</span>
+              </div>
+              <input id="slider-hand-mute" type="range" min="0" max="90" step="1" value="12" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300"><em>Saworo</em> Peripheral Brass Bells Mix</span>
+                <span id="lbl-saworo" class="font-mono-tech text-amber-300">45% (16 Bells)</span>
+              </div>
+              <input id="slider-saworo" type="range" min="0" max="100" step="1" value="45" class="w-full" />
+              <p class="text-[10px] text-slate-400 mt-0.5">
+                <em>"Saworo ni 'lu wa; Ilu ti ko ni saworo ki se 'lu gidi"</em> — Yoruba proverb: a lead <em>Ìyá Ìlù</em> without brass bells is incomplete.
+              </p>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Hausa <em>Kalangu</em> Gut Snare Buzz</span>
+                <span id="lbl-snare-buzz" class="font-mono-tech text-cyan-300">0% (Off)</span>
+              </div>
+              <input id="slider-snare-buzz" type="range" min="0" max="100" step="1" value="0" class="w-full" />
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT DOCK: Real-Time Speech Pitch-Contour Oscilloscope, Formant Spectrum & 16-Step Speech Sequencer -->
+      <aside id="right-dock" class="absolute top-10 bottom-2 right-3 z-20 w-96 max-w-[92vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-emerald-300">Tonal Speech Surrogacy &amp; Telemetry</h2>
+            <p class="text-[10px] text-slate-400">Live $f_{01}(t)$ Pitch-Glide Contour (`Dò–Rè–Mí`) &amp; Hourglass Formant FFT</p>
+          </div>
+          <span id="seq-playing-indicator" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 text-slate-400">IDLE</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+          <!-- Canvas 1: Live Speech Pitch-Contour Tracker (Dò / Rè / Mí Rail + f01(t) Trajectory) -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-amber-300">Speech-Tone Pitch Contour $f_{01}(t)$ &amp; Cord Squeeze $S(t)$</span>
+              <span id="contour-hz-readout" class="text-[10px] font-mono-tech text-emerald-400">110.0 Hz</span>
+            </div>
+            <canvas id="canvas-pitch-contour" width="340" height="115" class="w-full h-28 rounded bg-[#050811] border border-slate-800/80"></canvas>
+          </div>
+
+          <!-- Canvas 2: Coupled Dual-Head Modal Spectrum & Venturi Throat Formant Envelope -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-cyan-300">Dual-Head Bessel Modes + Venturi Formant Cavity</span>
+              <span id="formant-readout" class="text-[10px] font-mono-tech text-cyan-400">F1: 390 Hz (/o/)</span>
+            </div>
+            <canvas id="canvas-spectrum" width="340" height="95" class="w-full h-24 rounded bg-[#050811] border border-slate-800/80"></canvas>
+          </div>
+
+          <!-- Authentic West African Tonal Speech Phrases & Ensemble Grooves -->
+          <div class="p-2.5 rounded-lg bg-slate-900/75 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-amber-300">Tonal Speech Phrases &amp; West African Grooves</span>
+              <span class="text-[10px] font-mono-tech text-slate-400">12 Presets</span>
+            </div>
+            <select id="select-phrase-preset" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-amber-200 font-medium">
+              <optgroup label="Yoruba Tonal Speech Surrogacy (Dò–Rè–Mí)">
+                <option value="ekaabo">1. "Ẹ káàbọ̀ o!" — Yoruba Welcome Greeting (Dò–Mí–Dò–Dò–Rè)</option>
+                <option value="saworo_proverb">2. "Saworo ni 'lu wa" — Proverb of the Brass Bells (Rè–Rè–Rè–Dò–Mí–Dò)</option>
+                <option value="oriki_oba">3. Oríkì Ọba — Royal Praise Poetry Call (Dò↗Mí–Rè–Mí↘Dò)</option>
+                <option value="carrington_home">4. Carrington (1949) "Come Back Home" Redundant Formula</option>
+                <option value="carrington_moon">5. Carrington (1949) "The Moon Looks Towards Earth"</option>
+              </optgroup>
+              <optgroup label="West African Ensemble Styles (East vs. West)">
+                <option value="fuji_lead">6. Yoruba Fuji Lead Gángan Rubbery Glissando</option>
+                <option value="juju_talking">7. King Sunny Adé Style Jùjú Talking Call &amp; Response</option>
+                <option value="mbalax_tama">8. Senegalese Mbalax Tama Rapid Stick+Finger Burst</option>
+                <option value="dagomba_lunsi">9. Dagomba Lunsi Griot Praise Chant (Northern Ghana)</option>
+                <option value="hausa_kalangu">10. Hausa Kalangu Snare-Buzz Glissando Dance</option>
+                <option value="ashanti_dondo">11. Ashanti Dondo Twi Speech-Tone Dyad Signal</option>
+                <option value="octave_sweep">12. Continuous Octave Tension Sweep Diagnostic</option>
+              </optgroup>
+            </select>
+
+            <div id="phrase-translation-box" class="p-2 rounded bg-slate-950/90 border border-amber-500/25 text-[11px] leading-snug">
+              <div class="font-semibold text-amber-300" id="phrase-yoruba-text">"Ẹ káàbọ̀ o, ọmọ অবি (Welcome to our honored guest!)"</div>
+              <div class="text-[10px] text-slate-400 mt-0.5 font-mono-tech" id="phrase-tone-cipher">Tones: Rè – Mí – Dò – Dò↗Mí – Rè (Yoruba 3-Tone Surrogate)</div>
+            </div>
+
+            <!-- Interactive 8-Syllable Step Sequencer Grid -->
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono-tech text-slate-400 mb-1">
+                <span>Click Step to Cycle Tone (Dò → Rè → Mí → Rise → Fall → Rest)</span>
+                <button id="btn-speak-phrase" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+                  ▶ Speak Phrase Once
+                </button>
+              </div>
+              <div id="sequencer-grid" class="grid grid-cols-8 gap-1"></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ROW 3: Bottom Transport, Direct Strike Buttons & Lossless WAV Export Bar -->
+    <footer class="shrink-0 w-full px-3 py-2 bg-slate-950/90 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <!-- Direct Playable Articulation Triggers -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="btn-strike-do" class="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1">
+          <span>Strike Dò (Low)</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[J]</span>
+        </button>
+        <button id="btn-strike-re" class="px-2.5 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-500/40 text-amber-200 border border-amber-500/50 font-semibold text-xs transition flex items-center gap-1">
+          <span>Strike Rè (Mid)</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[K]</span>
+        </button>
+        <button id="btn-strike-mi" class="px-2.5 py-1.5 rounded-lg bg-orange-500/30 hover:bg-orange-500/40 text-orange-200 border border-orange-400/50 font-semibold text-xs transition flex items-center gap-1">
+          <span>Strike Mí (High)</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[L]</span>
+        </button>
+        <button id="btn-strike-glide" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs transition">
+          Dò↗Mí Talking Glide [Space]
+        </button>
+        <button id="btn-strike-slap" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-semibold text-xs transition">
+          Tama Finger Flam [F]
+        </button>
+      </div>
+
+      <!-- Loop Sequencer Transport -->
+      <div class="flex items-center gap-2">
+        <button id="btn-loop-toggle" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+          <span id="loop-btn-icon">▶</span>
+          <span id="loop-btn-text">Play Speech Loop</span>
+        </button>
+        <div class="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+          <span class="text-[10px] font-mono-tech text-slate-400">BPM</span>
+          <input id="slider-bpm" type="range" min="65" max="175" value="112" class="w-20" />
+          <span id="lbl-bpm" class="text-xs font-mono-tech text-amber-300 w-7 text-right">112</span>
+        </div>
+      </div>
+
+      <!-- Lossless 44.1 kHz 16-Bit Stereo WAV Export -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-export-oneshot" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-xs font-mono-tech transition">
+          ⬇ WAV One-Shot
+        </button>
+        <button id="btn-export-loop" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/40 text-xs font-mono-tech transition">
+          ⬇ Export Speech Loop (WAV)
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ACOUSTICS & ORGANOLOGY MODAL -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-dock max-w-2xl w-full rounded-2xl border border-amber-500/40 p-5 space-y-3 text-xs text-slate-200 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 class="font-display text-base font-bold text-amber-300">West African Talking Drum — Hourglass Tension Physics &amp; Speech Surrogacy</h3>
+          <p class="text-[11px] text-slate-400">Hornbostel–Sachs 211.242.11 • Coupled Dual-Skin Hourglass Pressure Drum</p>
+        </div>
+        <button id="btn-close-modal" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-tech">✕ ESC</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-amber-300">1. Dynamic Cord-Tension Modulation $T(t)$</h4>
+          <p class="text-slate-300">
+            Unlike fixed-tension drums, the talking drum mounts two opposing animal-hide membranes (goat, kid, or iguana skin) across a waist-constricted hourglass shell linked by longitudinal leather tension cords (<em>osán</em>). Squeezing the cords between the upper arm and ribs increases radial tension $T(t) = T_0(1 + \kappa_{\text{cord}} S(t))$, continuously shifting the Bessel modal frequencies $f_{mn}(t) = \frac{j_{mn}}{2\pi a}\sqrt{T(t)/\sigma}$ across more than an octave—both between strokes and <em>mid-note</em> after impact.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-cyan-300">2. Hourglass Venturi Throat &amp; Vocal Formants</h4>
+          <p class="text-slate-300">
+            The narrow hourglass waist constricts the internal air column between the struck batter head and the sympathetic bottom head. Acting as an acoustic Venturi neck joining two resonant sub-cavities, the throat introduces a vocal formant doublet ($290\text{–}920\text{ Hz}$) that colors every pitch glide with human vowel-like resonances (<code>/o/</code>, <code>/a/</code>, <code>/e/</code>).
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-emerald-300">3. Yoruba 3-Tone Surrogacy (Dò – Rè – Mí)</h4>
+          <p class="text-slate-300">
+            Tone languages such as Yoruba distinguish words by three level pitch registers—Low (<em>Dò</em>), Mid (<em>Rè</em>), and High (<em>Mí</em>)—plus rising and falling glides. By replicating exact speech-tone contours and syllable durations, master drummers transmit proverbs, royal <em>Oríkì</em> praise poetry, and long-distance messages (historically 4–5 miles per drum, using Carrington's redundant poetic formulas to eliminate ambiguity).
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-orange-300">4. Eastern vs. Western Playing Styles &amp; Saworo</h4>
+          <p class="text-slate-300">
+            In the Eastern zone (Nigeria, Benin, Ghana — Yoruba <em>Dùndún/Gángan</em>, Dagomba <em>Lunna</em>), players strike with a curved wooden stick (<em>ọ̀pá</em>) for long, vocal pitch-bent notes accompanied by jingling peripheral brass bells (<em>saworo</em>). In the Western zone (Senegal/Gambia/Mali — Wolof <em>Tama</em>), players combine rapid stick strokes with explosive free-hand finger rolls for <em>Mbalax</em> rhythms.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. ARCHETYPE DATABASE & SPEECH-SURROGATE PHRASE LIBRARY
+    // =========================================================================
+    const ARCHETYPES = {
+      dundun: {
+        id: 'dundun',
+        name: 'Ìyá Ìlù Dùndún (Yoruba Mother Drum)',
+        badge: 'Ìyá Ìlù Dùndún (Yoruba)',
+        lengthCm: 36, headDiaCm: 17, waistRatio: 0.42,
+        baseFreq: 110.0, maxBendSt: 14.0, sustain: 1.55,
+        dualCoupling: 0.82, saworoMix: 0.50, snareBuzz: 0.0,
+        hideType: 'goatskin', cordCount: 36,
+        woodColor: 0x5c2d16, cordColor: 0xc2854c, headColor: 0xead7b7,
+        hasSaworo: true
+      },
+      gangan: {
+        id: 'gangan',
+        name: 'Gángan / Kànàngó (Fuji & Jùjú Lead)',
+        badge: 'Gángan (Yoruba Fuji/Jùjú)',
+        lengthCm: 28, headDiaCm: 14, waistRatio: 0.40,
+        baseFreq: 138.6, maxBendSt: 15.0, sustain: 1.40,
+        dualCoupling: 0.78, saworoMix: 0.15, snareBuzz: 0.0,
+        hideType: 'goatskin', cordCount: 32,
+        woodColor: 0x6e361a, cordColor: 0xd19456, headColor: 0xf0dfc2,
+        hasSaworo: false
+      },
+      tama: {
+        id: 'tama',
+        name: 'Tama / Tamma (Wolof Mbalax — Senegal)',
+        badge: 'Tama (Senegal Mbalax)',
+        lengthCm: 15, headDiaCm: 8.5, waistRatio: 0.46,
+        baseFreq: 220.0, maxBendSt: 15.5, sustain: 0.85,
+        dualCoupling: 0.68, saworoMix: 0.0, snareBuzz: 0.0,
+        hideType: 'iguana', cordCount: 28,
+        woodColor: 0x47210f, cordColor: 0xb36c32, headColor: 0xf5ebd6,
+        hasSaworo: false
+      },
+      lunna: {
+        id: 'lunna',
+        name: 'Lunna / Donno (Dagomba Griot — Ghana)',
+        badge: 'Lunna (Dagomba Griot)',
+        lengthCm: 32, headDiaCm: 15, waistRatio: 0.44,
+        baseFreq: 123.5, maxBendSt: 13.0, sustain: 1.50,
+        dualCoupling: 0.80, saworoMix: 0.0, snareBuzz: 0.0,
+        hideType: 'antelope', cordCount: 34,
+        woodColor: 0x733a1e, cordColor: 0xc89a64, headColor: 0xe6d0ab,
+        hasSaworo: false
+      },
+      kalangu: {
+        id: 'kalangu',
+        name: 'Kalangu (Hausa Hourglass — Northern Nigeria)',
+        badge: 'Kalangu (Hausa)',
+        lengthCm: 30, headDiaCm: 14.5, waistRatio: 0.38,
+        baseFreq: 130.8, maxBendSt: 13.5, sustain: 1.25,
+        dualCoupling: 0.76, saworoMix: 0.0, snareBuzz: 0.48,
+        hideType: 'goatskin', cordCount: 30,
+        woodColor: 0x4f2412, cordColor: 0xa86434, headColor: 0xdec49b,
+        hasSaworo: false
+      },
+      dondo: {
+        id: 'dondo',
+        name: 'Dondo / Odondo (Akan Ashanti — Ghana)',
+        badge: 'Dondo (Ashanti Twi)',
+        lengthCm: 31, headDiaCm: 15, waistRatio: 0.43,
+        baseFreq: 130.8, maxBendSt: 12.0, sustain: 1.45,
+        dualCoupling: 0.78, saworoMix: 0.0, snareBuzz: 0.0,
+        hideType: 'goatskin', cordCount: 32,
+        woodColor: 0x633018, cordColor: 0xd49c63, headColor: 0xede0c8,
+        hasSaworo: false
+      }
+    };
+
+    const HIDE_PROFILES = {
+      goatskin: { name: 'Thin Goatskin', brightness: 1.0, damping: 1.0, nlStiff: 1.0 },
+      iguana:   { name: 'Iguana / Kidskin', brightness: 1.38, damping: 1.25, nlStiff: 1.25 },
+      calfskin: { name: 'Heavy Calfskin', brightness: 0.78, damping: 0.82, nlStiff: 0.85 },
+      antelope: { name: 'Savanna Antelope', brightness: 1.12, damping: 0.92, nlStiff: 1.05 }
+    };
+
+    // Speech Phrase Library: each step has { syl, tone ('do'|'re'|'mi'|'rest'), contour ('level'|'rise'|'fall'|'scoop'|'warble'), artic }
+    const PHRASE_PRESETS = {
+      ekaabo: {
+        yoruba: '"Ẹ káàbọ̀ o, ọmọ wa!" — Welcome, honored guest!',
+        cipher: 'Tones: Rè – Mí – Dò – Dò↗Mí – Rè – Dò – Mí – Rè',
+        bpm: 108,
+        steps: [
+          { syl: 'Ẹ', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'ká', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'à', tone: 'do', contour: 'fall', artic: 'opa_press' },
+          { syl: 'bọ̀', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'o!', tone: 're', contour: 'warble', artic: 'opa_open' },
+          { syl: 'ọ', tone: 're', contour: 'level', artic: 'finger_tap' },
+          { syl: 'mọ', tone: 'mi', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'wa', tone: 're', contour: 'level', artic: 'rim_saworo' }
+        ]
+      },
+      saworo_proverb: {
+        yoruba: '"Saworo ni \'lu wa; ilu ti ko ni saworo ki se \'lu gidi"',
+        cipher: 'Proverb: "Our drum possesses brass bells; without bells it is not authentic"',
+        bpm: 112,
+        steps: [
+          { syl: 'Sa', tone: 're', contour: 'level', artic: 'rim_saworo' },
+          { syl: 'wo', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'ro', tone: 're', contour: 'rise', artic: 'opa_press' },
+          { syl: 'ni', tone: 're', contour: 'level', artic: 'finger_tap' },
+          { syl: 'lù', tone: 'do', contour: 'level', artic: 'opa_open' },
+          { syl: 'wa', tone: 'mi', contour: 'scoop', artic: 'rim_saworo' },
+          { syl: 'gí', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'di!', tone: 'do', contour: 'level', artic: 'rim_saworo' }
+        ]
+      },
+      oriki_oba: {
+        yoruba: '"Kábíyèsí Ọba, Aláṣẹ èkejì òrìṣà!" — Royal Oríkì Praise',
+        cipher: 'Tones: Mí – Mí – Dò – Mí – Rè↗Mí – Dò – Dò – Dò',
+        bpm: 98,
+        steps: [
+          { syl: 'Ká', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'bí', tone: 'mi', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'yè', tone: 'do', contour: 'level', artic: 'opa_open' },
+          { syl: 'sí', tone: 'mi', contour: 'warble', artic: 'rim_saworo' },
+          { syl: 'Ọ', tone: 're', contour: 'rise', artic: 'opa_press' },
+          { syl: 'ba', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'òrì', tone: 'do', contour: 'fall', artic: 'opa_press' },
+          { syl: 'ṣà', tone: 'do', contour: 'level', artic: 'rim_saworo' }
+        ]
+      },
+      carrington_home: {
+        yoruba: 'Carrington (1949): "Make your feet come back the way they went..."',
+        cipher: 'Redundant disambiguating tonal formula for "Come back home"',
+        bpm: 116,
+        steps: [
+          { syl: 'Feet', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'come', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'back', tone: 'do', contour: 'level', artic: 'finger_tap' },
+          { syl: 'way', tone: 're', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'plant', tone: 'do', contour: 'level', artic: 'muted_slap' },
+          { syl: 'legs', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'vil-', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'lage', tone: 'do', contour: 'level', artic: 'opa_open' }
+        ]
+      },
+      carrington_moon: {
+        yoruba: 'Carrington (1949): "The Moon looks towards the Earth"',
+        cipher: 'Poetic tonal expansion preventing homophone ambiguity',
+        bpm: 102,
+        steps: [
+          { syl: 'The', tone: 'do', contour: 'level', artic: 'opa_open' },
+          { syl: 'Moon', tone: 'mi', contour: 'warble', artic: 'opa_press' },
+          { syl: 'up', tone: 'mi', contour: 'level', artic: 'finger_tap' },
+          { syl: 'high', tone: 're', contour: 'fall', artic: 'opa_press' },
+          { syl: 'looks', tone: 're', contour: 'rise', artic: 'opa_press' },
+          { syl: 'down', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'to', tone: 're', contour: 'level', artic: 'finger_tap' },
+          { syl: 'Earth', tone: 'do', contour: 'level', artic: 'opa_open' }
+        ]
+      },
+      fuji_lead: {
+        yoruba: 'Yoruba Fuji Lead Gángan — Wide Octave Glissando Groove',
+        cipher: 'Eastern sustained post-strike squeeze modulation with muted slaps',
+        bpm: 124,
+        steps: [
+          { syl: 'Gán', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'kpa', tone: 'mi', contour: 'level', artic: 'muted_slap' },
+          { syl: 'gàn', tone: 'do', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'rè', tone: 're', contour: 'level', artic: 'finger_tap' },
+          { syl: 'wó!', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'ti', tone: 're', contour: 'level', artic: 'flam_roll' },
+          { syl: 'gì', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'dá', tone: 'mi', contour: 'warble', artic: 'rim_saworo' }
+        ]
+      },
+      juju_talking: {
+        yoruba: 'Jùjú Talking Call & Response (King Sunny Adé Style)',
+        cipher: 'Melodic 3-tone conversational phrasing with Saworo shimmer',
+        bpm: 118,
+        steps: [
+          { syl: 'Mo', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'kí', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'yín', tone: 'mi', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'o', tone: 're', contour: 'level', artic: 'rim_saworo' },
+          { syl: 'ẹ', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'gbọ́', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'ohùn', tone: 'do', contour: 'level', artic: 'finger_tap' },
+          { syl: 'ìlù', tone: 'do', contour: 'warble', artic: 'opa_open' }
+        ]
+      },
+      mbalax_tama: {
+        yoruba: 'Senegalese Mbalax Tama — Explosive Stick + Finger Roll',
+        cipher: 'Western style (Wolof/Serer): high tension, rapid flams & finger slaps',
+        bpm: 142,
+        steps: [
+          { syl: 'Ta!', tone: 'mi', contour: 'level', artic: 'flam_roll' },
+          { syl: 'ka', tone: 're', contour: 'level', artic: 'finger_tap' },
+          { syl: 'di', tone: 'mi', contour: 'rise', artic: 'opa_press' },
+          { syl: 'kpa', tone: 'mi', contour: 'level', artic: 'muted_slap' },
+          { syl: 'rr-ta', tone: 're', contour: 'scoop', artic: 'flam_roll' },
+          { syl: 'ti', tone: 'mi', contour: 'level', artic: 'finger_tap' },
+          { syl: 'gu', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'pax!', tone: 'mi', contour: 'level', artic: 'muted_slap' }
+        ]
+      },
+      dagomba_lunsi: {
+        yoruba: 'Dagomba Lunsi Griot History Call (Northern Ghana)',
+        cipher: 'Deep throat resonance with measured vocal pitch inflections',
+        bpm: 104,
+        steps: [
+          { syl: 'Lun-', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'na', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'Nàá', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'Yà-', tone: 'do', contour: 'level', artic: 'opa_open' },
+          { syl: 'ni', tone: 're', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'bì', tone: 'do', contour: 'level', artic: 'finger_tap' },
+          { syl: 'zù-', tone: 'mi', contour: 'warble', artic: 'opa_press' },
+          { syl: 'gù', tone: 'do', contour: 'level', artic: 'opa_open' }
+        ]
+      },
+      hausa_kalangu: {
+        yoruba: 'Hausa Kalangu — Gut-Snare Buzz & Steep Upward Glissando',
+        cipher: 'Northern Nigerian hourglass drum with internal snare strand buzz',
+        bpm: 120,
+        steps: [
+          { syl: 'Ka-', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'lan-', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'gu', tone: 're', contour: 'fall', artic: 'opa_press' },
+          { syl: 'zrr', tone: 'do', contour: 'warble', artic: 'flam_roll' },
+          { syl: 'dan', tone: 're', contour: 'rise', artic: 'opa_press' },
+          { syl: 'kar', tone: 'mi', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'kpa', tone: 're', contour: 'level', artic: 'muted_slap' },
+          { syl: 'bi!', tone: 'do', contour: 'level', artic: 'opa_open' }
+        ]
+      },
+      ashanti_dondo: {
+        yoruba: 'Ashanti Dondo — Twi Low/High Speech-Tone Dyads',
+        cipher: 'Akan surrogate signaling across Low (Dò) and High (Mí) registers',
+        bpm: 110,
+        steps: [
+          { syl: 'O-', tone: 'do', contour: 'level', artic: 'opa_open' },
+          { syl: 'don-', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'do', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'kasa', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'bɛ-', tone: 'do', contour: 'level', artic: 'finger_tap' },
+          { syl: 'ra', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'fie', tone: 're', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'o!', tone: 'do', contour: 'level', artic: 'opa_open' }
+        ]
+      },
+      octave_sweep: {
+        yoruba: 'Diagnostic: Full Octave Tension-Cord Sweep (Dò → Rè → Mí → Octave)',
+        cipher: 'Verifies f01(t) = f_base * sqrt(1 + kappa * S(t)) continuous pitch bend',
+        bpm: 96,
+        steps: [
+          { syl: 'Dò', tone: 'do', contour: 'level', artic: 'opa_open' },
+          { syl: 'Dò↗Rè', tone: 'do', contour: 'rise', artic: 'opa_press' },
+          { syl: 'Rè', tone: 're', contour: 'level', artic: 'opa_open' },
+          { syl: 'Rè↗Mí', tone: 're', contour: 'rise', artic: 'opa_press' },
+          { syl: 'Mí', tone: 'mi', contour: 'level', artic: 'opa_open' },
+          { syl: 'Scoop', tone: 'mi', contour: 'scoop', artic: 'opa_press' },
+          { syl: 'Mí↘Dò', tone: 'mi', contour: 'fall', artic: 'opa_press' },
+          { syl: 'Warble', tone: 're', contour: 'warble', artic: 'rim_saworo' }
+        ]
+      }
+    };
+
+    // =========================================================================
+    // 2. APPLICATION STATE & LIVE PHYSICS TELEMETRY
+    // =========================================================================
+    const state = {
+      archetype: 'dundun',
+      armSqueeze: 0.08,        // 0..1 live arm-squeeze fraction S(t)
+      targetTone: 'do',        // 'do' | 're' | 'mi'
+      contour: 'level',        // 'level' | 'rise' | 'fall' | 'scoop' | 'warble' | 'question'
+      articulation: 'opa_open',
+      glideMs: 190,
+      maxBendSt: 14.0,
+      baseFreq: 110.0,
+      waistRatio: 0.42,
+      dualCoupling: 0.78,
+      hideType: 'goatskin',
+      sustain: 1.45,
+      handMute: 0.12,
+      saworoMix: 0.45,
+      snareBuzz: 0.0,
+      strikeRadiusNorm: 0.18,  // r/a in [0, 0.9]
+      xrayCutaway: false,
+      bpm: 112,
+      isLooping: false,
+      currentStep: 0,
+      activePreset: 'ekaabo',
+      steps: JSON.parse(JSON.stringify(PHRASE_PRESETS.ekaabo.steps)),
+      // Real-time visual & audio tracking
+      liveFreqHz: 110.0,
+      liveSemitoneOffset: 0.0,
+      liveTensionNm: 420,
+      headEnergyTop: 0.0,
+      headEnergyBottom: 0.0,
+      stickAnimPhase: 0.0,
+      handAnimPhase: 0.0,
+      saworoEnergy: 0.0,
+      activeBesselMode: [1.0, 0.35, 0.18],
+      pitchHistory: []         // Array of { f, s, e } for oscilloscope
+    };
+
+    for (let i = 0; i < 160; i++) {
+      state.pitchHistory.push({ f: 110, s: 0.08, e: 0 });
+    }
+
+    const TONE_SQUEEZE_MAP = {
+      do: 0.08,
+      re: 0.42,
+      mi: 0.78
+    };
+
+    // Bessel ratios j_mn / j_01 for circular membrane modes (0,1), (1,1), (2,1), (0,2), (3,1), (1,2)
+    const BESSEL_RATIOS = [1.0000, 1.5933, 2.1355, 2.2954, 2.6531, 2.9173];
+
+    // Compute instantaneous fundamental frequency f01(S) from arm squeeze S in [0, 1]
+    function computeInstantFreq(squeeze, baseFreq = state.baseFreq, maxBendSt = state.maxBendSt) {
+      const clampedS = Math.max(0, Math.min(1, squeeze));
+      // Tension factor kappa chosen so S=1 yields +maxBendSt semitones:
+      // f(S) = f_base * sqrt(1 + kappa * S), where sqrt(1 + kappa) = 2^(maxBendSt/12)
+      const maxRatioSq = Math.pow(2, (2 * maxBendSt) / 12) - 1;
+      const freq = baseFreq * Math.sqrt(1 + maxRatioSq * clampedS);
+      return freq;
+    }
+
+    function computeVenturiFormants(waistRatio, lengthCm) {
+      // Narrower hourglass waist lowers the Helmholtz neck resonance and sharpens the 2nd formant
+      const f1 = (310 + (1 - waistRatio) * 210) * (32 / Math.max(14, lengthCm));
+      const f2 = f1 * (2.15 + (0.5 - waistRatio) * 0.65);
+      return { f1: Math.min(950, Math.max(240, f1)), f2: Math.min(2200, Math.max(620, f2)) };
+    }
+
+    // =========================================================================
+    // 3. WEB AUDIO API PHYSICAL SYNTHESIS ENGINE (WITH LIVE MID-NOTE BEND)
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let analyserNode = null;
+    const activeVoices = new Set(); // Track active ringing voices so live slider/cord dragging bends them in real time!
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.86;
+
+        // Soft saturation limiter for warm African percussion headroom
+        const shaper = audioCtx.createWaveShaper();
+        const curve = new Float32Array(2048);
+        for (let i = 0; i < 2048; i++) {
+          const x = (i * 2) / 2048 - 1;
+          curve[i] = Math.tanh(x * 1.35);
+        }
+        shaper.curve = curve;
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 1024;
+        analyserNode.smoothingTimeConstant = 0.72;
+
+        masterGain.connect(shaper);
+        shaper.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Updates all currently ringing notes when the user drags the Arm-Squeeze slider or 3D cords!
+    function applyLiveArmSqueezeToActiveVoices(newSqueeze) {
+      state.armSqueeze = Math.max(0, Math.min(1, newSqueeze));
+      const f01 = computeInstantFreq(state.armSqueeze);
+      const stOffset = 12 * Math.log2(f01 / state.baseFreq);
+      state.liveFreqHz = f01;
+      state.liveSemitoneOffset = stOffset;
+      state.liveTensionNm = Math.round(380 * Math.pow(f01 / 110, 2));
+
+      if (audioCtx && activeVoices.size > 0) {
+        const now = audioCtx.currentTime;
+        activeVoices.forEach(voice => {
+          if (now < voice.stopTime) {
+            voice.modes.forEach((mOsc, idx) => {
+              const targetHz = f01 * mOsc.ratio;
+              mOsc.osc.frequency.cancelScheduledValues(now);
+              mOsc.osc.frequency.setTargetAtTime(targetHz, now, 0.018);
+            });
+            if (voice.bottomOsc) {
+              voice.bottomOsc.frequency.cancelScheduledValues(now);
+              voice.bottomOsc.frequency.setTargetAtTime(f01 * 0.97, now, 0.024);
+            }
+          }
+        });
+      }
+      updateTelemetryHUD();
+    }
+
+    // Schedule a pitch contour trajectory on a frequency AudioParam
+    function scheduleContourTrajectory(freqParam, ratio, startSqueeze, contourType, now, glideSec, baseFreq, maxBendSt) {
+      const fStart = computeInstantFreq(startSqueeze, baseFreq, maxBendSt) * ratio;
+      freqParam.setValueAtTime(fStart, now);
+
+      if (contourType === 'level') {
+        // Subtle natural nonlinear tension relaxation after impact (+0.35 st settling to fStart)
+        freqParam.setValueAtTime(fStart * 1.022, now);
+        freqParam.exponentialRampToValueAtTime(fStart, now + 0.055);
+      } else if (contourType === 'rise') {
+        const endS = Math.min(1.0, startSqueeze + 0.62);
+        const fEnd = computeInstantFreq(endS, baseFreq, maxBendSt) * ratio;
+        freqParam.setValueAtTime(fStart, now + 0.02);
+        freqParam.exponentialRampToValueAtTime(fEnd, now + 0.02 + glideSec);
+      } else if (contourType === 'fall') {
+        const startHigh = Math.max(startSqueeze, 0.76);
+        const endLow = Math.max(0.04, startHigh - 0.64);
+        const fHi = computeInstantFreq(startHigh, baseFreq, maxBendSt) * ratio;
+        const fLo = computeInstantFreq(endLow, baseFreq, maxBendSt) * ratio;
+        freqParam.setValueAtTime(fHi, now);
+        freqParam.exponentialRampToValueAtTime(fLo, now + 0.025 + glideSec);
+      } else if (contourType === 'scoop') {
+        const peakS = Math.min(1.0, startSqueeze + 0.55);
+        const settleS = Math.min(1.0, startSqueeze + 0.25);
+        const fPeak = computeInstantFreq(peakS, baseFreq, maxBendSt) * ratio;
+        const fSettle = computeInstantFreq(settleS, baseFreq, maxBendSt) * ratio;
+        freqParam.setValueAtTime(fStart, now);
+        freqParam.exponentialRampToValueAtTime(fPeak, now + glideSec * 0.52);
+        freqParam.exponentialRampToValueAtTime(fSettle, now + glideSec * 1.15);
+      } else if (contourType === 'question') {
+        const dipS = Math.max(0.02, startSqueeze - 0.18);
+        const highS = Math.min(1.0, startSqueeze + 0.58);
+        freqParam.setValueAtTime(fStart, now);
+        freqParam.exponentialRampToValueAtTime(computeInstantFreq(dipS, baseFreq, maxBendSt) * ratio, now + glideSec * 0.35);
+        freqParam.exponentialRampToValueAtTime(computeInstantFreq(highS, baseFreq, maxBendSt) * ratio, now + glideSec * 1.05);
+      } else if (contourType === 'warble') {
+        const steps = 8;
+        const stepDur = (glideSec * 1.4) / steps;
+        for (let k = 1; k <= steps; k++) {
+          const dS = (k % 2 === 1 ? 0.16 : -0.10) * Math.exp(-k * 0.12);
+          const fk = computeInstantFreq(Math.max(0.02, Math.min(1, startSqueeze + dS)), baseFreq, maxBendSt) * ratio;
+          freqParam.exponentialRampToValueAtTime(fk, now + k * stepDur);
+        }
+      }
+    }
+
+    // Trigger a Talking Drum Stroke with full physical synthesis
+    function triggerTalkingDrumStrike(options = {}) {
+      initAudio();
+      const now = audioCtx.currentTime;
+
+      const tone = options.tone || state.targetTone;
+      const contour = options.contour || state.contour;
+      const artic = options.artic || state.articulation;
+      const velocity = options.velocity !== undefined ? options.velocity : 0.92;
+      const syllableLabel = options.syllable || (tone === 'do' ? 'Dò' : tone === 're' ? 'Rè' : 'Mí');
+
+      // Determine starting arm squeeze S(t)
+      let startSqueeze = options.squeeze !== undefined ? options.squeeze : state.armSqueeze;
+      if (options.useToneTarget !== false && TONE_SQUEEZE_MAP[tone] !== undefined) {
+        startSqueeze = TONE_SQUEEZE_MAP[tone];
+        state.armSqueeze = startSqueeze;
+        const sl = document.getElementById('slider-arm-squeeze');
+        if (sl) sl.value = (startSqueeze * 100).toFixed(1);
+      }
+
+      // If flam_roll, trigger a grace note 28 ms before main stroke
+      if (artic === 'flam_roll' && !options.isGrace) {
+        triggerTalkingDrumStrike({
+          ...options,
+          artic: 'finger_tap',
+          velocity: velocity * 0.58,
+          isGrace: true,
+          syllable: syllableLabel
+        });
+        setTimeout(() => {
+          triggerTalkingDrumStrike({
+            ...options,
+            artic: 'opa_press',
+            velocity: velocity * 0.96,
+            isGrace: true,
+            syllable: syllableLabel
+          });
+        }, 32);
+        return;
+      }
+
+      const hide = HIDE_PROFILES[state.hideType] || HIDE_PROFILES.goatskin;
+      const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+      const glideSec = state.glideMs / 1000;
+      const rNorm = artic === 'finger_tap' ? 0.62 : artic === 'muted_slap' ? 0.72 : artic === 'rim_saworo' ? 0.84 : state.strikeRadiusNorm;
+
+      // Damping factor from free-hand palm muting & articulation
+      const muteFactor = (artic === 'muted_slap' ? 0.24 : artic === 'finger_tap' ? 0.68 : 1.0) * (1 - state.handMute * 0.72) / hide.damping;
+      const tau01 = Math.max(0.14, state.sustain * muteFactor);
+      const stopTime = now + tau01 + 0.35;
+
+      // 1. Venturi Hourglass Throat Formant Filter Bank (Twin Cavity /o/ - /a/ Vocal Formants)
+      const formants = computeVenturiFormants(state.waistRatio, arch.lengthCm);
+      const throatMerge = audioCtx.createGain();
+      throatMerge.gain.value = 1.0;
+
+      const f1Filter = audioCtx.createBiquadFilter();
+      f1Filter.type = 'peaking';
+      f1Filter.frequency.setValueAtTime(formants.f1, now);
+      f1Filter.Q.value = 3.2 + (1 - state.waistRatio) * 3.5;
+      f1Filter.gain.value = 6.5;
+
+      const f2Filter = audioCtx.createBiquadFilter();
+      f2Filter.type = 'peaking';
+      f2Filter.frequency.setValueAtTime(formants.f2, now);
+      f2Filter.Q.value = 2.8;
+      f2Filter.gain.value = 4.2;
+
+      throatMerge.connect(f1Filter);
+      f1Filter.connect(f2Filter);
+      f2Filter.connect(masterGain);
+
+      // 2. Six Circular Membrane Bessel Eigenmodes (m,n)
+      const modeRecords = [];
+      BESSEL_RATIOS.forEach((ratio, idx) => {
+        const osc = audioCtx.createOscillator();
+        const mGain = audioCtx.createGain();
+
+        // Spatial Bessel excitation weight from radial strike position rNorm
+        let spatialWeight = 1.0;
+        if (idx === 0) {
+          spatialWeight = Math.max(0.15, Math.cos(rNorm * 1.35)) * (artic === 'muted_slap' ? 0.28 : 1.0);
+        } else {
+          spatialWeight = (0.25 + 0.85 * Math.sin(rNorm * Math.PI * (idx * 0.45 + 0.5))) * Math.pow(hide.brightness, idx * 0.35);
+        }
+
+        const amp = velocity * (idx === 0 ? 0.58 : (0.24 / Math.pow(idx + 1, 1.18))) * spatialWeight;
+        osc.type = idx === 0 ? 'sine' : (idx % 2 === 1 ? 'triangle' : 'sine');
+
+        scheduleContourTrajectory(osc.frequency, ratio, startSqueeze, contour, now, glideSec, state.baseFreq, state.maxBendSt);
+
+        const modeDecay = tau01 / Math.pow(idx + 1, 0.78);
+        mGain.gain.setValueAtTime(0.0001, now);
+        mGain.gain.linearRampToValueAtTime(Math.max(0.0002, amp), now + (artic === 'opa_press' ? 0.005 : 0.0025));
+        mGain.gain.exponentialRampToValueAtTime(0.0001, now + modeDecay);
+
+        osc.connect(mGain);
+        mGain.connect(throatMerge);
+        osc.start(now);
+        osc.stop(now + modeDecay + 0.05);
+
+        modeRecords.push({ osc, ratio });
+      });
+
+      // 3. Sympathetic Bottom Membrane Coupled via Hourglass Air Column (anti-symmetric & symmetric beating)
+      let bottomOsc = null;
+      if (state.dualCoupling > 0.05) {
+        bottomOsc = audioCtx.createOscillator();
+        const bottomGain = audioCtx.createGain();
+        bottomOsc.type = 'sine';
+        const bottomDetuneRatio = 0.968 + (1 - state.waistRatio) * 0.022;
+        scheduleContourTrajectory(bottomOsc.frequency, bottomDetuneRatio, startSqueeze, contour, now + 0.006, glideSec, state.baseFreq, state.maxBendSt);
+
+        const bAmp = velocity * 0.26 * state.dualCoupling;
+        bottomGain.gain.setValueAtTime(0.0001, now);
+        bottomGain.gain.linearRampToValueAtTime(bAmp, now + 0.018); // Delayed air-column impulse arrival
+        bottomGain.gain.exponentialRampToValueAtTime(0.0001, now + tau01 * 1.12);
+
+        bottomOsc.connect(bottomGain);
+        bottomGain.connect(throatMerge);
+        bottomOsc.start(now);
+        bottomOsc.stop(now + tau01 * 1.15);
+      }
+
+      // 4. Curved Ọ̀pá Beater / Finger Impact Transient Exciter
+      const noiseLen = Math.floor(audioCtx.sampleRate * 0.045);
+      const noiseBuf = audioCtx.createBuffer(1, noiseLen, audioCtx.sampleRate);
+      const nData = noiseBuf.getChannelData(0);
+      for (let i = 0; i < noiseLen; i++) {
+        nData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * (artic === 'muted_slap' ? 0.008 : 0.0045)));
+      }
+      const noiseSrc = audioCtx.createBufferSource();
+      noiseSrc.buffer = noiseBuf;
+      const noiseBand = audioCtx.createBiquadFilter();
+      noiseBand.type = 'bandpass';
+      noiseBand.frequency.value = artic === 'muted_slap' ? 1450 : artic === 'finger_tap' ? 1900 : artic === 'rim_saworo' ? 2800 : 880;
+      noiseBand.Q.value = 1.8;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.value = velocity * (artic === 'muted_slap' ? 0.55 : 0.34);
+      noiseSrc.connect(noiseBand);
+      noiseBand.connect(noiseGain);
+      noiseGain.connect(masterGain);
+      noiseSrc.start(now);
+
+      // 5. Peripheral Saworo Brass Bells (Yoruba Ìyá Ìlù Dùndún Jingle Collar)
+      const effectiveSaworo = artic === 'rim_saworo' ? Math.max(0.75, state.saworoMix) : state.saworoMix;
+      if (effectiveSaworo > 0.02) {
+        const bellFreqs = [2480, 3190, 4120, 5380, 6640];
+        bellFreqs.forEach((bf, bIdx) => {
+          const bOsc = audioCtx.createOscillator();
+          const bGain = audioCtx.createGain();
+          bOsc.type = 'sine';
+          bOsc.frequency.setValueAtTime(bf * (0.98 + Math.random() * 0.04), now);
+          const bAmp = velocity * effectiveSaworo * (artic === 'rim_saworo' ? 0.085 : 0.038) / (1 + bIdx * 0.3);
+          const bDur = 0.18 + Math.random() * 0.24;
+          bGain.gain.setValueAtTime(0.0001, now + 0.004 * bIdx);
+          bGain.gain.linearRampToValueAtTime(bAmp, now + 0.004 * bIdx + 0.003);
+          bGain.gain.exponentialRampToValueAtTime(0.0001, now + bDur);
+          bOsc.connect(bGain);
+          bGain.connect(masterGain);
+          bOsc.start(now);
+          bOsc.stop(now + bDur + 0.02);
+        });
+        state.saworoEnergy = Math.min(1.0, state.saworoEnergy + effectiveSaworo * 0.9);
+      }
+
+      // 6. Hausa Kalangu Gut Snare Strand Buzz
+      if (state.snareBuzz > 0.02) {
+        const buzzDur = Math.min(0.45, tau01 * 0.55);
+        const buzzSamples = Math.floor(audioCtx.sampleRate * buzzDur);
+        const buzzBuf = audioCtx.createBuffer(1, buzzSamples, audioCtx.sampleRate);
+        const bCh = buzzBuf.getChannelData(0);
+        for (let i = 0; i < buzzSamples; i++) {
+          const env = Math.exp(-i / (audioCtx.sampleRate * (buzzDur * 0.38)));
+          bCh[i] = (Math.random() * 2 - 1) * env;
+        }
+        const buzzSrc = audioCtx.createBufferSource();
+        buzzSrc.buffer = buzzBuf;
+        const buzzFilter = audioCtx.createBiquadFilter();
+        buzzFilter.type = 'bandpass';
+        buzzFilter.frequency.value = 1850;
+        buzzFilter.Q.value = 2.4;
+        const buzzGain = audioCtx.createGain();
+        buzzGain.gain.value = velocity * state.snareBuzz * 0.28;
+        buzzSrc.connect(buzzFilter);
+        buzzFilter.connect(buzzGain);
+        buzzGain.connect(masterGain);
+        buzzSrc.start(now + 0.003);
+      }
+
+      // Register active voice for real-time mid-note arm-squeeze pitch bending
+      const voiceRecord = {
+        modes: modeRecords,
+        bottomOsc,
+        stopTime,
+        startTime: now,
+        startSqueeze,
+        contour,
+        glideSec
+      };
+      activeVoices.add(voiceRecord);
+      setTimeout(() => activeVoices.delete(voiceRecord), (tau01 + 0.4) * 1000);
+
+      // Update visual animation states
+      state.headEnergyTop = Math.min(1.4, state.headEnergyTop + velocity * 0.95);
+      state.headEnergyBottom = Math.min(1.2, state.headEnergyBottom + velocity * state.dualCoupling * 0.75);
+      if (artic === 'finger_tap' || artic === 'muted_slap') {
+        state.handAnimPhase = 1.0;
+      } else {
+        state.stickAnimPhase = 1.0;
+      }
+      state.activeBesselMode = [
+        1.0,
+        rNorm * 1.4,
+        artic === 'muted_slap' ? 0.95 : rNorm * 0.8
+      ];
+
+      // Update banner & HUD
+      const f01Now = computeInstantFreq(startSqueeze);
+      const stNow = 12 * Math.log2(f01Now / state.baseFreq);
+      state.liveFreqHz = f01Now;
+      state.liveSemitoneOffset = stNow;
+      state.liveTensionNm = Math.round(380 * Math.pow(f01Now / 110, 2));
+
+      const banner = document.getElementById('live-syllable-banner');
+      const glideBadge = document.getElementById('live-glide-badge');
+      if (banner) {
+        banner.textContent = `${syllableLabel} — ${artic.replace('_', ' ').toUpperCase()} (${f01Now.toFixed(1)} Hz)`;
+      }
+      if (glideBadge) {
+        glideBadge.textContent = `${stNow >= 0 ? '+' : ''}${stNow.toFixed(1)} st (${contour})`;
+      }
+      updateTelemetryHUD();
+    }
+
+    // =========================================================================
+    // 4. THREE.JS 3D HOURGLASS DRUM, DEFORMABLE LEATHER CORDS & CUTAWAY SCENE
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x04060a, 0.042);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+    let camSpherical = { radius: 8.4, theta: 0.42, phi: 1.18 };
+    let camTarget = new THREE.Vector3(0, 0.05, 0);
+
+    function updateCameraFromSpherical() {
+      camera.position.x = camTarget.x + camSpherical.radius * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+      camera.position.z = camTarget.z + camSpherical.radius * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.lookAt(camTarget);
+    }
+    updateCameraFromSpherical();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    // Studio Lighting
+    const ambientLight = new THREE.AmbientLight(0x94a3b8, 0.65);
+    scene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffedd5, 1.35);
+    keyLight.position.set(5, 8, 6);
+    keyLight.castShadow = true;
+    scene.add(keyLight);
+
+    const rimLight = new THREE.PointLight(0xf59e0b, 1.15, 18);
+    rimLight.position.set(-5, 3, -4);
+    scene.add(rimLight);
+
+    const throatLight = new THREE.PointLight(0x22d3ee, 0.9, 8);
+    throatLight.position.set(0, 0, 0);
+    scene.add(throatLight);
+
+    // Subtle Studio Floor Grid
+    const gridHelper = new THREE.GridHelper(22, 22, 0x1e293b, 0x0f172a);
+    gridHelper.position.y = -2.85;
+    scene.add(gridHelper);
+
+    // Root Group for the Talking Drum Assembly
+    const drumGroup = new THREE.Group();
+    // Tilt slightly like an underarm held talking drum
+    drumGroup.rotation.z = -0.18;
+    drumGroup.rotation.x = 0.14;
+    scene.add(drumGroup);
+
+    let outerShellMesh = null;
+    let innerThroatMesh = null;
+    let topHeadMesh = null;
+    let bottomHeadMesh = null;
+    let topHeadBasePos = null;
+    let bottomHeadBasePos = null;
+    let cordMeshes = [];
+    let saworoGroup = null;
+    let opaStickGroup = null;
+    let freeHandGroup = null;
+    let squeezeBandMesh = null;
+
+    function buildTalkingDrum3D() {
+      // Clear previous meshes
+      while (drumGroup.children.length > 0) {
+        const obj = drumGroup.children[0];
+        drumGroup.remove(obj);
+      }
+      cordMeshes = [];
+
+      const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+      const halfH = (arch.lengthCm / 32) * 1.95;
+      const headR = (arch.headDiaCm / 16) * 1.18;
+      const waistR = headR * state.waistRatio;
+
+      // 1. Carved Hourglass Wooden Shell (LatheGeometry with optional X-Ray cutaway)
+      const lathePoints = [];
+      const segmentsY = 40;
+      for (let i = 0; i <= segmentsY; i++) {
+        const v = i / segmentsY; // 0 (bottom) to 1 (top)
+        const y = (v - 0.5) * 2 * halfH;
+        const u = (v - 0.5) * 2; // -1 to +1
+        // Smooth hourglass profile r(u) = waistR + (headR - waistR) * u^2 + carved lip rings
+        const lipFlare = Math.exp(-Math.pow((Math.abs(u) - 0.92) / 0.06, 2)) * 0.065;
+        const r = waistR + (headR - waistR) * Math.pow(Math.abs(u), 1.65) + lipFlare;
+        lathePoints.push(new THREE.Vector2(r, y));
+      }
+
+      const phiLength = state.xrayCutaway ? Math.PI * 1.38 : Math.PI * 2;
+      const shellGeo = new THREE.LatheGeometry(lathePoints, 48, 0, phiLength);
+      const shellMat = new THREE.MeshStandardMaterial({
+        color: arch.woodColor,
+        roughness: 0.42,
+        metalness: 0.08,
+        side: THREE.DoubleSide
+      });
+      outerShellMesh = new THREE.Mesh(shellGeo, shellMat);
+      outerShellMesh.castShadow = true;
+      outerShellMesh.receiveShadow = true;
+      drumGroup.add(outerShellMesh);
+
+      // Inner Venturi Air-Throat Glow Liner (visible in X-Ray Cutaway mode)
+      const innerPoints = lathePoints.map(pt => new THREE.Vector2(Math.max(0.12, pt.x - 0.08), pt.y * 0.98));
+      const innerGeo = new THREE.LatheGeometry(innerPoints, 36, 0, Math.PI * 2);
+      const innerMat = new THREE.MeshStandardMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0891b2,
+        emissiveIntensity: state.xrayCutaway ? 0.55 : 0.08,
+        roughness: 0.3,
+        transparent: true,
+        opacity: state.xrayCutaway ? 0.52 : 0.15,
+        wireframe: state.xrayCutaway
+      });
+      innerThroatMesh = new THREE.Mesh(innerGeo, innerMat);
+      drumGroup.add(innerThroatMesh);
+
+      // Leather Hoops (Egi / Rim Collars) at Top & Bottom
+      const hoopGeo = new THREE.TorusGeometry(headR * 1.03, 0.075, 14, 48);
+      const hoopMat = new THREE.MeshStandardMaterial({ color: 0x3b1d0e, roughness: 0.65 });
+      const topHoop = new THREE.Mesh(hoopGeo, hoopMat);
+      topHoop.rotation.x = Math.PI / 2;
+      topHoop.position.y = halfH;
+      drumGroup.add(topHoop);
+
+      const botHoop = new THREE.Mesh(hoopGeo, hoopMat);
+      botHoop.rotation.x = Math.PI / 2;
+      botHoop.position.y = -halfH;
+      drumGroup.add(botHoop);
+
+      // 2. Top Batter & Bottom Sympathetic Animal-Hide Membranes (Deformable Bessel Vertex Grids)
+      const headGeoTop = new THREE.CircleGeometry(headR * 1.01, 44, 18);
+      headGeoTop.rotateX(-Math.PI / 2);
+      // Store base positions and add vertex colors for Bessel modal heatmap
+      const posAttrTop = headGeoTop.attributes.position;
+      topHeadBasePos = new Float32Array(posAttrTop.array.length);
+      topHeadBasePos.set(posAttrTop.array);
+      const colorsTop = new Float32Array(posAttrTop.count * 3);
+      const baseCol = new THREE.Color(arch.headColor);
+      for (let i = 0; i < posAttrTop.count; i++) {
+        colorsTop[i * 3] = baseCol.r;
+        colorsTop[i * 3 + 1] = baseCol.g;
+        colorsTop[i * 3 + 2] = baseCol.b;
+      }
+      headGeoTop.setAttribute('color', new THREE.BufferAttribute(colorsTop, 3));
+
+      const headMatTop = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.52,
+        metalness: 0.04,
+        side: THREE.DoubleSide
+      });
+      topHeadMesh = new THREE.Mesh(headGeoTop, headMatTop);
+      topHeadMesh.position.y = halfH + 0.01;
+      topHeadMesh.name = 'batter_head';
+      drumGroup.add(topHeadMesh);
+
+      const headGeoBot = headGeoTop.clone();
+      bottomHeadBasePos = new Float32Array(headGeoBot.attributes.position.array.length);
+      bottomHeadBasePos.set(headGeoBot.attributes.position.array);
+      bottomHeadMesh = new THREE.Mesh(headGeoBot, headMatTop.clone());
+      bottomHeadMesh.position.y = -halfH - 0.01;
+      drumGroup.add(bottomHeadMesh);
+
+      // 3. Longitudinal Leather Tension Cords (Osán) that visibly pull inward when squeezed!
+      const cordCount = arch.cordCount || 32;
+      const cordMat = new THREE.MeshStandardMaterial({
+        color: arch.cordColor,
+        roughness: 0.55,
+        metalness: 0.05
+      });
+
+      for (let i = 0; i < cordCount; i++) {
+        const angle = (i / cordCount) * Math.PI * 2;
+        const nextAngle = ((i + 0.5) / cordCount) * Math.PI * 2;
+        const cordGeo = new THREE.CylinderGeometry(0.021, 0.021, halfH * 2, 6, 12);
+        const cordMesh = new THREE.Mesh(cordGeo, cordMat);
+        cordMesh.userData = {
+          angle,
+          nextAngle,
+          halfH,
+          headR: headR * 1.045,
+          waistR: waistR * 1.12,
+          baseVerts: new Float32Array(cordGeo.attributes.position.array)
+        };
+        cordMesh.name = 'tension_cord';
+        drumGroup.add(cordMesh);
+        cordMeshes.push(cordMesh);
+      }
+
+      // Underarm Squeeze Compression Indicator Ring around the waist
+      const bandGeo = new THREE.TorusGeometry(headR * 0.92, 0.032, 12, 48);
+      const bandMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.45,
+        transparent: true,
+        opacity: 0.78
+      });
+      squeezeBandMesh = new THREE.Mesh(bandGeo, bandMat);
+      squeezeBandMesh.rotation.x = Math.PI / 2;
+      drumGroup.add(squeezeBandMesh);
+
+      // 4. Peripheral Saworo Brass Bells Collar (Yoruba Ìyá Ìlù Dùndún)
+      saworoGroup = new THREE.Group();
+      const bellCount = 16;
+      const bellMat = new THREE.MeshStandardMaterial({
+        color: 0xfbbf24,
+        metalness: 0.86,
+        roughness: 0.22
+      });
+      for (let i = 0; i < bellCount; i++) {
+        const ang = (i / bellCount) * Math.PI * 2;
+        const bellCone = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.19, 10), bellMat);
+        const rBell = headR * 1.11;
+        bellCone.position.set(Math.cos(ang) * rBell, halfH - 0.14, Math.sin(ang) * rBell);
+        bellCone.rotation.z = Math.cos(ang) * 0.35;
+        bellCone.rotation.x = Math.sin(ang) * 0.35;
+        bellCone.userData = { baseRotZ: bellCone.rotation.z, phase: i * 0.7 };
+        saworoGroup.add(bellCone);
+      }
+      saworoGroup.visible = state.saworoMix > 0.02 || arch.hasSaworo;
+      drumGroup.add(saworoGroup);
+
+      // 5. Curved Wooden Beater Stick (Ọ̀pá / Kọ̀ngọ́) with Flared Button Tip
+      opaStickGroup = new THREE.Group();
+      const curvePts = [];
+      for (let i = 0; i <= 18; i++) {
+        const t = i / 18;
+        // J-shaped curved talking drum stick
+        const x = 1.65 - t * 1.55;
+        const y = 0.48 - Math.sin(t * Math.PI * 0.85) * 0.38 - (t > 0.7 ? (t - 0.7) * 0.95 : 0);
+        const z = 0.25 - t * 0.22;
+        curvePts.push(new THREE.Vector3(x, y, z));
+      }
+      const stickCurve = new THREE.CatmullRomCurve3(curvePts);
+      const stickGeo = new THREE.TubeGeometry(stickCurve, 24, 0.045, 10, false);
+      const stickMat = new THREE.MeshStandardMaterial({ color: 0x854d27, roughness: 0.38 });
+      const stickMesh = new THREE.Mesh(stickGeo, stickMat);
+      opaStickGroup.add(stickMesh);
+
+      // Flared rubber/leather button tip at strike end of Ọ̀pá stick
+      const tipGeo = new THREE.CylinderGeometry(0.11, 0.09, 0.06, 16);
+      const tipMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.45 });
+      const tipMesh = new THREE.Mesh(tipGeo, tipMat);
+      const endPt = curvePts[curvePts.length - 1];
+      tipMesh.position.copy(endPt);
+      opaStickGroup.add(tipMesh);
+
+      opaStickGroup.position.set(0, halfH + 0.15, 0);
+      drumGroup.add(opaStickGroup);
+
+      // 6. Free-Hand Finger/Palm Muting Marker above Left Rim
+      freeHandGroup = new THREE.Group();
+      const palmGeo = new THREE.BoxGeometry(0.42, 0.045, 0.22);
+      const palmMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.35,
+        transparent: true,
+        opacity: 0.75
+      });
+      const palmMesh = new THREE.Mesh(palmGeo, palmMat);
+      freeHandGroup.add(palmMesh);
+      freeHandGroup.position.set(-headR * 0.58, halfH + 0.08, 0.15);
+      drumGroup.add(freeHandGroup);
+
+      updateCordDeformationGeometry(state.armSqueeze);
+    }
+
+    // Deform longitudinal leather cords inward toward the hourglass waist proportional to arm squeeze S(t)
+    function updateCordDeformationGeometry(squeeze) {
+      const clampedS = Math.max(0, Math.min(1, squeeze));
+      cordMeshes.forEach((mesh, idx) => {
+        const { angle, nextAngle, halfH, headR, waistR, baseVerts } = mesh.userData;
+        const pos = mesh.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const bx = baseVerts[i * 3];
+          const by = baseVerts[i * 3 + 1];
+          const bz = baseVerts[i * 3 + 2];
+          const vNorm = by / halfH; // -1 at bottom hoop, 0 at waist, +1 at top hoop
+          const waistWeight = 1 - vNorm * vNorm; // 1 at waist, 0 at top/bottom hoops
+
+          // When squeezed, cords pull inward from headR toward waistR
+          const radialCenter = headR * (1 - waistWeight * (0.12 + clampedS * 0.48)) + waistR * (waistWeight * (0.12 + clampedS * 0.48));
+          const zigAngle = angle + (idx % 2 === 0 ? 1 : -1) * (nextAngle - angle) * (vNorm * 0.5 + 0.5);
+
+          const cx = Math.cos(zigAngle) * radialCenter;
+          const cz = Math.sin(zigAngle) * radialCenter;
+          pos.setXYZ(i, cx + bx, by, cz + bz);
+        }
+        pos.needsUpdate = true;
+      });
+
+      if (squeezeBandMesh && cordMeshes.length > 0) {
+        const { headR, waistR } = cordMeshes[0].userData;
+        const bandR = headR * (1 - (0.12 + clampedS * 0.48)) + waistR * (0.12 + clampedS * 0.48);
+        const scale = bandR / (headR * 0.88);
+        squeezeBandMesh.scale.set(scale, scale, 1);
+      }
+    }
+
+    buildTalkingDrum3D();
+
+    // =========================================================================
+    // 5. RAYCASTING: CLICK HEAD TO STRIKE OR DRAG CORDS TO SQUEEZE TENSION LIVE
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let isOrbitDragging = false;
+    let isCordSqueezeDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartSqueeze = 0.08;
+
+    container.addEventListener('pointerdown', (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(drumGroup.children, true);
+
+      if (hits.length > 0) {
+        const hit = hits[0];
+        if (hit.object === topHeadMesh) {
+          // Compute radial strike point on top head
+          const localPt = topHeadMesh.worldToLocal(hit.point.clone());
+          const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+          const headR = (arch.headDiaCm / 16) * 1.18;
+          const rNorm = Math.min(0.92, Math.sqrt(localPt.x * localPt.x + localPt.z * localPt.z) / headR);
+          state.strikeRadiusNorm = rNorm;
+          drawXYTensionPad();
+
+          // Strike! Near rim triggers finger tap or saworo rim if outside 0.72
+          const chosenArtic = rNorm > 0.78 ? 'rim_saworo' : rNorm > 0.56 ? 'finger_tap' : state.articulation;
+          triggerTalkingDrumStrike({
+            squeeze: state.armSqueeze,
+            useToneTarget: false,
+            artic: chosenArtic,
+            syllable: state.armSqueeze > 0.62 ? 'Mí' : state.armSqueeze > 0.26 ? 'Rè' : 'Dò'
+          });
+          return;
+        } else if (hit.object.name === 'tension_cord' || hit.object === outerShellMesh || hit.object === squeezeBandMesh) {
+          // Dragging vertically on the drum waist/cords bends arm-squeeze tension in real time!
+          isCordSqueezeDragging = true;
+          dragStartY = e.clientY;
+          dragStartSqueeze = state.armSqueeze;
+          return;
+        }
+      }
+
+      isOrbitDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (isCordSqueezeDragging) {
+        const dy = dragStartY - e.clientY;
+        const newSqueeze = Math.max(0, Math.min(1, dragStartSqueeze + dy / 180));
+        const sl = document.getElementById('slider-arm-squeeze');
+        if (sl) sl.value = (newSqueeze * 100).toFixed(1);
+        applyLiveArmSqueezeToActiveVoices(newSqueeze);
+        updateCordDeformationGeometry(newSqueeze);
+        drawXYTensionPad();
+        return;
+      }
+      if (isOrbitDragging) {
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        camSpherical.theta -= dx * 0.0065;
+        camSpherical.phi = Math.max(0.25, Math.min(Math.PI - 0.25, camSpherical.phi - dy * 0.0065));
+        updateCameraFromSpherical();
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      isOrbitDragging = false;
+      isCordSqueezeDragging = false;
+    });
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camSpherical.radius = Math.max(4.5, Math.min(14.5, camSpherical.radius + e.deltaY * 0.004));
+      updateCameraFromSpherical();
+    }, { passive: false });
+
+    // =========================================================================
+    // 6. 2D INTERACTIVE PITCH-BEND & RADIAL STRIKE PAD + OSCILLOSCOPE CANVASES
+    // =========================================================================
+    const xyPadCanvas = document.getElementById('xy-tension-pad');
+    const xyPadCtx = xyPadCanvas.getContext('2d');
+    let isPadDragging = false;
+
+    function drawXYTensionPad() {
+      const w = xyPadCanvas.width;
+      const h = xyPadCanvas.height;
+      xyPadCtx.clearRect(0, 0, w, h);
+
+      // Horizontal tone rails for Dò, Rè, Mí
+      const rails = [
+        { label: 'Mí (High)', s: 0.78, color: 'rgba(251, 146, 60, 0.35)' },
+        { label: 'Rè (Mid)',  s: 0.42, color: 'rgba(52, 211, 153, 0.35)' },
+        { label: 'Dò (Low)',  s: 0.08, color: 'rgba(245, 158, 11, 0.35)' }
+      ];
+      rails.forEach(r => {
+        const y = h - r.s * h;
+        xyPadCtx.strokeStyle = r.color;
+        xyPadCtx.lineWidth = 1;
+        xyPadCtx.setLineDash([4, 4]);
+        xyPadCtx.beginPath();
+        xyPadCtx.moveTo(0, y);
+        xyPadCtx.lineTo(w, y);
+        xyPadCtx.stroke();
+        xyPadCtx.setLineDash([]);
+        xyPadCtx.fillStyle = '#94a3b8';
+        xyPadCtx.font = '10px "JetBrains Mono", monospace';
+        xyPadCtx.fillText(r.label, 6, Math.max(11, y - 3));
+      });
+
+      // Cursor dot
+      const cx = (state.strikeRadiusNorm / 0.9) * w;
+      const cy = h - state.armSqueeze * h;
+
+      const grad = xyPadCtx.createRadialGradient(cx, cy, 2, cx, cy, 22);
+      grad.addColorStop(0, 'rgba(245, 158, 11, 0.85)');
+      grad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      xyPadCtx.fillStyle = grad;
+      xyPadCtx.beginPath();
+      xyPadCtx.arc(cx, cy, 22, 0, Math.PI * 2);
+      xyPadCtx.fill();
+
+      xyPadCtx.fillStyle = '#fef3c7';
+      xyPadCtx.strokeStyle = '#f59e0b';
+      xyPadCtx.lineWidth = 2;
+      xyPadCtx.beginPath();
+      xyPadCtx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+      xyPadCtx.fill();
+      xyPadCtx.stroke();
+
+      const readout = document.getElementById('pad-readout');
+      if (readout) {
+        readout.textContent = `r/a=${state.strikeRadiusNorm.toFixed(2)} • S=${Math.round(state.armSqueeze * 100)}%`;
+      }
+    }
+
+    function handlePadPointer(e, triggerOnDown = false) {
+      const rect = xyPadCanvas.getBoundingClientRect();
+      const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const ny = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height));
+      state.strikeRadiusNorm = nx * 0.9;
+      const sl = document.getElementById('slider-arm-squeeze');
+      if (sl) sl.value = (ny * 100).toFixed(1);
+      applyLiveArmSqueezeToActiveVoices(ny);
+      updateCordDeformationGeometry(ny);
+      drawXYTensionPad();
+
+      if (triggerOnDown) {
+        triggerTalkingDrumStrike({
+          squeeze: ny,
+          useToneTarget: false,
+          syllable: ny > 0.62 ? 'Mí' : ny > 0.26 ? 'Rè' : 'Dò'
+        });
+      }
+    }
+
+    xyPadCanvas.addEventListener('pointerdown', (e) => {
+      isPadDragging = true;
+      handlePadPointer(e, true);
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (isPadDragging) handlePadPointer(e, false);
+    });
+    window.addEventListener('pointerup', () => {
+      isPadDragging = false;
+    });
+
+    drawXYTensionPad();
+
+    // =========================================================================
+    // 7. SPEECH-TONE SEQUENCER & PRESET ENGINE
+    // =========================================================================
+    const seqGrid = document.getElementById('sequencer-grid');
+    let loopIntervalId = null;
+
+    function renderSequencerGrid() {
+      seqGrid.innerHTML = '';
+      state.steps.forEach((st, idx) => {
+        const btn = document.createElement('button');
+        const isCurrent = state.isLooping && state.currentStep === idx;
+        const toneColor = st.tone === 'mi'
+          ? 'border-orange-400/60 bg-orange-500/20 text-orange-200'
+          : st.tone === 're'
+            ? 'border-emerald-400/60 bg-emerald-500/20 text-emerald-200'
+            : st.tone === 'do'
+              ? 'border-amber-400/60 bg-amber-500/20 text-amber-200'
+              : 'border-slate-800 bg-slate-900/60 text-slate-500';
+
+        btn.className = `p-1.5 rounded-lg border text-center transition flex flex-col items-center justify-between ${toneColor} ${isCurrent ? 'ring-2 ring-white scale-105' : ''}`;
+        const contourArrow = st.contour === 'rise' ? '↗' : st.contour === 'fall' ? '↘' : st.contour === 'scoop' ? '⌒' : st.contour === 'warble' ? '∿' : '━';
+        btn.innerHTML = `
+          <span class="text-[10px] font-bold truncate w-full">${st.syl}</span>
+          <span class="text-[9px] font-mono-tech uppercase">${st.tone}${contourArrow}</span>
+        `;
+        btn.addEventListener('click', () => {
+          // Cycle tone/contour on click and preview sound
+          const order = [
+            { tone: 'do', contour: 'level' },
+            { tone: 're', contour: 'level' },
+            { tone: 'mi', contour: 'level' },
+            { tone: 'do', contour: 'rise' },
+            { tone: 'mi', contour: 'fall' },
+            { tone: 're', contour: 'scoop' },
+            { tone: 'rest', contour: 'level' }
+          ];
+          const curIdx = order.findIndex(o => o.tone === st.tone && o.contour === st.contour);
+          const next = order[(curIdx + 1) % order.length];
+          st.tone = next.tone;
+          st.contour = next.contour;
+          if (st.tone !== 'rest') {
+            triggerTalkingDrumStrike({
+              tone: st.tone,
+              contour: st.contour,
+              artic: st.artic || 'opa_press',
+              syllable: st.syl
+            });
+          }
+          renderSequencerGrid();
+        });
+        seqGrid.appendChild(btn);
+      });
+    }
+
+    function loadPhrasePreset(presetKey) {
+      const p = PHRASE_PRESETS[presetKey];
+      if (!p) return;
+      state.activePreset = presetKey;
+      state.steps = JSON.parse(JSON.stringify(p.steps));
+      state.bpm = p.bpm;
+      document.getElementById('slider-bpm').value = p.bpm;
+      document.getElementById('lbl-bpm').textContent = p.bpm;
+      document.getElementById('phrase-yoruba-text').textContent = p.yoruba;
+      document.getElementById('phrase-tone-cipher').textContent = p.cipher;
+      renderSequencerGrid();
+    }
+
+    function stepSequencerTick() {
+      const st = state.steps[state.currentStep];
+      renderSequencerGrid();
+      if (st && st.tone !== 'rest') {
+        triggerTalkingDrumStrike({
+          tone: st.tone,
+          contour: st.contour,
+          artic: st.artic || 'opa_open',
+          syllable: st.syl
+        });
+      }
+      state.currentStep = (state.currentStep + 1) % state.steps.length;
+    }
+
+    function startStopLoop(forceState) {
+      const nextState = forceState !== undefined ? forceState : !state.isLooping;
+      state.isLooping = nextState;
+      if (loopIntervalId) {
+        clearInterval(loopIntervalId);
+        loopIntervalId = null;
+      }
+      const indicator = document.getElementById('seq-playing-indicator');
+      const icon = document.getElementById('loop-btn-icon');
+      const txt = document.getElementById('loop-btn-text');
+
+      if (state.isLooping) {
+        state.currentStep = 0;
+        stepSequencerTick();
+        const stepMs = (60 / state.bpm) * 500; // Eighth-note speech cadence
+        loopIntervalId = setInterval(stepSequencerTick, stepMs);
+        indicator.textContent = 'SPEAKING';
+        indicator.className = 'px-2 py-0.5 rounded text-[10px] font-mono-tech bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        icon.textContent = '■';
+        txt.textContent = 'Stop Speech Loop';
+      } else {
+        indicator.textContent = 'IDLE';
+        indicator.className = 'px-2 py-0.5 rounded text-[10px] font-mono-tech bg-slate-800 text-slate-400';
+        icon.textContent = '▶';
+        txt.textContent = 'Play Speech Loop';
+        renderSequencerGrid();
+      }
+    }
+
+    renderSequencerGrid();
+
+    // =========================================================================
+    // 8. LOSSLESS 44.1 kHz 16-BIT STEREO WAV OFFLINE EXPORT ENGINE
+    // =========================================================================
+    function encodeWAVFromAudioBuffer(audioBuffer) {
+      const numChannels = 2;
+      const sampleRate = audioBuffer.sampleRate;
+      const length = audioBuffer.length;
+      const buffer = new ArrayBuffer(44 + length * numChannels * 2);
+      const view = new DataView(buffer);
+
+      function writeStr(offset, str) {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + length * numChannels * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, length * numChannels * 2, true);
+
+      const chL = audioBuffer.getChannelData(0);
+      const chR = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : chL;
+      let offset = 44;
+      for (let i = 0; i < length; i++) {
+        const sL = Math.max(-1, Math.min(1, chL[i]));
+        const sR = Math.max(-1, Math.min(1, chR[i]));
+        view.setInt16(offset, sL < 0 ? sL * 0x8000 : sL * 0x7FFF, true);
+        view.setInt16(offset + 2, sR < 0 ? sR * 0x8000 : sR * 0x7FFF, true);
+        offset += 4;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    function renderOfflineStroke(offlineCtx, startTime, stepObj) {
+      const startSqueeze = TONE_SQUEEZE_MAP[stepObj.tone] !== undefined ? TONE_SQUEEZE_MAP[stepObj.tone] : state.armSqueeze;
+      const glideSec = state.glideMs / 1000;
+      const tau01 = state.sustain;
+      const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+      const formants = computeVenturiFormants(state.waistRatio, arch.lengthCm);
+
+      const f1 = offlineCtx.createBiquadFilter();
+      f1.type = 'peaking';
+      f1.frequency.setValueAtTime(formants.f1, startTime);
+      f1.Q.value = 3.5;
+      f1.gain.value = 6.0;
+      f1.connect(offlineCtx.destination);
+
+      BESSEL_RATIOS.forEach((ratio, idx) => {
+        const osc = offlineCtx.createOscillator();
+        const g = offlineCtx.createGain();
+        osc.type = idx === 0 ? 'sine' : 'triangle';
+        scheduleContourTrajectory(osc.frequency, ratio, startSqueeze, stepObj.contour, startTime, glideSec, state.baseFreq, state.maxBendSt);
+        const modeDur = tau01 / Math.pow(idx + 1, 0.78);
+        const amp = idx === 0 ? 0.46 : 0.18 / (idx + 1);
+        g.gain.setValueAtTime(0.0001, startTime);
+        g.gain.linearRampToValueAtTime(amp, startTime + 0.003);
+        g.gain.exponentialRampToValueAtTime(0.0001, startTime + modeDur);
+        osc.connect(g);
+        g.connect(f1);
+        osc.start(startTime);
+        osc.stop(startTime + modeDur + 0.04);
+      });
+    }
+
+    async function exportWAV(isFullLoop = false) {
+      const sr = 44100;
+      const stepSec = (60 / state.bpm) * 0.5;
+      const totalDur = isFullLoop ? (state.steps.length * stepSec + 1.4) : (state.sustain + 0.6);
+      const offlineCtx = new OfflineAudioContext(2, Math.ceil(sr * totalDur), sr);
+
+      if (isFullLoop) {
+        state.steps.forEach((st, idx) => {
+          if (st.tone !== 'rest') {
+            renderOfflineStroke(offlineCtx, idx * stepSec + 0.02, st);
+          }
+        });
+      } else {
+        renderOfflineStroke(offlineCtx, 0.02, {
+          tone: state.targetTone,
+          contour: state.contour,
+          artic: state.articulation
+        });
+      }
+
+      const rendered = await offlineCtx.startRendering();
+      const wavBlob = encodeWAVFromAudioBuffer(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = isFullLoop
+        ? `talking_drum_${state.archetype}_${state.activePreset}_loop.wav`
+        : `talking_drum_${state.archetype}_${state.targetTone}_${state.contour}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // =========================================================================
+    // 9. UI BINDINGS, TELEMETRY HUD & KEYBOARD CONTROLS
+    // =========================================================================
+    function updateTelemetryHUD() {
+      const f01 = computeInstantFreq(state.armSqueeze);
+      const st = 12 * Math.log2(f01 / state.baseFreq);
+      const toneLabel = state.armSqueeze > 0.62 ? 'Mí (High)' : state.armSqueeze > 0.26 ? 'Rè (Mid)' : 'Dò (Low)';
+      const tensionNm = Math.round(380 * Math.pow(f01 / 110, 2));
+
+      document.getElementById('hud-freq').textContent = `${f01.toFixed(1)} Hz`;
+      document.getElementById('hud-tone').textContent = `${toneLabel} (${st >= 0 ? '+' : ''}${st.toFixed(1)} st)`;
+      document.getElementById('hud-tension').textContent = `${tensionNm} N/m`;
+      document.getElementById('val-arm-squeeze').textContent = `${Math.round(state.armSqueeze * 100)}% (${toneLabel.split(' ')[0]})`;
+      document.getElementById('contour-hz-readout').textContent = `${f01.toFixed(1)} Hz (${st >= 0 ? '+' : ''}${st.toFixed(1)} st)`;
+
+      const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+      const formants = computeVenturiFormants(state.waistRatio, arch.lengthCm);
+      const vowel = formants.f1 < 380 ? '/u/–/o/' : formants.f1 < 520 ? '/o/–/a/' : '/a/–/e/';
+      document.getElementById('formant-readout').textContent = `F1: ${Math.round(formants.f1)} Hz • F2: ${Math.round(formants.f2)} Hz (${vowel})`;
+    }
+
+    // Archetype Buttons
+    document.querySelectorAll('.archetype-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.archetype-btn').forEach(b => b.classList.remove('tone-pill-active'));
+        btn.classList.add('tone-pill-active');
+        const key = btn.dataset.archetype;
+        const arch = ARCHETYPES[key];
+        if (!arch) return;
+
+        state.archetype = key;
+        state.baseFreq = arch.baseFreq;
+        state.maxBendSt = arch.maxBendSt;
+        state.waistRatio = arch.waistRatio;
+        state.sustain = arch.sustain;
+        state.dualCoupling = arch.dualCoupling;
+        state.saworoMix = arch.saworoMix;
+        state.snareBuzz = arch.snareBuzz;
+        state.hideType = arch.hideType;
+
+        // Sync UI sliders
+        document.getElementById('header-archetype-badge').textContent = arch.badge;
+        document.getElementById('slider-base-freq').value = arch.baseFreq;
+        document.getElementById('lbl-base-freq').textContent = `${arch.baseFreq.toFixed(1)} Hz`;
+        document.getElementById('slider-bend-range').value = arch.maxBendSt;
+        document.getElementById('lbl-bend-range').textContent = `+${arch.maxBendSt.toFixed(1)} st`;
+        document.getElementById('slider-waist-ratio').value = arch.waistRatio;
+        document.getElementById('lbl-waist-ratio').textContent = `${arch.waistRatio.toFixed(2)}`;
+        document.getElementById('slider-dual-coupling').value = Math.round(arch.dualCoupling * 100);
+        document.getElementById('lbl-dual-coupling').textContent = `${Math.round(arch.dualCoupling * 100)}%`;
+        document.getElementById('slider-sustain').value = arch.sustain;
+        document.getElementById('lbl-sustain').textContent = `${arch.sustain.toFixed(2)} s`;
+        document.getElementById('slider-saworo').value = Math.round(arch.saworoMix * 100);
+        document.getElementById('lbl-saworo').textContent = `${Math.round(arch.saworoMix * 100)}%`;
+        document.getElementById('slider-snare-buzz').value = Math.round(arch.snareBuzz * 100);
+        document.getElementById('lbl-snare-buzz').textContent = `${Math.round(arch.snareBuzz * 100)}%`;
+        document.getElementById('select-hide-type').value = arch.hideType;
+        document.getElementById('lbl-hide-type').textContent = HIDE_PROFILES[arch.hideType].name;
+
+        buildTalkingDrum3D();
+        updateTelemetryHUD();
+        triggerTalkingDrumStrike({ tone: state.targetTone, contour: 'scoop', syllable: arch.badge.split(' ')[0] });
+      });
+    });
+
+    // Left Dock Tabs
+    document.querySelectorAll('.ltab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.ltab-btn').forEach(b => {
+          b.classList.remove('tone-pill-active');
+          b.classList.add('text-slate-400');
+        });
+        btn.classList.add('tone-pill-active');
+        btn.classList.remove('text-slate-400');
+        const tab = btn.dataset.ltab;
+        ['tension', 'shell', 'stick'].forEach(t => {
+          document.getElementById(`ltab-${t}`).classList.toggle('hidden', t !== tab);
+        });
+      });
+    });
+
+    // Arm Squeeze Live Slider
+    document.getElementById('slider-arm-squeeze').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value) / 100;
+      applyLiveArmSqueezeToActiveVoices(val);
+      updateCordDeformationGeometry(val);
+      drawXYTensionPad();
+    });
+
+    // Yoruba 3-Tone Target Buttons
+    document.querySelectorAll('.tone-target-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tone-target-btn').forEach(b => b.classList.remove('tone-pill-active'));
+        btn.classList.add('tone-pill-active');
+        const t = btn.dataset.tone;
+        state.targetTone = t;
+        const sq = TONE_SQUEEZE_MAP[t] || 0.08;
+        document.getElementById('slider-arm-squeeze').value = (sq * 100).toFixed(1);
+        applyLiveArmSqueezeToActiveVoices(sq);
+        updateCordDeformationGeometry(sq);
+        drawXYTensionPad();
+        triggerTalkingDrumStrike({ tone: t, contour: state.contour });
+      });
+    });
+
+    // Post-Strike Pitch Contour Buttons
+    document.querySelectorAll('.contour-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.contour-btn').forEach(b => b.classList.remove('tone-pill-active'));
+        btn.classList.add('tone-pill-active');
+        state.contour = btn.dataset.contour;
+        triggerTalkingDrumStrike({ tone: state.targetTone, contour: state.contour });
+      });
+    });
+
+    // Articulation Buttons
+    document.querySelectorAll('.artic-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.artic-btn').forEach(b => b.classList.remove('tone-pill-active'));
+        btn.classList.add('tone-pill-active');
+        state.articulation = btn.dataset.artic;
+        triggerTalkingDrumStrike({ tone: state.targetTone, contour: state.contour, artic: state.articulation });
+      });
+    });
+
+    // Parameter Sliders
+    document.getElementById('slider-glide-ms').addEventListener('input', (e) => {
+      state.glideMs = parseFloat(e.target.value);
+      document.getElementById('lbl-glide-ms').textContent = `${state.glideMs} ms`;
+      document.getElementById('val-glide-time').textContent = `${state.glideMs} ms`;
+    });
+
+    document.getElementById('slider-bend-range').addEventListener('input', (e) => {
+      state.maxBendSt = parseFloat(e.target.value);
+      document.getElementById('lbl-bend-range').textContent = `+${state.maxBendSt.toFixed(1)} st`;
+      updateTelemetryHUD();
+    });
+
+    document.getElementById('slider-base-freq').addEventListener('input', (e) => {
+      state.baseFreq = parseFloat(e.target.value);
+      document.getElementById('lbl-base-freq').textContent = `${state.baseFreq.toFixed(1)} Hz`;
+      updateTelemetryHUD();
+    });
+
+    document.getElementById('slider-waist-ratio').addEventListener('input', (e) => {
+      state.waistRatio = parseFloat(e.target.value);
+      document.getElementById('lbl-waist-ratio').textContent = `${state.waistRatio.toFixed(2)}`;
+      buildTalkingDrum3D();
+      updateTelemetryHUD();
+    });
+
+    document.getElementById('slider-dual-coupling').addEventListener('input', (e) => {
+      state.dualCoupling = parseFloat(e.target.value) / 100;
+      document.getElementById('lbl-dual-coupling').textContent = `${e.target.value}%`;
+    });
+
+    document.getElementById('select-hide-type').addEventListener('change', (e) => {
+      state.hideType = e.target.value;
+      document.getElementById('lbl-hide-type').textContent = HIDE_PROFILES[state.hideType].name;
+    });
+
+    document.getElementById('slider-sustain').addEventListener('input', (e) => {
+      state.sustain = parseFloat(e.target.value);
+      document.getElementById('lbl-sustain').textContent = `${state.sustain.toFixed(2)} s`;
+    });
+
+    document.getElementById('slider-hand-mute').addEventListener('input', (e) => {
+      state.handMute = parseFloat(e.target.value) / 100;
+      document.getElementById('lbl-hand-mute').textContent = `${e.target.value}%`;
+    });
+
+    document.getElementById('slider-saworo').addEventListener('input', (e) => {
+      state.saworoMix = parseFloat(e.target.value) / 100;
+      document.getElementById('lbl-saworo').textContent = `${e.target.value}% (16 Bells)`;
+      if (saworoGroup) saworoGroup.visible = state.saworoMix > 0.02;
+    });
+
+    document.getElementById('slider-snare-buzz').addEventListener('input', (e) => {
+      state.snareBuzz = parseFloat(e.target.value) / 100;
+      document.getElementById('lbl-snare-buzz').textContent = `${e.target.value}%`;
+    });
+
+    // Phrase Preset Selector & Speak Button
+    document.getElementById('select-phrase-preset').addEventListener('change', (e) => {
+      loadPhrasePreset(e.target.value);
+      if (!state.isLooping) {
+        startStopLoop(true);
+      }
+    });
+
+    document.getElementById('btn-speak-phrase').addEventListener('click', () => {
+      startStopLoop(false);
+      const stepMs = (60 / state.bpm) * 500;
+      state.steps.forEach((st, idx) => {
+        setTimeout(() => {
+          state.currentStep = idx;
+          renderSequencerGrid();
+          if (st.tone !== 'rest') {
+            triggerTalkingDrumStrike({
+              tone: st.tone,
+              contour: st.contour,
+              artic: st.artic || 'opa_press',
+              syllable: st.syl
+            });
+          }
+        }, idx * stepMs);
+      });
+    });
+
+    // Footer Buttons
+    document.getElementById('btn-strike-do').addEventListener('click', () => {
+      triggerTalkingDrumStrike({ tone: 'do', contour: 'level', syllable: 'Dò' });
+    });
+    document.getElementById('btn-strike-re').addEventListener('click', () => {
+      triggerTalkingDrumStrike({ tone: 're', contour: 'level', syllable: 'Rè' });
+    });
+    document.getElementById('btn-strike-mi').addEventListener('click', () => {
+      triggerTalkingDrumStrike({ tone: 'mi', contour: 'level', syllable: 'Mí' });
+    });
+    document.getElementById('btn-strike-glide').addEventListener('click', () => {
+      triggerTalkingDrumStrike({ tone: 'do', contour: 'rise', artic: 'opa_press', syllable: 'Dò↗Mí' });
+    });
+    document.getElementById('btn-strike-slap').addEventListener('click', () => {
+      triggerTalkingDrumStrike({ tone: 'mi', contour: 'scoop', artic: 'flam_roll', syllable: 'Tama-Flam' });
+    });
+
+    document.getElementById('btn-loop-toggle').addEventListener('click', () => startStopLoop());
+    document.getElementById('slider-bpm').addEventListener('input', (e) => {
+      state.bpm = parseInt(e.target.value, 10);
+      document.getElementById('lbl-bpm').textContent = state.bpm;
+      if (state.isLooping) startStopLoop(true);
+    });
+
+    document.getElementById('btn-export-oneshot').addEventListener('click', () => exportWAV(false));
+    document.getElementById('btn-export-loop').addEventListener('click', () => exportWAV(true));
+
+    // X-Ray Cutaway, Camera Reset & Modal
+    document.getElementById('btn-xray').addEventListener('click', (e) => {
+      state.xrayCutaway = !state.xrayCutaway;
+      e.target.textContent = `X-Ray Throat: ${state.xrayCutaway ? 'ON' : 'OFF'}`;
+      buildTalkingDrum3D();
+    });
+
+    document.getElementById('btn-cam-reset').addEventListener('click', () => {
+      camSpherical = { radius: 8.4, theta: 0.42, phi: 1.18 };
+      updateCameraFromSpherical();
+    });
+
+    const infoModal = document.getElementById('info-modal');
+    document.getElementById('btn-info-modal').addEventListener('click', () => {
+      infoModal.classList.remove('hidden');
+      infoModal.classList.add('flex');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      infoModal.classList.add('hidden');
+      infoModal.classList.remove('flex');
+    });
+
+    // Collapsible Side Docks
+    let leftDockOpen = true;
+    let rightDockOpen = true;
+    document.getElementById('toggle-left-dock').addEventListener('click', () => {
+      leftDockOpen = !leftDockOpen;
+      document.getElementById('left-dock').style.transform = leftDockOpen ? 'translateX(0)' : 'translateX(-110%)';
+      document.getElementById('left-dock-arrow').textContent = leftDockOpen ? '◀' : '▶';
+    });
+    document.getElementById('toggle-right-dock').addEventListener('click', () => {
+      rightDockOpen = !rightDockOpen;
+      document.getElementById('right-dock').style.transform = rightDockOpen ? 'translateX(0)' : 'translateX(110%)';
+      document.getElementById('right-dock-arrow').textContent = rightDockOpen ? '▶' : '◀';
+    });
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'escape') {
+        infoModal.classList.add('hidden');
+        infoModal.classList.remove('flex');
+      } else if (k === '1') {
+        document.querySelector('[data-tone="do"]').click();
+      } else if (k === '2') {
+        document.querySelector('[data-tone="re"]').click();
+      } else if (k === '3') {
+        document.querySelector('[data-tone="mi"]').click();
+      } else if (k === 'j') {
+        triggerTalkingDrumStrike({ tone: 'do', contour: 'level', syllable: 'Dò' });
+      } else if (k === 'k') {
+        triggerTalkingDrumStrike({ tone: 're', contour: 'level', syllable: 'Rè' });
+      } else if (k === 'l') {
+        triggerTalkingDrumStrike({ tone: 'mi', contour: 'level', syllable: 'Mí' });
+      } else if (k === ' ') {
+        e.preventDefault();
+        triggerTalkingDrumStrike({ tone: 'do', contour: 'rise', artic: 'opa_press', syllable: 'Dò↗Mí' });
+      } else if (k === 'f') {
+        triggerTalkingDrumStrike({ tone: 'mi', contour: 'scoop', artic: 'flam_roll', syllable: 'Flam' });
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const nextS = Math.min(1, state.armSqueeze + 0.06);
+        document.getElementById('slider-arm-squeeze').value = (nextS * 100).toFixed(1);
+        applyLiveArmSqueezeToActiveVoices(nextS);
+        updateCordDeformationGeometry(nextS);
+        drawXYTensionPad();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const nextS = Math.max(0, state.armSqueeze - 0.06);
+        document.getElementById('slider-arm-squeeze').value = (nextS * 100).toFixed(1);
+        applyLiveArmSqueezeToActiveVoices(nextS);
+        updateCordDeformationGeometry(nextS);
+        drawXYTensionPad();
+      }
+    });
+
+    // =========================================================================
+    // 10. REAL-TIME ANIMATION LOOP (3D BESSEL DEFORMATION + TELEMETRY CANVASES)
+    // =========================================================================
+    const pitchCanvas = document.getElementById('canvas-pitch-contour');
+    const pitchCtx = pitchCanvas.getContext('2d');
+    const specCanvas = document.getElementById('canvas-spectrum');
+    const specCtx = specCanvas.getContext('2d');
+    const fftBuffer = new Uint8Array(512);
+
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, clock.getDelta());
+      const elapsed = clock.getElapsedTime();
+
+      // Track instantaneous pitch of most recent active voice (for rising/falling contour visualization)
+      if (audioCtx && activeVoices.size > 0) {
+        let latestVoice = null;
+        activeVoices.forEach(v => { latestVoice = v; });
+        if (latestVoice && latestVoice.modes[0]) {
+          const curHz = latestVoice.modes[0].osc.frequency.value;
+          if (curHz > 40) {
+            state.liveFreqHz = curHz;
+            // Invert f(S) to get instantaneous effective squeeze S(t)
+            const maxRatioSq = Math.pow(2, (2 * state.maxBendSt) / 12) - 1;
+            const effS = Math.max(0, Math.min(1, (Math.pow(curHz / state.baseFreq, 2) - 1) / Math.max(0.01, maxRatioSq)));
+            updateCordDeformationGeometry(effS);
+          }
+        }
+      }
+
+      // Decay membrane & animation energies
+      state.headEnergyTop *= Math.exp(-dt * 3.2);
+      state.headEnergyBottom *= Math.exp(-dt * 2.8);
+      state.stickAnimPhase *= Math.exp(-dt * 14.0);
+      state.handAnimPhase *= Math.exp(-dt * 12.0);
+      state.saworoEnergy *= Math.exp(-dt * 6.5);
+
+      // Push live pitch & energy sample into contour oscilloscope history
+      state.pitchHistory.push({
+        f: state.liveFreqHz,
+        s: state.armSqueeze,
+        e: Math.min(1, state.headEnergyTop)
+      });
+      if (state.pitchHistory.length > 160) state.pitchHistory.shift();
+
+      // 1. Deform Top Batter & Bottom Sympathetic Membranes with Bessel Eigenmodes
+      if (topHeadMesh && topHeadBasePos) {
+        const pos = topHeadMesh.geometry.attributes.position;
+        const col = topHeadMesh.geometry.attributes.color;
+        const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+        const headR = (arch.headDiaCm / 16) * 1.18;
+        const baseColor = new THREE.Color(arch.headColor);
+        const omega = elapsed * state.liveFreqHz * 0.22;
+
+        for (let i = 0; i < pos.count; i++) {
+          const bx = topHeadBasePos[i * 3];
+          const by = topHeadBasePos[i * 3 + 1];
+          const bz = topHeadBasePos[i * 3 + 2];
+          const r = Math.sqrt(bx * bx + bz * bz) / headR;
+          const theta = Math.atan2(bz, bx);
+
+          let disp = 0;
+          if (r < 0.98 && state.headEnergyTop > 0.002) {
+            const m01 = Math.cos(r * Math.PI * 0.5) * Math.sin(omega);
+            const m11 = Math.sin(r * Math.PI) * Math.cos(theta) * Math.sin(omega * 1.593) * state.activeBesselMode[1];
+            const m21 = Math.sin(r * Math.PI * 1.35) * Math.cos(2 * theta) * Math.sin(omega * 2.135) * state.activeBesselMode[2];
+            disp = (m01 + m11 * 0.45 + m21 * 0.25) * state.headEnergyTop * 0.14;
+          }
+          pos.setY(i, by + disp);
+
+          const heat = Math.min(1, Math.abs(disp) * 11);
+          col.setXYZ(
+            i,
+            baseColor.r + (0.98 - baseColor.r) * heat,
+            baseColor.g + (0.52 - baseColor.g) * heat,
+            baseColor.b * (1 - heat * 0.65)
+          );
+        }
+        pos.needsUpdate = true;
+        col.needsUpdate = true;
+      }
+
+      if (bottomHeadMesh && bottomHeadBasePos && state.headEnergyBottom > 0.002) {
+        const pos = bottomHeadMesh.geometry.attributes.position;
+        const arch = ARCHETYPES[state.archetype] || ARCHETYPES.dundun;
+        const headR = (arch.headDiaCm / 16) * 1.18;
+        const omega = elapsed * state.liveFreqHz * 0.21;
+        for (let i = 0; i < pos.count; i++) {
+          const bx = bottomHeadBasePos[i * 3];
+          const by = bottomHeadBasePos[i * 3 + 1];
+          const bz = bottomHeadBasePos[i * 3 + 2];
+          const r = Math.sqrt(bx * bx + bz * bz) / headR;
+          const disp = r < 0.98 ? Math.cos(r * Math.PI * 0.5) * Math.sin(omega - 0.6) * state.headEnergyBottom * 0.11 : 0;
+          pos.setY(i, by - disp);
+        }
+        pos.needsUpdate = true;
+      }
+
+      // 2. Animate Curved Ọ̀pá Beater Stick, Free Hand & Saworo Brass Bells
+      if (opaStickGroup) {
+        opaStickGroup.rotation.z = -state.stickAnimPhase * 0.36;
+        opaStickGroup.position.x = state.strikeRadiusNorm * 0.55;
+      }
+      if (freeHandGroup) {
+        freeHandGroup.position.y = ((ARCHETYPES[state.archetype].lengthCm / 32) * 1.95) + 0.09 - state.handAnimPhase * 0.075 - state.handMute * 0.06;
+      }
+      if (saworoGroup && saworoGroup.visible && state.saworoEnergy > 0.01) {
+        saworoGroup.children.forEach(bell => {
+          bell.rotation.z = bell.userData.baseRotZ + Math.sin(elapsed * 48 + bell.userData.phase) * state.saworoEnergy * 0.22;
+        });
+      }
+
+      // 3. Draw Pitch-Contour Oscilloscope Canvas
+      drawPitchContourCanvas();
+
+      // 4. Draw Modal + Formant Spectrum Canvas
+      drawSpectrumCanvas();
+
+      renderer.render(scene, camera);
+    }
+
+    function drawPitchContourCanvas() {
+      const w = pitchCanvas.width;
+      const h = pitchCanvas.height;
+      pitchCtx.clearRect(0, 0, w, h);
+
+      const minF = state.baseFreq * 0.92;
+      const maxF = state.baseFreq * Math.pow(2, state.maxBendSt / 12) * 1.06;
+
+      function freqToY(f) {
+        const norm = (Math.log2(Math.max(minF, f)) - Math.log2(minF)) / (Math.log2(maxF) - Math.log2(minF));
+        return h - 10 - Math.max(0, Math.min(1, norm)) * (h - 20);
+      }
+
+      // Reference Yoruba Tone Rails: Dò, Rè, Mí
+      const refTones = [
+        { name: 'Dò (Low)', s: 0.08, col: 'rgba(245, 158, 11, 0.32)' },
+        { name: 'Rè (Mid)', s: 0.42, col: 'rgba(52, 211, 153, 0.32)' },
+        { name: 'Mí (High)', s: 0.78, col: 'rgba(251, 146, 60, 0.32)' }
+      ];
+      refTones.forEach(rt => {
+        const fy = freqToY(computeInstantFreq(rt.s));
+        pitchCtx.strokeStyle = rt.col;
+        pitchCtx.lineWidth = 1;
+        pitchCtx.setLineDash([3, 3]);
+        pitchCtx.beginPath();
+        pitchCtx.moveTo(0, fy);
+        pitchCtx.lineTo(w, fy);
+        pitchCtx.stroke();
+        pitchCtx.setLineDash([]);
+        pitchCtx.fillStyle = '#64748b';
+        pitchCtx.font = '9px "JetBrains Mono", monospace';
+        pitchCtx.fillText(rt.name, 5, Math.max(9, fy - 2));
+      });
+
+      // Plot f01(t) Pitch Trajectory Ribbon
+      pitchCtx.lineWidth = 2.2;
+      pitchCtx.strokeStyle = '#f59e0b';
+      pitchCtx.beginPath();
+      state.pitchHistory.forEach((pt, idx) => {
+        const x = (idx / (state.pitchHistory.length - 1)) * w;
+        const y = freqToY(pt.f);
+        if (idx === 0) pitchCtx.moveTo(x, y);
+        else pitchCtx.lineTo(x, y);
+      });
+      pitchCtx.stroke();
+
+      // Highlight glowing active head energy pulse along the trajectory
+      const last = state.pitchHistory[state.pitchHistory.length - 1];
+      if (last) {
+        const ly = freqToY(last.f);
+        pitchCtx.fillStyle = '#fef08a';
+        pitchCtx.beginPath();
+        pitchCtx.arc(w - 4, ly, 3.5 + last.e * 3, 0, Math.PI * 2);
+        pitchCtx.fill();
+      }
+    }
+
+    function drawSpectrumCanvas() {
+      const w = specCanvas.width;
+      const h = specCanvas.height;
+      specCtx.clearRect(0, 0, w, h);
+
+      if (analyserNode) {
+        analyserNode.getByteFrequencyData(fftBuffer);
+      }
+
+      // Draw FFT Bars
+      const barCount = 56;
+      const barW = w / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const val = analyserNode ? fftBuffer[i] / 255 : 0;
+        const bh = val * (h - 14);
+        specCtx.fillStyle = i < 12 ? 'rgba(245, 158, 11, 0.78)' : 'rgba(34, 211, 238, 0.65)';
+        specCtx.fillRect(i * barW + 1, h - bh, barW - 2, bh);
+      }
+
+      // Overlay Bessel Eigenmode Markers j_mn
+      BESSEL_RATIOS.forEach((r, idx) => {
+        const fMode = state.liveFreqHz * r;
+        const x = Math.min(w - 6, (fMode / 1800) * w);
+        specCtx.strokeStyle = idx === 0 ? '#fbbf24' : 'rgba(52, 211, 153, 0.55)';
+        specCtx.lineWidth = idx === 0 ? 1.8 : 1;
+        specCtx.beginPath();
+        specCtx.moveTo(x, 4);
+        specCtx.lineTo(x, h);
+        specCtx.stroke();
+      });
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateTelemetryHUD();
+    animate();
+  </script>
+</body>
+</html>
