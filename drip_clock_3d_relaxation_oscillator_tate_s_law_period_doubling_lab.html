@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DRIP-CLOCK 3D — Relaxation Oscillator, Tate's Law &amp; Period-Doubling Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Large Bifurcation / Time-Series Focus Overlay (when selected) -->
+  <div id="focus-overlay" class="fixed inset-x-0 top-20 bottom-4 z-10 mx-auto max-w-2xl px-4 pointer-events-none hidden flex items-center justify-center">
+    <div class="lab-panel rounded-2xl p-4 w-full h-96 pointer-events-auto flex flex-col gap-2">
+      <div class="flex items-center justify-between">
+        <span id="focus-title" class="text-xs font-mono uppercase tracking-wider text-cyan-300 font-semibold">Bifurcation Diagram (τₙ vs Flow Rate Q)</span>
+        <button id="btn-clear-bif" type="button" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Clear Dots</button>
+      </div>
+      <div class="relative flex-1 bg-slate-950/90 rounded-xl border border-slate-800 overflow-hidden">
+        <canvas id="focus-canvas" class="w-full h-full block"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_10px_#38bdf8]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">DRIP-CLOCK 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-sky-300 border border-slate-700/70">Shaw 1984 · 4 kHz</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Relaxation Oscillator, Tate's Law &amp; Period-Doubling Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="regime-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-sky-500/20 text-sky-300 border border-sky-400/50">
+        PERIOD-1 (METRONOMIC)
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-reset" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Reset
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Live Bifurcation Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Tate's Law &amp; Dynamics</span>
+        <span id="lbl-drops" class="text-[10px] font-mono text-slate-400">0 drops</span>
+      </div>
+
+      <!-- Tate's Law Formula Box -->
+      <div class="bg-slate-900/80 rounded-lg p-2.5 border border-sky-500/25 text-[11px] font-mono space-y-1">
+        <div class="text-sky-300">m = 2πRγ / g &nbsp;|&nbsp; τ<sub>Tate</sub> = m / (ρQ)</div>
+        <div class="flex justify-between text-slate-300 pt-0.5">
+          <span>Predicted τ: <strong id="val-tau-tate" class="text-sky-300">830 ms</strong></span>
+          <span>Measured: <strong id="val-tau-meas" class="text-amber-300">--- ms</strong></span>
+        </div>
+      </div>
+
+      <!-- Drop Mass & Periodicity -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Drop Mass</div>
+          <div id="val-mass" class="text-xs font-mono font-semibold text-slate-100 mt-0.5">83.0 mg</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Detected Period</div>
+          <div id="val-period-n" class="text-xs font-mono font-semibold text-emerald-300 mt-0.5">Period-1</div>
+        </div>
+      </div>
+
+      <!-- Mini Interval Time-Series -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Interval Sequence τₙ (ms)</span>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="ts-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Mini Bifurcation Diagram -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Bifurcation (τₙ vs Q)</span>
+          <span id="lbl-bif-pts" class="text-[10px] font-mono text-slate-500">0 pts</span>
+        </div>
+        <div class="relative w-full h-28 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="bif-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Display Mode -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Display Mode</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-disp="drop" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-sky-500/25 text-sky-200 border border-sky-400/50">3D Drop</button>
+          <button type="button" data-disp="ts" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Time-Series</button>
+          <button type="button" data-disp="bif" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Bifurcation</button>
+        </div>
+      </div>
+
+      <!-- Flow Rate Q (Primary Sweep) -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-q" class="text-sky-300 font-semibold">Flow Rate Q</label>
+          <span id="lbl-q" class="font-mono text-sky-300 font-bold">0.100 mL/s</span>
+        </div>
+        <input id="ctrl-q" type="range" min="0" max="1000" step="1" value="310" class="lab-slider" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+          Sweep Q (Metronomic → Swing → Chaos)
+        </button>
+      </div>
+
+      <!-- Neck Radius R -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-r" class="text-slate-300 font-medium">Neck Radius R</label>
+          <span id="lbl-r" class="font-mono text-slate-200">1.80 mm</span>
+        </div>
+        <input id="ctrl-r" type="range" min="0.8" max="3.2" step="0.05" value="1.8" class="lab-slider" />
+      </div>
+
+      <!-- Surface Tension gamma / Fluid Choice -->
+      <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-gamma" class="text-slate-300 font-medium">Surface Tension γ</label>
+          <span id="lbl-gamma" class="font-mono text-slate-200">72 mN/m</span>
+        </div>
+        <input id="ctrl-gamma" type="range" min="25" max="480" step="1" value="72" class="lab-slider" />
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-fluid="water" class="fluid-btn py-1 rounded text-[10px] font-mono bg-sky-500/25 text-sky-200 border border-sky-400/50">Water</button>
+          <button type="button" data-fluid="soap" class="fluid-btn py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Soap</button>
+          <button type="button" data-fluid="mercury" class="fluid-btn py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Mercury-ish</button>
+        </div>
+      </div>
+
+      <!-- Gravity g -->
+      <div class="space-y-1.5 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-g" class="text-slate-300 font-medium">Gravity g</label>
+          <span id="lbl-g" class="font-mono text-slate-200">9.81 m/s²</span>
+        </div>
+        <input id="ctrl-g" type="range" min="1.62" max="24.8" step="0.05" value="9.81" class="lab-slider" />
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-g="1.62" class="g-btn py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Moon</button>
+          <button type="button" data-g="9.81" class="g-btn py-1 rounded text-[10px] font-mono bg-sky-500/25 text-sky-200 border border-sky-400/50">Earth</button>
+          <button type="button" data-g="24.79" class="g-btn py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">Jupiter</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-sky-500/40 text-xs font-mono text-sky-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. SHAW (1984) DRIPPING FAUCET RELAXATION OSCILLATOR (4 kHz Integration)
+      // =========================================================================
+      const DT = 0.00025; // 4 kHz fixed timestep
+
+      const params = {
+        Q_ml_s: 0.10,   // mL/s
+        R_mm: 1.80,     // mm
+        gamma_mNm: 72,  // mN/m
+        rho: 1000.0,    // kg/m^3
+        g: 9.81,        // m/s^2
+        fluidColor: 0x38bdf8,
+      };
+
+      const state = {
+        m: 0,
+        y: 0,
+        v: 0,
+        simTime: 0,
+        lastDetTime: null,
+        drops: 0,
+        running: true,
+        displayMode: 'drop', // 'drop' | 'ts' | 'bif'
+        intervalsMs: [],
+        bifurcationPts: [], // { q, tauMs }
+        sweepActive: false,
+        sweepTimer: 0,
+        fallingDrops: [],
+        ripples: [],
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function getPhysicsConstants() {
+        const R = params.R_mm * 1e-3;
+        const gamma = params.gamma_mNm * 1e-3;
+        const Q = params.Q_ml_s * 1e-6;
+        const dm_dt = params.rho * Q;
+        const m_tate = (2.0 * Math.PI * R * gamma) / params.g;
+        const k = 16.0 * gamma;
+        const b = 0.00095 * Math.sqrt(gamma / 0.072);
+        const y_crit = (m_tate * params.g) / k;
+        return { R, gamma, Q, dm_dt, m_tate, k, b, y_crit };
+      }
+
+      function resetOscillator() {
+        const { m_tate, y_crit } = getPhysicsConstants();
+        state.m = 0.25 * m_tate;
+        state.y = 0.10 * y_crit;
+        state.v = 0.0;
+        state.simTime = 0;
+        state.lastDetTime = null;
+        state.drops = 0;
+        state.intervalsMs = [];
+        state.fallingDrops = [];
+        state.ripples = [];
+        if (audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      }
+
+      function stepOscillator(dt, onDetach) {
+        const { dm_dt, m_tate, k, b, y_crit } = getPhysicsConstants();
+        state.m += dm_dt * dt;
+        const a = params.g - (k * state.y + b * state.v) / state.m;
+        state.v += a * dt;
+        state.y += state.v * dt;
+        state.simTime += dt;
+
+        if (state.y >= y_crit) {
+          const m_drop = m_tate * (0.76 + 1.6 * Math.max(0.0, state.v));
+          const actualDrop = Math.min(state.m * 0.92, m_drop);
+          state.m = Math.max(0.06 * m_tate, state.m - m_drop);
+          state.y = 0.12 * y_crit;
+          state.v = -0.04 - 0.45 * Math.max(0.0, state.v);
+
+          let intervalMs = null;
+          if (state.lastDetTime !== null) {
+            intervalMs = (state.simTime - state.lastDetTime) * 1000.0;
+            state.intervalsMs.push(intervalMs);
+            if (state.intervalsMs.length > 140) state.intervalsMs.shift();
+            state.bifurcationPts.push({ q: params.Q_ml_s, tauMs: intervalMs });
+            if (state.bifurcationPts.length > 3500) state.bifurcationPts.shift();
+          }
+          state.lastDetTime = state.simTime;
+          state.drops++;
+          onDetach(actualDrop, state.simTime, intervalMs);
+        }
+      }
+
+      function detectPeriod(ivs) {
+        if (ivs.length < 8) return 'Sampling...';
+        const tail = ivs.slice(-16);
+        const tol = Math.max(2.0, tail[tail.length - 1] * 0.025);
+        const checkPeriod = (p) => {
+          if (tail.length < p * 2 + 2) return false;
+          for (let i = tail.length - 1; i >= tail.length - p * 2; i--) {
+            if (Math.abs(tail[i] - tail[i - p]) > tol) return false;
+          }
+          return true;
+        };
+        if (checkPeriod(1)) return 'Period-1 (Metronomic)';
+        if (checkPeriod(2)) return 'Period-2 (Swing!)';
+        if (checkPeriod(4)) return 'Period-4';
+        if (checkPeriod(8)) return 'Period-8';
+        return 'Chaotic Band';
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO CLOCK-SYNCHRONIZED WATER DROP SYNTHESIS
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let simAudioOffset = 0;
+      const LOOKAHEAD = 0.045;
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.85;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-500/25 text-sky-200 border border-sky-400/60 hover:bg-sky-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) {
+          initAudio();
+        } else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleDripClick(dropMassKg, exactSimTime) {
+        // Spawn 3D falling droplet
+        const radiusScale = Math.pow(Math.max(1e-7, dropMassKg) / 8.3e-5, 1 / 3);
+        state.fallingDrops.push({ y: 1.45, v: 0, r: 0.11 * Math.max(0.55, Math.min(1.8, radiusScale)) });
+
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.30) return;
+
+        // Fat drop thunks lower, thin drop clicks higher (Minnaert-inspired dry plip)
+        const baseFreq = 680 / Math.max(0.45, Math.min(2.0, radiusScale));
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq, playTime);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.65, playTime + 0.018);
+
+        g.gain.setValueAtTime(0.32, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + 0.022);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(playTime);
+        osc.stop(playTime + 0.025);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        const snap = { m: state.m, y: state.y, v: state.v, t: state.simTime, lastDet: state.lastDetTime, drops: state.drops };
+        const events = [];
+        const steps = Math.floor(dur / DT);
+        for (let s = 0; s < steps; s++) {
+          stepOscillator(DT, (dropMass, tEv) => {
+            events.push({ t: tEv - snap.t, dropMass });
+          });
+        }
+        state.m = snap.m; state.y = snap.y; state.v = snap.v; state.simTime = snap.t; state.lastDetTime = snap.lastDet; state.drops = snap.drops;
+
+        for (const ev of events) {
+          if (ev.t < 0 || ev.t >= dur - 0.03) continue;
+          const start = Math.floor(ev.t * sr);
+          const rScale = Math.pow(Math.max(1e-7, ev.dropMass) / 8.3e-5, 1 / 3);
+          const f0 = 680 / Math.max(0.45, Math.min(2.0, rScale));
+          const len = Math.floor(sr * 0.022);
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const env = Math.exp(-tt / 0.0045) * 0.34;
+            const f = f0 * Math.pow(1.65, tt / 0.018);
+            const sig = env * Math.sin(2 * Math.PI * f * tt);
+            left[start + j] += sig;
+            right[start + j] += sig;
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `drip_clock_Q${params.Q_ml_s.toFixed(3)}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s 44.1 kHz stereo WAV (${events.length} drops)`);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D SCENE (Faucet Nozzle, Stretching Drop & Basin)
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.07);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.28, phi: 1.28, radius: 4.2, target: new THREE.Vector3(0, 0.65, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 1.2);
+      keyLight.position.set(3, 6, 4);
+      scene.add(keyLight);
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.6);
+      rimLight.position.set(-4, 2, -3);
+      scene.add(rimLight);
+
+      // Faucet Nozzle Assembly
+      const nozzleGroup = new THREE.Group();
+      nozzleGroup.position.set(0, 1.75, 0);
+      scene.add(nozzleGroup);
+
+      const pipeMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.25, metalness: 0.85 });
+      const upperPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.9, 24), pipeMat);
+      upperPipe.position.y = 0.55;
+      nozzleGroup.add(upperPipe);
+
+      const nozzleTip = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.08, 0.25, 24), pipeMat);
+      nozzleTip.position.y = 0.0;
+      nozzleGroup.add(nozzleTip);
+
+      // Pendant Growing Drop & Neck
+      const dropMat = new THREE.MeshStandardMaterial({
+        color: params.fluidColor,
+        roughness: 0.1,
+        metalness: 0.25,
+        transparent: true,
+        opacity: 0.88,
+      });
+      const pendantDrop = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 24), dropMat);
+      scene.add(pendantDrop);
+
+      const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.025, 0.2, 16), dropMat);
+      scene.add(neckMesh);
+
+      // Basin Pool below
+      const basin = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.75, 1.85, 0.12, 48),
+        new THREE.MeshStandardMaterial({ color: 0x0b1628, roughness: 0.2, metalness: 0.6 })
+      );
+      basin.position.y = -0.55;
+      scene.add(basin);
+
+      const grid = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      grid.position.y = -0.62;
+      scene.add(grid);
+
+      // Falling droplet pool & ripple pool
+      const fallPool = Array.from({ length: 12 }, () => {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), dropMat);
+        m.visible = false;
+        scene.add(m);
+        return m;
+      });
+      const ripplePool = Array.from({ length: 10 }, () => {
+        const m = new THREE.Mesh(
+          new THREE.RingGeometry(0.08, 0.11, 32),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+        );
+        m.rotation.x = -Math.PI / 2;
+        m.position.y = -0.485;
+        m.visible = false;
+        scene.add(m);
+        return m;
+      });
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.25, Math.min(1.48, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.4, Math.min(9.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. CHARTS (Time-Series & Bifurcation Diagram)
+      // =========================================================================
+      const tsCanvas = document.getElementById('ts-canvas');
+      const tsCtx = tsCanvas.getContext('2d');
+      const bifCanvas = document.getElementById('bif-canvas');
+      const bifCtx = bifCanvas.getContext('2d');
+      const focusCanvas = document.getElementById('focus-canvas');
+      const focusCtx = focusCanvas.getContext('2d');
+
+      function drawTimeSeries(canvas, ctx) {
+        const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+        ctx.clearRect(0, 0, w, h);
+        const ivs = state.intervalsMs;
+        if (ivs.length < 2) return;
+
+        const maxMs = Math.max(100, Math.max(...ivs) * 1.15);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ivs.forEach((v, idx) => {
+          const x = (idx / Math.max(1, ivs.length - 1)) * (w - 8) + 4;
+          const y = h - (v / maxMs) * (h - 12) - 6;
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = '#f59e0b';
+        ivs.forEach((v, idx) => {
+          const x = (idx / Math.max(1, ivs.length - 1)) * (w - 8) + 4;
+          const y = h - (v / maxMs) * (h - 12) - 6;
+          ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+        });
+      }
+
+      function drawBifurcation(canvas, ctx) {
+        const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+        ctx.clearRect(0, 0, w, h);
+
+        const pts = state.bifurcationPts;
+        if (pts.length === 0) return;
+        const minQ = 0.03, maxQ = 1.40;
+        const maxTau = 1200;
+
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.78)';
+        for (const p of pts) {
+          const x = ((Math.log(p.q / minQ)) / Math.log(maxQ / minQ)) * (w - 12) + 6;
+          const y = h - (Math.min(maxTau, p.tauMs) / maxTau) * (h - 12) - 6;
+          ctx.fillRect(x, y, 2, 2);
+        }
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS
+      // =========================================================================
+      function sliderToQ(val) {
+        return 0.03 * Math.pow(1.40 / 0.03, val / 1000);
+      }
+      function qToSlider(q) {
+        return Math.round(1000 * Math.log(q / 0.03) / Math.log(1.40 / 0.03));
+      }
+
+      function updateReadouts() {
+        const { m_tate, dm_dt } = getPhysicsConstants();
+        const tauTateMs = (m_tate / dm_dt) * 1000.0;
+        document.getElementById('val-tau-tate').textContent = `${tauTateMs.toFixed(1)} ms`;
+        document.getElementById('val-mass').textContent = `${(m_tate * 1000 * 1000).toFixed(1)} mg`;
+        document.getElementById('lbl-drops').textContent = `${state.drops} drops`;
+        document.getElementById('lbl-bif-pts').textContent = `${state.bifurcationPts.length} pts`;
+
+        const last = state.intervalsMs[state.intervalsMs.length - 1];
+        document.getElementById('val-tau-meas').textContent = last !== undefined ? `${last.toFixed(1)} ms` : '--- ms';
+
+        const periodStr = detectPeriod(state.intervalsMs);
+        document.getElementById('val-period-n').textContent = periodStr.split(' ')[0];
+        const badge = document.getElementById('regime-badge');
+        badge.textContent = periodStr.toUpperCase();
+        if (periodStr.includes('Period-2')) {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50';
+        } else if (periodStr.includes('Chaotic')) {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-400/50';
+        } else {
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-sky-500/20 text-sky-300 border border-sky-400/50';
+        }
+
+        drawTimeSeries(tsCanvas, tsCtx);
+        drawBifurcation(bifCanvas, bifCtx);
+        if (state.displayMode === 'ts') drawTimeSeries(focusCanvas, focusCtx);
+        else if (state.displayMode === 'bif') drawBifurcation(focusCanvas, focusCtx);
+      }
+
+      const ctrlQ = document.getElementById('ctrl-q');
+      ctrlQ.addEventListener('input', () => {
+        params.Q_ml_s = sliderToQ(parseFloat(ctrlQ.value));
+        document.getElementById('lbl-q').textContent = `${params.Q_ml_s.toFixed(3)} mL/s`;
+      });
+
+      document.getElementById('ctrl-r').addEventListener('input', (e) => {
+        params.R_mm = parseFloat(e.target.value);
+        document.getElementById('lbl-r').textContent = `${params.R_mm.toFixed(2)} mm`;
+        nozzleTip.scale.set(params.R_mm / 1.8, 1, params.R_mm / 1.8);
+      });
+
+      document.getElementById('ctrl-gamma').addEventListener('input', (e) => {
+        params.gamma_mNm = parseFloat(e.target.value);
+        document.getElementById('lbl-gamma').textContent = `${params.gamma_mNm.toFixed(0)} mN/m`;
+      });
+
+      document.getElementById('ctrl-g').addEventListener('input', (e) => {
+        params.g = parseFloat(e.target.value);
+        document.getElementById('lbl-g').textContent = `${params.g.toFixed(2)} m/s²`;
+      });
+
+      document.querySelectorAll('.fluid-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const f = btn.dataset.fluid;
+          if (f === 'water') { params.gamma_mNm = 72; params.rho = 1000; dropMat.color.setHex(0x38bdf8); }
+          else if (f === 'soap') { params.gamma_mNm = 32; params.rho = 1000; dropMat.color.setHex(0xa78bfa); }
+          else { params.gamma_mNm = 480; params.rho = 13500; dropMat.color.setHex(0xcbd5e1); }
+          document.getElementById('ctrl-gamma').value = String(params.gamma_mNm);
+          document.getElementById('lbl-gamma').textContent = `${params.gamma_mNm} mN/m`;
+          document.querySelectorAll('.fluid-btn').forEach((b) => {
+            b.className = 'fluid-btn py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'fluid-btn py-1 rounded text-[10px] font-mono bg-sky-500/25 text-sky-200 border border-sky-400/50';
+        });
+      });
+
+      document.querySelectorAll('.g-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.g = parseFloat(btn.dataset.g);
+          document.getElementById('ctrl-g').value = String(params.g);
+          document.getElementById('lbl-g').textContent = `${params.g.toFixed(2)} m/s²`;
+          document.querySelectorAll('.g-btn').forEach((b) => {
+            b.className = 'g-btn py-1 rounded text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'g-btn py-1 rounded text-[10px] font-mono bg-sky-500/25 text-sky-200 border border-sky-400/50';
+        });
+      });
+
+      document.querySelectorAll('.disp-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.displayMode = btn.dataset.disp;
+          document.querySelectorAll('.disp-btn').forEach((b) => {
+            b.className = 'disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-sky-500/25 text-sky-200 border border-sky-400/50';
+          const ov = document.getElementById('focus-overlay');
+          ov.classList.toggle('hidden', state.displayMode === 'drop');
+          document.getElementById('focus-title').textContent = state.displayMode === 'ts'
+            ? 'Interval Time-Series τₙ (ms)'
+            : 'Bifurcation Diagram (τₙ vs Flow Rate Q)';
+        });
+      });
+
+      document.getElementById('btn-clear-bif').addEventListener('click', () => { state.bifurcationPts = []; });
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+        if (state.running && audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      });
+      document.getElementById('btn-reset').addEventListener('click', () => { state.bifurcationPts = []; resetOscillator(); });
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.28; camState.phi = 1.28; camState.radius = 4.2; updateCamera();
+      });
+
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        if (state.sweepActive) {
+          state.sweepActive = false;
+          document.getElementById('btn-sweep').textContent = 'Sweep Q (Metronomic → Swing → Chaos)';
+          return;
+        }
+        state.sweepActive = true;
+        state.sweepTimer = 0;
+        state.bifurcationPts = [];
+        params.Q_ml_s = 0.05;
+        ctrlQ.value = String(qToSlider(params.Q_ml_s));
+        document.getElementById('lbl-q').textContent = `${params.Q_ml_s.toFixed(3)} mL/s`;
+        document.getElementById('btn-sweep').textContent = 'Stop Sweep';
+        resetOscillator();
+      });
+
+      // =========================================================================
+      // 7. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+      let uiTick = 0;
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.running) {
+          let targetSim = statsTimeTarget(dtReal);
+          const steps = Math.min(260, Math.max(0, Math.round((targetSim - state.simTime) / DT)));
+          for (let s = 0; s < steps; s++) {
+            stepOscillator(DT, scheduleDripClick);
+          }
+
+          if (state.sweepActive) {
+            state.sweepTimer += dtReal;
+            if (state.sweepTimer >= 0.12) {
+              state.sweepTimer = 0;
+              params.Q_ml_s = Math.min(1.30, params.Q_ml_s * 1.018);
+              ctrlQ.value = String(qToSlider(params.Q_ml_s));
+              document.getElementById('lbl-q').textContent = `${params.Q_ml_s.toFixed(3)} mL/s`;
+              if (params.Q_ml_s >= 1.30) {
+                state.sweepActive = false;
+                document.getElementById('btn-sweep').textContent = 'Sweep Q (Metronomic → Swing → Chaos)';
+                showToast('Flow rate sweep complete');
+              }
+            }
+          }
+        }
+
+        // Update 3D pendant drop & neck
+        const { m_tate, y_crit } = getPhysicsConstants();
+        const massFrac = Math.max(0.08, Math.min(1.5, state.m / m_tate));
+        const sagFrac = Math.max(0.05, Math.min(1.2, state.y / y_crit));
+        const rDrop = 0.14 * Math.pow(massFrac, 1 / 3) * (params.R_mm / 1.8);
+        const neckLen = 0.06 + sagFrac * 0.24;
+
+        pendantDrop.scale.set(rDrop / 0.14, (rDrop / 0.14) * (1 + sagFrac * 0.35), rDrop / 0.14);
+        pendantDrop.position.set(0, 1.62 - neckLen, 0);
+
+        neckMesh.scale.set(params.R_mm / 1.8, neckLen / 0.2, params.R_mm / 1.8);
+        neckMesh.position.set(0, 1.62 - neckLen * 0.5, 0);
+
+        // Update falling droplets & ripples
+        for (let i = state.fallingDrops.length - 1; i >= 0; i--) {
+          const d = state.fallingDrops[i];
+          d.v += params.g * 0.65 * dtReal;
+          d.y -= d.v * dtReal;
+          if (d.y <= -0.49) {
+            state.ripples.push({ r: 0.1, op: 0.85 });
+            state.fallingDrops.splice(i, 1);
+          }
+        }
+        for (let i = 0; i < fallPool.length; i++) {
+          if (i < state.fallingDrops.length) {
+            fallPool[i].visible = true;
+            fallPool[i].position.set(0, state.fallingDrops[i].y, 0);
+            const s = state.fallingDrops[i].r;
+            fallPool[i].scale.set(s, s * 1.25, s);
+          } else fallPool[i].visible = false;
+        }
+        for (let i = state.ripples.length - 1; i >= 0; i--) {
+          state.ripples[i].r += dtReal * 2.2;
+          state.ripples[i].op -= dtReal * 1.4;
+          if (state.ripples[i].op <= 0) state.ripples.splice(i, 1);
+        }
+        for (let i = 0; i < ripplePool.length; i++) {
+          if (i < state.ripples.length) {
+            ripplePool[i].visible = true;
+            const sc = state.ripples[i].r * 6.0;
+            ripplePool[i].scale.set(sc, sc, 1);
+            ripplePool[i].material.opacity = state.ripples[i].op;
+          } else ripplePool[i].visible = false;
+        }
+
+        uiTick++;
+        if (uiTick % 3 === 0) updateReadouts();
+        renderer.render(scene, camera);
+      }
+
+      function statsTimeTarget(dtReal) {
+        if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+          const target = (audioCtx.currentTime + LOOKAHEAD) - simAudioOffset;
+          if (Math.abs(target - state.simTime) > 0.25) {
+            simAudioOffset = audioCtx.currentTime - state.simTime;
+            return state.simTime + dtReal;
+          }
+          return target;
+        }
+        return state.simTime + dtReal;
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__DRIP_CLOCK__)
+      // =========================================================================
+      window.__DRIP_CLOCK__ = {
+        getState: () => ({ ...params, drops: state.drops, intervalsMs: [...state.intervalsMs], period: detectPeriod(state.intervalsMs) }),
+        verifyTatesLaw: () => {
+          const savedQ = params.Q_ml_s;
+          const res = [];
+          for (const q of [0.05, 0.10, 0.20]) {
+            params.Q_ml_s = q;
+            resetOscillator();
+            const steps = Math.floor(20.0 / DT);
+            for (let s = 0; s < steps && state.intervalsMs.length < 15; s++) stepOscillator(DT, () => {});
+            const mean = state.intervalsMs.slice(-8).reduce((a, b) => a + b, 0) / 8;
+            res.push({ Q: q, tauMs: mean });
+          }
+          params.Q_ml_s = savedQ;
+          resetOscillator();
+          return { samples: res, ratio1: res[1].tauMs / res[0].tauMs, ratio2: res[2].tauMs / res[1].tauMs };
+        },
+        verifyChaosDeterminism: (Q = 0.65) => {
+          const savedQ = params.Q_ml_s;
+          params.Q_ml_s = Q;
+          const runOnce = () => {
+            resetOscillator();
+            const steps = Math.floor(8.0 / DT);
+            for (let s = 0; s < steps; s++) stepOscillator(DT, () => {});
+            return [...state.intervalsMs];
+          };
+          const a = runOnce();
+          const b = runOnce();
+          params.Q_ml_s = savedQ;
+          resetOscillator();
+          let maxDiff = 0;
+          for (let i = 0; i < Math.min(a.length, b.length); i++) maxDiff = Math.max(maxDiff, Math.abs(a[i] - b[i]));
+          return { Q, count: a.length, maxDiffMs: maxDiff, period: detectPeriod(a) };
+        },
+      };
+
+      resetOscillator();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
