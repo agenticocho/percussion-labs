@@ -53,6 +53,7 @@ as well — technique first, then visible physics, then abstractions.
 | 35 | **GRAPH-CHOIR 3D** | Network Kuramoto, winding-number polyrhythm, cycle-space null |
 | 36 | **CAVITY-KICK 3D** | Bass drum Helmholtz cavity, avoided crossing, sub-bass thump |
 | 39 | **PHASE-LOOP 3D** | Reich phasing, exact integer-sample cycle drift, composition |
+| 40 | **AKSAK-FORGE 3D** | Additive meter, integer partitions, accent-driven metre |
 
 ## Specialty
 

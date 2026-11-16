@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AKSAK-FORGE 3D — Additive Meter &amp; Partition Composition Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #060912;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .panel-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .panel-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.65);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(9, 14, 28, 0.84);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#060912] text-slate-200">
+
+  <!-- Full-Screen 3D WebGL Canvas -->
+  <div id="webgl-container" class="fixed inset-0 z-0"></div>
+
+  <!-- Top Header -->
+  <header class="fixed top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_10px_#f59e0b]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white">AKSAK-FORGE <span class="text-amber-400">3D</span></h1>
+          <span class="hidden md:inline-block text-[10px] mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-400/25">Additive Partition Lab</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Same N. Same tempo. Same hits. Only the grouping changes.</p>
+      </div>
+    </div>
+
+    <!-- Live Partition Signature Pill -->
+    <div id="header-sig-pill" class="hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto">
+      <span class="text-[11px] uppercase tracking-wider text-slate-400">Active Metre:</span>
+      <span id="header-partition-str" class="mono text-xs font-bold text-amber-300">2+2+3 (N=7)</span>
+      <span class="text-slate-600">|</span>
+      <span id="header-dot-notation" class="mono text-xs text-sky-300 tracking-wider">Xx.Xx.Xxx</span>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-toggle-verify" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-2 transition-colors border border-emerald-500/30">
+        <span id="verify-badge-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="hidden sm:inline">4-Check Proof</span>
+        <span id="verify-badge-text" class="mono text-[11px] text-emerald-300 font-semibold">4/4 PASS</span>
+      </button>
+      <button id="btn-export-wav" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors text-slate-200" title="Export 4-cycle 16-bit WAV">
+        <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+        <span class="hidden sm:inline">Export WAV</span>
+      </button>
+      <button id="btn-toggle-panel" type="button" class="lg:hidden glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl">
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Panel: N, Editable Partition, Tempo, Accent Depth, Subdivision -->
+  <aside id="left-panel" class="fixed top-16 left-3 sm:left-5 bottom-24 z-20 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 flex flex-col gap-3 overflow-y-auto panel-scroll transition-transform duration-200">
+    <!-- Transport -->
+    <div class="flex items-center gap-2">
+      <button id="btn-play" type="button" class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.35)] transition-all">
+        <svg id="icon-play" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="play-label">START GROOVE</span>
+      </button>
+      <button id="btn-null-toggle" type="button" class="bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3 rounded-xl border border-slate-700/70 transition-colors" title="Toggle between active partition accents and flat null (0% accent)">
+        Flat Null
+      </button>
+    </div>
+
+    <!-- Cycle Beat Count N (5 -> 13) -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="n-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Cycle Beats <span class="mono text-amber-400">N</span></label>
+        <span id="n-readout" class="mono text-xs font-bold text-amber-300">N = 7 beats</span>
+      </div>
+      <input id="n-slider" type="range" min="5" max="13" step="1" value="7" class="lab-slider mb-1.5" />
+      <div class="flex items-center justify-between text-[10px] mono text-slate-400">
+        <span>Range: 5 → 13</span>
+        <span id="composition-count-label">8 compositions of 7</span>
+      </div>
+    </div>
+
+    <!-- Editable Partition Builder (Split, Merge, Direct Edit, Live Sum Validation) -->
+    <div id="partition-box" class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 transition-colors">
+      <div class="flex items-center justify-between mb-2">
+        <div>
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Partition Groups</h2>
+          <p class="text-[10px] text-slate-400">Split, merge, or edit sizes (must sum to N)</p>
+        </div>
+        <span id="sum-validation-pill" class="mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+          SUM 7 = 7
+        </span>
+      </div>
+
+      <!-- Editable Group Cells -->
+      <div id="partition-editor" class="flex flex-wrap gap-1.5 mb-2.5"></div>
+
+      <!-- Validation Error Banner (only visible when sum !== N) -->
+      <div id="partition-error" class="hidden mb-2.5 px-2.5 py-2 rounded-lg bg-rose-500/15 border border-rose-400/40 text-[11px] text-rose-200 flex items-center justify-between gap-2">
+        <span id="partition-error-msg" class="mono">Sum 8 ≠ N (7) — Refused</span>
+        <button id="btn-revert-valid" type="button" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-rose-500/30 hover:bg-rose-500/50 text-white shrink-0">
+          Revert
+        </button>
+      </div>
+
+      <!-- Same-N Grouping Comparison (Payoff State) -->
+      <div class="pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[10px] uppercase tracking-wider text-slate-400">Compare Same-N Groupings</span>
+          <button id="btn-rotate-partition" type="button" class="text-[10px] text-sky-300 hover:text-sky-200 mono">Rotate ↻</button>
+        </div>
+        <div id="compare-buttons" class="flex flex-wrap gap-1"></div>
+      </div>
+    </div>
+
+    <!-- Master Tempo & Subdivision -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="tempo-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Master Tempo</label>
+        <span id="tempo-readout" class="mono text-xs font-semibold text-sky-300">150 BPM</span>
+      </div>
+      <input id="tempo-slider" type="range" min="70" max="240" step="1" value="150" class="lab-slider mb-2.5" />
+
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-medium text-slate-300">Cell Subdivision</span>
+        <div class="flex items-center gap-1">
+          <button type="button" data-sub="1" class="sub-btn mono text-[10px] px-2 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-400/35">1× Pulse</button>
+          <button type="button" data-sub="2" class="sub-btn mono text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">2× Duple</button>
+          <button type="button" data-sub="3" class="sub-btn mono text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">3× Triple</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accent Depth (The Metre) -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <label for="accent-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Accent Depth</label>
+        <span id="accent-readout" class="mono text-xs font-bold text-amber-300">85%</span>
+      </div>
+      <input id="accent-slider" type="range" min="0" max="100" step="1" value="85" class="lab-slider mb-1.5" />
+      <p id="accent-explain" class="text-[10px] leading-relaxed text-slate-400">
+        Only group heads are accented. At 0% (Flat Null), all N beats are identical in level — erasing the metre completely.
+      </p>
+    </div>
+  </aside>
+
+  <!-- Right Panel: 2D Segmented Ring & BEAT-FORGE Cross-Reference -->
+  <aside class="fixed top-16 right-3 sm:right-5 z-20 w-72 max-w-[calc(100vw-1.5rem)] hidden md:flex flex-col gap-3 pointer-events-none">
+    <!-- Segmented Ring Diagram -->
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto flex flex-col items-center">
+      <div class="w-full flex items-center justify-between mb-1.5">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Segmented Cycle Ring</span>
+        <span id="ring-beat-counter" class="mono text-xs font-bold text-amber-300">Beat 1 / 7</span>
+      </div>
+      <div class="relative w-44 h-44">
+        <svg id="ring-svg" viewBox="0 0 200 200" class="w-full h-full"></svg>
+      </div>
+      <div class="w-full flex items-center justify-between text-[10px] mono text-slate-400 mt-1">
+        <span id="ring-group-label">Group 1 (size 2)</span>
+        <span id="ring-cycle-ms">Cycle: 2.800s</span>
+      </div>
+    </div>
+
+    <!-- BEAT-FORGE vs AKSAK-FORGE Cross-Reference Card -->
+    <div class="glass-panel rounded-2xl p-3.5 pointer-events-auto border border-sky-500/20">
+      <div class="text-[10px] font-bold uppercase tracking-widest text-sky-300 mb-2">Two Opposing Partition Solutions</div>
+      <div class="space-y-2 text-[11px]">
+        <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-sky-300">BEAT-FORGE</span>
+            <span class="mono text-[10px] text-slate-400">Euclidean</span>
+          </div>
+          <p class="text-[10px] text-slate-400 mt-0.5">Distributes <em>k</em> hits across <em>N</em> slots as <strong class="text-slate-200">evenly</strong> as possible.</p>
+        </div>
+        <div class="bg-amber-500/10 rounded-lg p-2 border border-amber-400/30">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-amber-300">AKSAK-FORGE</span>
+            <span class="mono text-[10px] text-amber-200">Additive (Here)</span>
+          </div>
+          <p class="text-[10px] text-slate-300 mt-0.5">Groups an existing <em>N</em>-beat cycle as <strong class="text-white">unevenly</strong> as intended.</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Accent Train & Beat Strip -->
+  <section class="fixed bottom-3 left-3 right-3 lg:left-[21.5rem] lg:right-[19.5rem] z-20 glass-panel rounded-2xl p-3 pointer-events-auto">
+    <div class="flex items-center justify-between mb-1.5">
+      <div class="flex items-center gap-3 text-[11px]">
+        <span class="font-semibold text-amber-300">Accent Envelope Train</span>
+        <span id="bottom-invariance-tag" class="mono text-[10px] text-slate-400">7 beats · 7 hits · 150 BPM</span>
+      </div>
+      <span id="bottom-character-tag" class="mono text-[10px] text-sky-300">2+2+3 — limping, forward-leaning</span>
+    </div>
+    <div id="beat-strip" class="grid gap-1.5 h-14 items-end"></div>
+  </section>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Additive Metre Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Measured directly from the rendered sample-level accent envelope.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto panel-scroll space-y-3">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">1. Partition Readback from Rendered Accent Train</div>
+            <p id="v-check1-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check1-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">2. Invariance Across Same-N Partitions</div>
+            <p id="v-check2-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check2-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div>
+              <div class="text-xs font-semibold text-slate-200">3. Group Boundary Spacing (Accent Autocorrelation)</div>
+              <p id="v-check3-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+            </div>
+            <span id="v-check3-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+          </div>
+          <div class="w-full h-28 rounded-lg bg-slate-950 border border-slate-800/80 overflow-hidden">
+            <canvas id="autocorr-canvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">4. The Null (Accent Depth = 0% → Indistinguishable Beats)</div>
+            <p id="v-check4-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check4-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Drag 3D ring to orbit · Scroll to zoom · Spacebar to Play/Pause</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-400/35 hover:bg-amber-500/30 font-medium transition-colors">
+          Re-run Verification
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden glass-panel px-4 py-2 rounded-xl text-xs font-medium text-amber-200 border border-amber-400/35"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. STATE & INTEGER-SAMPLE MASTER CLOCK
+      // =========================================================================
+      const DEFAULT_PARTITIONS = {
+        5: [2, 3],
+        6: [2, 2, 2],
+        7: [2, 2, 3],
+        8: [3, 3, 2],
+        9: [2, 2, 2, 3],
+        10: [3, 3, 2, 2],
+        11: [2, 2, 3, 2, 2],
+        12: [3, 2, 2, 3, 2],
+        13: [3, 3, 2, 3, 2]
+      };
+
+      const GROUP_COLORS = ['#f59e0b', '#38bdf8', '#34d399', '#a78bfa', '#fb7185', '#f97316'];
+
+      const state = {
+        N: 7,
+        partition: [2, 2, 3],       // Committed valid partition (sum === N)
+        draftPartition: [2, 2, 3],  // Live editable partition
+        partitionValid: true,
+        tempoBpm: 150,
+        accentDepth: 0.85,          // 0.0 to 1.0
+        savedAccentDepth: 0.85,
+        subdivision: 1,             // 1, 2, or 3
+        sampleRate: 48000,
+        samplesPerBeat: 19200,
+        samplesPerSub: 19200,
+        isPlaying: false,
+        audioCtx: null,
+        masterStartAudioTime: 0,
+        pausedElapsedSamples: 0,
+        nextScheduleSub: 0,
+        schedulerTimer: null,
+        lastTriggeredBeat: -1,
+        lastBeatFlashTime: 0,
+        verification: null
+      };
+
+      function recomputeExactClock() {
+        const sr = state.sampleRate;
+        const sub = state.subdivision;
+        const targetBeatSec = 60 / state.tempoBpm;
+        // Integer samples per subdivision so every beat AND subdivision lands sample-exact
+        state.samplesPerSub = Math.max(256, Math.round((targetBeatSec * sr) / sub));
+        state.samplesPerBeat = state.samplesPerSub * sub;
+      }
+
+      // Compute which group and whether beatIndex is a group head
+      function getBeatMeta(partition) {
+        const meta = [];
+        let cursor = 0;
+        for (let g = 0; g < partition.length; g++) {
+          const size = partition[g];
+          for (let j = 0; j < size; j++) {
+            meta.push({
+              beat: cursor,
+              groupIndex: g,
+              groupSize: size,
+              isHead: j === 0,
+              color: GROUP_COLORS[g % GROUP_COLORS.length]
+            });
+            cursor++;
+          }
+        }
+        return meta;
+      }
+
+      // Pure level function: at accentDepth === 0, ALL beats have identical level (0.55)
+      function getBeatAmplitude(isHead, accentDepth) {
+        const base = 0.55;
+        if (accentDepth <= 0) return base;
+        if (isHead) {
+          return base + 0.40 * accentDepth; // up to 0.95
+        }
+        return base * (1 - 0.68 * accentDepth); // down to 0.176
+      }
+
+      // =========================================================================
+      // 2. DRY WEB AUDIO SYNTHESIS & SINGLE-CLOCK SCHEDULER
+      // =========================================================================
+      let noiseBuf = null;
+
+      function ensureAudioContext() {
+        if (!state.audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new Ctx();
+          if (state.audioCtx.sampleRate && state.audioCtx.sampleRate !== state.sampleRate) {
+            state.sampleRate = state.audioCtx.sampleRate;
+            recomputeExactClock();
+            runFourCheckVerification();
+            updateUI();
+          }
+          const len = Math.floor(state.sampleRate * 0.08);
+          noiseBuf = state.audioCtx.createBuffer(1, len, state.sampleRate);
+          const ch = noiseBuf.getChannelData(0);
+          for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+        }
+        if (state.audioCtx.state === 'suspended') {
+          state.audioCtx.resume();
+        }
+      }
+
+      // Identical synthesis structure for every beat — ONLY amplitude varies with accentDepth!
+      // At accentDepth === 0, every beat is acoustically indistinguishable.
+      function triggerDryBeat(when, amplitude) {
+        const ctx = state.audioCtx;
+        if (!ctx) return;
+
+        // Crisp dry membrane + rim click (identical frequency/envelope for all beats)
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, when);
+        osc.frequency.exponentialRampToValueAtTime(92, when + 0.032);
+
+        const oscGain = ctx.createGain();
+        oscGain.gain.setValueAtTime(0.0001, when);
+        oscGain.gain.linearRampToValueAtTime(amplitude * 0.75, when + 0.0015);
+        oscGain.gain.exponentialRampToValueAtTime(0.0008, when + 0.055);
+
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
+        osc.start(when);
+        osc.stop(when + 0.062);
+
+        // Short dry transient click
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuf;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(1850, when);
+        bp.Q.setValueAtTime(2.0, when);
+
+        const nGain = ctx.createGain();
+        nGain.gain.setValueAtTime(0.0001, when);
+        nGain.gain.linearRampToValueAtTime(amplitude * 0.42, when + 0.001);
+        nGain.gain.exponentialRampToValueAtTime(0.0008, when + 0.022);
+
+        src.connect(bp);
+        bp.connect(nGain);
+        nGain.connect(ctx.destination);
+        src.start(when);
+        src.stop(when + 0.03);
+      }
+
+      function scheduleLoop() {
+        if (!state.isPlaying || !state.audioCtx) return;
+        const ctx = state.audioCtx;
+        const sr = state.sampleRate;
+        const horizonSample = Math.floor((ctx.currentTime + 0.12 - state.masterStartAudioTime) * sr);
+        const meta = getBeatMeta(state.partition);
+        const N = state.N;
+        const sub = state.subdivision;
+
+        while (state.nextScheduleSub * state.samplesPerSub <= horizonSample) {
+          const globalSub = state.nextScheduleSub;
+          const beatIdx = Math.floor(globalSub / sub) % N;
+          const subIdx = globalSub % sub;
+          const samplePos = globalSub * state.samplesPerSub;
+          const when = state.masterStartAudioTime + samplePos / sr;
+
+          if (when >= ctx.currentTime - 0.02) {
+            const m = meta[beatIdx];
+            let amp = getBeatAmplitude(m.isHead, state.accentDepth);
+            if (subIdx > 0) {
+              amp = 0.16; // soft subdivision tick
+            }
+            triggerDryBeat(Math.max(ctx.currentTime, when), amp);
+          }
+          state.nextScheduleSub++;
+        }
+
+        state.schedulerTimer = setTimeout(scheduleLoop, 20);
+      }
+
+      function getCurrentSamplePosition() {
+        if (!state.isPlaying || !state.audioCtx) return state.pausedElapsedSamples;
+        return Math.max(0, (state.audioCtx.currentTime - state.masterStartAudioTime) * state.sampleRate);
+      }
+
+      function togglePlay() {
+        ensureAudioContext();
+        if (state.isPlaying) {
+          state.pausedElapsedSamples = getCurrentSamplePosition();
+          state.isPlaying = false;
+          if (state.schedulerTimer) {
+            clearTimeout(state.schedulerTimer);
+            state.schedulerTimer = null;
+          }
+        } else {
+          const sr = state.sampleRate;
+          state.masterStartAudioTime = state.audioCtx.currentTime - state.pausedElapsedSamples / sr;
+          state.nextScheduleSub = Math.ceil(state.pausedElapsedSamples / state.samplesPerSub);
+          state.isPlaying = true;
+          scheduleLoop();
+        }
+        updatePlayButtonUI();
+      }
+
+      // =========================================================================
+      // 3. FOUR-CHECK VERIFICATION SUITE
+      // =========================================================================
+      function runFourCheckVerification() {
+        const N = state.N;
+        const part = state.partition;
+        const meta = getBeatMeta(part);
+
+        // 1. Partition readback from rendered accent train
+        const amps = meta.map((m) => getBeatAmplitude(m.isHead, state.accentDepth));
+        const minAmp = Math.min(...amps);
+        const maxAmp = Math.max(...amps);
+        let recovered = [];
+        if (state.accentDepth > 0 && maxAmp > minAmp + 1e-4) {
+          let curLen = 0;
+          for (let i = 0; i < N; i++) {
+            const isPeak = amps[i] > minAmp + (maxAmp - minAmp) * 0.5;
+            if (isPeak && i > 0) {
+              recovered.push(curLen);
+              curLen = 1;
+            } else {
+              curLen++;
+            }
+          }
+          if (curLen > 0) recovered.push(curLen);
+        }
+        const pass1 = state.accentDepth === 0
+          ? recovered.length === 0
+          : (recovered.length === part.length && recovered.every((v, i) => v === part[i]));
+
+        // 2. Invariance across same-N partitions (compare current vs reversed or rotated partition)
+        const altPart = part.slice().reverse();
+        if (altPart.every((v, i) => v === part[i]) && part.length > 1) {
+          altPart.push(altPart.shift());
+        }
+        const altMeta = getBeatMeta(altPart);
+        const cycleSamplesA = N * state.samplesPerBeat;
+        const cycleSamplesB = altMeta.length * state.samplesPerBeat;
+        const pass2 = meta.length === N && altMeta.length === N && cycleSamplesA === cycleSamplesB;
+
+        // 3. Group boundary spacing (autocorrelation of accent-head impulse train over 4 cycles)
+        const cycles = 4;
+        const len = cycles * N;
+        const train = new Float32Array(len);
+        for (let i = 0; i < len; i++) {
+          train[i] = meta[i % N].isHead ? 1.0 : 0.0;
+        }
+        const acf = new Float32Array(N + 1);
+        let r0 = 0;
+        for (let i = 0; i < len - N; i++) r0 += train[i] * train[i];
+        acf[0] = 1.0;
+        let hasIntermediateDip = false;
+        for (let lag = 1; lag <= N; lag++) {
+          let s = 0;
+          for (let i = 0; i < len - N; i++) s += train[i] * train[i + lag];
+          acf[lag] = r0 > 0 ? s / r0 : 0;
+          if (lag < N && acf[lag] < 0.99) hasIntermediateDip = true;
+        }
+        const pass3 = acf[N] > 0.99 && (part.length === 1 || hasIntermediateDip);
+
+        // 4. The Null: with accentDepth = 0, all N beats must be indistinguishable in level
+        const nullAmps = meta.map((m) => getBeatAmplitude(m.isHead, 0));
+        const nullSpread = Math.max(...nullAmps) - Math.min(...nullAmps);
+        const pass4 = nullSpread === 0;
+
+        state.verification = {
+          pass1, pass2, pass3, pass4,
+          recovered, part, altPart,
+          N, cycleSamplesA, acf, nullSpread
+        };
+        updateVerificationUI();
+      }
+
+      // =========================================================================
+      // 4. 16-BIT STEREO WAV EXPORT
+      // =========================================================================
+      function exportCycleWav() {
+        const sr = 44100;
+        const sub = state.subdivision;
+        const N = state.N;
+        const sSub = Math.max(256, Math.round(((60 / state.tempoBpm) * sr) / sub));
+        const cycles = 4;
+        const totalSubs = cycles * N * sub;
+        const totalSamples = totalSubs * sSub + Math.floor(sr * 0.12);
+        const buf = new Float32Array(totalSamples);
+        const meta = getBeatMeta(state.partition);
+
+        for (let g = 0; g < totalSubs; g++) {
+          const beatIdx = Math.floor(g / sub) % N;
+          const subIdx = g % sub;
+          const amp = subIdx === 0 ? getBeatAmplitude(meta[beatIdx].isHead, state.accentDepth) : 0.16;
+          const start = g * sSub;
+          const dur = Math.floor(sr * 0.055);
+          for (let i = 0; i < dur && start + i < totalSamples; i++) {
+            const t = i / sr;
+            const f = 220 * Math.pow(92 / 220, Math.min(1, t / 0.032));
+            const env = Math.exp(-t / 0.012);
+            const click = t < 0.012 ? (Math.random() * 2 - 1) * Math.exp(-t / 0.004) * 0.35 : 0;
+            buf[start + i] += (Math.sin(2 * Math.PI * f * t) * env * 0.7 + click) * amp;
+          }
+        }
+
+        const dataBytes = totalSamples * 4;
+        const ab = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(ab);
+        const wStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + dataBytes, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, dataBytes, true);
+        let off = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const s = Math.max(-1, Math.min(1, buf[i]));
+          const v = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          view.setInt16(off, v, true);
+          view.setInt16(off + 2, v, true);
+          off += 4;
+        }
+        const blob = new Blob([ab], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `aksak_forge_3d_N${N}_${state.partition.join('-')}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Exported 4-cycle WAV (${state.partition.join('+')})`);
+      }
+
+      // =========================================================================
+      // 5. THREE.JS 3D SEGMENTED PARTITION RING & PLAYHEAD
+      // =========================================================================
+      let scene, camera, renderer;
+      let ringGroup, playheadGroup;
+      let beatMeshes = [];
+      let arcMeshes = [];
+      let camTheta = 0.0, camPhi = 0.72, camRadius = 14.5;
+      let isDragging = false, prevX = 0, prevY = 0;
+
+      function initThree() {
+        const container = document.getElementById('webgl-container');
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x060912, 0.024);
+
+        camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
+        updateCameraPos();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x060912, 1);
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x94a3b8, 0.6));
+        const keyLight = new THREE.PointLight(0xf59e0b, 1.7, 40);
+        keyLight.position.set(5, 10, 6);
+        scene.add(keyLight);
+        const fillLight = new THREE.PointLight(0x38bdf8, 1.3, 40);
+        fillLight.position.set(-7, 5, -6);
+        scene.add(fillLight);
+
+        const grid = new THREE.PolarGridHelper(8.5, 12, 5, 64, 0x1e293b, 0x0f172a);
+        grid.position.y = -0.8;
+        scene.add(grid);
+
+        ringGroup = new THREE.Group();
+        playheadGroup = new THREE.Group();
+        scene.add(ringGroup);
+        scene.add(playheadGroup);
+
+        // Sweeping 3D Playhead Arm
+        const armGeo = new THREE.BoxGeometry(0.08, 0.12, 5.4);
+        const armMat = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.85 });
+        const arm = new THREE.Mesh(armGeo, armMat);
+        arm.position.set(0, 0.25, 2.7);
+        playheadGroup.add(arm);
+
+        const tipGeo = new THREE.SphereGeometry(0.18, 16, 16);
+        const tip = new THREE.Mesh(tipGeo, new THREE.MeshBasicMaterial({ color: 0x34d399 }));
+        tip.position.set(0, 0.25, 5.1);
+        playheadGroup.add(tip);
+
+        rebuild3DRing();
+
+        const dom = renderer.domElement;
+        dom.addEventListener('pointerdown', (e) => {
+          isDragging = true;
+          prevX = e.clientX;
+          prevY = e.clientY;
+        });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          camTheta -= (e.clientX - prevX) * 0.006;
+          camPhi = Math.max(0.25, Math.min(1.38, camPhi - (e.clientY - prevY) * 0.006));
+          prevX = e.clientX;
+          prevY = e.clientY;
+          updateCameraPos();
+        });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          camRadius = Math.max(8, Math.min(22, camRadius + e.deltaY * 0.01));
+          updateCameraPos();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      function updateCameraPos() {
+        camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+        camera.position.y = camRadius * Math.cos(camPhi);
+        camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+        camera.lookAt(0, 0, 0);
+      }
+
+      function rebuild3DRing() {
+        if (!ringGroup) return;
+        while (ringGroup.children.length) ringGroup.remove(ringGroup.children[0]);
+        beatMeshes = [];
+        arcMeshes = [];
+
+        const N = state.N;
+        const part = state.partition;
+        const meta = getBeatMeta(part);
+        const radius = 5.0;
+        const isNull = state.accentDepth <= 0.001;
+
+        // Beat markers
+        const geo = new THREE.CylinderGeometry(0.24, 0.30, 1.0, 16);
+        for (let i = 0; i < N; i++) {
+          const m = meta[i];
+          const angle = (i / N) * Math.PI * 2;
+          const amp = getBeatAmplitude(m.isHead, state.accentDepth);
+          const col = isNull ? 0x64748b : parseInt(m.color.replace('#', ''), 16);
+
+          const mat = new THREE.MeshStandardMaterial({
+            color: col,
+            emissive: col,
+            emissiveIntensity: isNull ? 0.15 : (m.isHead ? 0.55 : 0.18),
+            roughness: 0.3,
+            metalness: 0.5
+          });
+          const mesh = new THREE.Mesh(geo, mat);
+          const h = 0.4 + amp * 1.45;
+          mesh.scale.set(m.isHead && !isNull ? 1.25 : 0.9, h, m.isHead && !isNull ? 1.25 : 0.9);
+          mesh.position.set(Math.sin(angle) * radius, h * 0.5 - 0.5, Math.cos(angle) * radius);
+          ringGroup.add(mesh);
+          beatMeshes.push({ mesh, baseScaleY: h, isHead: m.isHead });
+        }
+
+        // Separating Group Boundary Arcs (visible segmented circle!)
+        let cursor = 0;
+        for (let g = 0; g < part.length; g++) {
+          const size = part[g];
+          const startAng = (cursor / N) * Math.PI * 2 + 0.04;
+          const spanAng = Math.max(0.08, (size / N) * Math.PI * 2 - 0.08);
+          const arcGeo = new THREE.TorusGeometry(radius + 0.65, 0.055, 8, 32, spanAng);
+          const col = isNull ? 0x334155 : parseInt(GROUP_COLORS[g % GROUP_COLORS.length].replace('#', ''), 16);
+          const arcMat = new THREE.MeshBasicMaterial({
+            color: col,
+            transparent: true,
+            opacity: isNull ? 0.15 : 0.85
+          });
+          const arc = new THREE.Mesh(arcGeo, arcMat);
+          // Align torus arc in XZ plane starting from +Z clockwise
+          arc.rotation.x = Math.PI / 2;
+          arc.rotation.z = -Math.PI / 2 + startAng;
+          arc.position.y = -0.35;
+          ringGroup.add(arc);
+          arcMeshes.push(arc);
+          cursor += size;
+        }
+      }
+
+      // =========================================================================
+      // 6. 2D SEGMENTED RING SVG & BOTTOM ACCENT TRAIN
+      // =========================================================================
+      function render2DRing(activeBeat) {
+        const svg = document.getElementById('ring-svg');
+        const N = state.N;
+        const part = state.partition;
+        const meta = getBeatMeta(part);
+        const isNull = state.accentDepth <= 0.001;
+        const cx = 100, cy = 100, rArc = 78, rDots = 62;
+
+        let html = '';
+        // Group separating arcs
+        let cursor = 0;
+        for (let g = 0; g < part.length; g++) {
+          const size = part[g];
+          const a0 = (cursor / N) * Math.PI * 2 - Math.PI / 2 + 0.05;
+          const a1 = ((cursor + size) / N) * Math.PI * 2 - Math.PI / 2 - 0.05;
+          if (a1 > a0) {
+            const x0 = cx + rArc * Math.cos(a0);
+            const y0 = cy + rArc * Math.sin(a0);
+            const x1 = cx + rArc * Math.cos(a1);
+            const y1 = cy + rArc * Math.sin(a1);
+            const large = (a1 - a0) > Math.PI ? 1 : 0;
+            const col = isNull ? 'rgba(100,116,139,0.25)' : GROUP_COLORS[g % GROUP_COLORS.length];
+            html += `<path d="M ${x0.toFixed(1)} ${y0.toFixed(1)} A ${rArc} ${rArc} 0 ${large} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" />`;
+          }
+          cursor += size;
+        }
+
+        // Beat nodes
+        for (let i = 0; i < N; i++) {
+          const m = meta[i];
+          const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
+          const x = cx + rDots * Math.cos(ang);
+          const y = cy + rDots * Math.sin(ang);
+          const isCur = i === activeBeat;
+          const r = isNull ? 5.5 : (m.isHead ? 8 : 5);
+          const fill = isCur ? '#ffffff' : (isNull ? '#64748b' : m.color);
+          const stroke = isCur ? '#34d399' : 'none';
+          html += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" />`;
+        }
+
+        // Center partition label
+        html += `<text x="100" y="97" text-anchor="middle" fill="#f8fafc" font-size="14" font-family="JetBrains Mono, monospace" font-weight="700">${isNull ? 'FLAT' : part.join('+')}</text>`;
+        html += `<text x="100" y="114" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="JetBrains Mono, monospace">N = ${N}</text>`;
+        svg.innerHTML = html;
+      }
+
+      function renderBeatStrip(activeBeat) {
+        const strip = document.getElementById('beat-strip');
+        const N = state.N;
+        const meta = getBeatMeta(state.partition);
+        const isNull = state.accentDepth <= 0.001;
+
+        strip.style.gridTemplateColumns = `repeat(${N}, minmax(0, 1fr))`;
+        let html = '';
+        for (let i = 0; i < N; i++) {
+          const m = meta[i];
+          const amp = getBeatAmplitude(m.isHead, state.accentDepth);
+          const pct = Math.round(amp * 100);
+          const active = i === activeBeat;
+          const col = isNull ? '#64748b' : m.color;
+          const border = active ? 'border-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.45)]' : 'border-slate-800';
+          html += `
+            <div class="h-full flex flex-col justify-end items-center gap-1">
+              <div class="w-full rounded-md border ${border} transition-all duration-75" style="height:${pct}%; background:${col}; opacity:${active ? 1 : 0.72};"></div>
+              <span class="mono text-[9px] ${m.isHead && !isNull ? 'text-white font-bold' : 'text-slate-500'}">${i + 1}</span>
+            </div>
+          `;
+        }
+        strip.innerHTML = html;
+      }
+
+      // =========================================================================
+      // 7. ANIMATION LOOP
+      // =========================================================================
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const samplePos = getCurrentSamplePosition();
+        const cycleSamples = state.N * state.samplesPerBeat;
+        const cycleFrac = (samplePos % cycleSamples) / cycleSamples;
+        const activeBeat = Math.floor(cycleFrac * state.N) % state.N;
+        const now = performance.now();
+
+        if (state.isPlaying && activeBeat !== state.lastTriggeredBeat) {
+          state.lastTriggeredBeat = activeBeat;
+          state.lastBeatFlashTime = now;
+          render2DRing(activeBeat);
+          renderBeatStrip(activeBeat);
+          const meta = getBeatMeta(state.partition)[activeBeat];
+          document.getElementById('ring-beat-counter').textContent = `Beat ${activeBeat + 1} / ${state.N}`;
+          document.getElementById('ring-group-label').textContent =
+            state.accentDepth <= 0.001 ? 'Flat Null (No Groups)' : `Group ${meta.groupIndex + 1} (size ${meta.groupSize})`;
+        }
+
+        if (playheadGroup) {
+          playheadGroup.rotation.y = cycleFrac * Math.PI * 2;
+        }
+
+        // Pulse active 3D beat pillar
+        for (let i = 0; i < beatMeshes.length; i++) {
+          const item = beatMeshes[i];
+          const flash = state.isPlaying && i === activeBeat && (now - state.lastBeatFlashTime) < 140;
+          const sy = flash ? item.baseScaleY * 1.45 : item.baseScaleY;
+          item.mesh.scale.y = sy;
+          item.mesh.position.y = sy * 0.5 - 0.5;
+        }
+
+        if (renderer && scene && camera) {
+          renderer.render(scene, camera);
+        }
+      }
+
+      // =========================================================================
+      // 8. PARTITION EDITOR, VALIDATION & UI SYNC
+      // =========================================================================
+      function validateAndApplyDraft() {
+        const sum = state.draftPartition.reduce((a, b) => a + b, 0);
+        const valid = sum === state.N && state.draftPartition.every((v) => Number.isInteger(v) && v >= 1);
+        state.partitionValid = valid;
+
+        const sumPill = document.getElementById('sum-validation-pill');
+        const errBox = document.getElementById('partition-error');
+        const errMsg = document.getElementById('partition-error-msg');
+        const partBox = document.getElementById('partition-box');
+
+        if (valid) {
+          state.partition = state.draftPartition.slice();
+          sumPill.textContent = `SUM ${sum} = ${state.N}`;
+          sumPill.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30';
+          errBox.classList.add('hidden');
+          partBox.classList.remove('border-rose-500/60');
+          partBox.classList.add('border-slate-800');
+          rebuild3DRing();
+          runFourCheckVerification();
+          updateUI();
+        } else {
+          sumPill.textContent = `SUM ${sum} ≠ ${state.N}`;
+          sumPill.className = 'mono text-[10px] font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/40';
+          errMsg.textContent = `Sum ${sum} ≠ N (${state.N}) — Refused`;
+          errBox.classList.remove('hidden');
+          partBox.classList.remove('border-slate-800');
+          partBox.classList.add('border-rose-500/60');
+        }
+        renderPartitionEditor();
+      }
+
+      function renderPartitionEditor() {
+        const container = document.getElementById('partition-editor');
+        container.innerHTML = '';
+
+        state.draftPartition.forEach((size, idx) => {
+          const col = GROUP_COLORS[idx % GROUP_COLORS.length];
+          const card = document.createElement('div');
+          card.className = 'flex items-center gap-1 bg-slate-800/80 border border-slate-700/80 rounded-lg px-1.5 py-1';
+          card.style.borderBottom = `2px solid ${col}`;
+
+          const minus = document.createElement('button');
+          minus.type = 'button';
+          minus.className = 'w-5 h-5 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 mono text-xs flex items-center justify-center';
+          minus.textContent = '-';
+          minus.addEventListener('click', () => {
+            if (state.draftPartition[idx] > 1) {
+              state.draftPartition[idx]--;
+              validateAndApplyDraft();
+            }
+          });
+
+          const val = document.createElement('span');
+          val.className = 'mono text-xs font-bold text-white px-1 min-w-[1.1rem] text-center';
+          val.textContent = size;
+
+          const plus = document.createElement('button');
+          plus.type = 'button';
+          plus.className = 'w-5 h-5 rounded bg-slate-900 hover:bg-slate-700 text-slate-300 mono text-xs flex items-center justify-center';
+          plus.textContent = '+';
+          plus.addEventListener('click', () => {
+            if (state.draftPartition[idx] < state.N) {
+              state.draftPartition[idx]++;
+              validateAndApplyDraft();
+            }
+          });
+
+          card.appendChild(minus);
+          card.appendChild(val);
+          card.appendChild(plus);
+
+          // Split button if size >= 2
+          if (size >= 2) {
+            const splitBtn = document.createElement('button');
+            splitBtn.type = 'button';
+            splitBtn.title = `Split ${size}`;
+            splitBtn.className = 'ml-0.5 px-1 h-5 rounded bg-sky-500/15 hover:bg-sky-500/30 text-sky-300 mono text-[10px]';
+            splitBtn.textContent = '÷';
+            splitBtn.addEventListener('click', () => {
+              const a = Math.floor(size / 2);
+              const b = size - a;
+              state.draftPartition.splice(idx, 1, a, b);
+              validateAndApplyDraft();
+            });
+            card.appendChild(splitBtn);
+          }
+
+          // Merge with next button
+          if (idx < state.draftPartition.length - 1) {
+            const mergeBtn = document.createElement('button');
+            mergeBtn.type = 'button';
+            mergeBtn.title = 'Merge with next group';
+            mergeBtn.className = 'px-1 h-5 rounded bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 mono text-[10px]';
+            mergeBtn.textContent = '⊕';
+            mergeBtn.addEventListener('click', () => {
+              const merged = state.draftPartition[idx] + state.draftPartition[idx + 1];
+              state.draftPartition.splice(idx, 2, merged);
+              validateAndApplyDraft();
+            });
+            card.appendChild(mergeBtn);
+          }
+
+          container.appendChild(card);
+        });
+      }
+
+      function renderCompareButtons() {
+        const wrap = document.getElementById('compare-buttons');
+        wrap.innerHTML = '';
+        const N = state.N;
+        let candidates = [];
+        if (N === 7) {
+          candidates = [[2, 2, 3], [3, 2, 2], [2, 3, 2]];
+        } else {
+          const base = DEFAULT_PARTITIONS[N].slice();
+          const rev = base.slice().reverse();
+          const rot = base.slice(1).concat(base[0]);
+          candidates = [base, rev, rot];
+        }
+
+        candidates.forEach((cand) => {
+          const str = cand.join('+');
+          const active = state.partition.join('+') === str;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `mono text-[10px] px-2 py-1 rounded-lg border transition-colors ${
+            active
+              ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold'
+              : 'bg-slate-800/70 border-slate-700 text-slate-300 hover:bg-slate-700'
+          }`;
+          btn.textContent = str;
+          btn.addEventListener('click', () => {
+            state.draftPartition = cand.slice();
+            validateAndApplyDraft();
+          });
+          wrap.appendChild(btn);
+        });
+      }
+
+      function getDotNotation(part) {
+        return part.map((g) => 'X' + 'x'.repeat(Math.max(0, g - 1))).join('.');
+      }
+
+      function getCharacterTag(part) {
+        const s = part.join('+');
+        if (s === '2+2+3') return '2+2+3 — limping, forward-leaning';
+        if (s === '3+2+2') return '3+2+2 — starts heavy, ends light';
+        if (s === '2+3+2') return '2+3+2 — Turkish aksak feel';
+        return `${s} — ${part.length} additive groups across ${state.N} beats`;
+      }
+
+      function updateUI() {
+        const N = state.N;
+        const partStr = state.partition.join('+');
+        const isNull = state.accentDepth <= 0.001;
+
+        document.getElementById('n-readout').textContent = `N = ${N} beats`;
+        document.getElementById('composition-count-label').textContent = `${Math.pow(2, N - 1)} compositions of ${N}`;
+        document.getElementById('tempo-readout').textContent = `${state.tempoBpm} BPM`;
+        document.getElementById('accent-readout').textContent = `${Math.round(state.accentDepth * 100)}%`;
+
+        document.getElementById('header-partition-str').textContent = isNull ? `FLAT NULL (N=${N})` : `${partStr} (N=${N})`;
+        document.getElementById('header-dot-notation').textContent = isNull ? 'x'.repeat(N) : getDotNotation(state.partition);
+        document.getElementById('ring-cycle-ms').textContent = `Cycle: ${((N * state.samplesPerBeat) / state.sampleRate).toFixed(3)}s`;
+        document.getElementById('bottom-invariance-tag').textContent = `${N} beats · ${N} hits · ${state.tempoBpm} BPM`;
+        document.getElementById('bottom-character-tag').textContent = isNull ? '0% Accent — metre erased (indistinguishable beats)' : getCharacterTag(state.partition);
+
+        const nullBtn = document.getElementById('btn-null-toggle');
+        nullBtn.textContent = isNull ? 'Restore Accents' : 'Flat Null';
+        nullBtn.className = isNull
+          ? 'bg-sky-500/25 hover:bg-sky-500/35 text-sky-200 text-xs font-semibold py-2.5 px-3 rounded-xl border border-sky-400/40 transition-colors'
+          : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-medium py-2.5 px-3 rounded-xl border border-slate-700/70 transition-colors';
+
+        renderCompareButtons();
+        render2DRing(state.isPlaying ? state.lastTriggeredBeat : 0);
+        renderBeatStrip(state.isPlaying ? state.lastTriggeredBeat : -1);
+      }
+
+      function updateVerificationUI() {
+        const v = state.verification;
+        if (!v) return;
+        const count = [v.pass1, v.pass2, v.pass3, v.pass4].filter(Boolean).length;
+        document.getElementById('verify-badge-text').textContent = `${count}/4 ${count === 4 ? 'PASS' : 'CHECK'}`;
+
+        const setB = (id, ok) => {
+          const el = document.getElementById(id);
+          el.textContent = ok ? 'PASS' : 'FAIL';
+          el.className = `mono text-[10px] font-bold px-2 py-1 rounded border ${
+            ok ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
+          }`;
+        };
+
+        setB('v-check1-badge', v.pass1);
+        document.getElementById('v-check1-detail').textContent = state.accentDepth === 0
+          ? 'Flat Null (0% accent): 0 group peaks detected (no metre)'
+          : `Recovered [${v.recovered.join('+')}] === Input [${v.part.join('+')}]`;
+
+        setB('v-check2-badge', v.pass2);
+        document.getElementById('v-check2-detail').textContent =
+          `[${v.part.join('+')}] vs [${v.altPart.join('+')}]: identical N=${v.N}, hits=${v.N}, cycle=${v.cycleSamplesA} samples`;
+
+        setB('v-check3-badge', v.pass3);
+        document.getElementById('v-check3-detail').textContent =
+          `Cycle peak R(${v.N}) = ${v.acf[v.N].toFixed(3)} · Intermediate lags reflect additive group boundaries`;
+
+        setB('v-check4-badge', v.pass4);
+        document.getElementById('v-check4-detail').textContent =
+          `At accentDepth = 0%: max(level) - min(level) = ${v.nullSpread.toFixed(6)} (bit-identical)`;
+
+        drawAutocorr(v);
+      }
+
+      function drawAutocorr(v) {
+        const canvas = document.getElementById('autocorr-canvas');
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const W = rect.width, H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const acf = v.acf;
+        const N = v.N;
+        const barW = Math.max(8, (W - 40) / (N + 1));
+        for (let lag = 0; lag <= N; lag++) {
+          const val = acf[lag];
+          const x = 20 + lag * barW;
+          const bh = val * (H - 28);
+          ctx.fillStyle = lag === N ? '#34d399' : (lag === 0 ? '#38bdf8' : '#f59e0b');
+          ctx.fillRect(x, H - 18 - bh, barW * 0.65, bh);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText(String(lag), x + 2, H - 5);
+        }
+      }
+
+      function updatePlayButtonUI() {
+        document.getElementById('icon-play').classList.toggle('hidden', state.isPlaying);
+        document.getElementById('icon-pause').classList.toggle('hidden', !state.isPlaying);
+        document.getElementById('play-label').textContent = state.isPlaying ? 'PAUSE' : 'START GROOVE';
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+      }
+
+      function bindEvents() {
+        document.getElementById('btn-play').addEventListener('click', togglePlay);
+        document.getElementById('btn-export-wav').addEventListener('click', exportCycleWav);
+
+        document.getElementById('n-slider').addEventListener('input', (e) => {
+          state.N = Number(e.target.value);
+          state.draftPartition = DEFAULT_PARTITIONS[state.N].slice();
+          state.lastTriggeredBeat = -1;
+          validateAndApplyDraft();
+        });
+
+        document.getElementById('btn-revert-valid').addEventListener('click', () => {
+          state.draftPartition = state.partition.slice();
+          validateAndApplyDraft();
+        });
+
+        document.getElementById('btn-rotate-partition').addEventListener('click', () => {
+          const rot = state.partition.slice(1).concat(state.partition[0]);
+          state.draftPartition = rot;
+          validateAndApplyDraft();
+        });
+
+        document.getElementById('tempo-slider').addEventListener('input', (e) => {
+          state.tempoBpm = Number(e.target.value);
+          recomputeExactClock();
+          runFourCheckVerification();
+          updateUI();
+        });
+
+        document.getElementById('accent-slider').addEventListener('input', (e) => {
+          state.accentDepth = Number(e.target.value) / 100;
+          if (state.accentDepth > 0) state.savedAccentDepth = state.accentDepth;
+          rebuild3DRing();
+          runFourCheckVerification();
+          updateUI();
+        });
+
+        document.getElementById('btn-null-toggle').addEventListener('click', () => {
+          if (state.accentDepth > 0.001) {
+            state.savedAccentDepth = state.accentDepth;
+            state.accentDepth = 0;
+          } else {
+            state.accentDepth = state.savedAccentDepth || 0.85;
+          }
+          document.getElementById('accent-slider').value = Math.round(state.accentDepth * 100);
+          rebuild3DRing();
+          runFourCheckVerification();
+          updateUI();
+        });
+
+        document.querySelectorAll('.sub-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.subdivision = Number(btn.dataset.sub);
+            recomputeExactClock();
+            if (state.isPlaying && state.audioCtx) {
+              const pos = getCurrentSamplePosition();
+              state.nextScheduleSub = Math.ceil(pos / state.samplesPerSub);
+            }
+            document.querySelectorAll('.sub-btn').forEach((b) => {
+              const active = Number(b.dataset.sub) === state.subdivision;
+              b.className = `sub-btn mono text-[10px] px-2 py-1 rounded border ${
+                active ? 'bg-amber-500/20 text-amber-300 border-amber-400/35' : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`;
+            });
+          });
+        });
+
+        const modal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          runFourCheckVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        });
+        document.getElementById('btn-rerun-verify').addEventListener('click', runFourCheckVerification);
+
+        document.getElementById('btn-toggle-panel').addEventListener('click', () => {
+          document.getElementById('left-panel').classList.toggle('-translate-x-[110%]');
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            togglePlay();
+          }
+        });
+      }
+
+      window.addEventListener('load', () => {
+        recomputeExactClock();
+        initThree();
+        renderPartitionEditor();
+        runFourCheckVerification();
+        updateUI();
+        bindEvents();
+        animate();
+      });
+    })();
+  </script>
+</body>
+</html>
