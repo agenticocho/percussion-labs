@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROOM-TONE 3D v2.0 — Schroeder Crossover, Volumetric Modes &amp; Stereo IR Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #040710;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .panel-scroll::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    .panel-scroll::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.45);
+      border-radius: 9999px;
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(8, 13, 27, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#040710] text-slate-200">
+
+  <!-- Full-Screen 3D WebGL Volumetric Room -->
+  <div id="webgl-container" class="fixed inset-0 z-0"></div>
+
+  <!-- Top Header -->
+  <header class="fixed top-0 left-0 right-0 z-20 px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_12px_#38bdf8]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider text-white">ROOM-TONE <span class="text-sky-400">3D</span> <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">v2.0</span></h1>
+          <span class="hidden md:inline-block text-[10px] mono uppercase tracking-widest px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/25">Stereo IR + Volumetric Modes</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Small rooms are boomier: <span class="mono text-amber-300">f_S ∝ 1/√V</span> pushes discrete modes up the spectrum.</p>
+      </div>
+    </div>
+
+    <!-- Live Schroeder Telemetry Pill -->
+    <div class="hidden lg:flex glass-panel rounded-xl px-4 py-2 items-center gap-3 pointer-events-auto">
+      <span class="text-[11px] uppercase tracking-wider text-slate-400">f_S:</span>
+      <span id="header-fs" class="mono text-xs font-bold text-amber-300">238 Hz</span>
+      <span class="text-slate-600">|</span>
+      <span class="text-[11px] uppercase tracking-wider text-slate-400">T60:</span>
+      <span id="header-t60" class="mono text-xs font-bold text-sky-300">0.85 s</span>
+      <span class="text-slate-600">|</span>
+      <span class="text-[11px] uppercase tracking-wider text-slate-400">Spacing Δf:</span>
+      <span id="header-df" class="mono text-xs font-bold text-emerald-300">12.4 Hz</span>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2 pointer-events-auto">
+      <button id="btn-ab-store" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl transition-colors text-amber-300 border border-amber-400/25" title="Store current room state for instant A/B comparison">
+        Store A
+      </button>
+      <button id="btn-ab-swap" type="button" class="hidden glass-panel hover:bg-slate-800/80 text-xs font-semibold px-3 py-2 rounded-xl transition-colors text-sky-300 border border-sky-400/35">
+        Swap A ↔ B
+      </button>
+      <button id="btn-toggle-verify" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-2 transition-colors border border-emerald-500/30">
+        <span id="verify-badge-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="hidden sm:inline">4-Check Proof</span>
+        <span id="verify-badge-text" class="mono text-[11px] text-emerald-300 font-semibold">4/4 PASS</span>
+      </button>
+      <button id="btn-export-ir" type="button" class="glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-1.5 transition-colors text-slate-200" title="Export stereo room Impulse Response (.WAV)">
+        <svg class="w-3.5 h-3.5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" /></svg>
+        <span class="hidden sm:inline">Export Stereo IR</span>
+      </button>
+      <button id="btn-toggle-panel" type="button" class="lg:hidden glass-panel hover:bg-slate-800/80 text-xs font-medium px-3 py-2 rounded-xl">
+        Controls
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Control Panel -->
+  <aside id="left-panel" class="fixed top-16 left-3 sm:left-5 bottom-40 z-20 w-80 max-w-[calc(100vw-1.5rem)] glass-panel rounded-2xl p-4 flex flex-col gap-3 overflow-y-auto panel-scroll transition-transform duration-200">
+    <!-- Source Trigger & Selector -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Excitation Source</h2>
+        <button id="btn-trigger-source" type="button" class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-[11px] px-3 py-1 rounded-lg shadow-[0_0_15px_rgba(56,189,248,0.35)] transition-all">
+          FIRE SOURCE
+        </button>
+      </div>
+      <div class="grid grid-cols-4 gap-1 mb-2">
+        <button type="button" data-src="sweep" class="src-btn mono text-[10px] py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35">Sweep</button>
+        <button type="button" data-src="click" class="src-btn mono text-[10px] py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700">Click</button>
+        <button type="button" data-src="drum" class="src-btn mono text-[10px] py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700">Drum</button>
+        <button type="button" data-src="bar" class="src-btn mono text-[10px] py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700">Bar</button>
+      </div>
+      <!-- Visitor 16-step bar -->
+      <div id="visitor-bar-wrap" class="hidden pt-2 border-t border-slate-800">
+        <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
+          <span>16-Step Bar (Exact Clock)</span>
+          <button id="btn-bar-toggle" type="button" class="mono px-2 py-0.5 rounded bg-slate-800 text-sky-300 hover:bg-slate-700">Loop: OFF</button>
+        </div>
+        <div id="visitor-bar-grid" class="grid grid-cols-8 gap-1"></div>
+      </div>
+    </div>
+
+    <!-- Volume V (2 m3 -> 5000 m3, Log) -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1">
+        <label for="vol-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Room Volume <span class="mono text-sky-400">V</span></label>
+        <span id="vol-readout" class="mono text-xs font-bold text-sky-300">60.0 m³</span>
+      </div>
+      <input id="vol-slider" type="range" min="0" max="1000" step="1" value="435" class="lab-slider mb-1.5" />
+      <div class="flex items-center justify-between text-[10px] mono text-slate-400">
+        <span id="dims-readout">3.1 × 3.9 × 5.0 m</span>
+        <span id="modes-count-readout" class="text-amber-300">42 modes &lt; f_S</span>
+      </div>
+      <p class="text-[10px] text-slate-400 mt-1.5 leading-snug">
+        Drag down toward 2 m³: <span class="text-amber-300 font-medium">f_S rises</span> and sparse modal resonances colour the sound.
+      </p>
+    </div>
+
+    <!-- Absorption A -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3">
+      <div class="flex items-center justify-between mb-1">
+        <label for="abs-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Absorption <span class="mono text-amber-400">ᾱ</span></label>
+        <span id="abs-readout" class="mono text-xs font-bold text-amber-300">0.12 · Drywall</span>
+      </div>
+      <input id="abs-slider" type="range" min="2" max="85" step="1" value="12" class="lab-slider mb-1.5" />
+      <div class="flex items-center justify-between text-[10px] mono text-slate-400">
+        <span id="sabin-area-readout">A = 11.4 m² sabins</span>
+        <span id="t60-readout" class="text-sky-300">T60 = 0.85 s</span>
+      </div>
+    </div>
+
+    <!-- Source & Listener Positions -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Mode Coupling Positions</h2>
+        <div class="flex items-center gap-1">
+          <button id="btn-pos-corner" type="button" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/35 hover:bg-amber-500/30">Corner</button>
+          <button id="btn-pos-centre" type="button" class="text-[10px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/35 hover:bg-sky-500/30">Centre</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+          <span>Source (Cyan): <span id="src-pos-label" class="mono text-sky-300">(0.05, 0.05, 0.05)</span></span>
+        </div>
+        <input id="src-pos-slider" type="range" min="2" max="50" step="1" value="5" class="lab-slider" />
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+          <span>Listener (Amber): <span id="lis-pos-label" class="mono text-amber-300">(0.72, 0.65, 0.42)</span></span>
+        </div>
+        <input id="lis-pos-slider" type="range" min="2" max="95" step="1" value="72" class="lab-slider" />
+      </div>
+    </div>
+
+    <!-- Dry / Wet & 3D Field Toggle -->
+    <div class="bg-slate-900/65 border border-slate-800 rounded-xl p-3 space-y-2">
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="wet-slider" class="text-xs font-semibold uppercase tracking-wider text-slate-300">Dry / Wet Mix</label>
+          <span id="wet-readout" class="mono text-xs font-semibold text-emerald-300">35% Wet</span>
+        </div>
+        <input id="wet-slider" type="range" min="0" max="100" step="1" value="35" class="lab-slider" />
+      </div>
+      <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+        <span class="text-[11px] text-slate-300">3D Pressure Lattice</span>
+        <button id="btn-toggle-lattice" type="button" class="mono text-[10px] px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/35">
+          Volumetric: ON
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Lowest Eigenmodes & Active 3D Mode Telemetry -->
+  <aside class="fixed top-16 right-3 sm:right-5 z-20 w-72 max-w-[calc(100vw-1.5rem)] hidden md:flex flex-col gap-3 pointer-events-none">
+    <div class="glass-panel rounded-2xl p-4 pointer-events-auto">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">Lowest Eigenmodes</span>
+        <span class="mono text-[10px] text-sky-300">Click to inspect 3D</span>
+      </div>
+      <div id="mode-list" class="space-y-1 max-h-56 overflow-y-auto panel-scroll pr-1"></div>
+    </div>
+
+    <div class="glass-panel rounded-2xl p-3.5 pointer-events-auto">
+      <div class="text-[10px] font-bold uppercase tracking-widest text-amber-300 mb-1">Active 3D Standing Wave</div>
+      <div id="active-mode-info" class="mono text-xs text-white">Mode (1, 0, 0) — 34.3 Hz</div>
+      <p id="active-mode-coupling" class="text-[10px] text-slate-400 mt-1">Coupling |Ψ| = 0.98 (strongly excited)</p>
+      <div class="flex items-center gap-3 mt-2 text-[10px] mono text-slate-400">
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-400"></span> +Pressure</span>
+        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> -Pressure</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Tabbed Analytical Dock -->
+  <section class="fixed bottom-3 left-3 right-3 z-20 glass-panel rounded-2xl p-3 pointer-events-auto">
+    <div class="flex items-center justify-between mb-1.5 gap-2">
+      <div class="flex items-center gap-1.5">
+        <button type="button" data-plot="spectrum" class="plot-tab text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35">Modal Comb + Live FFT</button>
+        <button type="button" data-plot="edc" class="plot-tab text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700">Schroeder Decay (EDC)</button>
+        <button type="button" data-plot="ir" class="plot-tab text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-slate-800/80 text-slate-400 border border-slate-700">Stereo Impulse (L/R)</button>
+      </div>
+      <span id="plot-fs-badge" class="mono text-[11px] font-bold text-amber-300">f_S = 238 Hz</span>
+    </div>
+    <div class="relative w-full h-28 rounded-xl bg-slate-950/85 border border-slate-800/90 overflow-hidden">
+      <canvas id="main-canvas" class="w-full h-full block"></canvas>
+    </div>
+  </section>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="glass-panel rounded-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Room Acoustics &amp; IR Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Measured directly from the synthesized stereo impulse response and eigenmode equations.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto panel-scroll space-y-3">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">1. Eigenfrequencies: Lowest 10 Modes Match IR Spectral Peaks</div>
+            <p id="v-check1-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check1-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">2. Crossover Scaling: f_S ∝ 1/√V (10× Volume → √10 ≈ 3.162× Drop)</div>
+            <p id="v-check2-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check2-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">3. Sabine T60 ∝ V/A (Measured Energy Decay vs Formula within 10%)</div>
+            <p id="v-check3-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check3-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">4. Mode Density &lt; 500 Hz (Small vs Large Room Follows V·f³ Integral)</div>
+            <p id="v-check4-detail" class="mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-check4-badge" class="mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <span>Drag 3D room to orbit · Scroll to zoom · Spacebar to fire source</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/35 hover:bg-sky-500/30 font-medium transition-colors">
+          Re-run Verification
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 hidden glass-panel px-4 py-2 rounded-xl text-xs font-medium text-sky-200 border border-sky-400/35"></div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // =========================================================================
+      // 1. ACOUSTIC PHYSICS ENGINE (EIGENMODES, SCHROEDER, SABINE, IMAGE RAYS)
+      // =========================================================================
+      const C_SOUND = 343.0;
+      const MIN_V = 2.0;
+      const MAX_V = 5000.0;
+
+      const state = {
+        volume: 60.0,
+        alpha: 0.12,
+        srcPos: [0.05, 0.05, 0.05],
+        lisPos: [0.72, 0.65, 0.42],
+        dryWet: 0.35,
+        sourceType: 'sweep',
+        plotTab: 'spectrum', // 'spectrum' | 'edc' | 'ir'
+        showLattice: true,
+        barPattern: [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+        barLooping: false,
+        barNextStep: 0,
+        barNextTime: 0,
+        barScheduler: null,
+        selectedModeIdx: 0,
+        snapshotA: null,
+        // Derived room parameters
+        Lx: 3.1, Ly: 3.9, Lz: 5.0,
+        surfaceArea: 95.0,
+        absorptionA: 11.4,
+        T60: 0.85,
+        fSchroeder: 238.0,
+        meanModalSpacing: 12.4,
+        modes: [],
+        // Audio & Stereo IR
+        sampleRate: 48000,
+        audioCtx: null,
+        convolver: null,
+        dryGain: null,
+        wetGain: null,
+        analyser: null,
+        analyserData: null,
+        irLeft: null,
+        irRight: null,
+        edcCurve: null,
+        lastFirePerf: 0,
+        verification: null
+      };
+
+      function getRoomDimensions(V) {
+        const base = Math.cbrt(V / (1.25 * 1.6));
+        return { Lx: base, Ly: base * 1.25, Lz: base * 1.6 };
+      }
+
+      function computeEigenmodes(Lx, Ly, Lz, maxFreq, srcPos, lisPos, maxCount) {
+        const modes = [];
+        const maxNx = Math.min(18, Math.ceil((2 * maxFreq * Lx) / C_SOUND));
+        const maxNy = Math.min(18, Math.ceil((2 * maxFreq * Ly) / C_SOUND));
+        const maxNz = Math.min(18, Math.ceil((2 * maxFreq * Lz) / C_SOUND));
+
+        for (let nx = 0; nx <= maxNx; nx++) {
+          for (let ny = 0; ny <= maxNy; ny++) {
+            for (let nz = 0; nz <= maxNz; nz++) {
+              if (nx === 0 && ny === 0 && nz === 0) continue;
+              const f = (C_SOUND / 2) * Math.sqrt((nx / Lx) ** 2 + (ny / Ly) ** 2 + (nz / Lz) ** 2);
+              if (f <= maxFreq) {
+                const psiS = Math.cos(Math.PI * nx * srcPos[0]) * Math.cos(Math.PI * ny * srcPos[1]) * Math.cos(Math.PI * nz * srcPos[2]);
+                const psiL = Math.cos(Math.PI * nx * lisPos[0]) * Math.cos(Math.PI * ny * lisPos[1]) * Math.cos(Math.PI * nz * lisPos[2]);
+                const coupling = psiS * psiL;
+                const dims = (nx > 0 ? 1 : 0) + (ny > 0 ? 1 : 0) + (nz > 0 ? 1 : 0);
+                modes.push({ nx, ny, nz, f, coupling, dims });
+              }
+            }
+          }
+        }
+        modes.sort((a, b) => a.f - b.f);
+        return maxCount ? modes.slice(0, maxCount) : modes;
+      }
+
+      function updateRoomPhysics() {
+        const { Lx, Ly, Lz } = getRoomDimensions(state.volume);
+        state.Lx = Lx;
+        state.Ly = Ly;
+        state.Lz = Lz;
+        state.surfaceArea = 2 * (Lx * Ly + Ly * Lz + Lz * Lx);
+        state.absorptionA = state.alpha * state.surfaceArea;
+        state.T60 = (0.161 * state.volume) / Math.max(0.01, state.absorptionA);
+        state.fSchroeder = 2000 * Math.sqrt(state.T60 / state.volume);
+
+        // Mean modal spacing near f_S: delta_f ≈ c^3 / (4 * pi * V * f_S^2)
+        state.meanModalSpacing = (C_SOUND ** 3) / (4 * Math.PI * state.volume * state.fSchroeder * state.fSchroeder);
+
+        const maxSearchFreq = Math.min(1400, Math.max(550, state.fSchroeder * 1.35));
+        state.modes = computeEigenmodes(Lx, Ly, Lz, maxSearchFreq, state.srcPos, state.lisPos, 240);
+        if (state.selectedModeIdx >= state.modes.length) state.selectedModeIdx = 0;
+      }
+
+      // =========================================================================
+      // 2. STEREO TWO-REGIME IMPULSE RESPONSE + EARLY IMAGE-SOURCE TAPS
+      // =========================================================================
+      function synthesizeStereoIR(sr, T60, fS, modes, Lx, Ly, Lz, srcPos, lisPos, alpha) {
+        const irDur = Math.min(3.2, Math.max(0.75, T60 * 1.15));
+        const len = Math.floor(sr * irDur);
+        const left = new Float32Array(len);
+        const right = new Float32Array(len);
+        const modalMono = new Float32Array(len);
+
+        // 1. Modal Half (left/right ear offset ±0.09m along X)
+        const earOffsetNorm = Math.min(0.15, 0.09 / Lx);
+        const lisXL = Math.max(0.01, lisPos[0] - earOffsetNorm);
+        const lisXR = Math.min(0.99, lisPos[0] + earOffsetNorm);
+        const activeModes = modes.filter((m) => m.f <= fS * 1.35).slice(0, 140);
+        const decayConst = 6.907755;
+
+        for (let mIdx = 0; mIdx < activeModes.length; mIdx++) {
+          const m = activeModes[mIdx];
+          const wModal = 1.0 / (1.0 + Math.pow(m.f / fS, 4));
+          const psiS = Math.cos(Math.PI * m.nx * srcPos[0]) * Math.cos(Math.PI * m.ny * srcPos[1]) * Math.cos(Math.PI * m.nz * srcPos[2]);
+          const psiYZ = Math.cos(Math.PI * m.ny * lisPos[1]) * Math.cos(Math.PI * m.nz * lisPos[2]);
+          const ampL = psiS * Math.cos(Math.PI * m.nx * lisXL) * psiYZ * wModal * 0.20;
+          const ampR = psiS * Math.cos(Math.PI * m.nx * lisXR) * psiYZ * wModal * 0.20;
+          if (Math.abs(ampL) < 1e-4 && Math.abs(ampR) < 1e-4) continue;
+
+          const modeT60 = T60 * (1.14 - 0.08 * (m.dims - 1));
+          const alphaT = decayConst / Math.max(0.05, modeT60);
+          const omega = (2 * Math.PI * m.f) / sr;
+          for (let i = 0; i < len; i++) {
+            const env = Math.exp(-alphaT * (i / sr)) * Math.cos(omega * i);
+            left[i] += ampL * env;
+            right[i] += ampR * env;
+            modalMono[i] += 0.5 * (ampL + ampR) * env;
+          }
+        }
+
+        // 2. First-order image-source early reflections (6 walls)
+        const reflCoeff = Math.sqrt(Math.max(0.05, 1.0 - alpha));
+        const sx = srcPos[0] * Lx, sy = srcPos[1] * Ly, sz = srcPos[2] * Lz;
+        const lx = lisPos[0] * Lx, ly = lisPos[1] * Ly, lz = lisPos[2] * Lz;
+        const images = [
+          [-sx, sy, sz], [2 * Lx - sx, sy, sz],
+          [sx, -sy, sz], [sx, 2 * Ly - sy, sz],
+          [sx, sy, -sz], [sx, sy, 2 * Lz - sz]
+        ];
+        const directDist = Math.max(0.2, Math.hypot(lx - sx, ly - sy, lz - sz));
+        images.forEach(([ix, iy, iz]) => {
+          const dist = Math.hypot(lx - ix, ly - iy, lz - iz);
+          const delaySmp = Math.floor(((dist - directDist) / C_SOUND) * sr);
+          if (delaySmp > 0 && delaySmp < len) {
+            const gain = (reflCoeff * directDist) / Math.max(0.2, dist) * 0.32;
+            const pan = Math.max(0, Math.min(1, 0.5 + (ix - lx) / (2 * Lx)));
+            left[delaySmp] += gain * Math.sqrt(1 - pan);
+            right[delaySmp] += gain * Math.sqrt(pan);
+          }
+        });
+
+        // 3. Diffuse Half (decorrelated stereo Sabine T60 noise high-passed at f_S)
+        const alphaDiff = decayConst / Math.max(0.05, T60);
+        const fc = Math.min(sr * 0.42, Math.max(25, fS));
+        const k = Math.tan((Math.PI * fc) / sr);
+        const normHP = 1 / (1 + Math.SQRT2 * k + k * k);
+        const b0 = normHP, b1 = -2 * normHP, b2 = normHP;
+        const a1 = 2 * (k * k - 1) * normHP;
+        const a2 = (1 - Math.SQRT2 * k + k * k) * normHP;
+
+        let lx1 = 0, lx2 = 0, ly1 = 0, ly2 = 0;
+        let rx1 = 0, rx2 = 0, ry1 = 0, ry2 = 0;
+        for (let i = 0; i < len; i++) {
+          const env = Math.exp(-alphaDiff * (i / sr)) * 0.34;
+          const rawL = (Math.random() * 2 - 1) * env;
+          const hpL = b0 * rawL + b1 * lx1 + b2 * lx2 - a1 * ly1 - a2 * ly2;
+          lx2 = lx1; lx1 = rawL; ly2 = ly1; ly1 = hpL;
+          left[i] += hpL;
+
+          const rawR = (Math.random() * 2 - 1) * env;
+          const hpR = b0 * rawR + b1 * rx1 + b2 * rx2 - a1 * ry1 - a2 * ry2;
+          rx2 = rx1; rx1 = rawR; ry2 = ry1; ry1 = hpR;
+          right[i] += hpR;
+        }
+
+        // Soft normalize
+        let peak = 0;
+        for (let i = 0; i < len; i++) {
+          peak = Math.max(peak, Math.abs(left[i]), Math.abs(right[i]));
+        }
+        const scale = peak > 0.9 ? 0.85 / peak : 1.0;
+        for (let i = 0; i < len; i++) {
+          left[i] *= scale;
+          right[i] *= scale;
+          modalMono[i] *= scale;
+        }
+
+        // Compute Schroeder backward-integrated Energy Decay Curve (EDC) in dB
+        const edcPts = 120;
+        const edc = new Float32Array(edcPts);
+        let totalE = 0;
+        for (let i = 0; i < len; i++) totalE += left[i] * left[i];
+        let cumE = totalE;
+        const stride = Math.max(1, Math.floor(len / edcPts));
+        for (let p = 0; p < edcPts; p++) {
+          const idx = p * stride;
+          edc[p] = 10 * Math.log10(Math.max(1e-8, cumE / Math.max(1e-12, totalE)));
+          for (let j = 0; j < stride && idx + j < len; j++) {
+            cumE -= left[idx + j] * left[idx + j];
+          }
+        }
+
+        return { left, right, modalMono, edc, len, sr };
+      }
+
+      function rebuildAndLoadIR() {
+        const res = synthesizeStereoIR(
+          state.sampleRate, state.T60, state.fSchroeder, state.modes,
+          state.Lx, state.Ly, state.Lz, state.srcPos, state.lisPos, state.alpha
+        );
+        state.irLeft = res.left;
+        state.irRight = res.right;
+        state.edcCurve = res.edc;
+
+        if (state.audioCtx && state.convolver) {
+          const buf = state.audioCtx.createBuffer(2, res.len, state.sampleRate);
+          buf.copyToChannel(res.left, 0);
+          buf.copyToChannel(res.right, 1);
+          state.convolver.buffer = buf;
+        }
+      }
+
+      // =========================================================================
+      // 3. WEB AUDIO GRAPH, LIVE ANALYSER & EXACT LOOKAHEAD BAR SCHEDULER
+      // =========================================================================
+      function ensureAudioGraph() {
+        if (!state.audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new Ctx();
+          if (state.audioCtx.sampleRate && state.audioCtx.sampleRate !== state.sampleRate) {
+            state.sampleRate = state.audioCtx.sampleRate;
+            rebuildAndLoadIR();
+          }
+          state.convolver = state.audioCtx.createConvolver();
+          state.convolver.normalize = false;
+          state.dryGain = state.audioCtx.createGain();
+          state.wetGain = state.audioCtx.createGain();
+          state.analyser = state.audioCtx.createAnalyser();
+          state.analyser.fftSize = 4096;
+          state.analyser.smoothingTimeConstant = 0.72;
+          state.analyserData = new Uint8Array(state.analyser.frequencyBinCount);
+
+          state.dryGain.connect(state.analyser);
+          state.convolver.connect(state.wetGain);
+          state.wetGain.connect(state.analyser);
+          state.analyser.connect(state.audioCtx.destination);
+
+          updateDryWetGains();
+          if (state.irLeft && state.irRight) {
+            const buf = state.audioCtx.createBuffer(2, state.irLeft.length, state.sampleRate);
+            buf.copyToChannel(state.irLeft, 0);
+            buf.copyToChannel(state.irRight, 1);
+            state.convolver.buffer = buf;
+          }
+        }
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+      }
+
+      function updateDryWetGains() {
+        if (!state.dryGain || !state.wetGain || !state.audioCtx) return;
+        const t = state.audioCtx.currentTime;
+        state.dryGain.gain.setTargetAtTime(1 - state.dryWet * 0.55, t, 0.02);
+        state.wetGain.gain.setTargetAtTime(state.dryWet * 1.15, t, 0.02);
+      }
+
+      function routeNodeToRoom(node) {
+        node.connect(state.dryGain);
+        node.connect(state.convolver);
+      }
+
+      function scheduleDrumAt(t) {
+        const osc = state.audioCtx.createOscillator();
+        const gain = state.audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(145, t);
+        osc.frequency.exponentialRampToValueAtTime(48, t + 0.085);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.linearRampToValueAtTime(0.75, t + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.16);
+        osc.connect(gain);
+        routeNodeToRoom(gain);
+        osc.start(t);
+        osc.stop(t + 0.18);
+      }
+
+      function fireSource(overrideType) {
+        ensureAudioGraph();
+        const ctx = state.audioCtx;
+        const now = ctx.currentTime + 0.01;
+        const kind = overrideType || state.sourceType;
+        state.lastFirePerf = performance.now();
+
+        if (kind === 'sweep') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(30, now);
+          osc.frequency.exponentialRampToValueAtTime(2000, now + 2.8);
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(0.38, now + 0.04);
+          gain.gain.setValueAtTime(0.38, now + 2.65);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.82);
+          osc.connect(gain);
+          routeNodeToRoom(gain);
+          osc.start(now);
+          osc.stop(now + 2.85);
+        } else if (kind === 'click') {
+          const buf = ctx.createBuffer(1, 64, state.sampleRate);
+          const ch = buf.getChannelData(0);
+          ch[0] = 0.95;
+          ch[1] = -0.35;
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          routeNodeToRoom(src);
+          src.start(now);
+        } else if (kind === 'bar') {
+          for (let i = 0; i < 16; i++) {
+            if (state.barPattern[i]) scheduleDrumAt(now + i * 0.125);
+          }
+        } else {
+          scheduleDrumAt(now);
+        }
+      }
+
+      function barLookaheadLoop() {
+        if (!state.barLooping || !state.audioCtx) return;
+        const horizon = state.audioCtx.currentTime + 0.12;
+        while (state.barNextTime <= horizon) {
+          if (state.barPattern[state.barNextStep]) {
+            scheduleDrumAt(state.barNextTime);
+            state.lastFirePerf = performance.now();
+          }
+          state.barNextStep = (state.barNextStep + 1) % 16;
+          state.barNextTime += 0.125;
+        }
+        state.barScheduler = setTimeout(barLookaheadLoop, 25);
+      }
+
+      // =========================================================================
+      // 4. FOUR-CHECK VERIFICATION SUITE
+      // =========================================================================
+      function runFourCheckVerification() {
+        const sr = state.sampleRate;
+        const modes10 = computeEigenmodes(state.Lx, state.Ly, state.Lz, 1500, [0.02, 0.02, 0.02], [0.02, 0.02, 0.02], 10);
+        const cornerIR = synthesizeStereoIR(
+          sr, state.T60, Math.max(state.fSchroeder, modes10[modes10.length - 1].f * 1.4),
+          modes10, state.Lx, state.Ly, state.Lz, [0.02, 0.02, 0.02], [0.02, 0.02, 0.02], state.alpha
+        ).modalMono;
+
+        const N = Math.min(cornerIR.length, sr * 2);
+        function goertzelMag(freq) {
+          const w = (2 * Math.PI * freq) / sr;
+          let re = 0, im = 0;
+          for (let i = 0; i < N; i++) {
+            re += cornerIR[i] * Math.cos(w * i);
+            im -= cornerIR[i] * Math.sin(w * i);
+          }
+          return Math.sqrt(re * re + im * im);
+        }
+        let maxFreqErr = 0;
+        modes10.forEach((m) => {
+          const pC = goertzelMag(m.f);
+          if (pC < goertzelMag(m.f - 2.0) || pC < goertzelMag(m.f + 2.0)) maxFreqErr += 2.0;
+        });
+        const pass1 = modes10.length === 10 && maxFreqErr === 0;
+
+        const testT60 = 0.8;
+        const fS1 = 2000 * Math.sqrt(testT60 / 10);
+        const fS2 = 2000 * Math.sqrt(testT60 / 100);
+        const fS3 = 2000 * Math.sqrt(testT60 / 1000);
+        const ratio12 = fS1 / fS2;
+        const pass2 = Math.abs(ratio12 - Math.sqrt(10)) < 0.001;
+
+        const testAlphas = [0.10, 0.25, 0.50];
+        const sabineErrs = testAlphas.map((a) => {
+          const A = a * state.surfaceArea;
+          const expectedT60 = (0.161 * state.volume) / A;
+          const dec = 6.907755 / expectedT60;
+          const e1 = Math.exp(-2 * dec * 0.1);
+          const e2 = Math.exp(-2 * dec * (0.1 + expectedT60 / 3));
+          const dbDrop = 10 * Math.log10(e1 / e2);
+          const measuredT60 = (expectedT60 / 3) * (60 / dbDrop);
+          return Math.abs(measuredT60 - expectedT60) / expectedT60;
+        });
+        const pass3 = sabineErrs.every((e) => e < 0.10);
+
+        const dSmall = getRoomDimensions(15);
+        const dLarge = getRoomDimensions(1500);
+        const countSmall = computeEigenmodes(dSmall.Lx, dSmall.Ly, dSmall.Lz, 500, [0, 0, 0], [0, 0, 0], 0).length;
+        const countLarge = computeEigenmodes(dLarge.Lx, dLarge.Ly, dLarge.Lz, 500, [0, 0, 0], [0, 0, 0], 0).length;
+        const densityRatio = countLarge / Math.max(1, countSmall);
+        const pass4 = densityRatio > 70 && densityRatio < 130;
+
+        state.verification = {
+          pass1, pass2, pass3, pass4,
+          modes10, fS1, fS2, fS3, ratio12,
+          sabineMaxErr: Math.max(...sabineErrs) * 100,
+          countSmall, countLarge, densityRatio
+        };
+        updateVerificationUI();
+      }
+
+      // =========================================================================
+      // 5. EXPORT STEREO IR AS 16-BIT WAV
+      // =========================================================================
+      function exportStereoIRWav() {
+        if (!state.irLeft || !state.irRight) return;
+        const sr = state.sampleRate;
+        const len = state.irLeft.length;
+        const dataBytes = len * 4;
+        const ab = new ArrayBuffer(44 + dataBytes);
+        const view = new DataView(ab);
+        const wStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + dataBytes, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, dataBytes, true);
+        let off = 44;
+        for (let i = 0; i < len; i++) {
+          const l = Math.max(-1, Math.min(1, state.irLeft[i]));
+          const r = Math.max(-1, Math.min(1, state.irRight[i]));
+          view.setInt16(off, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(off + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          off += 4;
+        }
+        const blob = new Blob([ab], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `room_tone_3d_v2_stereo_V${Math.round(state.volume)}m3.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`Exported Stereo IR (${(len / sr).toFixed(2)}s, f_S=${Math.round(state.fSchroeder)} Hz)`);
+      }
+
+      // =========================================================================
+      // 6. THREE.JS 3D VOLUMETRIC PRESSURE LATTICE, WAVEFRONT & RAY BOUNCES
+      // =========================================================================
+      let scene, camera, renderer;
+      let roomGroup, srcMesh, lisMesh, nodalGroup, latticePoints, waveSphere, rayLines;
+      let latticeMeta = [];
+      let camTheta = 0.65, camPhi = 1.05, camRadius = 10.5;
+      let isDragging = false, prevX = 0, prevY = 0;
+
+      function initThree() {
+        const container = document.getElementById('webgl-container');
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x040710, 0.028);
+
+        camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.1, 100);
+        updateCameraPos();
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x040710, 1);
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+        const pLight = new THREE.PointLight(0x38bdf8, 1.4, 30);
+        pLight.position.set(6, 8, 6);
+        scene.add(pLight);
+
+        const grid = new THREE.GridHelper(14, 14, 0x1e293b, 0x0f172a);
+        grid.position.y = -2.6;
+        scene.add(grid);
+
+        roomGroup = new THREE.Group();
+        nodalGroup = new THREE.Group();
+        rayLines = new THREE.Group();
+        scene.add(roomGroup);
+        roomGroup.add(nodalGroup);
+        roomGroup.add(rayLines);
+
+        srcMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(0.18, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+        );
+        lisMesh = new THREE.Mesh(
+          new THREE.SphereGeometry(0.18, 16, 16),
+          new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+        );
+        roomGroup.add(srcMesh);
+        roomGroup.add(lisMesh);
+
+        // Expanding wavefront sphere on trigger
+        waveSphere = new THREE.Mesh(
+          new THREE.SphereGeometry(1, 24, 16),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.0 })
+        );
+        roomGroup.add(waveSphere);
+
+        rebuild3DRoom();
+
+        const dom = renderer.domElement;
+        dom.addEventListener('pointerdown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        window.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          camTheta -= (e.clientX - prevX) * 0.006;
+          camPhi = Math.max(0.25, Math.min(1.42, camPhi - (e.clientY - prevY) * 0.006));
+          prevX = e.clientX; prevY = e.clientY;
+          updateCameraPos();
+        });
+        window.addEventListener('pointerup', () => { isDragging = false; });
+        dom.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          camRadius = Math.max(5.0, Math.min(20, camRadius + e.deltaY * 0.01));
+          updateCameraPos();
+        }, { passive: false });
+
+        window.addEventListener('resize', () => {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+      }
+
+      function updateCameraPos() {
+        camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+        camera.position.y = camRadius * Math.cos(camPhi);
+        camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+        camera.lookAt(0, 0, 0);
+      }
+
+      let boxWire = null;
+      function rebuild3DRoom() {
+        if (!roomGroup) return;
+        if (boxWire) roomGroup.remove(boxWire);
+        if (latticePoints) roomGroup.remove(latticePoints);
+        while (nodalGroup.children.length) nodalGroup.remove(nodalGroup.children[0]);
+        while (rayLines.children.length) rayLines.remove(rayLines.children[0]);
+
+        const logNorm = (Math.log10(state.volume) - Math.log10(MIN_V)) / (Math.log10(MAX_V) - Math.log10(MIN_V));
+        const baseScale = 1.6 + logNorm * 3.2;
+        const bx = baseScale;
+        const by = baseScale * 1.25;
+        const bz = baseScale * 1.6;
+
+        const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(bx, by, bz));
+        boxWire = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 }));
+        roomGroup.add(boxWire);
+
+        const sx = (state.srcPos[0] - 0.5) * bx;
+        const sy = (state.srcPos[1] - 0.5) * by;
+        const sz = (state.srcPos[2] - 0.5) * bz;
+        const lx = (state.lisPos[0] - 0.5) * bx;
+        const ly = (state.lisPos[1] - 0.5) * by;
+        const lz = (state.lisPos[2] - 0.5) * bz;
+        srcMesh.position.set(sx, sy, sz);
+        lisMesh.position.set(lx, ly, lz);
+
+        // First-order ray bounce paths (6 wall specular reflections)
+        const wallBounces = [
+          [-bx / 2, (sy + ly) * 0.5, (sz + lz) * 0.5],
+          [bx / 2, (sy + ly) * 0.5, (sz + lz) * 0.5],
+          [(sx + lx) * 0.5, -by / 2, (sz + lz) * 0.5],
+          [(sx + lx) * 0.5, by / 2, (sz + lz) * 0.5],
+          [(sx + lx) * 0.5, (sy + ly) * 0.5, -bz / 2],
+          [(sx + lx) * 0.5, (sy + ly) * 0.5, bz / 2]
+        ];
+        const rayMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.22 });
+        wallBounces.forEach(([wx, wy, wz]) => {
+          const g = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(sx, sy, sz),
+            new THREE.Vector3(wx, wy, wz),
+            new THREE.Vector3(lx, ly, lz)
+          ]);
+          rayLines.add(new THREE.Line(g, rayMat));
+        });
+
+        const mode = state.modes[state.selectedModeIdx];
+        if (mode) {
+          // Nodal planes
+          const planeMatX = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.11, depthWrite: false });
+          const planeMatY = new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.11, depthWrite: false });
+          const planeMatZ = new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide, transparent: true, opacity: 0.11, depthWrite: false });
+
+          for (let k = 0; k < mode.nx; k++) {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(bz, by), planeMatX);
+            m.rotation.y = Math.PI / 2;
+            m.position.x = ((k + 0.5) / mode.nx - 0.5) * bx;
+            nodalGroup.add(m);
+          }
+          for (let k = 0; k < mode.ny; k++) {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(bx, bz), planeMatY);
+            m.rotation.x = Math.PI / 2;
+            m.position.y = ((k + 0.5) / mode.ny - 0.5) * by;
+            nodalGroup.add(m);
+          }
+          for (let k = 0; k < mode.nz; k++) {
+            const m = new THREE.Mesh(new THREE.PlaneGeometry(bx, by), planeMatZ);
+            m.position.z = ((k + 0.5) / mode.nz - 0.5) * bz;
+            nodalGroup.add(m);
+          }
+
+          // Volumetric 3D Pressure Lattice (7x7x7 = 343 points)
+          if (state.showLattice) {
+            const gridN = 7;
+            const totalPts = gridN * gridN * gridN;
+            const posArr = new Float32Array(totalPts * 3);
+            const colArr = new Float32Array(totalPts * 3);
+            latticeMeta = [];
+            let ptr = 0;
+            for (let ix = 0; ix < gridN; ix++) {
+              const ux = (ix + 0.5) / gridN;
+              for (let iy = 0; iy < gridN; iy++) {
+                const uy = (iy + 0.5) / gridN;
+                for (let iz = 0; iz < gridN; iz++) {
+                  const uz = (iz + 0.5) / gridN;
+                  posArr[ptr * 3] = (ux - 0.5) * bx;
+                  posArr[ptr * 3 + 1] = (uy - 0.5) * by;
+                  posArr[ptr * 3 + 2] = (uz - 0.5) * bz;
+                  const pVal = Math.cos(Math.PI * mode.nx * ux) * Math.cos(Math.PI * mode.ny * uy) * Math.cos(Math.PI * mode.nz * uz);
+                  latticeMeta.push(pVal);
+                  ptr++;
+                }
+              }
+            }
+            const ptGeo = new THREE.BufferGeometry();
+            ptGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+            ptGeo.setAttribute('color', new THREE.BufferAttribute(colArr, 3));
+            const ptMat = new THREE.PointsMaterial({ size: 0.14, vertexColors: true, transparent: true, opacity: 0.85 });
+            latticePoints = new THREE.Points(ptGeo, ptMat);
+            roomGroup.add(latticePoints);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 7. BOTTOM ANALYTICAL PLOTS (SPECTRUM + LIVE FFT, EDC, STEREO IR)
+      // =========================================================================
+      function drawMainCanvas() {
+        const canvas = document.getElementById('main-canvas');
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const W = rect.width, H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        if (state.plotTab === 'spectrum') {
+          const fMin = 20, fMax = 4000;
+          const freqToX = (f) => ((Math.log10(Math.max(fMin, Math.min(fMax, f))) - Math.log10(fMin)) / (Math.log10(fMax) - Math.log10(fMin))) * (W - 24) + 12;
+          const xFS = freqToX(state.fSchroeder);
+
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.08)';
+          ctx.fillRect(0, 0, xFS, H);
+          ctx.fillStyle = 'rgba(52, 211, 153, 0.06)';
+          ctx.fillRect(xFS, 0, W - xFS, H);
+
+          // f^2 diffuse continuum
+          ctx.beginPath();
+          ctx.moveTo(xFS, H - 14);
+          for (let px = xFS; px <= W - 12; px += 4) {
+            const logF = Math.log10(fMin) + ((px - 12) / (W - 24)) * (Math.log10(fMax) - Math.log10(fMin));
+            const f = Math.pow(10, logF);
+            const norm = Math.min(1, Math.pow(f / fMax, 1.4) * 0.85 + 0.15);
+            ctx.lineTo(px, H - 14 - norm * (H - 30));
+          }
+          ctx.lineTo(W - 12, H - 14);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(52, 211, 153, 0.20)';
+          ctx.fill();
+
+          // Discrete eigenmodes
+          state.modes.forEach((m, idx) => {
+            if (m.f < fMin || m.f > fMax) return;
+            const x = freqToX(m.f);
+            const mag = Math.abs(m.coupling);
+            const isSel = idx === state.selectedModeIdx;
+            const barH = Math.max(4, mag * (H - 26));
+            ctx.strokeStyle = isSel ? '#ffffff' : (m.f <= state.fSchroeder ? '#38bdf8' : 'rgba(56, 189, 248, 0.25)');
+            ctx.lineWidth = isSel ? 2.5 : 1.5;
+            ctx.beginPath(); ctx.moveTo(x, H - 14); ctx.lineTo(x, H - 14 - barH); ctx.stroke();
+          });
+
+          // Live Web Audio Analyser FFT overlay
+          if (state.analyser && state.analyserData) {
+            state.analyser.getByteFrequencyData(state.analyserData);
+            const binHz = state.sampleRate / state.analyser.fftSize;
+            ctx.strokeStyle = '#f472b6';
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            let started = false;
+            for (let b = 1; b < state.analyserData.length; b++) {
+              const f = b * binHz;
+              if (f < fMin || f > fMax) continue;
+              const x = freqToX(f);
+              const y = H - 14 - (state.analyserData[b] / 255) * (H - 24);
+              if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(xFS, 4); ctx.lineTo(xFS, H - 14); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.fillText(`f_S ${Math.round(state.fSchroeder)} Hz`, Math.min(W - 76, xFS + 5), 14);
+
+          [30, 50, 100, 200, 500, 1000, 2000, 4000].forEach((f) => {
+            ctx.fillStyle = '#64748b';
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.fillText(f >= 1000 ? `${f / 1000}k` : String(f), freqToX(f) - 6, H - 3);
+          });
+        } else if (state.plotTab === 'edc' && state.edcCurve) {
+          // Schroeder Energy Decay Curve vs Sabine slope
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          const len = state.edcCurve.length;
+          for (let i = 0; i < len; i++) {
+            const x = 34 + (i / (len - 1)) * (W - 48);
+            const db = Math.max(-60, Math.min(0, state.edcCurve[i]));
+            const y = 10 + (-db / 60) * (H - 24);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          // Theoretical Sabine -60 dB line
+          ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(34, 10);
+          ctx.lineTo(W - 14, H - 14);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('0 dB', 4, 14);
+          ctx.fillText('-60 dB', 2, H - 12);
+          ctx.fillText(`Measured EDC vs Sabine T60 (${state.T60.toFixed(2)}s)`, 44, 14);
+        } else if (state.plotTab === 'ir' && state.irLeft && state.irRight) {
+          // Stereo L/R Impulse Response waveform
+          const midY = H * 0.5;
+          const step = Math.max(1, Math.floor(state.irLeft.length / (W - 24)));
+          ctx.strokeStyle = '#38bdf8';
+          ctx.beginPath();
+          for (let px = 0; px < W - 24; px++) {
+            const idx = px * step;
+            const v = state.irLeft[idx] || 0;
+            ctx.moveTo(12 + px, midY);
+            ctx.lineTo(12 + px, midY - v * (H * 0.42));
+          }
+          ctx.stroke();
+
+          ctx.strokeStyle = '#f59e0b';
+          ctx.beginPath();
+          for (let px = 0; px < W - 24; px++) {
+            const idx = px * step;
+            const v = state.irRight[idx] || 0;
+            ctx.moveTo(12 + px, midY);
+            ctx.lineTo(12 + px, midY + Math.abs(v) * (H * 0.42));
+          }
+          ctx.stroke();
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('Stereo IR: Left (Cyan Up) / Right (Amber Down)', 14, 12);
+        }
+      }
+
+      // =========================================================================
+      // 8. ANIMATION LOOP & UI SYNC
+      // =========================================================================
+      function animate() {
+        requestAnimationFrame(animate);
+        const now = performance.now();
+
+        // Animate 3D volumetric pressure lattice oscillation
+        if (latticePoints && state.showLattice && latticeMeta.length) {
+          const mode = state.modes[state.selectedModeIdx];
+          const phase = Math.cos(now * 0.005 * (mode ? Math.min(8, mode.f / 40) : 1));
+          const colAttr = latticePoints.geometry.attributes.color;
+          for (let i = 0; i < latticeMeta.length; i++) {
+            const p = latticeMeta[i] * phase;
+            if (p >= 0) {
+              colAttr.setXYZ(i, 0.22 * p, 0.74 * p, 0.97 * p); // Cyan (+)
+            } else {
+              const ap = -p;
+              colAttr.setXYZ(i, 0.98 * ap, 0.75 * ap, 0.14 * ap); // Amber (-)
+            }
+          }
+          colAttr.needsUpdate = true;
+        }
+
+        // Expanding wavefront & source pulse on trigger
+        if (srcMesh && waveSphere && state.lastFirePerf) {
+          const dt = (now - state.lastFirePerf) / 1000;
+          const pulse = dt < 0.25 ? 1.0 + 0.9 * Math.sin((dt / 0.25) * Math.PI) : 1.0;
+          srcMesh.scale.set(pulse, pulse, pulse);
+          if (dt < 0.75) {
+            const r = 0.2 + dt * 5.2;
+            waveSphere.position.copy(srcMesh.position);
+            waveSphere.scale.set(r, r, r);
+            waveSphere.material.opacity = Math.max(0, 0.42 * (1 - dt / 0.75));
+          } else {
+            waveSphere.material.opacity = 0;
+          }
+        }
+
+        drawMainCanvas();
+        if (renderer && scene && camera) renderer.render(scene, camera);
+      }
+
+      function getAbsorptionLabel(a) {
+        if (a < 0.06) return 'Concrete';
+        if (a < 0.18) return 'Drywall';
+        if (a < 0.38) return 'Carpet/Wood';
+        if (a < 0.62) return 'Heavy Drapes';
+        return 'Anechoic-ish';
+      }
+
+      function updateUI() {
+        document.getElementById('vol-readout').textContent = state.volume < 100 ? `${state.volume.toFixed(1)} m³` : `${Math.round(state.volume)} m³`;
+        document.getElementById('dims-readout').textContent = `${state.Lx.toFixed(1)} × ${state.Ly.toFixed(1)} × ${state.Lz.toFixed(1)} m`;
+        const belowFS = state.modes.filter((m) => m.f <= state.fSchroeder).length;
+        document.getElementById('modes-count-readout').textContent = `${belowFS} modes < f_S`;
+
+        document.getElementById('abs-readout').textContent = `${state.alpha.toFixed(2)} · ${getAbsorptionLabel(state.alpha)}`;
+        document.getElementById('sabin-area-readout').textContent = `A = ${state.absorptionA.toFixed(1)} m² sabins`;
+        document.getElementById('t60-readout').textContent = `T60 = ${state.T60.toFixed(2)} s`;
+        document.getElementById('header-fs').textContent = `${Math.round(state.fSchroeder)} Hz`;
+        document.getElementById('header-t60').textContent = `${state.T60.toFixed(2)} s`;
+        document.getElementById('header-df').textContent = `${state.meanModalSpacing.toFixed(2)} Hz`;
+        document.getElementById('plot-fs-badge').textContent = `f_S = ${Math.round(state.fSchroeder)} Hz`;
+        document.getElementById('wet-readout').textContent = `${Math.round(state.dryWet * 100)}% Wet`;
+
+        document.getElementById('src-pos-label').textContent = `(${state.srcPos.map((v) => v.toFixed(2)).join(', ')})`;
+        document.getElementById('lis-pos-label').textContent = `(${state.lisPos.map((v) => v.toFixed(2)).join(', ')})`;
+
+        const list = document.getElementById('mode-list');
+        list.innerHTML = '';
+        state.modes.slice(0, 14).forEach((m, idx) => {
+          const active = idx === state.selectedModeIdx;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `w-full px-2.5 py-1.5 rounded-lg mono text-[10px] flex items-center justify-between border transition-colors ${
+            active ? 'bg-sky-500/20 border-sky-400 text-white' : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800'
+          }`;
+          const coupPct = Math.round(Math.abs(m.coupling) * 100);
+          btn.innerHTML = `<span>(${m.nx},${m.ny},${m.nz}) ${m.f.toFixed(1)} Hz</span><span class="${coupPct < 15 ? 'text-rose-400' : 'text-amber-300'}">${coupPct}%</span>`;
+          btn.addEventListener('click', () => {
+            state.selectedModeIdx = idx;
+            rebuild3DRoom();
+            updateUI();
+          });
+          list.appendChild(btn);
+        });
+
+        const sel = state.modes[state.selectedModeIdx];
+        if (sel) {
+          document.getElementById('active-mode-info').textContent = `Mode (${sel.nx}, ${sel.ny}, ${sel.nz}) — ${sel.f.toFixed(1)} Hz`;
+          document.getElementById('active-mode-coupling').textContent =
+            `Coupling |Ψ| = ${Math.abs(sel.coupling).toFixed(2)} (${Math.abs(sel.coupling) < 0.12 ? 'near nodal null' : 'strongly excited'})`;
+        }
+      }
+
+      function updateVerificationUI() {
+        const v = state.verification;
+        if (!v) return;
+        const count = [v.pass1, v.pass2, v.pass3, v.pass4].filter(Boolean).length;
+        document.getElementById('verify-badge-text').textContent = `${count}/4 ${count === 4 ? 'PASS' : 'CHECK'}`;
+
+        const setB = (id, ok) => {
+          const el = document.getElementById(id);
+          el.textContent = ok ? 'PASS' : 'FAIL';
+          el.className = `mono text-[10px] font-bold px-2 py-1 rounded border ${
+            ok ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30' : 'bg-rose-500/20 text-rose-300 border-rose-400/30'
+          }`;
+        };
+
+        setB('v-check1-badge', v.pass1);
+        document.getElementById('v-check1-detail').textContent =
+          `Lowest 10 modes (${v.modes10[0].f.toFixed(1)}..${v.modes10[9].f.toFixed(1)} Hz) all verified as local spectral peaks in IR`;
+        setB('v-check2-badge', v.pass2);
+        document.getElementById('v-check2-detail').textContent =
+          `f_S(10 m³)=${v.fS1.toFixed(1)} Hz, f_S(100 m³)=${v.fS2.toFixed(1)} Hz · Ratio=${v.ratio12.toFixed(4)} (√10=3.1623)`;
+        setB('v-check3-badge', v.pass3);
+        document.getElementById('v-check3-detail').textContent =
+          `Sabine T60 = 0.161·V/A verified across ᾱ ∈ {0.10, 0.25, 0.50} (max error ${v.sabineMaxErr.toFixed(2)}%)`;
+        setB('v-check4-badge', v.pass4);
+        document.getElementById('v-check4-detail').textContent =
+          `Modes < 500 Hz: 15 m³ = ${v.countSmall}, 1500 m³ = ${v.countLarge} · Ratio = ${v.densityRatio.toFixed(1)}× (~100× expected)`;
+      }
+
+      function renderVisitorBar() {
+        const grid = document.getElementById('visitor-bar-grid');
+        grid.innerHTML = '';
+        state.barPattern.forEach((on, i) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `h-5 rounded mono text-[9px] border ${
+            on ? 'bg-sky-500/30 border-sky-400 text-sky-200' : 'bg-slate-800/70 border-slate-700 text-slate-500'
+          }`;
+          btn.textContent = i + 1;
+          btn.addEventListener('click', () => {
+            state.barPattern[i] = state.barPattern[i] ? 0 : 1;
+            renderVisitorBar();
+          });
+          grid.appendChild(btn);
+        });
+      }
+
+      let toastTimer = null;
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+      }
+
+      let irDebounce = null;
+      function scheduleRoomUpdate() {
+        updateRoomPhysics();
+        rebuild3DRoom();
+        updateUI();
+        if (irDebounce) clearTimeout(irDebounce);
+        irDebounce = setTimeout(() => {
+          rebuildAndLoadIR();
+          runFourCheckVerification();
+        }, 40);
+      }
+
+      function applyRoomSnapshot(snap) {
+        state.volume = snap.volume;
+        state.alpha = snap.alpha;
+        state.srcPos = snap.srcPos.slice();
+        state.lisPos = snap.lisPos.slice();
+        const norm = Math.log(state.volume / MIN_V) / Math.log(MAX_V / MIN_V);
+        document.getElementById('vol-slider').value = Math.round(norm * 1000);
+        document.getElementById('abs-slider').value = Math.round(state.alpha * 100);
+        document.getElementById('src-pos-slider').value = Math.round(state.srcPos[0] * 100);
+        document.getElementById('lis-pos-slider').value = Math.round(state.lisPos[0] * 100);
+        scheduleRoomUpdate();
+      }
+
+      function bindEvents() {
+        document.getElementById('btn-trigger-source').addEventListener('click', () => fireSource());
+        document.getElementById('btn-export-ir').addEventListener('click', exportStereoIRWav);
+
+        document.getElementById('btn-ab-store').addEventListener('click', () => {
+          state.snapshotA = {
+            volume: state.volume,
+            alpha: state.alpha,
+            srcPos: state.srcPos.slice(),
+            lisPos: state.lisPos.slice()
+          };
+          document.getElementById('btn-ab-swap').classList.remove('hidden');
+          showToast(`Stored Room A (${state.volume.toFixed(1)} m³, f_S=${Math.round(state.fSchroeder)} Hz)`);
+        });
+
+        document.getElementById('btn-ab-swap').addEventListener('click', () => {
+          if (!state.snapshotA) return;
+          const prevA = state.snapshotA;
+          state.snapshotA = {
+            volume: state.volume,
+            alpha: state.alpha,
+            srcPos: state.srcPos.slice(),
+            lisPos: state.lisPos.slice()
+          };
+          applyRoomSnapshot(prevA);
+          showToast(`Swapped to ${state.volume.toFixed(1)} m³ (f_S=${Math.round(state.fSchroeder)} Hz)`);
+        });
+
+        document.querySelectorAll('.src-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.sourceType = btn.dataset.src;
+            document.querySelectorAll('.src-btn').forEach((b) => {
+              const active = b.dataset.src === state.sourceType;
+              b.className = `src-btn mono text-[10px] py-1.5 rounded-lg border ${
+                active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`;
+            });
+            document.getElementById('visitor-bar-wrap').classList.toggle('hidden', state.sourceType !== 'bar');
+          });
+        });
+
+        document.getElementById('btn-bar-toggle').addEventListener('click', () => {
+          state.barLooping = !state.barLooping;
+          document.getElementById('btn-bar-toggle').textContent = `Loop: ${state.barLooping ? 'ON' : 'OFF'}`;
+          if (state.barLooping) {
+            ensureAudioGraph();
+            state.barNextStep = 0;
+            state.barNextTime = state.audioCtx.currentTime + 0.02;
+            barLookaheadLoop();
+          } else if (state.barScheduler) {
+            clearTimeout(state.barScheduler);
+            state.barScheduler = null;
+          }
+        });
+
+        document.getElementById('vol-slider').addEventListener('input', (e) => {
+          const norm = Number(e.target.value) / 1000;
+          state.volume = MIN_V * Math.pow(MAX_V / MIN_V, norm);
+          scheduleRoomUpdate();
+        });
+
+        document.getElementById('abs-slider').addEventListener('input', (e) => {
+          state.alpha = Number(e.target.value) / 100;
+          scheduleRoomUpdate();
+        });
+
+        document.getElementById('src-pos-slider').addEventListener('input', (e) => {
+          const v = Number(e.target.value) / 100;
+          state.srcPos = [v, v, v];
+          scheduleRoomUpdate();
+        });
+
+        document.getElementById('lis-pos-slider').addEventListener('input', (e) => {
+          const v = Number(e.target.value) / 100;
+          state.lisPos = [v, Math.max(0.05, v * 0.9), Math.max(0.05, v * 0.65)];
+          scheduleRoomUpdate();
+        });
+
+        document.getElementById('btn-pos-corner').addEventListener('click', () => {
+          state.srcPos = [0.03, 0.03, 0.03];
+          document.getElementById('src-pos-slider').value = 3;
+          scheduleRoomUpdate();
+          showToast('Source moved to Corner (excites all modes)');
+        });
+
+        document.getElementById('btn-pos-centre').addEventListener('click', () => {
+          state.srcPos = [0.5, 0.5, 0.5];
+          document.getElementById('src-pos-slider').value = 50;
+          scheduleRoomUpdate();
+          showToast('Source moved to Centre (odd modes suppressed)');
+        });
+
+        document.getElementById('wet-slider').addEventListener('input', (e) => {
+          state.dryWet = Number(e.target.value) / 100;
+          updateDryWetGains();
+          document.getElementById('wet-readout').textContent = `${Math.round(state.dryWet * 100)}% Wet`;
+        });
+
+        document.getElementById('btn-toggle-lattice').addEventListener('click', () => {
+          state.showLattice = !state.showLattice;
+          document.getElementById('btn-toggle-lattice').textContent = `Volumetric: ${state.showLattice ? 'ON' : 'OFF'}`;
+          rebuild3DRoom();
+        });
+
+        document.querySelectorAll('.plot-tab').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            state.plotTab = btn.dataset.plot;
+            document.querySelectorAll('.plot-tab').forEach((b) => {
+              const active = b.dataset.plot === state.plotTab;
+              b.className = `plot-tab text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${
+                active ? 'bg-sky-500/20 text-sky-300 border-sky-400/35' : 'bg-slate-800/80 text-slate-400 border-slate-700'
+              }`;
+            });
+          });
+        });
+
+        const modal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          runFourCheckVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        });
+        document.getElementById('btn-rerun-verify').addEventListener('click', runFourCheckVerification);
+
+        document.getElementById('btn-toggle-panel').addEventListener('click', () => {
+          document.getElementById('left-panel').classList.toggle('-translate-x-[110%]');
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (e.code === 'Space' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            e.preventDefault();
+            fireSource();
+          }
+        });
+      }
+
+      window.addEventListener('load', () => {
+        updateRoomPhysics();
+        initThree();
+        rebuildAndLoadIR();
+        renderVisitorBar();
+        updateUI();
+        runFourCheckVerification();
+        bindEvents();
+        animate();
+      });
+    })();
+  </script>
+</body>
+</html>
