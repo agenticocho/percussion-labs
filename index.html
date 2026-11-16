@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Percussion Labs — Thirty-Six Interactive Laboratories</title>
+<title>Percussion Labs — Thirty-Eight Interactive Laboratories</title>
 <meta name="description" content="Thirty-six browser-native percussion laboratories, plus two specialty pendulum pieces: rudiments, cymatics, cavitation, gongs, bells, cymbals, snares, steelpans, marimbas, talking drums, waterphones, granular cascades, timpani, taiko, tuning forks, singing bowls, chimera oscillators, solitons, isospectral drums, p-adic rhythm and aperiodic tilings.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,6 +62,12 @@
     letter-spacing:.1em;
   }
   section{margin-bottom:52px}
+
+  .family{
+    font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--faint);margin:26px 0 12px;
+  }
+  .family:first-of-type{margin-top:0}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
 
@@ -211,24 +217,24 @@
 <symbol id="i-spiraldrum" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12a1.5 1.5 0 101.5 1.5A3.5 3.5 0 0010 10a5.5 5.5 0 018.5 4.5A8 8 0 117 8.5"/></symbol>
 <symbol id="i-jamwave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6h6v12H2zM10 6h4v12h-4zM16 6h6v12h-6z" opacity=".55"/><path d="M2 12c4-2 6 2 10 0s6 2 10 0"/></symbol>
 <symbol id="i-graphchoir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="8" r="2"/><circle cx="12" cy="4" r="2"/><circle cx="19" cy="9" r="2"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="18" r="2"/><path d="M5 8l7-4M12 4l7 5M5 8l3 9M19 9l-3 9M8 17l8 1"/></symbol>
-<symbol id="i-cavitykick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v10c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M8 12h8M8 12l2-2M8 12l2 2M16 12l-2-2M16 12l-2 2"/></symbol>
+<symbol id="i-cavitykick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v10c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M8 12h8M8 12l2-2M8 12l2 2M16 12l-2-2M16 12l-2 2"/></symbol><symbol id="i-pendulum" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v9"/><circle cx="12" cy="15" r="3.5"/><path d="M5 21h14"/><path d="M6 6l3 4M18 6l-3 4"/></symbol><symbol id="i-newton" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v10M9 4v10M14 4v10M19 4v10"/><circle cx="4" cy="17" r="2"/><circle cx="9" cy="17" r="2"/><circle cx="14" cy="17" r="2"/><circle cx="19" cy="17" r="2"/></symbol>
 </svg>
 <div class="wrap">
 
   <header>
     <div class="eyebrow">Percussion Series</div>
-    <h1>Thirty-six percussion <span>laboratories</span>,<br>running in your browser.</h1>
+    <h1>Thirty-eight percussion <span>laboratories</span>,<br>organised by what they are.</h1>
     <p class="lede">
       Each lab is a self-contained instrument built from a different piece of
       physics or mathematics — <strong>cymatics, cavitation, gongs, tuning forks,
       singing bowls, chimera oscillators, solitons, isospectral drums, p-adic trees,
       aperiodic tilings</strong>. Turn a knob and the underlying model responds; the sound
       is generated from the model, not sampled over it. No build step, no backend,
-      no account. Listed in the order they were built, which tracks the order of
-      ambition as well: technique first, then visible physics, then abstractions.
+      no account. Twenty-eight instruments grouped by family, eight experiments grouped by mechanism,
+      and two labs that are about the whole collection.
     </p>
     <div class="stats">
-      <div class="stat"><b>36</b><i>Laboratories</i></div>
+      <div class="stat"><b>38</b><i>Laboratories</i></div>
       <div class="stat"><b>+2</b><i>Specialty pieces</i></div>
       <div class="stat"><b>0</b><i>Install steps</i></div>
       <div class="stat"><b>100%</b><i>Client-side</i></div>
@@ -237,114 +243,57 @@
 
   <section>
     <div class="section-head">
-      <h2>The Thirty-Six</h2>
-      <span>01–36 · in order of construction</span>
+      <h2>INSTRUMENTS</h2>
+      <span>what a strike sounds like · 28 labs</span>
     </div>
 
+    <div class="family">plates & discs</div>
     <div class="grid">
-
-      <a class="card" href="pas_40_studio_interactive_drum_rudiments_simulator_sample_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-pas40"/></svg>
-        <div class="num">01</div>
-        <h3 class="name">PAS-40 STUDIO</h3>
-        <p class="desc">The forty Percussive Arts Society rudiments as an interactive simulator and sample lab. Pure technique, no physics — where the series started, and the ground everything else stands on.</p>
-        <div class="tags"><span class="tag">rudiments</span><span class="tag">PAS-40</span><span class="tag">technique</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a class="card" href="eigenpulse_spatial_drumline_drill_bessel_cymatics_polyrhythmic_hocket_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-eigenpulse"/></svg>
-        <div class="num">02</div>
-        <h3 class="name">EIGENPULSE</h3>
-        <p class="desc">Spatial drumline drill and polyrhythmic hocket, visualised through Bessel-mode cymatics. Where a drill line meets an eigenmode.</p>
-        <div class="tags"><span class="tag">Bessel modes</span><span class="tag">hocket</span><span class="tag">drumline</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a class="card" href="chronocrystal_3d_spectral_graph_percussion_pendulum_wave_polyrhythmic_automaton.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-chronocrystal"/></svg>
-        <div class="num">03</div>
-        <h3 class="name">CHRONOCRYSTAL</h3>
-        <p class="desc">3D spectral graph percussion with a pendulum wave and a polyrhythmic automaton — a time crystal you can hear fold and unfold.</p>
-        <div class="tags"><span class="tag">spectral graph</span><span class="tag">polyrhythm</span><span class="tag">automaton</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a class="card" href="kac_spectra_isospectral_drum_solver_poincar_hyperbolic_tree_kuramoto_chimera_synth.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-kac"/></svg>
-        <div class="num">04</div>
-        <h3 class="name">KAC-SPECTRA</h3>
-        <p class="desc">Solve the inverse problem — can you hear the shape of a drum? An isospectral drum solver, a Poincaré hyperbolic tree and a Kuramoto chimera synth.</p>
-        <div class="tags"><span class="tag">isospectral</span><span class="tag">Kuramoto</span><span class="tag">hyperbolic</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a class="card" href="quasicrystal_pu_penrose_aperiodic_percussion_delta_rule_state_machine_reversible_automaton_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-quasicrystal"/></svg>
-        <div class="num">05</div>
-        <h3 class="name">QUASICRYSTAL-PU</h3>
-        <p class="desc">Penrose aperiodic percussion — a tiling that never repeats, driven by a delta-rule state machine and a reversible automaton.</p>
-        <div class="tags"><span class="tag">Penrose tiling</span><span class="tag">aperiodic</span><span class="tag">reversible</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a class="card" href="padic_braid_p_adic_ultrametric_tree_non_holomorphic_fractal_series_synth_braid_group_b_loom.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-padic"/></svg>
-        <div class="num">06</div>
-        <h3 class="name">PADIC-BRAID</h3>
-        <p class="desc">Rhythm on a p-adic ultrametric tree, a non-holomorphic fractal series synth, and a braid group B₄ loom — where distance is not what you think.</p>
-        <div class="tags"><span class="tag">p-adic</span><span class="tag">braid group</span><span class="tag">fractal</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
 
       <a class="card" href="cyma_forge_percussive_cymatics_faraday_hydro_tank_biharmonic_chladni_plate_acoustic_levitation_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-cymaforge"/></svg>
-        <div class="num">07</div>
+        <div class="num">01</div>
         <h3 class="name">CYMA-FORGE</h3>
         <p class="desc">Percussive cymatics: a Faraday hydro-tank, a biharmonic Chladni plate and an acoustic levitation field. Strike a plate and watch the sand find its nodes.</p>
         <div class="tags"><span class="tag">Chladni</span><span class="tag">Faraday waves</span><span class="tag">levitation</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="hyper_soliton_4d_polychoron_percussion_hopf_fibration_torus_nonlinear_toda_soliton_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-hypersoliton"/></svg>
-        <div class="num">08</div>
-        <h3 class="name">HYPER-SOLITON</h3>
-        <p class="desc">A 4D polychoron projected through a Hopf fibration, struck as percussion, with a nonlinear Toda lattice carrying the transients.</p>
-        <div class="tags"><span class="tag">4D / Hopf</span><span class="tag">Toda lattice</span><span class="tag">solitons</span></div>
+      <a class="card" href="cymbal_3d_f_ppl_von_k_rm_n_nonlinear_plate_weyl_modal_density_wave_turbulence_chaos_wav_loop_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-cymbal"/></svg>
+        <div class="num">02</div>
+        <h3 class="name">CYMBAL-3D</h3>
+        <p class="desc">A Föppl–von Kármán nonlinear plate with Weyl modal density — thousands of inharmonic modes summed into bronze. No pitch, no harmonics, just a plate whose modal spacing dissolves into shimmer at the edge and speaks in defined partials at the bell.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Weyl density</span><span class="tag">nonlinear plate</span><span class="tag">bronze</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="cavitron_rayleigh_plesset_sonoluminescence_rijke_thermoacoustic_flame_shear_thickening_impact_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-cavitron"/></svg>
-        <div class="num">09</div>
-        <h3 class="name">CAVITRON</h3>
-        <p class="desc">Rayleigh–Plesset bubble collapse and sonoluminescence, a Rijke thermoacoustic flame tube, and shear-thickening impact rheology — three ways a strike becomes light and heat.</p>
-        <div class="tags"><span class="tag">cavitation</span><span class="tag">thermoacoustic</span><span class="tag">rheology</span></div>
+      <a class="card" href="crotales_3d_orchestral_chromatic_antique_cymbals_chladni_disk_modes_bowed_edge_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-crotales"/></svg>
+        <div class="num">03</div>
+        <h3 class="name">CROTALES-3D</h3>
+        <p class="desc">Chromatic antique cymbals as Chladni disk modes, struck or bowed at the edge. A small thick disk tuned to a definite pitch, which makes it the rare bronze instrument that can be played in a melody — and bowing the rim excites modes a strike cannot reach.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Chladni disk</span><span class="tag">antique cymbals</span><span class="tag">bowed edge</span><span class="tag">chromatic</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="chimera_swarm_3d_kuramoto_sakaguchi_chimera_manifold_swarmalator_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-chimera"/></svg>
-        <div class="num">10</div>
-        <h3 class="name">CHIMERA-SWARM</h3>
-        <p class="desc">A 3D Kuramoto–Sakaguchi chimera manifold and swarmalator: one population locks in phase while another stays incoherent, and the boundary between them is what you hear.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">Kuramoto–Sakaguchi</span><span class="tag">swarmalator</span><span class="tag">chimera</span></div>
+      <a class="card" href="pan_3d_steelpan_handpan_1_2_3_orthogonal_mode_coupling_loop_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-pan"/></svg>
+        <div class="num">04</div>
+        <h3 class="name">PAN-3D</h3>
+        <p class="desc">A steelpan and handpan whose note areas are tuned to 1:2:3 orthogonal mode coupling — the only struck object here that was designed to be harmonic rather than left inharmonic. Strike a note field and the overtone sits exactly where the tuner put it, which is why a pan sounds placed and a cymbal sounds found.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">steelpan</span><span class="tag">handpan</span><span class="tag">harmonic tuning</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="diapason_3d_full_screen_3d_euler_bernoulli_tuning_fork_von_mises_stress_6_eigenmode_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-diapason"/></svg>
-        <div class="num">11</div>
-        <h3 class="name">DIAPASON-3D</h3>
-        <p class="desc">A full-screen 3D Euler–Bernoulli tuning fork with von Mises stress and six eigenmodes — the geometry of a struck fork resolved into stress fields and the modes that follow from them.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">Euler–Bernoulli</span><span class="tag">von Mises</span><span class="tag">eigenmodes</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
+    </div>
+
+    <div class="family">shells & bells</div>
+    <div class="grid">
 
       <a class="card" href="k_rm_n_gong_3d_f_ppl_von_k_rm_n_nonlinear_shell_wave_turbulence_pitch_glissando_gong_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-karman"/></svg>
-        <div class="num">12</div>
+        <div class="num">05</div>
         <h3 class="name">KÁRMÁN-GONG 3D</h3>
         <p class="desc">Föppl–von Kármán nonlinear shell dynamics with wave turbulence and pitch glissando — a gong whose pitch bends as the shell deforms, which is why a struck gong blooms instead of simply ringing.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">Föppl–von Kármán</span><span class="tag">shell</span><span class="tag">glissando</span></div>
@@ -353,7 +302,7 @@
 
       <a class="card" href="keisu_3d_standing_bell_singing_bowl_rayleigh_love_rim_modes_faraday_spouting_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-keisu"/></svg>
-        <div class="num">13</div>
+        <div class="num">06</div>
         <h3 class="name">KEISU-3D</h3>
         <p class="desc">A standing bell and a singing bowl: Rayleigh–Love rim modes plus Faraday spouting. Two ways a curved vessel sings — coupled rim modes in the metal, and a liquid film climbing and breaking from the wall.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">Rayleigh–Love</span><span class="tag">rim modes</span><span class="tag">Faraday spouting</span></div>
@@ -362,16 +311,21 @@
 
       <a class="card" href="campana_3d_free_free_hanging_bell_hum_prime_tierce_quint_nominal_partials_bell_swarm_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-campana"/></svg>
-        <div class="num">14</div>
+        <div class="num">07</div>
         <h3 class="name">CAMPANA-3D</h3>
         <p class="desc">A free-free hanging bell resolved into its five named partials — hum, prime, tierce, quint and nominal — plus a bell swarm. The tierce sits a minor third above the prime, which is why a Western bell sounds minor whatever note you think you struck.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">free-free</span><span class="tag">partials</span><span class="tag">tierce</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
+    </div>
+
+    <div class="family">membranes & drums</div>
+    <div class="grid">
+
       <a class="card" href="timpani_3d_coupled_kettle_cavity_air_spring_live_pedal_portamento_bessel_inharmonicity_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-timpani"/></svg>
-        <div class="num">15</div>
+        <div class="num">08</div>
         <h3 class="name">TIMPANI-3D</h3>
         <p class="desc">A coupled kettle-cavity air spring, live pedal portamento and Bessel inharmonicity — the one percussion instrument that changes pitch while it is still ringing. The partials are not harmonic: roughly 1 : 1.59 : 2.14 : 2.30, which is why a timpanist tunes by ear and never by ratio.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">air spring</span><span class="tag">portamento</span><span class="tag">Bessel</span></div>
@@ -380,144 +334,283 @@
 
       <a class="card" href="taiko_3d_coupled_dual_membrane_wadaiko_nonlinear_pitch_glide_kuchi_sh_ga_wav_loop_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-taiko"/></svg>
-        <div class="num">16</div>
+        <div class="num">09</div>
         <h3 class="name">TAIKO-3D</h3>
         <p class="desc">A coupled dual-membrane wadaiko: two heads sharing one air column, with nonlinear pitch glide and kuchi-shōga vocal notation rendered as a WAV loop. The coupled heads are why a taiko's pitch bends under its own strike energy rather than settling where it started.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">dual membrane</span><span class="tag">pitch glide</span><span class="tag">kuchi-shōga</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="cymbal_3d_f_ppl_von_k_rm_n_nonlinear_plate_weyl_modal_density_wave_turbulence_chaos_wav_loop_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-cymbal"/></svg>
-        <div class="num">17</div>
-        <h3 class="name">CYMBAL-3D</h3>
-        <p class="desc">A Föppl–von Kármán nonlinear plate with Weyl modal density — thousands of inharmonic modes summed into bronze. No pitch, no harmonics, just a plate whose modal spacing dissolves into shimmer at the edge and speaks in defined partials at the bell.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">Weyl density</span><span class="tag">nonlinear plate</span><span class="tag">bronze</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
       <a class="card" href="snare_3d_coupled_membrane_wire_acoustic_physics_pas_40_rudiment_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-snare"/></svg>
-        <div class="num">18</div>
+        <div class="num">10</div>
         <h3 class="name">SNARE-3D</h3>
         <p class="desc">A coupled membrane and snare-wire model with the PAS-40 rudiments built in. The wires are the interesting part: they are a stochastic nonlinear attachment, not a filter, so the buzz responds to how hard you hit and where — which is why a buzz roll and a marching rudiment sound like different instruments.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">snare wires</span><span class="tag">coupled membrane</span><span class="tag">PAS-40</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="pan_3d_steelpan_handpan_1_2_3_orthogonal_mode_coupling_loop_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-pan"/></svg>
-        <div class="num">19</div>
-        <h3 class="name">PAN-3D</h3>
-        <p class="desc">A steelpan and handpan whose note areas are tuned to 1:2:3 orthogonal mode coupling — the only struck object here that was designed to be harmonic rather than left inharmonic. Strike a note field and the overtone sits exactly where the tuner put it, which is why a pan sounds placed and a cymbal sounds found.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">steelpan</span><span class="tag">handpan</span><span class="tag">harmonic tuning</span></div>
+      <a class="card" href="cavity_kick_3d_bass_drum_helmholtz_avoided_crossing_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-cavitykick"/></svg>
+        <div class="num">11</div>
+        <h3 class="name">CAVITY-KICK 3D</h3>
+        <p class="desc">A bass drum as two resonators of equal standing: the head and the air inside it. Sweep the cavity volume through the head frequency and the two modes refuse to cross — they repel, with a minimum gap of 2g, and a visitor expecting an intersection hears two tones bounce off each other instead. The deepest fundamental in the suite, and the only lab where the air is the instrument.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Helmholtz cavity</span><span class="tag">avoided crossing</span><span class="tag">sub-bass</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
-      <a class="card" href="rainstick_3d_granular_avalanche_pin_lattice_jamming_phase_transition_timing_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-rainstick"/></svg>
-        <div class="num">20</div>
-        <h3 class="name">RAINSTICK-3D</h3>
-        <p class="desc">A granular avalanche through a pin lattice, with jamming as a real phase transition. The sound is not modal — it is a timing statistic: correlated cascades sound like rain, independent clicks sound like dust, and at high fill the flow stops entirely.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">granular</span><span class="tag">jamming</span><span class="tag">inter-arrival</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-      <a class="card" href="marimba_3d_arch_carved_bar_1_4_10_harmonic_physics_quarter_wave_resonator_4_mallet_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-marimba"/></svg>
-        <div class="num">21</div>
-        <h3 class="name">MARIMBA-3D</h3>
-        <p class="desc">An arch-carved rosewood bar over a quarter-wave resonator tube, tuned so the second partial sits at 4x and the third at 10x the fundamental. A pan is tuned by hammering a plate; a bar is tuned by removing mass from underneath — same idea, opposite craft, and it is why wood sounds like wood.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">arch carve</span><span class="tag">1:4:10</span><span class="tag">quarter-wave tube</span><span class="tag">mallet choice</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-      <a class="card" href="beat_forge_3d_percussionist_s_beat_architecture_euclidean_necklaces_microtiming_groove_polyrhythm_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-beatforge"/></svg>
-        <div class="num">22</div>
-        <h3 class="name">BEAT-FORGE 3D</h3>
-        <p class="desc">Beat architecture as mathematics: Euclidean necklaces distributing hits as evenly as a rhythm allows, microtiming that decides whether a groove sits or swings, and polyrhythms that lock only at the least common multiple. The first lab here about when a hit happens rather than what it sounds like.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">Euclidean necklace</span><span class="tag">microtiming</span><span class="tag">polyrhythm</span><span class="tag">groove</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-      <a class="card" href="cochlea_mask_3d_percussion_psychoacoustics_auditory_masking_thresholds_pitch_perception_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-cochlea"/></svg>
-        <div class="num">23</div>
-        <h3 class="name">COCHLEA-MASK 3D</h3>
-        <p class="desc">The listener, finally: auditory masking thresholds and pitch perception. One hit can hide another that is louder, and where the threshold sits depends on frequency, time and bandwidth. Every other lab asks how an object vibrates; this one asks what you can actually hear of it.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">masking</span><span class="tag">thresholds</span><span class="tag">pitch perception</span><span class="tag">psychoacoustics</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
       <a class="card" href="talking_drum_3d_hourglass_tension_cord_pitch_modulation_speech_surrogate_physics_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-talkingdrum"/></svg>
-        <div class="num">24</div>
+        <div class="num">12</div>
         <h3 class="name">TALKING-DRUM 3D</h3>
         <p class="desc">An hourglass drum whose cord-laced head is squeezed under the arm to bend pitch continuously mid-strike — the only drum here whose pitch is played rather than set. The hourglass body is a coupled resonator, and the tension modulation is what lets a drum imitate a tonal language.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">tension cords</span><span class="tag">pitch modulation</span><span class="tag">hourglass body</span><span class="tag">speech surrogate</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
-      <a class="card" href="crotales_3d_orchestral_chromatic_antique_cymbals_chladni_disk_modes_bowed_edge_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-crotales"/></svg>
-        <div class="num">25</div>
-        <h3 class="name">CROTALES-3D</h3>
-        <p class="desc">Chromatic antique cymbals as Chladni disk modes, struck or bowed at the edge. A small thick disk tuned to a definite pitch, which makes it the rare bronze instrument that can be played in a melody — and bowing the rim excites modes a strike cannot reach.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">Chladni disk</span><span class="tag">antique cymbals</span><span class="tag">bowed edge</span><span class="tag">chromatic</span></div>
+
+    </div>
+
+    <div class="family">bars & beams</div>
+    <div class="grid">
+
+      <a class="card" href="diapason_3d_full_screen_3d_euler_bernoulli_tuning_fork_von_mises_stress_6_eigenmode_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-diapason"/></svg>
+        <div class="num">13</div>
+        <h3 class="name">DIAPASON-3D</h3>
+        <p class="desc">A full-screen 3D Euler–Bernoulli tuning fork with von Mises stress and six eigenmodes — the geometry of a struck fork resolved into stress fields and the modes that follow from them.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Euler–Bernoulli</span><span class="tag">von Mises</span><span class="tag">eigenmodes</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+      <a class="card" href="marimba_3d_arch_carved_bar_1_4_10_harmonic_physics_quarter_wave_resonator_4_mallet_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-marimba"/></svg>
+        <div class="num">14</div>
+        <h3 class="name">MARIMBA-3D</h3>
+        <p class="desc">An arch-carved rosewood bar over a quarter-wave resonator tube, tuned so the second partial sits at 4x and the third at 10x the fundamental. A pan is tuned by hammering a plate; a bar is tuned by removing mass from underneath — same idea, opposite craft, and it is why wood sounds like wood.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">arch carve</span><span class="tag">1:4:10</span><span class="tag">quarter-wave tube</span><span class="tag">mallet choice</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
       <a class="card" href="waterphone_3d_hydro_acoustic_friction_idiophone_fluid_slosh_modal_portamento_stick_slip_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-waterphone"/></svg>
-        <div class="num">26</div>
+        <div class="num">15</div>
         <h3 class="name">WATERPHONE-3D</h3>
         <p class="desc">A hydro-acoustic friction idiophone: a steel bowl, a column of water and a ring of tines. Tip it and the water redistributes, shifting every mode at once — a portamento with no moving part, driven by stick-slip and a fluid that is also the instrument.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">hydro-acoustic</span><span class="tag">fluid slosh</span><span class="tag">stick-slip</span><span class="tag">modal portamento</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">granular</div>
+    <div class="grid">
+
+      <a class="card" href="rainstick_3d_granular_avalanche_pin_lattice_jamming_phase_transition_timing_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-rainstick"/></svg>
+        <div class="num">16</div>
+        <h3 class="name">RAINSTICK-3D</h3>
+        <p class="desc">A granular avalanche through a pin lattice, with jamming as a real phase transition. The sound is not modal — it is a timing statistic: correlated cascades sound like rain, independent clicks sound like dust, and at high fill the flow stops entirely.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">granular</span><span class="tag">jamming</span><span class="tag">inter-arrival</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
+
+    <div class="family">technique</div>
+    <div class="grid">
+
+      <a class="card" href="pas_40_studio_interactive_drum_rudiments_simulator_sample_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-pas40"/></svg>
+        <div class="num">17</div>
+        <h3 class="name">PAS-40 STUDIO</h3>
+        <p class="desc">The forty Percussive Arts Society rudiments as an interactive simulator and sample lab. Pure technique, no physics — where the series started, and the ground everything else stands on.</p>
+        <div class="tags"><span class="tag">rudiments</span><span class="tag">PAS-40</span><span class="tag">technique</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
+
+    <div class="family">pendulums</div>
+    <div class="grid">
+
+      <a class="card" href="pendulum_loom_3d_harmonic_phase_loom_blackburn_lissajous_coupled_huygens_wave_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-pendulum"/></svg>
+        <div class="num">18</div>
+        <h3 class="name">PENDULUM-LOOM</h3>
+        <p class="desc">A 3D harmonic phase loom driven by Blackburn pendulums, Lissajous figures and coupled Huygens clocks — interference turned into rhythm. The most purely physical piece in the set: every hit traces back to a pendulum you can watch swing.</p>
+        <div class="tags"><span class="tag">coupled oscillators</span><span class="tag">Lissajous</span><span class="tag">Huygens</span><span class="tag">phase</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="newton_pulse_3d_precision_percussive_newton_s_cradle_oddball_mass_chain_zero_g_bpm_collider_rhythm_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-newton"/></svg>
+        <div class="num">19</div>
+        <h3 class="name">NEWTON-PULSE 3D</h3>
+        <p class="desc">A precision percussive Newton's cradle with an oddball mass chain, a zero-G BPM collider and a rhythm lab. Momentum transfer as rhythm — one ball in and two out is a musical decision, not just a physics demonstration.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">momentum transfer</span><span class="tag">mass chain</span><span class="tag">zero-G</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
+
+    <div class="family">abstract & mathematical</div>
+    <div class="grid">
+
+      <a class="card" href="chronocrystal_3d_spectral_graph_percussion_pendulum_wave_polyrhythmic_automaton.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-chronocrystal"/></svg>
+        <div class="num">20</div>
+        <h3 class="name">CHRONOCRYSTAL</h3>
+        <p class="desc">3D spectral graph percussion with a pendulum wave and a polyrhythmic automaton — a time crystal you can hear fold and unfold.</p>
+        <div class="tags"><span class="tag">spectral graph</span><span class="tag">polyrhythm</span><span class="tag">automaton</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="eigenpulse_spatial_drumline_drill_bessel_cymatics_polyrhythmic_hocket_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-eigenpulse"/></svg>
+        <div class="num">21</div>
+        <h3 class="name">EIGENPULSE</h3>
+        <p class="desc">Spatial drumline drill and polyrhythmic hocket, visualised through Bessel-mode cymatics. Where a drill line meets an eigenmode.</p>
+        <div class="tags"><span class="tag">Bessel modes</span><span class="tag">hocket</span><span class="tag">drumline</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="kac_spectra_isospectral_drum_solver_poincar_hyperbolic_tree_kuramoto_chimera_synth.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-kac"/></svg>
+        <div class="num">22</div>
+        <h3 class="name">KAC-SPECTRA</h3>
+        <p class="desc">Solve the inverse problem — can you hear the shape of a drum? An isospectral drum solver, a Poincaré hyperbolic tree and a Kuramoto chimera synth.</p>
+        <div class="tags"><span class="tag">isospectral</span><span class="tag">Kuramoto</span><span class="tag">hyperbolic</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="quasicrystal_pu_penrose_aperiodic_percussion_delta_rule_state_machine_reversible_automaton_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-quasicrystal"/></svg>
+        <div class="num">23</div>
+        <h3 class="name">QUASICRYSTAL-PU</h3>
+        <p class="desc">Penrose aperiodic percussion — a tiling that never repeats, driven by a delta-rule state machine and a reversible automaton.</p>
+        <div class="tags"><span class="tag">Penrose tiling</span><span class="tag">aperiodic</span><span class="tag">reversible</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="padic_braid_p_adic_ultrametric_tree_non_holomorphic_fractal_series_synth_braid_group_b_loom.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-padic"/></svg>
+        <div class="num">24</div>
+        <h3 class="name">PADIC-BRAID</h3>
+        <p class="desc">Rhythm on a p-adic ultrametric tree, a non-holomorphic fractal series synth, and a braid group B₄ loom — where distance is not what you think.</p>
+        <div class="tags"><span class="tag">p-adic</span><span class="tag">braid group</span><span class="tag">fractal</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="hyper_soliton_4d_polychoron_percussion_hopf_fibration_torus_nonlinear_toda_soliton_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-hypersoliton"/></svg>
+        <div class="num">25</div>
+        <h3 class="name">HYPER-SOLITON</h3>
+        <p class="desc">A 4D polychoron projected through a Hopf fibration, struck as percussion, with a nonlinear Toda lattice carrying the transients.</p>
+        <div class="tags"><span class="tag">4D / Hopf</span><span class="tag">Toda lattice</span><span class="tag">solitons</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="chimera_swarm_3d_kuramoto_sakaguchi_chimera_manifold_swarmalator_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-chimera"/></svg>
+        <div class="num">26</div>
+        <h3 class="name">CHIMERA-SWARM</h3>
+        <p class="desc">A 3D Kuramoto–Sakaguchi chimera manifold and swarmalator: one population locks in phase while another stays incoherent, and the boundary between them is what you hear.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Kuramoto–Sakaguchi</span><span class="tag">swarmalator</span><span class="tag">chimera</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+      <a class="card" href="cavitron_rayleigh_plesset_sonoluminescence_rijke_thermoacoustic_flame_shear_thickening_impact_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-cavitron"/></svg>
+        <div class="num">27</div>
+        <h3 class="name">CAVITRON</h3>
+        <p class="desc">Rayleigh–Plesset bubble collapse and sonoluminescence, a Rijke thermoacoustic flame tube, and shear-thickening impact rheology — three ways a strike becomes light and heat.</p>
+        <div class="tags"><span class="tag">cavitation</span><span class="tag">thermoacoustic</span><span class="tag">rheology</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
+
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>EXPERIMENTS</h2>
+      <span>when strikes happen · 8 labs</span>
+    </div>
+
+    <div class="family">coupling</div>
+    <div class="grid">
+
       <a class="card" href="metronome_sync_3d_huygens_coupled_pendulum_order_parameter_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-metronome"/></svg>
-        <div class="num">27</div>
+        <div class="num">28</div>
         <h3 class="name">METRONOME-SYNC 3D</h3>
         <p class="desc">Metronomes on a shared beam that synchronise through nothing but their own recoil — Huygens' 1665 observation, integrated rather than scripted. Two identical metronomes settle into ANTI-PHASE, not unison: they alternate, and the double-time pulse on the interval histogram is the physics telling you so. Sweep the coupling and watch the order parameter cross over.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">Huygens coupling</span><span class="tag">anti-phase</span><span class="tag">order parameter</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">arithmetic</div>
+    <div class="grid">
+
       <a class="card" href="beat_field_3d_interference_polyrhythm_ratio_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-beatfield"/></svg>
-        <div class="num">28</div>
+        <div class="num">29</div>
         <h3 class="name">BEAT-FIELD 3D</h3>
         <p class="desc">Two pulse trains and one piece of arithmetic. Detune them and the beat rate becomes a tempo; set them to 3:2 and you get a hemiola that never drifts. Then sweep the master tempo past 20 Hz and the same ratio stops being a cross-rhythm and becomes a chord — a perfect fifth at 702 cents, from the identical integers.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">interference</span><span class="tag">polyrhythm</span><span class="tag">rhythm→pitch</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">criticality</div>
+    <div class="grid">
+
       <a class="card" href="sand_pile_3d_self_organised_criticality_avalanche_rhythm_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-sandpile"/></svg>
-        <div class="num">29</div>
+        <div class="num">30</div>
         <h3 class="name">SAND-PILE 3D</h3>
         <p class="desc">A Bak–Tang–Wiesenfeld pile that grows until it collapses, and the collapse onsets are the beat. No tempo is set — the rhythm is the pile's own instability, bursty and clustered with quiet refractory gaps. Flip to the Poisson null and the difference is instant: human musical timing is 1/f too, which is why a grid sounds stiff and a pile does not.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">self-organised criticality</span><span class="tag">avalanche</span><span class="tag">Poisson null</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">relaxation</div>
+    <div class="grid">
+
       <a class="card" href="drip_clock_3d_relaxation_oscillator_tate_s_law_period_doubling_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-dripclock"/></svg>
-        <div class="num">30</div>
+        <div class="num">31</div>
         <h3 class="name">DRIP-CLOCK 3D</h3>
         <p class="desc">A dripping faucet as a rhythm you can derive on paper: Tate&rsquo;s law gives the drop mass, so the tempo is set by surface tension, neck radius and flow, to within a few percent. Sweep the flow and the drip stops being metronomic: period-2 is swing, then period-4, then deterministic chaos, then jetting. The only lab here whose tempo has a closed form, and it still finds a way to break it.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">Tate law</span><span class="tag">period doubling</span><span class="tag">bifurcation</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">chaos</div>
+    <div class="grid">
+
       <a class="card" href="strange_drum_3d_chaotic_oscillator_thresholded_rhythm_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-strangedrum"/></svg>
-        <div class="num">31</div>
+        <div class="num">32</div>
         <h3 class="name">STRANGE-DRUM 3D</h3>
         <p class="desc">A chaotic oscillator sampled through a threshold plane, so the orbit becomes a groove. The same seed always replays the identical rhythm, yet nothing predicts the thousandth hit without iterating to it. Sweep the parameter through period-doubling into chaos, linger in the intermittency window where it sounds like a player varying a pattern, then hit Shuffle and hear the order vanish while the histogram stays identical.</p>
         <div class="tags"><span class="tag new">new</span><span class="tag">chaos</span><span class="tag">Lyapunov</span><span class="tag">seed replay</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
-      <a class="card" href="timbre_clock_3d_spectrum_rhythm_timescale_unifier_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-timbreclock"/></svg>
-        <div class="num">32</div>
-        <h3 class="name">TIMBRE-CLOCK 3D</h3>
-        <p class="desc">One array of partials and one dial. At audio rate the array is a chord; slow it a thousandfold and the identical numbers become a rhythm you can count. Sweep through 20 to 50 Hz and hear repetition fuse into pitch, then load a cymbal and find that the shimmer becomes a jumble nobody could tap along to. The capstone: every instrument in this suite is a rhythm too fast to count.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">spectrum ↔ rhythm</span><span class="tag">fusion crossover</span><span class="tag">capstone</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
+
+    </div>
+
+    <div class="family">reaction-diffusion</div>
+    <div class="grid">
+
       <a class="card" href="spiral_drum_3d_excitable_medium_rotating_wave_rhythm_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-spiraldrum"/></svg>
         <div class="num">33</div>
@@ -526,6 +619,12 @@
         <div class="tags"><span class="tag new">new</span><span class="tag">excitable medium</span><span class="tag">reaction-diffusion</span><span class="tag">tip chaos</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">flow</div>
+    <div class="grid">
+
       <a class="card" href="jam_wave_3d_nagel_schreckenberg_stop_and_go_rhythm_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-jamwave"/></svg>
         <div class="num">34</div>
@@ -534,6 +633,12 @@
         <div class="tags"><span class="tag new">new</span><span class="tag">Nagel-Schreckenberg</span><span class="tag">backward jam wave</span><span class="tag">fundamental diagram</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
+
+    </div>
+
+    <div class="family">network</div>
+    <div class="grid">
+
       <a class="card" href="graph_choir_3d_network_kuramoto_winding_number_polyrhythm_lab.html">
         <svg class="glyph" aria-hidden="true"><use href="#i-graphchoir"/></svg>
         <div class="num">35</div>
@@ -542,57 +647,71 @@
         <div class="tags"><span class="tag new">new</span><span class="tag">network Kuramoto</span><span class="tag">winding number</span><span class="tag">tree null</span></div>
         <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
-      <a class="card" href="cavity_kick_3d_bass_drum_helmholtz_avoided_crossing_lab.html">
-        <svg class="glyph" aria-hidden="true"><use href="#i-cavitykick"/></svg>
-        <div class="num">36</div>
-        <h3 class="name">CAVITY-KICK 3D</h3>
-        <p class="desc">A bass drum as two resonators of equal standing: the head and the air inside it. Sweep the cavity volume through the head frequency and the two modes refuse to cross — they repel, with a minimum gap of 2g, and a visitor expecting an intersection hears two tones bounce off each other instead. The deepest fundamental in the suite, and the only lab where the air is the instrument.</p>
-        <div class="tags"><span class="tag new">new</span><span class="tag">Helmholtz cavity</span><span class="tag">avoided crossing</span><span class="tag">sub-bass</span></div>
-        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
 
     </div>
+
   </section>
 
   <section>
     <div class="section-head">
-      <h2>Specialty</h2>
-      <span>beyond the numbered series · the pendulum family</span>
+      <h2>PERCEPTION & CAPSTONE</h2>
+      <span>about the suite, not inside it · 2 labs</span>
     </div>
 
-    <div class="spec">
+    <div class="family">the listener</div>
+    <div class="grid">
 
-      <a class="feature" href="pendulum_loom_3d_harmonic_phase_loom_blackburn_lissajous_coupled_huygens_wave_lab.html">
-        <div>
-          <div class="badge">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v6l4 2"/><circle cx="8" cy="8" r="6"/></svg>
-            Specialty · harmonic
-          </div>
-          <h3 class="name">PENDULUM-LOOM</h3>
-          <p class="desc">A 3D harmonic phase loom driven by Blackburn pendulums, Lissajous figures and coupled Huygens clocks — interference turned into rhythm. The most purely physical piece in the set: every hit traces back to a pendulum you can watch swing.</p>
-          <div class="tags"><span class="tag">coupled oscillators</span><span class="tag">Lissajous</span><span class="tag">Huygens</span><span class="tag">phase</span></div>
-        </div>
-        <div class="arrow">Open <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
-      </a>
-
-      <a class="feature" href="newton_pulse_3d_precision_percussive_newton_s_cradle_oddball_mass_chain_zero_g_bpm_collider_rhythm_lab.html">
-        <div>
-          <div class="badge">
-            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v6l4 2"/><circle cx="8" cy="8" r="6"/></svg>
-            Specialty · impulse
-          </div>
-          <h3 class="name">NEWTON-PULSE 3D</h3>
-          <p class="desc">A precision percussive Newton's cradle with an oddball mass chain, a zero-G BPM collider and a rhythm lab. Momentum transfer as rhythm — one ball in and two out is a musical decision, not just a physics demonstration.</p>
-          <div class="tags"><span class="tag new">new</span><span class="tag">momentum transfer</span><span class="tag">mass chain</span><span class="tag">zero-G</span></div>
-        </div>
-        <div class="arrow">Open <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      <a class="card" href="cochlea_mask_3d_percussion_psychoacoustics_auditory_masking_thresholds_pitch_perception_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-cochlea"/></svg>
+        <div class="num">36</div>
+        <h3 class="name">COCHLEA-MASK 3D</h3>
+        <p class="desc">The listener, finally: auditory masking thresholds and pitch perception. One hit can hide another that is louder, and where the threshold sits depends on frequency, time and bandwidth. Every other lab asks how an object vibrates; this one asks what you can actually hear of it.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">masking</span><span class="tag">thresholds</span><span class="tag">pitch perception</span><span class="tag">psychoacoustics</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
       </a>
 
     </div>
+
+    <div class="family">the relationship</div>
+    <div class="grid">
+
+      <a class="card" href="timbre_clock_3d_spectrum_rhythm_timescale_unifier_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-timbreclock"/></svg>
+        <div class="num">37</div>
+        <h3 class="name">TIMBRE-CLOCK 3D</h3>
+        <p class="desc">One array of partials and one dial. At audio rate the array is a chord; slow it a thousandfold and the identical numbers become a rhythm you can count. Sweep through 20 to 50 Hz and hear repetition fuse into pitch, then load a cymbal and find that the shimmer becomes a jumble nobody could tap along to. The capstone: every instrument in this suite is a rhythm too fast to count.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">spectrum ↔ rhythm</span><span class="tag">fusion crossover</span><span class="tag">capstone</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
+
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>COMPOSITION</h2>
+      <span>authored rhythm · 1 lab</span>
+    </div>
+
+    <div class="family">beat architecture</div>
+    <div class="grid">
+
+      <a class="card" href="beat_forge_3d_percussionist_s_beat_architecture_euclidean_necklaces_microtiming_groove_polyrhythm_lab.html">
+        <svg class="glyph" aria-hidden="true"><use href="#i-beatforge"/></svg>
+        <div class="num">38</div>
+        <h3 class="name">BEAT-FORGE 3D</h3>
+        <p class="desc">Beat architecture as mathematics: Euclidean necklaces distributing hits as evenly as a rhythm allows, microtiming that decides whether a groove sits or swings, and polyrhythms that lock only at the least common multiple. The first lab here about when a hit happens rather than what it sounds like.</p>
+        <div class="tags"><span class="tag new">new</span><span class="tag">Euclidean necklace</span><span class="tag">microtiming</span><span class="tag">polyrhythm</span><span class="tag">groove</span></div>
+        <div class="launch">Launch lab <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>
+      </a>
+
+    </div>
+
   </section>
 
   <footer>
-    <div>Percussion Labs · thirty-six labs + two specialty pendulum pieces · built for the browser</div>
+    <div>Percussion Labs · thirty-eight labs, organised by kind · built for the browser</div>
     <p class="note">
       Everything runs client-side. Audio starts after your first click or key press, because
       browsers require a user gesture before a page may produce sound. The modules reference
