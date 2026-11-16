@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAVITY-KICK 3D — Bass Drum Helmholtz &amp; Avoided-Crossing Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f97316;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f97316;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-[0_0_10px_#f97316]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">CAVITY-KICK 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-orange-300 border border-slate-700/70">Helmholtz · 40–100 Hz</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Bass Drum Cavity–Membrane Avoided-Crossing Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <button id="btn-strike" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-orange-500/25 text-orange-200 border border-orange-400/60 hover:bg-orange-500/35 transition">
+        Strike Kick (Space)
+      </button>
+      <button id="btn-auto" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Auto-Pulse: OFF
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Avoided Crossing Plot -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Coupled Eigenmodes</span>
+        <span id="lbl-gap" class="text-[10px] font-mono text-orange-300">Gap Δf = 12.0 Hz</span>
+      </div>
+
+      <!-- Hybridized Modes f- and f+ -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-2 px-2 border border-cyan-500/25">
+          <div class="text-[10px] font-mono uppercase text-cyan-400">Lower Mode (f₋)</div>
+          <div id="val-f-minus" class="text-sm font-mono font-bold text-slate-100 mt-0.5">46.2 Hz</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-2 px-2 border border-orange-500/25">
+          <div class="text-[10px] font-mono uppercase text-orange-400">Upper Mode (f₊)</div>
+          <div id="val-f-plus" class="text-sm font-mono font-bold text-slate-100 mt-0.5">60.8 Hz</div>
+        </div>
+      </div>
+
+      <!-- Uncoupled + Sub-Bass Telemetry -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Uncoupled f_H / f_m</div>
+          <div id="val-uncoupled" class="text-xs font-mono font-semibold text-slate-300 mt-0.5">50.2 / 54.9</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Centroid / &lt;120Hz</div>
+          <div id="val-subbass" class="text-xs font-mono font-semibold text-emerald-300 mt-0.5">64 Hz / 82%</div>
+        </div>
+      </div>
+
+      <!-- Avoided Crossing Plot (f vs V) -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Avoided Crossing (f vs V)</span>
+          <div class="flex items-center gap-2 text-[10px] font-mono">
+            <span class="text-cyan-300">─ f₋</span>
+            <span class="text-orange-300">─ f₊</span>
+            <span class="text-slate-400">┈ g=0</span>
+          </div>
+        </div>
+        <div class="relative w-full h-36 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="crossing-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Formula Card -->
+      <div class="bg-slate-900/70 rounded-lg p-2 text-[10px] font-mono text-slate-400 space-y-0.5">
+        <div>f_H = (c/2π)√(A / V·L_eff) &nbsp;∝ 1/√V</div>
+        <div>ω±² = ½(ω_H²+ω_m²) ± ½√[(ω_H²−ω_m²)²+4g⁴]</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Cavity Volume V (Primary Sweep) -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-v" class="text-orange-300 font-semibold">Cavity Volume V</label>
+          <span id="lbl-v" class="font-mono text-orange-300 font-bold">90 L</span>
+        </div>
+        <input id="ctrl-v" type="range" min="25" max="220" step="1" value="90" class="lab-slider" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-orange-500/20 text-orange-300 border border-orange-500/40 hover:bg-orange-500/30 transition">
+          Sweep V (25 L → 220 L Through Crossing)
+        </button>
+      </div>
+
+      <!-- Coupling g -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-g" class="text-slate-200 font-medium">Coupling g <span class="text-slate-500 font-normal">(Min Gap = 2g)</span></label>
+          <span id="lbl-g" class="font-mono text-cyan-300 font-semibold">6.0 Hz</span>
+        </div>
+        <input id="ctrl-g" type="range" min="0.0" max="16.0" step="0.5" value="6.0" class="lab-slider" />
+        <button id="btn-g0" type="button" class="w-full py-1 px-2 rounded text-[11px] font-mono bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-slate-700 transition">
+          Set g = 0 (Uncoupled Crossing Null)
+        </button>
+      </div>
+
+      <!-- Port Area A -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-a" class="text-slate-300 font-medium">Port Area A <span class="text-slate-500 font-normal">(f_H ∝ √A)</span></label>
+          <span id="lbl-a" class="font-mono text-slate-200">150 cm²</span>
+        </div>
+        <input id="ctrl-a" type="range" min="50" max="420" step="5" value="150" class="lab-slider" />
+      </div>
+
+      <!-- Head Tension T -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-t" class="text-slate-300 font-medium">Head Tension T</label>
+          <span id="lbl-t" class="font-mono text-slate-200">420 N/m</span>
+        </div>
+        <input id="ctrl-t" type="range" min="150" max="850" step="10" value="420" class="lab-slider" />
+      </div>
+
+      <!-- Beater Hardness & Strike Position -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-hard" class="text-slate-300 font-medium">Beater Hardness</label>
+          <span id="lbl-hard" class="font-mono text-slate-200">0.45</span>
+        </div>
+        <input id="ctrl-hard" type="range" min="0.1" max="1.0" step="0.05" value="0.45" class="lab-slider" />
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-pos" class="text-slate-300 font-medium">Strike Position (Center → Edge)</label>
+          <span id="lbl-pos" class="font-mono text-slate-200">0.20</span>
+        </div>
+        <input id="ctrl-pos" type="range" min="0.0" max="0.85" step="0.05" value="0.20" class="lab-slider" />
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-orange-500/40 text-xs font-mono text-orange-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. HELMHOLTZ CAVITY + MEMBRANE AVOIDED-CROSSING PHYSICS
+      // =========================================================================
+      const C_SOUND = 343.0;
+      const L_PORT = 0.08;
+      const A_RADIUS = 0.28; // 22" bass drum radius (m)
+      const SIGMA = 0.26;    // areal density (kg/m^2)
+
+      const params = {
+        V_L: 90,        // Liters (0.090 m^3)
+        A_cm2: 150,     // cm^2 (0.015 m^2)
+        T: 420,         // N/m
+        g_Hz: 6.0,      // Coupling gap half-width (min separation = 2g)
+        hardness: 0.45,
+        strikePos: 0.20,
+      };
+
+      const state = {
+        autoPulse: false,
+        autoTimer: 0,
+        sweepActive: false,
+        sweepDir: 1,
+        headDisp: 0,
+        portPulse: 0,
+        beaterAngle: 0,
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function computeModes(V_L = params.V_L, A_cm2 = params.A_cm2, T = params.T, g_Hz = params.g_Hz) {
+        const V = V_L * 1e-3;
+        const A = A_cm2 * 1e-4;
+        const rPort = Math.sqrt(A / Math.PI);
+        const L_eff = L_PORT + 1.7 * rPort;
+        const fH = (C_SOUND / (2 * Math.PI)) * Math.sqrt(A / (V * L_eff));
+        const fm = (2.4048 / (2 * Math.PI * A_RADIUS)) * Math.sqrt(T / SIGMA);
+
+        if (g_Hz <= 1e-6) {
+          return {
+            fH, fm,
+            fMinus: Math.min(fH, fm),
+            fPlus: Math.max(fH, fm),
+          };
+        }
+
+        const wH = 2 * Math.PI * fH;
+        const wm = 2 * Math.PI * fm;
+        const wH2 = wH * wH;
+        const wm2 = wm * wm;
+        const fAvg = 0.5 * (fH + fm);
+        // g_eff^4 chosen so at fH = fm, fPlus - fMinus = 2 * g_Hz
+        const twoG2 = 4 * Math.PI * Math.PI * (2 * fAvg) * (2 * g_Hz);
+        const disc = Math.sqrt(Math.pow(wH2 - wm2, 2) + twoG2 * twoG2);
+        const wMinus = Math.sqrt(Math.max(10, 0.5 * (wH2 + wm2 - disc)));
+        const wPlus = Math.sqrt(0.5 * (wH2 + wm2 + disc));
+
+        return {
+          fH, fm,
+          fMinus: wMinus / (2 * Math.PI),
+          fPlus: wPlus / (2 * Math.PI),
+        };
+      }
+
+      function computeSubBassMetrics() {
+        const { fm, fMinus, fPlus } = computeModes();
+        const edge = params.strikePos;
+        const hard = params.hardness;
+        const modes = [
+          { f: fMinus, e: 1.0 },
+          { f: fPlus, e: 0.72 },
+          { f: fm * 1.593, e: 0.32 * edge * hard },
+          { f: fm * 2.135, e: 0.22 * edge * hard },
+          { f: fm * 2.295, e: 0.16 * hard },
+        ];
+        let totalE = 0, weightedF = 0, sub120E = 0;
+        for (const m of modes) {
+          const e2 = m.e * m.e;
+          totalE += e2;
+          weightedF += m.f * e2;
+          if (m.f < 120) sub120E += e2;
+        }
+        return {
+          centroidHz: weightedF / Math.max(1e-6, totalE),
+          pctBelow120: (sub120E / Math.max(1e-6, totalE)) * 100,
+        };
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO SUB-BASS KICK SYNTHESIS (Two Hybrid Modes + Pitch Droop)
+      // =========================================================================
+      let audioCtx = null;
+      let masterGain = null;
+
+      function ensureAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.85;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function triggerKick(playTime = null) {
+        ensureAudio();
+        const t = playTime ?? (audioCtx.currentTime + 0.008);
+        const { fm, fMinus, fPlus } = computeModes();
+
+        state.headDisp = 1.0;
+        state.portPulse = 1.0;
+        state.beaterAngle = 1.0;
+
+        // 1. Two hybridized low-frequency modes (f- and f+) with 7% initial pitch droop
+        const synthMode = (freq, amp, decay) => {
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq * 1.07, t);
+          osc.frequency.exponentialRampToValueAtTime(freq, t + 0.055);
+          g.gain.setValueAtTime(0.001, t);
+          g.gain.linearRampToValueAtTime(amp, t + 0.004);
+          g.gain.exponentialRampToValueAtTime(0.0008, t + decay);
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(t);
+          osc.stop(t + decay + 0.02);
+        };
+
+        synthMode(fMinus, 0.48, 0.42);
+        synthMode(fPlus, 0.36, 0.34);
+
+        // 2. Upper Bessel modes weighted by strike position
+        if (params.strikePos > 0.05) {
+          synthMode(fm * 1.593, 0.14 * params.strikePos * params.hardness, 0.14);
+          synthMode(fm * 2.135, 0.09 * params.strikePos * params.hardness, 0.10);
+        }
+
+        // 3. Impulse-shaped beater transient
+        const clickOsc = audioCtx.createOscillator();
+        const clickGain = audioCtx.createGain();
+        clickOsc.type = 'triangle';
+        clickOsc.frequency.setValueAtTime(180 + params.hardness * 900, t);
+        clickOsc.frequency.exponentialRampToValueAtTime(65, t + 0.015);
+        clickGain.gain.setValueAtTime(0.18 * params.hardness, t);
+        clickGain.gain.exponentialRampToValueAtTime(0.0008, t + 0.018);
+        clickOsc.connect(clickGain);
+        clickGain.connect(masterGain);
+        clickOsc.start(t);
+        clickOsc.stop(t + 0.022);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav4Hits() {
+        const sr = 44100;
+        const dur = 4.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+        const { fm, fMinus, fPlus } = computeModes();
+
+        const hits = [0.05, 1.05, 2.05, 3.05];
+        for (const hT of hits) {
+          const start = Math.floor(hT * sr);
+          const len = Math.floor(sr * 0.45);
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const droop = 1 + 0.07 * Math.exp(-tt / 0.02);
+            const env1 = Math.exp(-tt / 0.14);
+            const env2 = Math.exp(-tt / 0.11);
+            const beater = Math.exp(-tt / 0.004) * 0.18 * params.hardness * Math.sin(2 * Math.PI * (200 + params.hardness * 800) * tt);
+            let sig = 0.45 * env1 * Math.sin(2 * Math.PI * fMinus * droop * tt)
+                    + 0.34 * env2 * Math.sin(2 * Math.PI * fPlus * droop * tt)
+                    + beater;
+            if (params.strikePos > 0.05) {
+              sig += 0.12 * params.strikePos * Math.exp(-tt / 0.05) * Math.sin(2 * Math.PI * fm * 1.593 * tt);
+            }
+            left[start + j] += sig;
+            right[start + j] += sig;
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `cavity_kick_V${params.V_L}L_g${params.g_Hz}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Exported 4s 44.1 kHz stereo WAV');
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D BASS DRUM SHELL, PORT & BEATER
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.06);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.45, phi: 1.25, radius: 4.5, target: new THREE.Vector3(0, 0.15, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 1.2);
+      keyLight.position.set(3, 6, 4);
+      scene.add(keyLight);
+
+      const grid = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      grid.position.y = -1.2;
+      scene.add(grid);
+
+      const drumGroup = new THREE.Group();
+      scene.add(drumGroup);
+
+      const shellMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.0, 1.0, 1.0, 48, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.35, metalness: 0.7, side: THREE.DoubleSide })
+      );
+      shellMesh.rotation.x = Math.PI / 2;
+      drumGroup.add(shellMesh);
+
+      const frontHead = new THREE.Mesh(
+        new THREE.CircleGeometry(1.0, 48),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.2, side: THREE.DoubleSide })
+      );
+      drumGroup.add(frontHead);
+
+      const portRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.18, 0.22, 32),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide })
+      );
+      drumGroup.add(portRing);
+
+      const airJet = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.26, 0.45, 24, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.0, side: THREE.DoubleSide })
+      );
+      airJet.rotation.x = Math.PI / 2;
+      drumGroup.add(airJet);
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        ensureAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.48, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.4, Math.min(10.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. AVOIDED-CROSSING PLOT (f- & f+ vs V, with g=0 Dashed Crossing)
+      // =========================================================================
+      const crossCanvas = document.getElementById('crossing-canvas');
+      const crossCtx = crossCanvas.getContext('2d');
+
+      function drawCrossingPlot() {
+        const w = crossCanvas.width = crossCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = crossCanvas.height = crossCanvas.clientHeight * (window.devicePixelRatio || 1);
+        crossCtx.clearRect(0, 0, w, h);
+
+        const minV = 25, maxV = 220;
+        const minF = 20, maxF = 115;
+        const xForV = (v) => ((v - minV) / (maxV - minV)) * (w - 16) + 8;
+        const yForF = (f) => h - ((f - minF) / (maxF - minF)) * (h - 14) - 7;
+
+        const plotCurve = (fn, color, dashed = false) => {
+          crossCtx.strokeStyle = color;
+          crossCtx.lineWidth = dashed ? 1.2 : 2.2;
+          crossCtx.setLineDash(dashed ? [4, 4] : []);
+          crossCtx.beginPath();
+          for (let i = 0; i <= 60; i++) {
+            const v = minV + (i / 60) * (maxV - minV);
+            const m = computeModes(v, params.A_cm2, params.T, params.g_Hz);
+            const x = xForV(v);
+            const y = yForF(fn(m));
+            if (i === 0) crossCtx.moveTo(x, y);
+            else crossCtx.lineTo(x, y);
+          }
+          crossCtx.stroke();
+          crossCtx.setLineDash([]);
+        };
+
+        // Uncoupled crossing dashed
+        plotCurve((m) => m.fH, 'rgba(148, 163, 184, 0.5)', true);
+        plotCurve((m) => m.fm, 'rgba(148, 163, 184, 0.5)', true);
+
+        // Coupled avoided crossing solid
+        plotCurve((m) => m.fMinus, '#22d3ee', false);
+        plotCurve((m) => m.fPlus, '#f97316', false);
+
+        // Current V cursor
+        const cx = xForV(params.V_L);
+        crossCtx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        crossCtx.lineWidth = 1.2;
+        crossCtx.beginPath();
+        crossCtx.moveTo(cx, 4);
+        crossCtx.lineTo(cx, h - 4);
+        crossCtx.stroke();
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS
+      // =========================================================================
+      function updateReadouts() {
+        const m = computeModes();
+        const sub = computeSubBassMetrics();
+        document.getElementById('val-f-minus').textContent = `${m.fMinus.toFixed(1)} Hz`;
+        document.getElementById('val-f-plus').textContent = `${m.fPlus.toFixed(1)} Hz`;
+        document.getElementById('val-uncoupled').textContent = `${m.fH.toFixed(1)} / ${m.fm.toFixed(1)}`;
+        document.getElementById('val-subbass').textContent = `${sub.centroidHz.toFixed(0)} Hz / ${sub.pctBelow120.toFixed(0)}%`;
+        document.getElementById('lbl-gap').textContent = `Δf = ${(m.fPlus - m.fMinus).toFixed(1)} Hz`;
+        drawCrossingPlot();
+      }
+
+      document.getElementById('ctrl-v').addEventListener('input', (e) => {
+        params.V_L = parseInt(e.target.value, 10);
+        document.getElementById('lbl-v').textContent = `${params.V_L} L`;
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-g').addEventListener('input', (e) => {
+        params.g_Hz = parseFloat(e.target.value);
+        document.getElementById('lbl-g').textContent = `${params.g_Hz.toFixed(1)} Hz`;
+        updateReadouts();
+      });
+
+      document.getElementById('btn-g0').addEventListener('click', () => {
+        params.g_Hz = params.g_Hz === 0 ? 6.0 : 0.0;
+        document.getElementById('ctrl-g').value = params.g_Hz.toFixed(1);
+        document.getElementById('lbl-g').textContent = `${params.g_Hz.toFixed(1)} Hz`;
+        document.getElementById('btn-g0').textContent = params.g_Hz === 0
+          ? 'Restore Coupling (g = 6.0 Hz)'
+          : 'Set g = 0 (Uncoupled Crossing Null)';
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-a').addEventListener('input', (e) => {
+        params.A_cm2 = parseInt(e.target.value, 10);
+        document.getElementById('lbl-a').textContent = `${params.A_cm2} cm²`;
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-t').addEventListener('input', (e) => {
+        params.T = parseInt(e.target.value, 10);
+        document.getElementById('lbl-t').textContent = `${params.T} N/m`;
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-hard').addEventListener('input', (e) => {
+        params.hardness = parseFloat(e.target.value);
+        document.getElementById('lbl-hard').textContent = params.hardness.toFixed(2);
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-pos').addEventListener('input', (e) => {
+        params.strikePos = parseFloat(e.target.value);
+        document.getElementById('lbl-pos').textContent = params.strikePos.toFixed(2);
+        updateReadouts();
+      });
+
+      document.getElementById('btn-strike').addEventListener('click', () => triggerKick());
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') { e.preventDefault(); triggerKick(); }
+      });
+
+      document.getElementById('btn-auto').addEventListener('click', () => {
+        state.autoPulse = !state.autoPulse;
+        document.getElementById('btn-auto').textContent = `Auto-Pulse: ${state.autoPulse ? 'ON' : 'OFF'}`;
+        if (state.autoPulse) triggerKick();
+      });
+
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        state.sweepActive = !state.sweepActive;
+        document.getElementById('btn-sweep').textContent = state.sweepActive
+          ? 'Stop Sweep'
+          : 'Sweep V (25 L → 220 L Through Crossing)';
+      });
+
+      document.getElementById('btn-wav').addEventListener('click', exportWav4Hits);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.45; camState.phi = 1.25; camState.radius = 4.5; updateCamera();
+      });
+
+      // =========================================================================
+      // 7. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.autoPulse) {
+          state.autoTimer += dtReal;
+          if (state.autoTimer >= 0.65) {
+            state.autoTimer = 0;
+            triggerKick();
+          }
+        }
+
+        if (state.sweepActive) {
+          params.V_L += state.sweepDir * dtReal * 38;
+          if (params.V_L >= 220) { params.V_L = 220; state.sweepDir = -1; }
+          if (params.V_L <= 25) { params.V_L = 25; state.sweepDir = 1; }
+          document.getElementById('ctrl-v').value = String(Math.round(params.V_L));
+          document.getElementById('lbl-v').textContent = `${Math.round(params.V_L)} L`;
+          updateReadouts();
+        }
+
+        // Update 3D shell depth & port size
+        const depth = 0.45 + (params.V_L / 220) * 1.4;
+        shellMesh.scale.set(1, depth, 1);
+        frontHead.position.z = depth * 0.5 + state.headDisp * 0.04 * Math.sin(now * 0.08);
+        const portScale = Math.sqrt(params.A_cm2 / 150);
+        portRing.scale.set(portScale, portScale, 1);
+        portRing.position.set(0.35, -0.35, depth * 0.5 + 0.01);
+
+        airJet.scale.set(portScale, 1, portScale);
+        airJet.position.set(0.35, -0.35, depth * 0.5 + 0.22);
+        airJet.material.opacity = state.portPulse * 0.65;
+
+        state.headDisp = Math.max(0, state.headDisp - dtReal * 3.5);
+        state.portPulse = Math.max(0, state.portPulse - dtReal * 3.0);
+
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__CAVITY_KICK__)
+      // =========================================================================
+      window.__CAVITY_KICK__ = {
+        getState: () => ({ ...params, ...computeModes(), ...computeSubBassMetrics() }),
+        verifyHelmholtzLaw: () => [45, 90, 180].map((v) => ({ V_L: v, fH: computeModes(v).fH })),
+        verifyAvoidedCrossing: () => {
+          let minGap = Infinity;
+          for (let v = 25; v <= 220; v += 1) {
+            const m = computeModes(v);
+            minGap = Math.min(minGap, m.fPlus - m.fMinus);
+          }
+          const zeroGap = (() => {
+            let mg = Infinity;
+            for (let v = 25; v <= 220; v += 0.5) {
+              const m = computeModes(v, params.A_cm2, params.T, 0);
+              mg = Math.min(mg, m.fPlus - m.fMinus);
+            }
+            return mg;
+          })();
+          return { coupledMinGapHz: minGap, expectedTwoG: 2 * params.g_Hz, uncoupledMinGapHz: zeroGap };
+        },
+      };
+
+      updateReadouts();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
