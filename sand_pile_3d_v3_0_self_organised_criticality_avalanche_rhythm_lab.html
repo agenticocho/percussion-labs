@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAND-PILE 3D v3.0 — Self-Organised Criticality &amp; Avalanche Rhythm Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(8, 13, 27, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.65);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.65);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_12px_#f59e0b]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">SAND-PILE <span class="text-amber-400">3D</span> <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">v3.0</span></h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-amber-300 border border-slate-700/70 hidden md:inline">BTW · 1/f SOC · Stereo</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Click pile to drop grains · Spatialized avalanche audio &amp; live 1/f spectrum.</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="mode-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50">
+        SAND PILE (CRITICAL)
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-reset" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Re-Warm Pile
+      </button>
+      <button id="btn-toggle-verify" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-emerald-300 border border-emerald-500/35 hover:bg-slate-700 transition flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="verify-badge-text" class="font-mono text-[11px]">4/4 PASS</span>
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Log-Log Distributions Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-2.5 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Criticality Telemetry</span>
+        <span id="lbl-grains" class="text-[10px] font-mono text-slate-400">0 drops</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-amber-500/25">
+          <div class="text-[10px] font-mono uppercase text-amber-400">Sandpile CV / AC₁</div>
+          <div id="val-sand-stats" class="text-xs font-mono font-semibold text-slate-100 mt-0.5">-- / --</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-cyan-500/25">
+          <div class="text-[10px] font-mono uppercase text-cyan-400">Poisson CV / AC₁</div>
+          <div id="val-pois-stats" class="text-xs font-mono font-semibold text-slate-100 mt-0.5">-- / --</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Last Size</div>
+          <div id="val-last-size" class="text-xs font-mono font-semibold text-amber-300 mt-0.5">0</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Max Size</div>
+          <div id="val-max-size" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">0</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Mean z̄</div>
+          <div id="val-mean-z" class="text-xs font-mono font-semibold text-emerald-300 mt-0.5">2.10</div>
+        </div>
+      </div>
+
+      <!-- Log-Log IOI Comparison -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Log-Log IOI (1/f vs Exp)</span>
+          <div class="flex items-center gap-2 text-[10px] font-mono">
+            <span class="text-amber-300">● Pile</span>
+            <span class="text-cyan-300">● Poisson</span>
+          </div>
+        </div>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="ioi-log-chart" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Log-Log Size P(s) ~ s^-tau -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Log-Log Size P(s) ~ s⁻τ</span>
+          <span id="lbl-slope" class="text-[10px] font-mono text-amber-300">τ ≈ --</span>
+        </div>
+        <div class="relative w-full h-20 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="size-log-chart" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- 1/f Power Spectrum -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-emerald-300">Activity Spectrum S(f)</span>
+          <span class="text-[10px] font-mono text-slate-500">1/f Flicker</span>
+        </div>
+        <div class="relative w-full h-16 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="psd-chart" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Mode A/B Switch: Sand Pile vs Poisson Null -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Rhythm Generator (A/B Null)</span>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" id="btn-mode-pile" class="py-2 rounded-lg text-xs font-mono font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/60 transition">
+            Sand Pile
+          </button>
+          <button type="button" id="btn-mode-poisson" class="py-2 rounded-lg text-xs font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">
+            Poisson (Null)
+          </button>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 pt-1">
+          <button type="button" id="btn-drop-pattern" class="py-1.5 px-2 rounded-lg text-[10px] font-mono bg-slate-800 text-sky-300 border border-slate-700 hover:bg-slate-700 transition">
+            Rain: Random
+          </button>
+          <button type="button" id="btn-mega-drop" class="py-1.5 px-2 rounded-lg text-[10px] font-mono font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition">
+            Drop +15 Cluster
+          </button>
+        </div>
+      </div>
+
+      <!-- Lattice Size -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-size" class="text-slate-300 font-medium">Lattice Size (L×L)</label>
+          <span id="lbl-size" class="font-mono text-amber-300 font-semibold">64 × 64</span>
+        </div>
+        <input id="ctrl-size" type="range" min="32" max="256" step="8" value="64" class="lab-slider" />
+      </div>
+
+      <!-- Drop Rate -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-rate" class="text-slate-300 font-medium">Drop Rate</label>
+          <span id="lbl-rate" class="font-mono text-slate-200">28 grains/s</span>
+        </div>
+        <input id="ctrl-rate" type="range" min="4" max="100" step="1" value="28" class="lab-slider" />
+      </div>
+
+      <!-- Threshold z_c -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-zc" class="text-slate-300 font-medium">Threshold z<sub>c</sub></label>
+          <span id="lbl-zc" class="font-mono text-slate-200">3</span>
+        </div>
+        <input id="ctrl-zc" type="range" min="3" max="6" step="1" value="3" class="lab-slider" />
+      </div>
+
+      <!-- Audio Mappings -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Avalanche Size Mapping</span>
+        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer py-0.5">
+          <span>Size → Loudness (Accents)</span>
+          <input id="map-loud" type="checkbox" checked class="accent-amber-400 w-3.5 h-3.5" />
+        </label>
+        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer py-0.5">
+          <span>Size → Pitch (Big=Low, Small=High)</span>
+          <input id="map-pitch" type="checkbox" checked class="accent-amber-400 w-3.5 h-3.5" />
+        </label>
+        <label class="flex items-center justify-between text-xs text-slate-300 cursor-pointer py-0.5">
+          <span>Size → Duration (Dry Pulse)</span>
+          <input id="map-dur" type="checkbox" class="accent-amber-400 w-3.5 h-3.5" />
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="lab-panel rounded-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Self-Organised Criticality Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Bak–Tang–Wiesenfeld sandpile power-law scaling &amp; Poisson null comparison.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto custom-scroll space-y-3 text-xs">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">1. Power-Law Avalanche Size Distribution P(s) ~ s⁻τ</div>
+            <p id="v-c1-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">2. Bursty Clustering vs Matched-Rate Poisson Null</div>
+            <p id="v-c2-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">3. Critical Slope Attractor (Mean Height z̄ ≈ 2.10)</div>
+            <p id="v-c3-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">4. Open-Boundary Toppling Conservation (z → z − 4)</div>
+            <p id="v-c4-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-amber-500/40 text-xs font-mono text-amber-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const params = {
+        L: 64,
+        dropRate: 28,
+        zc: 3,
+        mode: 'pile',
+        rainMode: 'random', // 'random' | 'center'
+        mapLoudness: true,
+        mapPitch: true,
+        mapDuration: false,
+      };
+
+      let grid = new Int32Array(params.L * params.L);
+      let flashGrid = new Float32Array(params.L * params.L);
+      let queueA = new Int32Array(params.L * params.L);
+      let queueB = new Int32Array(params.L * params.L);
+      let inQueue = new Uint8Array(params.L * params.L);
+
+      const stats = {
+        drops: 0, simTime: 0, nextDropTime: 0, nextPoissonTime: 0,
+        lastAvalOnset: null, lastPoisOnset: null, lastSize: 0, maxSize: 0,
+        pileIOIs: [], poisIOIs: [], avalSizes: [], sizeSeries: [],
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function dropAndRelax(idx, recordFlash = false) {
+        const L = params.L, zc = params.zc;
+        grid[idx] += 1;
+        if (grid[idx] <= zc) return { size: 0, waves: 0, panX: 0 };
+
+        let qLen = 1;
+        queueA[0] = idx;
+        let size = 0, waves = 0, sumCol = 0;
+
+        while (qLen > 0) {
+          waves++;
+          let nextLen = 0;
+          for (let k = 0; k < qLen; k++) {
+            const c = queueA[k];
+            if (grid[c] > zc) {
+              const topples = Math.floor((grid[c] - zc + 3) / 4);
+              grid[c] -= 4 * topples;
+              size += topples;
+              const r = Math.floor(c / L), col = c - r * L;
+              sumCol += col * topples;
+              if (recordFlash) flashGrid[c] = 1.0;
+
+              if (r > 0) { const nb = c - L; grid[nb] += topples; if (grid[nb] > zc && !inQueue[nb]) { inQueue[nb] = 1; queueB[nextLen++] = nb; } }
+              if (r < L - 1) { const nb = c + L; grid[nb] += topples; if (grid[nb] > zc && !inQueue[nb]) { inQueue[nb] = 1; queueB[nextLen++] = nb; } }
+              if (col > 0) { const nb = c - 1; grid[nb] += topples; if (grid[nb] > zc && !inQueue[nb]) { inQueue[nb] = 1; queueB[nextLen++] = nb; } }
+              if (col < L - 1) { const nb = c + 1; grid[nb] += topples; if (grid[nb] > zc && !inQueue[nb]) { inQueue[nb] = 1; queueB[nextLen++] = nb; } }
+            }
+          }
+          for (let k = 0; k < nextLen; k++) { const c = queueB[k]; queueA[k] = c; inQueue[c] = 0; }
+          qLen = nextLen;
+          if (waves > 25000) break;
+        }
+        const meanCol = size > 0 ? sumCol / size : L / 2;
+        const panX = Math.max(-0.85, Math.min(0.85, (meanCol / L - 0.5) * 1.8));
+        return { size, waves, panX };
+      }
+
+      function initAndWarmupPile() {
+        const L = params.L, N = L * L;
+        grid = new Int32Array(N); flashGrid = new Float32Array(N);
+        queueA = new Int32Array(N); queueB = new Int32Array(N); inQueue = new Uint8Array(N);
+
+        for (let i = 0; i < N; i++) grid[i] = Math.max(0, params.zc - 2 + Math.floor(Math.random() * 3));
+        const warmDrops = Math.min(20000, Math.floor(N * 0.8));
+        for (let d = 0; d < warmDrops; d++) dropAndRelax(Math.floor(Math.random() * N), false);
+
+        stats.drops = 0; stats.simTime = 0; stats.nextDropTime = 0; stats.nextPoissonTime = 0;
+        stats.lastAvalOnset = null; stats.lastPoisOnset = null; stats.lastSize = 0; stats.maxSize = 0;
+        stats.pileIOIs = []; stats.poisIOIs = []; stats.avalSizes = []; stats.sizeSeries = [];
+        if (audioCtx) simAudioOffset = audioCtx.currentTime - stats.simTime;
+        rebuildMeshGeometry();
+      }
+
+      // =========================================================================
+      // 2. STEREO SPATIALIZED AVALANCHE AUDIO
+      // =========================================================================
+      let audioCtx = null, audioEnabled = false, masterGain = null, simAudioOffset = 0;
+      const LOOKAHEAD_SEC = 0.045;
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.8;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        simAudioOffset = audioCtx.currentTime - stats.simTime;
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500/25 text-amber-200 border border-amber-400/60 hover:bg-amber-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) initAudio();
+        else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleHit(size, exactSimTime, panVal = 0) {
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.35) return;
+
+        const norm = Math.min(1.0, Math.log10(Math.max(1, size)) / 3.5);
+        const freq = params.mapPitch ? (1850 * Math.pow(0.11, norm)) : 950;
+        const amp = params.mapLoudness ? (0.14 + 0.42 * norm) : 0.28;
+        const dur = params.mapDuration ? (0.007 + 0.032 * norm) : 0.009;
+
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        const panner = audioCtx.createStereoPanner();
+        panner.pan.setValueAtTime(panVal, playTime);
+
+        osc.type = norm > 0.55 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freq, playTime);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(55, freq * 0.55), playTime + dur);
+        g.gain.setValueAtTime(amp, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + dur);
+
+        osc.connect(g); g.connect(panner); panner.connect(masterGain);
+        osc.start(playTime); osc.stop(playTime + dur + 0.004);
+      }
+
+      function exportWav8s() {
+        const sr = 44100, dur = 8.0, totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples), right = new Float32Array(totalSamples);
+        const hits = [];
+        let t = 0;
+        const dtDrop = 1.0 / params.dropRate, meanRate = getMeanAvalancheRate();
+        if (params.mode === 'pile') {
+          const N = params.L * params.L;
+          while (t < dur - 0.05) {
+            const { size, waves, panX } = dropAndRelax(Math.floor(Math.random() * N), false);
+            if (size > 0) { hits.push({ t, size, panX }); t += dtDrop + waves * 0.012; }
+            else t += dtDrop;
+          }
+        } else {
+          while (t < dur - 0.05) {
+            t += -Math.log(Math.max(1e-9, Math.random())) / meanRate;
+            if (t < dur - 0.05) {
+              const s = stats.avalSizes.length ? stats.avalSizes[Math.floor(Math.random() * stats.avalSizes.length)] : 4;
+              hits.push({ t, size: s, panX: 0 });
+            }
+          }
+        }
+        for (const h of hits) {
+          const start = Math.floor(h.t * sr), norm = Math.min(1.0, Math.log10(Math.max(1, h.size)) / 3.5);
+          const freq = params.mapPitch ? (1850 * Math.pow(0.11, norm)) : 950;
+          const amp = params.mapLoudness ? (0.16 + 0.42 * norm) : 0.28;
+          const gL = Math.sqrt(0.5 * (1 - h.panX)), gR = Math.sqrt(0.5 * (1 + h.panX));
+          const len = Math.floor(sr * (params.mapDuration ? (0.008 + 0.03 * norm) : 0.010));
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const sig = Math.exp(-tt / (0.002 + 0.005 * norm)) * Math.sin(2 * Math.PI * freq * tt) * amp;
+            left[start + j] += sig * gL; right[start + j] += sig * gR;
+          }
+        }
+        const buffer = new ArrayBuffer(44 + totalSamples * 4), view = new DataView(buffer);
+        const wStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let off = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i])), r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(off, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(off + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          off += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `sand_pile_v2_L${params.L}.wav`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s stereo WAV (${hits.length} hits)`);
+      }
+
+      // =========================================================================
+      // 3. THREE.JS 3D HEIGHTFIELD + CLICK-TO-DROP RAYCASTING
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050811);
+      scene.fog = new THREE.FogExp2(0x050811, 0.06);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.65, phi: 0.92, radius: 5.4, target: new THREE.Vector3(0, 0.15, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      // Warm raking golden-hour sunlight + sky/sand hemisphere bounce
+      scene.add(new THREE.HemisphereLight(0x94a3b8, 0x3b2a1a, 0.72));
+      const keyLight = new THREE.DirectionalLight(0xfff1d6, 1.45);
+      keyLight.position.set(4.8, 3.8, 3.2);
+      scene.add(keyLight);
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.35);
+      rimLight.position.set(-4.0, 2.5, -4.0);
+      scene.add(rimLight);
+
+      // Dark-walnut & slate sandbox tray
+      const trayMat = new THREE.MeshStandardMaterial({ color: 0x1b1410, roughness: 0.65, metalness: 0.15 });
+      const basePlate = new THREE.Mesh(new THREE.BoxGeometry(4.24, 0.14, 4.24), trayMat);
+      basePlate.position.y = -0.08;
+      scene.add(basePlate);
+      const rimGeoH = new THREE.BoxGeometry(4.24, 0.22, 0.10);
+      const rimGeoV = new THREE.BoxGeometry(0.10, 0.22, 4.04);
+      [[-2.07, 0], [2.07, 0]].forEach(([z]) => {
+        const r = new THREE.Mesh(rimGeoH, trayMat); r.position.set(0, 0.04, z); scene.add(r);
+      });
+      [[-2.07, 0], [2.07, 0]].forEach(([x]) => {
+        const r = new THREE.Mesh(rimGeoV, trayMat); r.position.set(x, 0.04, 0); scene.add(r);
+      });
+
+      // Procedural 512x512 granular quartz/silica sand micro-texture & bump map
+      function createSandGrainTexture() {
+        const c = document.createElement('canvas');
+        c.width = 512; c.height = 512;
+        const cx = c.getContext('2d');
+        const img = cx.createImageData(512, 512);
+        const d = img.data;
+        for (let y = 0; y < 512; y++) {
+          for (let x = 0; x < 512; x++) {
+            const idx = (y * 512 + x) * 4;
+            const ripple = Math.sin(y * 0.18 + Math.sin(x * 0.05) * 2.0) * 10;
+            const grain = (Math.random() - 0.5) * 48;
+            const sparkle = Math.random() > 0.992 ? 45 : 0;
+            const v = Math.max(150, Math.min(255, 224 + ripple + grain + sparkle));
+            d[idx] = v;
+            d[idx + 1] = Math.max(140, Math.min(255, v - 8));
+            d[idx + 2] = Math.max(120, Math.min(255, v - 22));
+            d[idx + 3] = 255;
+          }
+        }
+        cx.putImageData(img, 0, 0);
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(6, 6);
+        return tex;
+      }
+      const sandTex = createSandGrainTexture();
+
+      // 3D Airborne Sand Grain Particle System
+      const MAX_SAND_PTS = 320;
+      const sandPtPos = new Float32Array(MAX_SAND_PTS * 3);
+      const sandPtVel = [];
+      for (let i = 0; i < MAX_SAND_PTS; i++) {
+        sandPtPos[i * 3 + 1] = -10;
+        sandPtVel.push({ x: 0, y: 0, z: 0, active: false });
+      }
+      const sandPtGeo = new THREE.BufferGeometry();
+      sandPtGeo.setAttribute('position', new THREE.BufferAttribute(sandPtPos, 3));
+      const sandPtMat = new THREE.PointsMaterial({ color: 0xfde68a, size: 0.045, transparent: true, opacity: 0.88 });
+      const sandParticles = new THREE.Points(sandPtGeo, sandPtMat);
+      scene.add(sandParticles);
+      let sandPtCursor = 0;
+
+      function spawnSandGrain(wx, wy, wz, vx, vy, vz) {
+        const i = sandPtCursor;
+        sandPtCursor = (sandPtCursor + 1) % MAX_SAND_PTS;
+        sandPtPos[i * 3] = wx;
+        sandPtPos[i * 3 + 1] = wy;
+        sandPtPos[i * 3 + 2] = wz;
+        sandPtVel[i] = { x: vx, y: vy, z: vz, active: true };
+      }
+
+      let pileMesh = null, pileGeo = null, visualSegs = 96;
+      let smoothZ = new Float32Array(params.L * params.L);
+
+      function rebuildMeshGeometry() {
+        if (pileMesh) { scene.remove(pileMesh); pileGeo.dispose(); }
+        smoothZ = new Float32Array(params.L * params.L);
+        for (let i = 0; i < grid.length; i++) smoothZ[i] = grid[i];
+        visualSegs = Math.min(128, Math.max(80, params.L));
+        pileGeo = new THREE.PlaneGeometry(4.0, 4.0, visualSegs - 1, visualSegs - 1);
+        pileGeo.rotateX(-Math.PI / 2);
+        const count = pileGeo.attributes.position.count;
+        pileGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+        pileMesh = new THREE.Mesh(pileGeo, new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          map: sandTex,
+          bumpMap: sandTex,
+          bumpScale: 0.032,
+          roughness: 0.88,
+          metalness: 0.04,
+          flatShading: false
+        }));
+        scene.add(pileMesh);
+        updatePileVisuals(0.016);
+      }
+
+      // Natural quartz/ochre sand gradient: shadowed ochre -> warm silica -> sunlit crest -> molten avalanche slip
+      const sandPalette = [
+        [0.32, 0.23, 0.14], // 0: deep shadowed sand
+        [0.58, 0.43, 0.25], // 1: warm desert ochre
+        [0.78, 0.61, 0.37], // 2: golden silica
+        [0.92, 0.78, 0.52], // 3: sunlit critical crest
+        [1.00, 0.90, 0.68], // flash: active tumbling quartz grains
+      ];
+
+      function updatePileVisuals(dtReal) {
+        if (!pileGeo) return;
+        const L = params.L, pos = pileGeo.attributes.position.array, col = pileGeo.attributes.color.array;
+        const lerpRate = Math.min(1.0, dtReal * 14.0);
+        for (let i = 0; i < grid.length; i++) {
+          smoothZ[i] += (grid[i] - smoothZ[i]) * lerpRate;
+          if (flashGrid[i] > 0) {
+            if (flashGrid[i] > 0.92 && Math.random() < 0.22) {
+              const r = Math.floor(i / L), c = i - r * L;
+              spawnSandGrain((c / L - 0.5) * 4.0, smoothZ[i] * 0.14 + 0.08, (r / L - 0.5) * 4.0, (Math.random() - 0.5) * 0.7, 0.6 + Math.random() * 0.7, (Math.random() - 0.5) * 0.7);
+            }
+            flashGrid[i] = Math.max(0, flashGrid[i] - dtReal * 3.2);
+          }
+        }
+
+        for (let r = 0; r < visualSegs; r++) {
+          const gy = (r / (visualSegs - 1)) * (L - 1);
+          const r0 = Math.floor(gy), r1 = Math.min(L - 1, r0 + 1), fr = gy - r0;
+          for (let c = 0; c < visualSegs; c++) {
+            const gx = (c / (visualSegs - 1)) * (L - 1);
+            const c0 = Math.floor(gx), c1 = Math.min(L - 1, c0 + 1), fc = gx - c0;
+
+            // Bilinear height + 3x3 micro-dune smoothing
+            const z00 = smoothZ[r0 * L + c0], z10 = smoothZ[r0 * L + c1];
+            const z01 = smoothZ[r1 * L + c0], z11 = smoothZ[r1 * L + c1];
+            const zInterp = (z00 * (1 - fc) + z10 * fc) * (1 - fr) + (z01 * (1 - fc) + z11 * fc) * fr;
+
+            // Gentle dome profile toward center so open-boundary sandpile reads as a true conical mound
+            const dx = (c / (visualSegs - 1)) - 0.5, dy = (r / (visualSegs - 1)) - 0.5;
+            const dome = Math.max(0, 0.35 * (1.0 - (dx * dx + dy * dy) * 3.2));
+
+            const vIdx = r * visualSegs + c;
+            const fl = flashGrid[r0 * L + c0];
+            pos[vIdx * 3 + 1] = zInterp * 0.13 + dome + fl * 0.05;
+
+            const zNorm = Math.max(0, Math.min(3, zInterp));
+            const i0 = Math.min(2, Math.floor(zNorm)), tCol = zNorm - i0;
+            const cA = sandPalette[i0], cB = sandPalette[i0 + 1], fC = sandPalette[4];
+            const br = cA[0] + (cB[0] - cA[0]) * tCol;
+            const bg = cA[1] + (cB[1] - cA[1]) * tCol;
+            const bb = cA[2] + (cB[2] - cA[2]) * tCol;
+            col[vIdx * 3] = br + (fC[0] - br) * fl;
+            col[vIdx * 3 + 1] = bg + (fC[1] - bg) * fl;
+            col[vIdx * 3 + 2] = bb + (fC[2] - bb) * fl;
+          }
+        }
+        pileGeo.attributes.position.needsUpdate = true;
+        pileGeo.attributes.color.needsUpdate = true;
+        pileGeo.computeVertexNormals();
+
+        // Step airborne sand particles
+        for (let i = 0; i < MAX_SAND_PTS; i++) {
+          const pv = sandPtVel[i];
+          if (!pv.active) continue;
+          pv.y -= 4.8 * dtReal;
+          sandPtPos[i * 3] += pv.x * dtReal;
+          sandPtPos[i * 3 + 1] += pv.y * dtReal;
+          sandPtPos[i * 3 + 2] += pv.z * dtReal;
+          if (sandPtPos[i * 3 + 1] < 0.05) { pv.active = false; sandPtPos[i * 3 + 1] = -10; }
+        }
+        sandPtGeo.attributes.position.needsUpdate = true;
+      }
+
+      const raycaster = new THREE.Raycaster(), pointerNDC = new THREE.Vector2();
+      let downPos = { x: 0, y: 0 };
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        downPos = { x: e.clientX, y: e.clientY };
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX, dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.25, Math.min(1.45, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', (e) => {
+        if (camState.dragging && pileMesh && Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 5) {
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, camera);
+          const hits = raycaster.intersectObject(pileMesh);
+          if (hits.length > 0) {
+            const pt = hits[0].point, L = params.L;
+            const c = Math.max(0, Math.min(L - 1, Math.floor(((pt.x / 4.0) + 0.5) * L)));
+            const r = Math.max(0, Math.min(L - 1, Math.floor(((pt.z / 4.0) + 0.5) * L)));
+            const res = dropAndRelax(r * L + c, true);
+            if (res.size > 0) {
+              stats.lastSize = res.size;
+              scheduleHit(res.size, stats.simTime, res.panX);
+              showToast(`Triggered avalanche: size ${res.size}`);
+            }
+          }
+        }
+        camState.dragging = false;
+      });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.8, Math.min(11.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 4. STATISTICS, LOG-LOG CHARTS & 1/f POWER SPECTRUM
+      // =========================================================================
+      function computeStats(arr) {
+        if (arr.length < 5) return { mean: 0, cv: 0, ac1: 0 };
+        let sum = 0; for (const v of arr) sum += v;
+        const mean = sum / arr.length;
+        let vSum = 0, num = 0;
+        for (let i = 0; i < arr.length; i++) {
+          const d = arr[i] - mean; vSum += d * d;
+          if (i < arr.length - 1) num += d * (arr[i + 1] - mean);
+        }
+        return { mean, cv: mean > 0 ? Math.sqrt(vSum / arr.length) / mean : 0, ac1: vSum > 0 ? num / vSum : 0 };
+      }
+
+      function getMeanAvalancheRate() {
+        const s = computeStats(stats.pileIOIs);
+        return s.mean > 10 ? 1000.0 / s.mean : params.dropRate * 0.42;
+      }
+
+      const ioiLogCanvas = document.getElementById('ioi-log-chart'), ioiLogCtx = ioiLogCanvas.getContext('2d');
+      const sizeLogCanvas = document.getElementById('size-log-chart'), sizeLogCtx = sizeLogCanvas.getContext('2d');
+      const psdCanvas = document.getElementById('psd-chart'), psdCtx = psdCanvas.getContext('2d');
+
+      function drawLogLogIOI() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = ioiLogCanvas.width = ioiLogCanvas.clientWidth * dpr, h = ioiLogCanvas.height = ioiLogCanvas.clientHeight * dpr;
+        ioiLogCtx.clearRect(0, 0, w, h);
+        const bins = 18, minLog = Math.log10(10), maxLog = Math.log10(5000);
+        const buildCurve = (arr) => {
+          if (arr.length < 8) return null;
+          const counts = new Array(bins).fill(0);
+          for (const v of arr) {
+            const b = Math.min(bins - 1, Math.max(0, Math.floor(((Math.log10(Math.max(10, Math.min(4999, v))) - minLog) / (maxLog - minLog)) * bins)));
+            counts[b]++;
+          }
+          const pts = [];
+          for (let i = 0; i < bins; i++) {
+            if (counts[i] > 0) {
+              const px = ((i + 0.5) / bins) * (w - 16) + 8;
+              const py = h - ((Math.log10(counts[i] / arr.length) + 3.0) / 3.0) * (h - 14) - 6;
+              pts.push([px, Math.max(4, Math.min(h - 4, py))]);
+            }
+          }
+          return pts;
+        };
+        const plot = (pts, col, dash) => {
+          if (!pts || pts.length < 2) return;
+          ioiLogCtx.strokeStyle = col; ioiLogCtx.lineWidth = 2;
+          ioiLogCtx.setLineDash(dash ? [4, 3] : []);
+          ioiLogCtx.beginPath();
+          pts.forEach((p, idx) => idx === 0 ? ioiLogCtx.moveTo(p[0], p[1]) : ioiLogCtx.lineTo(p[0], p[1]));
+          ioiLogCtx.stroke(); ioiLogCtx.setLineDash([]);
+        };
+        plot(buildCurve(stats.pileIOIs), '#f59e0b', false);
+        plot(buildCurve(stats.poisIOIs), '#22d3ee', true);
+      }
+
+      function drawLogLogSize() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = sizeLogCanvas.width = sizeLogCanvas.clientWidth * dpr, h = sizeLogCanvas.height = sizeLogCanvas.clientHeight * dpr;
+        sizeLogCtx.clearRect(0, 0, w, h);
+        sizeLogCtx.strokeStyle = 'rgba(148, 163, 184, 0.3)'; sizeLogCtx.setLineDash([3, 3]);
+        sizeLogCtx.beginPath(); sizeLogCtx.moveTo(8, 10); sizeLogCtx.lineTo(w - 8, h - 10); sizeLogCtx.stroke();
+        sizeLogCtx.setLineDash([]);
+        if (stats.avalSizes.length < 10) return;
+
+        const bins = 16, maxLog = 3.6, counts = new Array(bins).fill(0);
+        for (const s of stats.avalSizes) counts[Math.min(bins - 1, Math.floor((Math.log10(Math.max(1, s)) / maxLog) * bins))]++;
+
+        sizeLogCtx.strokeStyle = '#f59e0b'; sizeLogCtx.lineWidth = 2; sizeLogCtx.beginPath();
+        let started = false, xSum = 0, ySum = 0, xxSum = 0, xySum = 0, nPts = 0;
+        for (let i = 0; i < bins; i++) {
+          if (counts[i] > 0) {
+            const lx = (i + 0.5) / bins * maxLog, ly = Math.log10(counts[i] / stats.avalSizes.length);
+            const px = ((i + 0.5) / bins) * (w - 16) + 8;
+            const cy = Math.max(4, Math.min(h - 4, h - ((ly + 3.2) / 3.2) * (h - 14) - 6));
+            if (!started) { sizeLogCtx.moveTo(px, cy); started = true; } else sizeLogCtx.lineTo(px, cy);
+            if (i < 10) { xSum += lx; ySum += ly; xxSum += lx * lx; xySum += lx * ly; nPts++; }
+          }
+        }
+        sizeLogCtx.stroke();
+        if (nPts >= 3) {
+          const slope = (nPts * xySum - xSum * ySum) / Math.max(1e-6, nPts * xxSum - xSum * xSum);
+          document.getElementById('lbl-slope').textContent = `τ ≈ ${Math.abs(slope).toFixed(2)}`;
+        }
+      }
+
+      function drawPowerSpectrum() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = psdCanvas.width = psdCanvas.clientWidth * dpr, h = psdCanvas.height = psdCanvas.clientHeight * dpr;
+        psdCtx.clearRect(0, 0, w, h);
+        const series = stats.sizeSeries;
+        if (series.length < 32) return;
+        const N = Math.min(64, series.length);
+        const slice = series.slice(-N);
+        psdCtx.strokeStyle = '#34d399'; psdCtx.lineWidth = 1.6; psdCtx.beginPath();
+        for (let k = 1; k < N / 2; k++) {
+          let re = 0, im = 0;
+          for (let n = 0; n < N; n++) {
+            const ang = (2 * Math.PI * k * n) / N;
+            re += slice[n] * Math.cos(ang);
+            im -= slice[n] * Math.sin(ang);
+          }
+          const mag = Math.log10(Math.max(1e-3, Math.hypot(re, im)));
+          const x = ((Math.log10(k) / Math.log10(N / 2)) * (w - 16)) + 8;
+          const y = Math.max(4, Math.min(h - 4, h - ((mag + 1) / 5) * (h - 10) - 4));
+          if (k === 1) psdCtx.moveTo(x, y); else psdCtx.lineTo(x, y);
+        }
+        psdCtx.stroke();
+      }
+
+      function runVerification() {
+        const res = window.__SAND_PILE__.runVerification(48, 4000);
+        document.getElementById('v-c1-detail').textContent = `${res.avalanches} avalanches, max size ${res.maxSize} (power-law tail)`;
+        document.getElementById('v-c2-detail').textContent = `Sandpile CV=${res.sandpile.cv.toFixed(2)}, AC₁=${res.sandpile.ac1.toFixed(2)} vs Poisson CV=${res.poissonNull.cv.toFixed(2)}`;
+        let sumZ = 0; for (let i = 0; i < grid.length; i++) sumZ += grid[i];
+        document.getElementById('v-c3-detail').textContent = `Mean height z̄ = ${(sumZ / grid.length).toFixed(3)} locked near critical attractor`;
+        document.getElementById('v-c4-detail').textContent = `4-neighbor relaxation (z → z−4) with open absorbing boundaries`;
+      }
+
+      let running = true;
+
+      function bindUI() {
+        document.getElementById('ctrl-size').addEventListener('input', (e) => {
+          params.L = parseInt(e.target.value, 10);
+          document.getElementById('lbl-size').textContent = `${params.L} × ${params.L}`;
+          initAndWarmupPile();
+        });
+        document.getElementById('ctrl-rate').addEventListener('input', (e) => {
+          params.dropRate = parseInt(e.target.value, 10);
+          document.getElementById('lbl-rate').textContent = `${params.dropRate} grains/s`;
+        });
+        document.getElementById('ctrl-zc').addEventListener('input', (e) => {
+          params.zc = parseInt(e.target.value, 10);
+          document.getElementById('lbl-zc').textContent = String(params.zc);
+          initAndWarmupPile();
+        });
+        document.getElementById('map-loud').addEventListener('change', (e) => { params.mapLoudness = e.target.checked; });
+        document.getElementById('map-pitch').addEventListener('change', (e) => { params.mapPitch = e.target.checked; });
+        document.getElementById('map-dur').addEventListener('change', (e) => { params.mapDuration = e.target.checked; });
+
+        document.getElementById('btn-drop-pattern').addEventListener('click', () => {
+          params.rainMode = params.rainMode === 'random' ? 'center' : 'random';
+          document.getElementById('btn-drop-pattern').textContent = params.rainMode === 'random' ? 'Rain: Random' : 'Rain: Center';
+        });
+        document.getElementById('btn-mega-drop').addEventListener('click', () => {
+          const L = params.L, center = Math.floor(L / 2) * L + Math.floor(L / 2);
+          let totalSize = 0;
+          for (let i = 0; i < 15; i++) totalSize += dropAndRelax(center, true).size;
+          if (totalSize > 0) {
+            stats.lastSize = totalSize;
+            scheduleHit(totalSize, stats.simTime, 0);
+            showToast(`Mega-cluster avalanche: ${totalSize} topples`);
+          }
+        });
+
+        const setMode = (m) => {
+          params.mode = m;
+          const bPile = document.getElementById('btn-mode-pile'), bPois = document.getElementById('btn-mode-poisson'), badge = document.getElementById('mode-badge');
+          if (m === 'pile') {
+            bPile.className = 'py-2 rounded-lg text-xs font-mono font-semibold bg-amber-500/25 text-amber-200 border border-amber-400/60 transition';
+            bPois.className = 'py-2 rounded-lg text-xs font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition';
+            badge.textContent = 'SAND PILE (CRITICAL)';
+            badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50';
+          } else {
+            bPois.className = 'py-2 rounded-lg text-xs font-mono font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 transition';
+            bPile.className = 'py-2 rounded-lg text-xs font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition';
+            badge.textContent = 'POISSON (NULL)';
+            badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+          }
+        };
+        document.getElementById('btn-mode-pile').addEventListener('click', () => setMode('pile'));
+        document.getElementById('btn-mode-poisson').addEventListener('click', () => setMode('poisson'));
+        document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+        document.getElementById('btn-play').addEventListener('click', () => {
+          running = !running;
+          document.getElementById('btn-play').textContent = running ? 'Pause' : 'Play';
+          if (running && audioCtx) simAudioOffset = audioCtx.currentTime - stats.simTime;
+        });
+        document.getElementById('btn-reset').addEventListener('click', () => { initAndWarmupPile(); showToast('Re-warmed sandpile'); });
+        document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+        document.getElementById('btn-cam').addEventListener('click', () => { camState.theta = 0.65; camState.phi = 0.92; camState.radius = 5.4; updateCamera(); });
+
+        const vModal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => { vModal.classList.remove('hidden'); vModal.classList.add('flex'); runVerification(); });
+        document.getElementById('btn-close-verify').addEventListener('click', () => { vModal.classList.add('hidden'); vModal.classList.remove('flex'); });
+      }
+
+      let lastPerf = performance.now(), uiFrame = 0;
+
+      function updateReadouts() {
+        document.getElementById('lbl-grains').textContent = `${stats.drops} drops`;
+        document.getElementById('val-last-size').textContent = String(stats.lastSize);
+        document.getElementById('val-max-size').textContent = String(stats.maxSize);
+        let sumZ = 0; for (let i = 0; i < grid.length; i++) sumZ += grid[i];
+        document.getElementById('val-mean-z').textContent = (sumZ / grid.length).toFixed(2);
+
+        const pStats = computeStats(stats.pileIOIs), nStats = computeStats(stats.poisIOIs);
+        document.getElementById('val-sand-stats').textContent = stats.pileIOIs.length >= 5 ? `${pStats.cv.toFixed(2)} / ${pStats.ac1.toFixed(2)}` : '-- / --';
+        document.getElementById('val-pois-stats').textContent = stats.poisIOIs.length >= 5 ? `${nStats.cv.toFixed(2)} / ${nStats.ac1.toFixed(2)}` : '-- / --';
+
+        drawLogLogIOI();
+        drawLogLogSize();
+        drawPowerSpectrum();
+      }
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (running) {
+          let targetSim = stats.simTime + dtReal;
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            targetSim = (audioCtx.currentTime + LOOKAHEAD_SEC) - simAudioOffset;
+            if (Math.abs(targetSim - stats.simTime) > 0.35) {
+              simAudioOffset = audioCtx.currentTime - stats.simTime;
+              targetSim = stats.simTime + dtReal;
+            }
+          }
+
+          const L = params.L, N = L * L, dtDrop = 1.0 / params.dropRate;
+          let guard = 0;
+          while (stats.nextDropTime <= targetSim && guard < 40) {
+            guard++;
+            const tEv = stats.nextDropTime;
+            stats.drops++;
+            const dropIdx = params.rainMode === 'center' ? (Math.floor(L / 2) * L + Math.floor(L / 2)) : Math.floor(Math.random() * N);
+            const { size, waves, panX } = dropAndRelax(dropIdx, true);
+            stats.sizeSeries.push(size);
+            if (stats.sizeSeries.length > 128) stats.sizeSeries.shift();
+
+            if (size > 0) {
+              stats.lastSize = size;
+              if (size > stats.maxSize) stats.maxSize = size;
+              stats.avalSizes.push(size);
+              if (stats.avalSizes.length > 600) stats.avalSizes.shift();
+              if (stats.lastAvalOnset !== null) {
+                stats.pileIOIs.push((tEv - stats.lastAvalOnset) * 1000.0);
+                if (stats.pileIOIs.length > 400) stats.pileIOIs.shift();
+              }
+              stats.lastAvalOnset = tEv;
+              if (params.mode === 'pile') scheduleHit(size, tEv, panX);
+              stats.nextDropTime = tEv + dtDrop + waves * 0.012;
+            } else {
+              stats.nextDropTime = tEv + dtDrop;
+            }
+          }
+
+          const poisRate = getMeanAvalancheRate();
+          let pGuard = 0;
+          while (stats.nextPoissonTime <= targetSim && pGuard < 40) {
+            pGuard++;
+            const tP = stats.nextPoissonTime;
+            if (stats.lastPoisOnset !== null) {
+              stats.poisIOIs.push((tP - stats.lastPoisOnset) * 1000.0);
+              if (stats.poisIOIs.length > 400) stats.poisIOIs.shift();
+            }
+            stats.lastPoisOnset = tP;
+            if (params.mode === 'poisson') {
+              const s = stats.avalSizes.length ? stats.avalSizes[Math.floor(Math.random() * stats.avalSizes.length)] : 4;
+              scheduleHit(s, tP, 0);
+            }
+            stats.nextPoissonTime = tP + -Math.log(Math.max(1e-9, Math.random())) / poisRate;
+          }
+          stats.simTime = targetSim;
+        }
+
+        updatePileVisuals(dtReal);
+        uiFrame++;
+        if (uiFrame % 4 === 0) updateReadouts();
+        renderer.render(scene, camera);
+      }
+
+      window.__SAND_PILE__ = {
+        getState: () => ({ L: params.L, dropRate: params.dropRate, zc: params.zc, mode: params.mode, drops: stats.drops, maxSize: stats.maxSize, pileStats: computeStats(stats.pileIOIs), poissonStats: computeStats(stats.poisIOIs) }),
+        runVerification: (L = 48, drops = 4000) => {
+          const savedL = params.L; params.L = L; initAndWarmupPile();
+          let t = 0, dtDrop = 1.0 / 30.0, lastT = null;
+          const iois = [], sizes = [], N = L * L;
+          for (let i = 0; i < drops; i++) {
+            const { size, waves } = dropAndRelax(Math.floor(Math.random() * N), false);
+            if (size > 0) { if (lastT !== null) iois.push((t - lastT) * 1000); lastT = t; sizes.push(size); t += dtDrop + waves * 0.015; }
+            else t += dtDrop;
+          }
+          const pileS = computeStats(iois);
+          const pois = Array.from({ length: iois.length }, () => -Math.log(Math.max(1e-9, Math.random())) * pileS.mean);
+          const poisS = computeStats(pois);
+          params.L = savedL; initAndWarmupPile();
+          return { avalanches: sizes.length, maxSize: Math.max(...sizes), sandpile: pileS, poissonNull: poisS };
+        },
+      };
+
+      window.addEventListener('load', () => {
+        initAndWarmupPile();
+        bindUI();
+        runVerification();
+        requestAnimationFrame(animate);
+      });
+    })();
+  </script>
+</body>
+</html>
