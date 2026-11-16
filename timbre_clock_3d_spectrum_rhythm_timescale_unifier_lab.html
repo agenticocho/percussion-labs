@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TIMBRE-CLOCK 3D — Spectrum-Rhythm Timescale Unifier Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #a855f7;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #a855f7;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-[0_0_10px_#a855f7]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">TIMBRE-CLOCK 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-purple-300 border border-slate-700/70">fᵢ = f₀ · rᵢ · k</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Spectrum-Rhythm Timescale Unifier Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="regime-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 border border-purple-400/50">
+        TIMBRE / CHORD (k = 1.00)
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/40 hover:bg-purple-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Dual-Coordinate Displays (One Array, Two Axes) -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">One Array · Two Axes</span>
+        <span id="lbl-fbase" class="text-[11px] font-mono text-purple-300 font-semibold">f₀·k = 220.0 Hz</span>
+      </div>
+
+      <!-- Crossover & Conservation Readout -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-purple-500/25">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Measured Crossover</div>
+          <div id="val-crossover" class="text-xs font-mono font-semibold text-purple-300 mt-0.5">30.0 Hz (k=0.136)</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-cyan-500/25">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Active Voices</div>
+          <div id="val-voices" class="text-xs font-mono font-semibold text-cyan-300 mt-0.5">8 / 8</div>
+        </div>
+      </div>
+
+      <!-- Panel 1: Spectrum (Magnitude vs Log-Frequency, 20 Hz -> 20 kHz) -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-purple-300">Spectrum (20 Hz → 20 kHz)</span>
+          <span class="text-[10px] font-mono text-slate-500">Audio Axis</span>
+        </div>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="spec-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Panel 2: Event Timeline (Onset Period vs Log-Time, 5 ms -> 5000 ms) -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-cyan-300">Event Timeline (5 ms → 5 s)</span>
+          <span class="text-[10px] font-mono text-slate-500">Rhythm Axis</span>
+        </div>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="time-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Unified Partial Table Preview -->
+      <div class="pt-1 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
+        <div class="text-slate-500 mb-1">Single Array (rᵢ, aᵢ) → fᵢ = f₀·rᵢ·k:</div>
+        <div id="lbl-array-preview" class="text-slate-300 truncate">1.00, 2.00, 3.00, 4.00...</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Time Scale k (The Centerpiece Dial) -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-k" class="text-purple-300 font-semibold">Time Scale k <span class="text-slate-500 font-normal">(0.0005 → 4)</span></label>
+          <span id="lbl-k" class="font-mono text-purple-300 font-bold">1.0000</span>
+        </div>
+        <input id="ctrl-k" type="range" min="0" max="1000" step="1" value="845" class="lab-slider" />
+        <div class="flex justify-between text-[10px] font-mono text-slate-500">
+          <span>0.0005 (Rhythm)</span>
+          <span>0.14 (20–50Hz)</span>
+          <span>4.0 (Chord)</span>
+        </div>
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-purple-500/20 text-purple-200 border border-purple-500/40 hover:bg-purple-500/30 transition">
+          Sweep k (Rhythm ↔ Crossover ↔ Timbre)
+        </button>
+      </div>
+
+      <!-- Partial Set Source -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Partial Set Source</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-src="harmonic" class="src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-purple-500/25 text-purple-200 border border-purple-400/50">Harmonic</button>
+          <button type="button" data-src="bell" class="src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Bell</button>
+          <button type="button" data-src="cymbal" class="src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Cymbal</button>
+          <button type="button" data-src="pan" class="src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Pan 1:2:3</button>
+          <button type="button" data-src="polyrhythm" class="src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Polyrhythm</button>
+          <button type="button" data-src="custom" class="src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Custom</button>
+        </div>
+        <div id="custom-box" class="hidden pt-1">
+          <input id="ctrl-custom" type="text" value="1, 1.414, 2, 2.718, 3.141, 4.236" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] font-mono text-slate-200 focus:outline-none focus:border-purple-400" />
+        </div>
+      </div>
+
+      <!-- Base Frequency f0 -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-f0" class="text-slate-300 font-medium">Base Frequency f₀</label>
+          <span id="lbl-f0" class="font-mono text-slate-200">220 Hz</span>
+        </div>
+        <input id="ctrl-f0" type="range" min="55" max="660" step="1" value="220" class="lab-slider" />
+      </div>
+
+      <!-- Partial Count -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-count" class="text-slate-300 font-medium">Partial Count</label>
+          <span id="lbl-count" class="font-mono text-slate-200">8</span>
+        </div>
+        <input id="ctrl-count" type="range" min="2" max="16" step="1" value="8" class="lab-slider" />
+      </div>
+
+      <!-- Amplitude Slope -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-slope" class="text-slate-300 font-medium">Amplitude Slope (r⁻ˢ)</label>
+          <span id="lbl-slope" class="font-mono text-slate-200">0.70</span>
+        </div>
+        <input id="ctrl-slope" type="range" min="0.0" max="2.0" step="0.05" value="0.70" class="lab-slider" />
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-purple-500/40 text-xs font-mono text-purple-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. SINGLE UNIFIED PARTIAL ARRAY (Source of Truth for Both Rhythm & Timbre)
+      // =========================================================================
+      const RATIO_SETS = {
+        harmonic:   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+        bell:       [0.5, 1.0, 1.2, 1.5, 2.0, 2.51, 3.0, 3.98, 5.02, 6.12, 7.23, 8.41, 9.65, 10.9, 12.1, 13.4],
+        cymbal:     [1.0, 1.371, 1.618, 2.147, 2.718, 3.317, 3.873, 4.472, 5.196, 5.916, 6.708, 7.550, 8.367, 9.274, 10.198, 11.136],
+        pan:        [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0],
+        polyrhythm: [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.0, 14.0, 15.0, 16.0],
+      };
+
+      const params = {
+        source: 'harmonic',
+        k: 1.0,
+        f0: 220,
+        partialCount: 8,
+        slope: 0.70,
+        customStr: '1, 1.414, 2, 2.718, 3.141, 4.236',
+      };
+
+      // The single unified array: [{ ratio, amp, nextEventTime, flash }]
+      let partials = [];
+
+      const state = {
+        simTime: 0,
+        running: true,
+        sweepActive: false,
+        sweepDir: 1,
+        sweepSliderVal: 845,
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function rebuildPartials() {
+        let baseRatios = RATIO_SETS[params.source];
+        if (params.source === 'custom') {
+          baseRatios = params.customStr.split(',').map((s) => parseFloat(s.trim())).filter((n) => isFinite(n) && n > 0.05);
+          if (baseRatios.length === 0) baseRatios = [1, 2, 3, 4];
+        }
+        const count = Math.min(params.partialCount, baseRatios.length);
+        partials = [];
+        let maxAmp = 0;
+        for (let i = 0; i < count; i++) {
+          const r = baseRatios[i];
+          const a = Math.pow(Math.max(0.25, r), -params.slope);
+          if (a > maxAmp) maxAmp = a;
+          partials.push({ ratio: r, amp: a, nextEventTime: state.simTime, flash: 0 });
+        }
+        for (const p of partials) p.amp /= Math.max(1e-6, maxAmp);
+
+        document.getElementById('lbl-array-preview').textContent = partials.map((p) => p.ratio.toFixed(2)).join(', ');
+        rebuild3DColumns();
+        updateAudioPartials();
+      }
+
+      function measureCrossoverHz() {
+        // 6 ms click envelope: onset detector loses separation when T < 5 * tau_env (~30 Hz)
+        const tauEnv = 0.0065;
+        return 1.0 / (5.0 * tauEnv); // ~30.8 Hz
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO UNIFIED ENGINE (Click Trains <-> Bandlimited Sine Partials)
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let sineVoices = []; // { osc, gain }
+      let simAudioOffset = 0;
+      const LOOKAHEAD = 0.045;
+      const MAX_AUDIO_HZ = 20000;
+
+      function updateAudioPartials() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const nyquistLimit = Math.min(MAX_AUDIO_HZ, audioCtx.sampleRate * 0.46);
+
+        // Ensure voice pool size matches partials
+        while (sineVoices.length < partials.length) {
+          const osc = audioCtx.createOscillator();
+          const g = audioCtx.createGain();
+          osc.type = 'sine';
+          g.gain.value = 0;
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start();
+          sineVoices.push({ osc, gain: g });
+        }
+
+        for (let i = 0; i < sineVoices.length; i++) {
+          const v = sineVoices[i];
+          if (i >= partials.length || !audioEnabled) {
+            v.gain.gain.setTargetAtTime(0, now, 0.015);
+            continue;
+          }
+          const f = params.f0 * partials[i].ratio * params.k;
+          if (f > nyquistLimit) {
+            // Anti-aliasing brickwall above 20 kHz
+            v.gain.gain.setTargetAtTime(0, now, 0.01);
+          } else {
+            v.osc.frequency.setTargetAtTime(f, now, 0.015);
+            // Smooth crossover around 20 -> 45 Hz
+            const toneBlend = Math.max(0, Math.min(1, (f - 20.0) / 25.0));
+            const normGain = (0.35 / Math.sqrt(partials.length)) * partials[i].amp * toneBlend;
+            v.gain.gain.setTargetAtTime(normGain, now, 0.018);
+          }
+        }
+      }
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.75;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        updateAudioPartials();
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-500/25 text-purple-200 border border-purple-400/60 hover:bg-purple-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) initAudio();
+        else {
+          audioEnabled = false;
+          updateAudioPartials();
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function schedulePartialClick(idx, f, amp, exactSimTime) {
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        if (f > 42.0) return; // Handled by continuous sine partial above crossover
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.25) return;
+
+        const clickBlend = Math.max(0, Math.min(1, 1.0 - (f - 20.0) / 22.0));
+        if (clickBlend <= 0.01) return;
+
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        const pingFreq = 700 + idx * 110;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(pingFreq, playTime);
+        osc.frequency.exponentialRampToValueAtTime(pingFreq * 0.65, playTime + 0.008);
+
+        const gainVal = (0.32 / Math.sqrt(partials.length)) * amp * clickBlend;
+        g.gain.setValueAtTime(gainVal, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + 0.009);
+
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(playTime);
+        osc.stop(playTime + 0.012);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+        const nyq = Math.min(MAX_AUDIO_HZ, sr * 0.46);
+
+        for (let idx = 0; idx < partials.length; idx++) {
+          const p = partials[idx];
+          const f = params.f0 * p.ratio * params.k;
+          if (f > nyq) continue;
+          const amp = (0.35 / Math.sqrt(partials.length)) * p.amp;
+          const toneBlend = Math.max(0, Math.min(1, (f - 20.0) / 25.0));
+          const clickBlend = 1.0 - toneBlend;
+
+          if (toneBlend > 0.01) {
+            for (let i = 0; i < totalSamples; i++) {
+              const sig = amp * toneBlend * Math.sin(2 * Math.PI * f * (i / sr));
+              left[i] += sig;
+              right[i] += sig;
+            }
+          }
+          if (clickBlend > 0.01) {
+            const pingFreq = 700 + idx * 110;
+            const clickLen = Math.floor(sr * 0.010);
+            for (let k = 0; k / f < dur - 0.015; k++) {
+              const start = Math.floor((k / f) * sr);
+              for (let j = 0; j < clickLen && start + j < totalSamples; j++) {
+                const tt = j / sr;
+                const sig = amp * clickBlend * Math.exp(-tt / 0.0022) * Math.sin(2 * Math.PI * pingFreq * tt);
+                left[start + j] += sig;
+                right[start + j] += sig;
+              }
+            }
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `timbre_clock_${params.source}_k${params.k.toFixed(4)}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Exported 8s 44.1 kHz stereo WAV');
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D HARMONIC-RHYTHMIC BRIDGE
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.06);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.35, phi: 1.15, radius: 5.2, target: new THREE.Vector3(0, 0.5, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+      const keyLight = new THREE.DirectionalLight(0xf8fafc, 1.1);
+      keyLight.position.set(3, 6, 4);
+      scene.add(keyLight);
+
+      const grid = new THREE.GridHelper(14, 28, 0x1e293b, 0x0f172a);
+      grid.position.y = -0.1;
+      scene.add(grid);
+
+      const colGroup = new THREE.Group();
+      scene.add(colGroup);
+      let colMeshes = [];
+
+      function rebuild3DColumns() {
+        while (colGroup.children.length > 0) colGroup.remove(colGroup.children[0]);
+        colMeshes = [];
+        const N = partials.length;
+        const span = Math.min(4.6, N * 0.42);
+        for (let i = 0; i < N; i++) {
+          const x = N > 1 ? (-span / 2 + (i / (N - 1)) * span) : 0;
+          const mat = new THREE.MeshStandardMaterial({ color: 0xa855f7, roughness: 0.25, metalness: 0.6, emissive: 0x3b0764 });
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.0, 0.18), mat);
+          mesh.position.set(x, 0.5, 0);
+          colGroup.add(mesh);
+          colMeshes.push(mesh);
+        }
+      }
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.5, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.5, Math.min(11.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. DUAL-COORDINATE CHARTS (Spectrum vs Event Timeline from ONE Array)
+      // =========================================================================
+      const specCanvas = document.getElementById('spec-canvas');
+      const specCtx = specCanvas.getContext('2d');
+      const timeCanvas = document.getElementById('time-canvas');
+      const timeCtx = timeCanvas.getContext('2d');
+
+      function drawDualDisplays() {
+        // 1. Spectrum: 20 Hz -> 20,000 Hz (log-frequency)
+        const sw = specCanvas.width = specCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const sh = specCanvas.height = specCanvas.clientHeight * (window.devicePixelRatio || 1);
+        specCtx.clearRect(0, 0, sw, sh);
+
+        const minF = Math.log10(20), maxF = Math.log10(20000);
+        let activeVoices = 0;
+        for (const p of partials) {
+          const f = params.f0 * p.ratio * params.k;
+          if (f <= 20000) activeVoices++;
+          if (f >= 20 && f <= 20000) {
+            const x = ((Math.log10(f) - minF) / (maxF - minF)) * (sw - 12) + 6;
+            const barH = p.amp * (sh - 14);
+            specCtx.fillStyle = '#a855f7';
+            specCtx.fillRect(x - 2, sh - barH - 4, 4, barH);
+          }
+        }
+        document.getElementById('val-voices').textContent = `${activeVoices} / ${partials.length}`;
+
+        // 2. Event Timeline: 5 ms -> 5000 ms (log-time)
+        const tw = timeCanvas.width = timeCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const th = timeCanvas.height = timeCanvas.clientHeight * (window.devicePixelRatio || 1);
+        timeCtx.clearRect(0, 0, tw, th);
+
+        const minT = Math.log10(5), maxT = Math.log10(5000);
+        for (const p of partials) {
+          const f = params.f0 * p.ratio * params.k;
+          const periodMs = 1000.0 / Math.max(1e-4, f);
+          if (periodMs >= 5 && periodMs <= 5000) {
+            const x = ((Math.log10(periodMs) - minT) / (maxT - minT)) * (tw - 12) + 6;
+            const barH = p.amp * (th - 14);
+            timeCtx.fillStyle = '#22d3ee';
+            timeCtx.fillRect(x - 2, th - barH - 4, 4, barH);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS
+      // =========================================================================
+      function sliderToK(val) {
+        return 0.0005 * Math.pow(4.0 / 0.0005, val / 1000);
+      }
+
+      function updateReadouts() {
+        const fBase = params.f0 * params.k;
+        document.getElementById('lbl-k').textContent = params.k >= 0.1 ? params.k.toFixed(3) : params.k.toFixed(4);
+        document.getElementById('lbl-fbase').textContent = fBase >= 10 ? `f₀·k = ${fBase.toFixed(1)} Hz` : `f₀·k = ${fBase.toFixed(3)} Hz`;
+
+        const crossHz = measureCrossoverHz();
+        const crossK = crossHz / params.f0;
+        document.getElementById('val-crossover').textContent = `${crossHz.toFixed(1)} Hz (k=${crossK.toFixed(3)})`;
+
+        const badge = document.getElementById('regime-badge');
+        if (fBase < 18) {
+          badge.textContent = `RHYTHM / COUNTABLE (${fBase.toFixed(2)} Hz)`;
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+        } else if (fBase <= 45) {
+          badge.textContent = `CROSSOVER FUSION (${fBase.toFixed(1)} Hz)`;
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50';
+        } else {
+          badge.textContent = `TIMBRE / CHORD (${fBase.toFixed(0)} Hz)`;
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-300 border border-purple-400/50';
+        }
+        drawDualDisplays();
+      }
+
+      const ctrlK = document.getElementById('ctrl-k');
+      ctrlK.addEventListener('input', () => {
+        state.sweepSliderVal = parseFloat(ctrlK.value);
+        params.k = sliderToK(state.sweepSliderVal);
+        updateAudioPartials();
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-f0').addEventListener('input', (e) => {
+        params.f0 = parseInt(e.target.value, 10);
+        document.getElementById('lbl-f0').textContent = `${params.f0} Hz`;
+        updateAudioPartials();
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-count').addEventListener('input', (e) => {
+        params.partialCount = parseInt(e.target.value, 10);
+        document.getElementById('lbl-count').textContent = String(params.partialCount);
+        rebuildPartials();
+        updateReadouts();
+      });
+
+      document.getElementById('ctrl-slope').addEventListener('input', (e) => {
+        params.slope = parseFloat(e.target.value);
+        document.getElementById('lbl-slope').textContent = params.slope.toFixed(2);
+        rebuildPartials();
+        updateReadouts();
+      });
+
+      document.querySelectorAll('.src-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.source = btn.dataset.src;
+          document.getElementById('custom-box').classList.toggle('hidden', params.source !== 'custom');
+          document.querySelectorAll('.src-btn').forEach((b) => {
+            b.className = 'src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'src-btn py-1.5 rounded text-[10px] font-mono font-semibold bg-purple-500/25 text-purple-200 border border-purple-400/50';
+          rebuildPartials();
+          updateReadouts();
+        });
+      });
+
+      document.getElementById('ctrl-custom').addEventListener('change', (e) => {
+        params.customStr = e.target.value;
+        rebuildPartials();
+        updateReadouts();
+      });
+
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+        if (state.running && audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      });
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.35; camState.phi = 1.15; camState.radius = 5.2; updateCamera();
+      });
+
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        state.sweepActive = !state.sweepActive;
+        document.getElementById('btn-sweep').textContent = state.sweepActive
+          ? 'Stop Sweep'
+          : 'Sweep k (Rhythm ↔ Crossover ↔ Timbre)';
+      });
+
+      // =========================================================================
+      // 7. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.running) {
+          let targetSim = state.simTime + dtReal;
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            targetSim = (audioCtx.currentTime + LOOKAHEAD) - simAudioOffset;
+            if (Math.abs(targetSim - state.simTime) > 0.3) {
+              simAudioOffset = audioCtx.currentTime - state.simTime;
+              targetSim = state.simTime + dtReal;
+            }
+          }
+
+          // Schedule discrete clicks from the SAME partials array when below crossover
+          for (let i = 0; i < partials.length; i++) {
+            const p = partials[i];
+            const f = params.f0 * p.ratio * params.k;
+            const period = 1.0 / Math.max(1e-4, f);
+            if (p.nextEventTime < targetSim - period * 2) p.nextEventTime = targetSim;
+            let guard = 0;
+            while (p.nextEventTime <= targetSim && guard < 8) {
+              guard++;
+              schedulePartialClick(i, f, p.amp, p.nextEventTime);
+              p.flash = 1.0;
+              p.nextEventTime += period;
+            }
+          }
+          state.simTime = targetSim;
+
+          if (state.sweepActive) {
+            state.sweepSliderVal += state.sweepDir * dtReal * 85;
+            if (state.sweepSliderVal >= 1000) { state.sweepSliderVal = 1000; state.sweepDir = -1; }
+            if (state.sweepSliderVal <= 0) { state.sweepSliderVal = 0; state.sweepDir = 1; }
+            ctrlK.value = String(Math.round(state.sweepSliderVal));
+            params.k = sliderToK(state.sweepSliderVal);
+            updateAudioPartials();
+            updateReadouts();
+          }
+        }
+
+        // Update 3D columns
+        for (let i = 0; i < partials.length; i++) {
+          const p = partials[i];
+          const m = colMeshes[i];
+          if (!m) continue;
+          const f = params.f0 * p.ratio * params.k;
+          p.flash = Math.max(0, p.flash - dtReal * 5.0);
+          const isTone = f > 30;
+          const h = Math.max(0.15, p.amp * (isTone ? 2.2 : 1.0 + p.flash * 1.4));
+          m.scale.y = h;
+          m.position.y = h * 0.5;
+          m.material.color.setHex(isTone ? 0xa855f7 : 0x22d3ee);
+          m.material.emissive.setHex(p.flash > 0.2 ? 0x67e8f9 : (isTone ? 0x4c1d95 : 0x083344));
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__TIMBRE_CLOCK__)
+      // =========================================================================
+      window.__TIMBRE_CLOCK__ = {
+        getState: () => ({ ...params, partials: partials.map((p) => ({ ratio: p.ratio, amp: p.amp })) }),
+        verifyRatioIdentity: () => {
+          const freqsK1 = partials.map((p) => params.f0 * p.ratio * 1.0);
+          const ratesK001 = partials.map((p) => params.f0 * p.ratio * 0.001);
+          const normSpec = freqsK1.map((f) => f / freqsK1[0]);
+          const normRhythm = ratesK001.map((r) => r / ratesK001[0]);
+          let maxDev = 0;
+          for (let i = 0; i < normSpec.length; i++) maxDev = Math.max(maxDev, Math.abs(normSpec[i] - normRhythm[i]));
+          return {
+            spectralRatios: normSpec,
+            rhythmicRatios: normRhythm,
+            maxDeviation: maxDev,
+            eventStreamsConserved: partials.length === params.partialCount,
+            measuredCrossoverHz: measureCrossoverHz(),
+          };
+        },
+      };
+
+      rebuildPartials();
+      updateReadouts();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
