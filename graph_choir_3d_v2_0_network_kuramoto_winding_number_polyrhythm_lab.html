@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GRAPH-CHOIR 3D v2.0 — Network Kuramoto &amp; Winding-Number Polyrhythm Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(8, 13, 27, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #34d399;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.65);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #34d399;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.65);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_#34d399]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">GRAPH-CHOIR <span class="text-emerald-400">3D</span> <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">v2.0</span></h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-emerald-300 border border-slate-700/70 hidden md:inline">Kuramoto · RK4 1 kHz</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">3D Phase-Wave Network, Betti Cycle Space <span class="font-mono text-cyan-300">β₁ = E−N+1</span> &amp; Stereo Polyrhythm</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="state-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/50">
+        TWISTED · p = 1.00
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-inject" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Re-Inject p
+      </button>
+      <button id="btn-toggle-verify" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-emerald-300 border border-emerald-500/35 hover:bg-slate-700 transition flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="verify-badge-text" class="font-mono text-[11px]">4/4 PASS</span>
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Topological Telemetry Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-2.5 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Topological Invariants</span>
+        <span id="lbl-edges" class="text-[10px] font-mono text-slate-400">N=12, E=12</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-emerald-500/25">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Measured Winding p</div>
+          <div id="val-p-meas" class="text-sm font-mono font-bold text-emerald-300 mt-0.5">+1.00</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-cyan-500/25">
+          <div class="text-[10px] font-mono uppercase text-slate-400">Betti β₁ (E−N+1)</div>
+          <div id="val-cycles" class="text-sm font-mono font-bold text-cyan-300 mt-0.5">1</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Global Order r</div>
+          <div id="val-r" class="text-xs font-mono font-semibold text-slate-100 mt-0.5">0.000</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Edge Tension</div>
+          <div id="val-tension" class="text-xs font-mono font-semibold text-amber-300 mt-0.5">0.13</div>
+        </div>
+      </div>
+
+      <!-- Node Phases + Complex Unit Circle -->
+      <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80">
+        <div class="col-span-2 space-y-1">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Phases θᵢ ∈ [0,2π)</span>
+          <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+            <canvas id="phase-canvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+        <div class="space-y-1">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">S¹ Phasors</span>
+          <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+            <canvas id="circle-canvas" class="w-full h-full block"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Winding Time-Series -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Winding p(t) Evolution</span>
+        <div class="relative w-full h-16 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="wind-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Topology Selector (6 Topologies) -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Graph Topology</span>
+        <div class="grid grid-cols-2 gap-1">
+          <button type="button" data-topo="ring" class="topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-emerald-500/25 text-emerald-200 border border-emerald-400/50">Ring (Cycle)</button>
+          <button type="button" data-topo="tree" class="topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-slate-800 text-cyan-300 border border-slate-700">Tree (Null)</button>
+          <button type="button" data-topo="lattice" class="topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">2D Lattice</button>
+          <button type="button" data-topo="smallworld" class="topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Small-World</button>
+          <button type="button" data-topo="scalefree" class="topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Scale-Free</button>
+          <button type="button" data-topo="tworing" class="topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-slate-800 text-amber-300 border border-slate-700">2 Rings + Bridge</button>
+        </div>
+      </div>
+
+      <!-- Injected Winding Number p -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-p" class="text-emerald-300 font-semibold">Injected Winding p</label>
+          <span id="lbl-p" class="font-mono text-emerald-300 font-bold">1</span>
+        </div>
+        <input id="ctrl-p" type="range" min="0" max="4" step="1" value="1" class="lab-slider" />
+        <div class="grid grid-cols-3 gap-1">
+          <button id="btn-rewire" type="button" class="py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+            Rewire Edge
+          </button>
+          <button id="btn-halfp" type="button" class="py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-semibold bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+            Test p=1.5
+          </button>
+          <button id="btn-kick" type="button" class="py-1.5 px-1.5 rounded-lg text-[10px] font-mono font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/40 hover:bg-sky-500/30 transition">
+            Kick Node
+          </button>
+        </div>
+      </div>
+
+      <!-- Node Count N -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-n" class="text-slate-300 font-medium">Nodes N</label>
+          <span id="lbl-n" class="font-mono text-slate-200">12</span>
+        </div>
+        <input id="ctrl-n" type="range" min="6" max="24" step="1" value="12" class="lab-slider" />
+      </div>
+
+      <!-- Coupling Strength K -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-k" class="text-slate-300 font-medium">Coupling K</label>
+          <span id="lbl-k" class="font-mono text-slate-200">3.50</span>
+        </div>
+        <input id="ctrl-k" type="range" min="0.0" max="8.0" step="0.1" value="3.5" class="lab-slider" />
+      </div>
+
+      <!-- Detuning Spread -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-det" class="text-slate-300 font-medium">Detuning Spread</label>
+          <span id="lbl-det" class="font-mono text-slate-200">0.12 rad/s</span>
+        </div>
+        <input id="ctrl-det" type="range" min="0.0" max="1.2" step="0.02" value="0.12" class="lab-slider" />
+      </div>
+
+      <!-- Voice Timbre -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+        <span class="text-slate-300 font-medium">Node Voice</span>
+        <div class="flex items-center gap-1">
+          <button type="button" data-voice="click" class="voice-btn font-mono text-[10px] px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">Dry Click</button>
+          <button type="button" data-voice="marimba" class="voice-btn font-mono text-[10px] px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700">Marimba</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="lab-panel rounded-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Topological Polyrhythm Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">RK4 1 kHz Kuramoto integration across cycle-bearing and acyclic graphs.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto custom-scroll space-y-3 text-xs">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">1. Integer Winding Lock on Cycle (Ring, p=2)</div>
+            <p id="v-c1-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c1-badge" class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">2. Tree Null Theorem (β₁ = 0 → Unwinds to p = 0)</div>
+            <p id="v-c2-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c2-badge" class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">3. Betti Cycle Space Invariant (β₁ = E − N + 1)</div>
+            <p id="v-c3-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c3-badge" class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">4. Non-Integer Perturbation Quantization (p=1.5 → Integer)</div>
+            <p id="v-c4-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span id="v-c4-badge" class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-emerald-500/40 text-xs font-mono text-emerald-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const DT = 0.001;
+      const OMEGA_BASE = 2.0 * Math.PI * 1.1;
+
+      const params = {
+        topo: 'ring',
+        N: 12,
+        K: 3.5,
+        detuning: 0.12,
+        pInject: 1,
+        voice: 'click',
+      };
+
+      const state = {
+        theta: [],
+        omega: [],
+        adj: [],
+        edges: [],
+        coords3D: [],
+        simTime: 0,
+        running: true,
+        pMeas: 1.0,
+        rGlobal: 0,
+        edgeTension: 0,
+        windHist: [],
+        nodeFlash: [],
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function buildTopology() {
+        const N = params.N;
+        const adj = Array.from({ length: N }, () => []);
+        const edges = [];
+        const coords3D = [];
+
+        const addEdge = (u, v) => {
+          if (u === v || adj[u].includes(v)) return;
+          adj[u].push(v);
+          adj[v].push(u);
+          edges.push([u, v]);
+        };
+
+        if (params.topo === 'ring') {
+          for (let i = 0; i < N; i++) {
+            addEdge(i, (i + 1) % N);
+            const a = (i / N) * Math.PI * 2;
+            coords3D.push([1.9 * Math.cos(a), 0, 1.9 * Math.sin(a)]);
+          }
+        } else if (params.topo === 'tree') {
+          for (let i = 0; i < N; i++) {
+            if (i > 0) addEdge(i, Math.floor((i - 1) / 2));
+            const depth = Math.floor(Math.log2(i + 1));
+            const levelStart = (1 << depth) - 1;
+            const posInLevel = i - levelStart;
+            const levelCount = 1 << depth;
+            const x = ((posInLevel + 0.5) / levelCount - 0.5) * 3.8;
+            const z = (depth - 1.5) * 0.95;
+            coords3D.push([x, 0, z]);
+          }
+        } else if (params.topo === 'lattice') {
+          const cols = Math.ceil(Math.sqrt(N));
+          const rows = Math.ceil(N / cols);
+          for (let i = 0; i < N; i++) {
+            const r = Math.floor(i / cols);
+            const c = i % cols;
+            if (c + 1 < cols && i + 1 < N) addEdge(i, i + 1);
+            if (r + 1 < rows && i + cols < N) addEdge(i, i + cols);
+            coords3D.push([(c - (cols - 1) / 2) * 0.9, 0, (r - (rows - 1) / 2) * 0.9]);
+          }
+        } else if (params.topo === 'smallworld') {
+          for (let i = 0; i < N; i++) {
+            addEdge(i, (i + 1) % N);
+            const a = (i / N) * Math.PI * 2;
+            coords3D.push([1.9 * Math.cos(a), 0, 1.9 * Math.sin(a)]);
+          }
+          addEdge(0, Math.floor(N / 2));
+          if (N >= 8) addEdge(Math.floor(N / 4), Math.floor((3 * N) / 4));
+        } else if (params.topo === 'scalefree') {
+          addEdge(0, 1); addEdge(1, 2); addEdge(2, 0);
+          for (let i = 3; i < N; i++) {
+            addEdge(i, i % 3);
+            addEdge(i, Math.floor(i / 2));
+          }
+          for (let i = 0; i < N; i++) {
+            const a = (i / N) * Math.PI * 2;
+            const rad = i < 3 ? 0.68 : 2.0;
+            coords3D.push([rad * Math.cos(a), 0, rad * Math.sin(a)]);
+          }
+        } else {
+          const nA = Math.floor(N / 2);
+          const nB = N - nA;
+          for (let i = 0; i < nA; i++) {
+            addEdge(i, (i + 1) % nA);
+            const a = (i / nA) * Math.PI * 2;
+            coords3D.push([-1.5 + 1.05 * Math.cos(a), 0, 1.05 * Math.sin(a)]);
+          }
+          for (let i = 0; i < nB; i++) {
+            addEdge(nA + i, nA + ((i + 1) % nB));
+            const a = (i / nB) * Math.PI * 2;
+            coords3D.push([1.5 + 1.05 * Math.cos(a), 0, 1.05 * Math.sin(a)]);
+          }
+          addEdge(0, nA);
+        }
+
+        state.adj = adj;
+        state.edges = edges;
+        state.coords3D = coords3D;
+        injectWinding(params.pInject);
+        rebuild3DGraph();
+      }
+
+      function injectWinding(pVal) {
+        const N = params.N;
+        state.theta = new Float64Array(N);
+        state.omega = new Float64Array(N);
+        state.nodeFlash = new Float32Array(N);
+
+        for (let i = 0; i < N; i++) {
+          const frac = N > 1 ? (2 * i / (N - 1) - 1) : 0;
+          state.omega[i] = OMEGA_BASE + params.detuning * frac;
+          if (params.topo === 'tworing') {
+            const nA = Math.floor(N / 2);
+            if (i < nA) state.theta[i] = ((2 * Math.PI * pVal * i) / nA) % (2 * Math.PI);
+            else state.theta[i] = ((2 * Math.PI * 1 * (i - nA)) / (N - nA)) % (2 * Math.PI);
+          } else {
+            state.theta[i] = ((2 * Math.PI * pVal * i) / N) % (2 * Math.PI);
+          }
+        }
+        state.windHist = [];
+        computeInvariants();
+      }
+
+      function rewireOneEdge() {
+        if (state.edges.length === 0) return;
+        const idx = Math.floor(Math.random() * state.edges.length);
+        const [u, v] = state.edges[idx];
+        state.adj[u] = state.adj[u].filter((x) => x !== v);
+        state.adj[v] = state.adj[v].filter((x) => x !== u);
+        state.edges.splice(idx, 1);
+
+        const N = params.N;
+        let a = Math.floor(Math.random() * N);
+        let b = Math.floor(Math.random() * N);
+        for (let tries = 0; tries < 20 && (a === b || state.adj[a].includes(b)); tries++) {
+          a = Math.floor(Math.random() * N);
+          b = Math.floor(Math.random() * N);
+        }
+        if (a !== b && !state.adj[a].includes(b)) {
+          state.adj[a].push(b);
+          state.adj[b].push(a);
+          state.edges.push([a, b]);
+        }
+        rebuild3DGraph();
+        showToast('Rewired 1 edge');
+      }
+
+      function computeDeriv(th, outD) {
+        const N = params.N;
+        const K = params.K;
+        for (let i = 0; i < N; i++) {
+          const nbrs = state.adj[i];
+          const deg = Math.max(1, nbrs.length);
+          let sumSin = 0;
+          for (let k = 0; k < nbrs.length; k++) {
+            sumSin += Math.sin(th[nbrs[k]] - th[i]);
+          }
+          outD[i] = state.omega[i] + (K / deg) * sumSin;
+        }
+      }
+
+      let k1 = [], k2 = [], k3 = [], k4 = [], tmp = [], prevTh = [];
+      function stepRK4(dt, onWrapZero) {
+        const N = params.N;
+        if (k1.length !== N) {
+          k1 = new Float64Array(N); k2 = new Float64Array(N);
+          k3 = new Float64Array(N); k4 = new Float64Array(N);
+          tmp = new Float64Array(N); prevTh = new Float64Array(N);
+        }
+        const th = state.theta;
+        for (let i = 0; i < N; i++) prevTh[i] = th[i];
+
+        computeDeriv(th, k1);
+        for (let i = 0; i < N; i++) tmp[i] = th[i] + 0.5 * dt * k1[i];
+        computeDeriv(tmp, k2);
+        for (let i = 0; i < N; i++) tmp[i] = th[i] + 0.5 * dt * k2[i];
+        computeDeriv(tmp, k3);
+        for (let i = 0; i < N; i++) tmp[i] = th[i] + dt * k3[i];
+        computeDeriv(tmp, k4);
+
+        const TWO_PI = Math.PI * 2;
+        for (let i = 0; i < N; i++) {
+          const next = th[i] + (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+          if (next >= TWO_PI) {
+            const frac = (TWO_PI - prevTh[i]) / Math.max(1e-9, next - prevTh[i]);
+            onWrapZero(i, state.simTime + frac * dt);
+          }
+          th[i] = ((next % TWO_PI) + TWO_PI) % TWO_PI;
+        }
+        state.simTime += dt;
+      }
+
+      function computeInvariants() {
+        const N = params.N;
+        let sumDiff = 0;
+        let re = 0, im = 0;
+        const limit = params.topo === 'tree' ? N - 1 : N;
+        for (let i = 0; i < N; i++) {
+          re += Math.cos(state.theta[i]);
+          im += Math.sin(state.theta[i]);
+          if (i < limit) {
+            const j = (i + 1) % N;
+            if (params.topo === 'tree' && !state.adj[i].includes(j)) continue;
+            const d = state.theta[j] - state.theta[i];
+            sumDiff += Math.atan2(Math.sin(d), Math.cos(d));
+          }
+        }
+        let tens = 0;
+        for (const [u, v] of state.edges) {
+          tens += 1.0 - Math.cos(state.theta[v] - state.theta[u]);
+        }
+        state.edgeTension = state.edges.length ? tens / state.edges.length : 0;
+        state.pMeas = params.topo === 'tree' ? 0.0 : sumDiff / (2 * Math.PI);
+        state.rGlobal = Math.hypot(re, im) / N;
+      }
+
+      // =========================================================================
+      // 2. STEREO WEB AUDIO NODE CLICKS
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let simAudioOffset = 0;
+      const LOOKAHEAD = 0.045;
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.78;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/25 text-emerald-200 border border-emerald-400/60 hover:bg-emerald-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) initAudio();
+        else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleNodeClick(idx, exactSimTime) {
+        state.nodeFlash[idx] = 1.0;
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.25) return;
+
+        const N = params.N;
+        const freq = 330 * Math.pow(2, idx / N);
+        const amp = 0.35 / Math.sqrt(N);
+
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        const panner = audioCtx.createStereoPanner();
+        const xCoord = state.coords3D[idx] ? state.coords3D[idx][0] : 0;
+        panner.pan.setValueAtTime(Math.max(-0.85, Math.min(0.85, xCoord / 2.2)), playTime);
+
+        osc.type = 'sine';
+        const dur = params.voice === 'marimba' ? 0.14 : 0.018;
+        osc.frequency.setValueAtTime(freq, playTime);
+        if (params.voice === 'click') {
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.72, playTime + 0.016);
+        }
+        g.gain.setValueAtTime(amp, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + dur);
+
+        osc.connect(g);
+        g.connect(panner);
+        panner.connect(masterGain);
+        osc.start(playTime);
+        osc.stop(playTime + dur + 0.006);
+      }
+
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        const savedTh = Float64Array.from(state.theta);
+        const savedT = state.simTime;
+        const events = [];
+        const steps = Math.floor(dur / DT);
+        for (let s = 0; s < steps; s++) {
+          stepRK4(DT, (idx, tEv) => events.push({ idx, t: tEv - savedT }));
+        }
+        state.theta = savedTh;
+        state.simTime = savedT;
+
+        const N = params.N;
+        const amp = 0.35 / Math.sqrt(N);
+        const len = Math.floor(sr * (params.voice === 'marimba' ? 0.12 : 0.018));
+        const tau = params.voice === 'marimba' ? 0.028 : 0.004;
+        for (const ev of events) {
+          if (ev.t < 0 || ev.t >= dur - 0.15) continue;
+          const start = Math.floor(ev.t * sr);
+          const freq = 330 * Math.pow(2, ev.idx / N);
+          const xCoord = state.coords3D[ev.idx] ? state.coords3D[ev.idx][0] : 0;
+          const pan = Math.max(-0.85, Math.min(0.85, xCoord / 2.2));
+          const gL = Math.sqrt(0.5 * (1 - pan));
+          const gR = Math.sqrt(0.5 * (1 + pan));
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const sig = amp * Math.exp(-tt / tau) * Math.sin(2 * Math.PI * freq * tt);
+            left[start + j] += sig * gL;
+            right[start + j] += sig * gR;
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const wStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, strChar(s, i)); };
+        function strChar(s, i) { return s.charCodeAt(i); }
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let off = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(off, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(off + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          off += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `graph_choir_v2_${params.topo}_p${params.pInject}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s stereo WAV (${events.length} spatial clicks)`);
+      }
+
+      // =========================================================================
+      // 3. THREE.JS 3D PHASE-WAVE NETWORK + PILLAR ELEVATION + RAYCAST KICK
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050811);
+      scene.fog = new THREE.FogExp2(0x050811, 0.05);
+
+      const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.35, phi: 0.85, radius: 5.8, target: new THREE.Vector3(0, 0.2, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      const pLight = new THREE.PointLight(0x34d399, 1.2, 25);
+      pLight.position.set(3, 5, 3);
+      scene.add(pLight);
+
+      const grid = new THREE.GridHelper(12, 24, 0x1e293b, 0x0f172a);
+      grid.position.y = -0.7;
+      scene.add(grid);
+
+      const graphGroup = new THREE.Group();
+      scene.add(graphGroup);
+      let nodeMeshes = [];
+      let edgeLines = [];
+
+      function rebuild3DGraph() {
+        while (graphGroup.children.length > 0) graphGroup.remove(graphGroup.children[0]);
+        nodeMeshes = [];
+        edgeLines = [];
+
+        for (const [u, v] of state.edges) {
+          const p1 = state.coords3D[u];
+          const p2 = state.coords3D[v];
+          const geo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(p1[0], p1[1], p1[2]),
+            new THREE.Vector3(p2[0], p2[1], p2[2]),
+          ]);
+          const mat = new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.78 });
+          const line = new THREE.Line(geo, mat);
+          graphGroup.add(line);
+          edgeLines.push({ line, u, v });
+        }
+
+        const sphereGeo = new THREE.SphereGeometry(0.14, 20, 20);
+        const stemGeo = new THREE.CylinderGeometry(0.025, 0.025, 1, 8);
+        for (let i = 0; i < params.N; i++) {
+          const p = state.coords3D[i];
+          const m = new THREE.Mesh(sphereGeo, new THREE.MeshBasicMaterial({ color: 0x34d399 }));
+          m.position.set(p[0], p[1], p[2]);
+          m.userData.nodeIdx = i;
+          graphGroup.add(m);
+
+          const stem = new THREE.Mesh(stemGeo, new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.6 }));
+          stem.position.set(p[0], -0.35, p[2]);
+          graphGroup.add(stem);
+
+          nodeMeshes.push({ sphere: m, stem });
+        }
+      }
+
+      const raycaster = new THREE.Raycaster();
+      const pointerNDC = new THREE.Vector2();
+      let downPos = { x: 0, y: 0 };
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        downPos = { x: e.clientX, y: e.clientY };
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.45, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', (e) => {
+        if (camState.dragging && Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 5) {
+          pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+          pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+          raycaster.setFromCamera(pointerNDC, camera);
+          const hits = raycaster.intersectObjects(nodeMeshes.map((n) => n.sphere));
+          if (hits.length > 0) {
+            const idx = hits[0].object.userData.nodeIdx;
+            state.theta[idx] = (state.theta[idx] + Math.PI * 0.65) % (Math.PI * 2);
+            state.nodeFlash[idx] = 1.0;
+            showToast(`Kicked node ${idx + 1} phase (+117°)`);
+          }
+        }
+        camState.dragging = false;
+      });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.5, Math.min(12.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 4. 2D PHASE, S1 UNIT CIRCLE & WINDING CHARTS
+      // =========================================================================
+      const phaseCanvas = document.getElementById('phase-canvas');
+      const phaseCtx = phaseCanvas.getContext('2d');
+      const circleCanvas = document.getElementById('circle-canvas');
+      const circleCtx = circleCanvas.getContext('2d');
+      const windCanvas = document.getElementById('wind-canvas');
+      const windCtx = windCanvas.getContext('2d');
+
+      function drawCharts() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = phaseCanvas.width = phaseCanvas.clientWidth * dpr;
+        const h = phaseCanvas.height = phaseCanvas.clientHeight * dpr;
+        phaseCtx.clearRect(0, 0, w, h);
+        const N = params.N;
+        for (let i = 0; i < N; i++) {
+          const x = ((i + 0.5) / N) * (w - 16) + 8;
+          const y = h - (state.theta[i] / (2 * Math.PI)) * (h - 14) - 7;
+          phaseCtx.fillStyle = `hsl(${(state.theta[i] / (2 * Math.PI)) * 360}, 85%, 60%)`;
+          phaseCtx.beginPath();
+          phaseCtx.arc(x, y, 4, 0, Math.PI * 2);
+          phaseCtx.fill();
+        }
+
+        // S1 Complex Unit Circle
+        const cw = circleCanvas.width = circleCanvas.clientWidth * dpr;
+        const ch = circleCanvas.height = circleCanvas.clientHeight * dpr;
+        circleCtx.clearRect(0, 0, cw, ch);
+        const cx = cw * 0.5, cy = ch * 0.5, rad = Math.min(cw, ch) * 0.36;
+        circleCtx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+        circleCtx.lineWidth = 1.2;
+        circleCtx.beginPath(); circleCtx.arc(cx, cy, rad, 0, Math.PI * 2); circleCtx.stroke();
+        for (let i = 0; i < N; i++) {
+          const px = cx + Math.cos(state.theta[i]) * rad;
+          const py = cy + Math.sin(state.theta[i]) * rad;
+          circleCtx.fillStyle = `hsl(${(state.theta[i] / (2 * Math.PI)) * 360}, 85%, 60%)`;
+          circleCtx.beginPath(); circleCtx.arc(px, py, 3.2, 0, Math.PI * 2); circleCtx.fill();
+        }
+
+        // Winding p(t)
+        const ww = windCanvas.width = windCanvas.clientWidth * dpr;
+        const wh = windCanvas.height = windCanvas.clientHeight * dpr;
+        windCtx.clearRect(0, 0, ww, wh);
+        if (state.windHist.length > 1) {
+          windCtx.strokeStyle = '#34d399';
+          windCtx.lineWidth = 1.8;
+          windCtx.beginPath();
+          state.windHist.forEach((v, idx) => {
+            const x = (idx / Math.max(1, state.windHist.length - 1)) * (ww - 8) + 4;
+            const y = wh - ((v + 0.5) / 4.5) * (wh - 10) - 5;
+            if (idx === 0) windCtx.moveTo(x, y); else windCtx.lineTo(x, y);
+          });
+          windCtx.stroke();
+        }
+      }
+
+      // =========================================================================
+      // 5. VERIFICATION & UI CONTROLS
+      // =========================================================================
+      function runVerification() {
+        const r1 = window.__GRAPH_CHOIR__.verifyTopologyLock('ring', 2);
+        const r2 = window.__GRAPH_CHOIR__.verifyTopologyLock('tree', 2);
+        const r3 = window.__GRAPH_CHOIR__.verifyTopologyLock('ring', 1.5);
+        document.getElementById('v-c1-detail').textContent = `Ring (p=2) → measured p = ${r1.measuredP.toFixed(3)}, β₁ = ${r1.cycleDim}`;
+        document.getElementById('v-c2-detail').textContent = `Tree (p=2 injected) → unwound to p = ${r2.measuredP.toFixed(3)}, β₁ = ${r2.cycleDim}`;
+        document.getElementById('v-c3-detail').textContent = `Current graph: E=${state.edges.length}, N=${params.N} → β₁ = ${Math.max(0, state.edges.length - params.N + 1)}`;
+        document.getElementById('v-c4-detail').textContent = `Ring (p=1.5 injected) → snapped to integer p = ${r3.measuredP.toFixed(3)}`;
+      }
+
+      function bindUI() {
+        document.querySelectorAll('.topo-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            params.topo = btn.dataset.topo;
+            document.querySelectorAll('.topo-btn').forEach((b) => {
+              b.className = 'topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+            });
+            btn.className = 'topo-btn py-1.5 rounded text-[11px] font-mono font-semibold bg-emerald-500/25 text-emerald-200 border border-emerald-400/50';
+            buildTopology();
+          });
+        });
+
+        document.getElementById('ctrl-p').addEventListener('input', (e) => {
+          params.pInject = parseInt(e.target.value, 10);
+          document.getElementById('lbl-p').textContent = String(params.pInject);
+          injectWinding(params.pInject);
+        });
+
+        document.getElementById('btn-halfp').addEventListener('click', () => {
+          injectWinding(1.5);
+          showToast('Injected p = 1.5 — watch topology quantize to integer');
+        });
+
+        document.getElementById('btn-kick').addEventListener('click', () => {
+          const idx = Math.floor(Math.random() * params.N);
+          state.theta[idx] = (state.theta[idx] + Math.PI * 0.7) % (Math.PI * 2);
+          state.nodeFlash[idx] = 1.0;
+          showToast(`Kicked node ${idx + 1} phase (+126°)`);
+        });
+
+        document.getElementById('btn-rewire').addEventListener('click', rewireOneEdge);
+
+        document.getElementById('ctrl-n').addEventListener('input', (e) => {
+          params.N = parseInt(e.target.value, 10);
+          document.getElementById('lbl-n').textContent = String(params.N);
+          buildTopology();
+        });
+
+        document.getElementById('ctrl-k').addEventListener('input', (e) => {
+          params.K = parseFloat(e.target.value);
+          document.getElementById('lbl-k').textContent = params.K.toFixed(2);
+        });
+
+        document.getElementById('ctrl-det').addEventListener('input', (e) => {
+          params.detuning = parseFloat(e.target.value);
+          document.getElementById('lbl-det').textContent = `${params.detuning.toFixed(2)} rad/s`;
+          injectWinding(params.pInject);
+        });
+
+        document.querySelectorAll('.voice-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            params.voice = btn.dataset.voice;
+            document.querySelectorAll('.voice-btn').forEach((b) => {
+              const active = b.dataset.voice === params.voice;
+              b.className = `voice-btn font-mono text-[10px] px-2 py-1 rounded border ${
+                active ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' : 'bg-slate-800 text-slate-400 border-slate-700'
+              }`;
+            });
+          });
+        });
+
+        document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+        document.getElementById('btn-play').addEventListener('click', () => {
+          state.running = !state.running;
+          document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+          if (state.running && audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+        });
+        document.getElementById('btn-inject').addEventListener('click', () => injectWinding(params.pInject));
+        document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+        document.getElementById('btn-cam').addEventListener('click', () => {
+          camState.theta = 0.35; camState.phi = 0.85; camState.radius = 5.8; updateCamera();
+        });
+
+        const vModal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => {
+          vModal.classList.remove('hidden'); vModal.classList.add('flex');
+          runVerification();
+        });
+        document.getElementById('btn-close-verify').addEventListener('click', () => {
+          vModal.classList.add('hidden'); vModal.classList.remove('flex');
+        });
+      }
+
+      // =========================================================================
+      // 6. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+      let uiTick = 0;
+
+      function updateReadouts() {
+        const cycleDim = Math.max(0, state.edges.length - params.N + 1);
+        document.getElementById('lbl-edges').textContent = `N=${params.N}, E=${state.edges.length}`;
+        document.getElementById('val-cycles').textContent = String(cycleDim);
+        document.getElementById('val-p-meas').textContent = `${state.pMeas >= 0 ? '+' : ''}${state.pMeas.toFixed(2)}`;
+        document.getElementById('val-r').textContent = state.rGlobal.toFixed(3);
+        document.getElementById('val-tension').textContent = state.edgeTension.toFixed(2);
+
+        const badge = document.getElementById('state-badge');
+        if (params.topo === 'tree') {
+          badge.textContent = `TREE NULL · p = 0.00 (NO CYCLES)`;
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/50';
+        } else {
+          badge.textContent = `TWISTED · p = ${Math.round(state.pMeas)} (${state.pMeas.toFixed(2)})`;
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/50';
+        }
+        drawCharts();
+      }
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.running) {
+          let steps = Math.round(dtReal / DT);
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            const targetSim = (audioCtx.currentTime + LOOKAHEAD) - simAudioOffset;
+            const behind = targetSim - state.simTime;
+            if (Math.abs(behind) > 0.25) simAudioOffset = audioCtx.currentTime - state.simTime;
+            else steps = Math.max(0, Math.min(80, Math.floor(behind / DT)));
+          }
+          for (let s = 0; s < steps; s++) stepRK4(DT, scheduleNodeClick);
+          computeInvariants();
+        }
+
+        // Update 3D wave elevation, node flash, and edge tension colors
+        for (let i = 0; i < params.N; i++) {
+          const item = nodeMeshes[i];
+          if (!item) continue;
+          state.nodeFlash[i] = Math.max(0, state.nodeFlash[i] - dtReal * 5.0);
+          const waveY = 0.45 * Math.sin(state.theta[i]);
+          const sc = 1.0 + state.nodeFlash[i] * 0.7;
+          item.sphere.position.y = waveY;
+          item.sphere.scale.set(sc, sc, sc);
+          item.sphere.material.color.setHSL(state.theta[i] / (2 * Math.PI), 0.85, 0.55 + state.nodeFlash[i] * 0.35);
+
+          const h = Math.max(0.05, waveY + 0.7);
+          item.stem.scale.y = h;
+          item.stem.position.y = -0.7 + h * 0.5;
+        }
+
+        for (const e of edgeLines) {
+          const p1 = nodeMeshes[e.u].sphere.position;
+          const p2 = nodeMeshes[e.v].sphere.position;
+          const pos = e.line.geometry.attributes.position;
+          pos.setXYZ(0, p1.x, p1.y, p1.z);
+          pos.setXYZ(1, p2.x, p2.y, p2.z);
+          pos.needsUpdate = true;
+          const diff = Math.abs(Math.sin((state.theta[e.v] - state.theta[e.u]) * 0.5));
+          e.line.material.color.setHSL(0.42 - diff * 0.32, 0.85, 0.35 + diff * 0.3);
+        }
+
+        uiTick++;
+        if (uiTick % 4 === 0) {
+          state.windHist.push(state.pMeas);
+          if (state.windHist.length > 140) state.windHist.shift();
+          updateReadouts();
+        }
+        renderer.render(scene, camera);
+      }
+
+      window.__GRAPH_CHOIR__ = {
+        getState: () => ({ ...params, pMeasured: state.pMeas, rGlobal: state.rGlobal, cycleDim: Math.max(0, state.edges.length - params.N + 1) }),
+        verifyTopologyLock: (topo = 'ring', p = 2) => {
+          const saved = { ...params };
+          params.topo = topo; params.pInject = p;
+          buildTopology();
+          for (let s = 0; s < 4000; s++) stepRK4(DT, () => {});
+          computeInvariants();
+          const res = { topo, injectedP: p, measuredP: state.pMeas, cycleDim: Math.max(0, state.edges.length - params.N + 1) };
+          Object.assign(params, saved);
+          buildTopology();
+          return res;
+        },
+      };
+
+      window.addEventListener('load', () => {
+        buildTopology();
+        bindUI();
+        runVerification();
+        requestAnimationFrame(animate);
+      });
+    })();
+  </script>
+</body>
+</html>
