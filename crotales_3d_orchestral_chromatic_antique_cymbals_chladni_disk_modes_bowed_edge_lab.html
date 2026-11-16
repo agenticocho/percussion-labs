@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CROTALES-3D — Orchestral Chromatic Antique Cymbals, Chladni Disk Modes & Bowed Edge Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-obsidian: #04060b;
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #04060b; color: #f1f5f9;
+      font-family: 'Inter', sans-serif; overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .glass-dock {
+      background: rgba(8, 12, 22, 0.89);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 191, 36, 0.20);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.80);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.45); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.45); border-radius: 3px; }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 999px;
+      background: rgba(51, 65, 85, 0.85); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fbbf24; border: 2px solid #fffbeb;
+      cursor: pointer; box-shadow: 0 0 8px rgba(251, 191, 36, 0.85);
+    }
+    .gold-pill-active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.30), rgba(34, 211, 238, 0.18));
+      border-color: rgba(251, 191, 36, 0.88) !important;
+      color: #fef3c7 !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.32);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden bg-[#04060b] text-slate-100">
+
+  <!-- Full-Screen 3D WebGL Canvas Layer -->
+  <div id="canvas-container" class="fixed inset-0 z-0 cursor-crosshair"></div>
+
+  <!-- Non-Overlapping 3-Row Flex Viewport HUD -->
+  <div class="relative z-10 w-full h-full flex flex-col justify-between pointer-events-none">
+
+    <!-- ROW 1: Top Header Bar -->
+    <header class="shrink-0 w-full px-3 py-2 bg-slate-950/88 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 via-yellow-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-300/40">
+          <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-sm md:text-base font-bold tracking-tight text-white">CROTALES-3D</h1>
+            <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">H-S 111.22 • C6–C8 (15ma)</span>
+            <span id="header-archetype-badge" class="hidden sm:inline-block text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Paiste 2002 Concert Set</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight hidden sm:block">
+            25-Disk Chromatic Cast Bronze Plaques ($\text{C}_6\text{–}\text{C}_8$), Chladni $(2,0)/(3,0)/(0,1)$ Modes, Double-Bass Edge Bowing &amp; Antique Pair Clash
+          </p>
+        </div>
+      </div>
+
+      <!-- 6 Crotale Archetype Models -->
+      <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+        <button data-set="paiste2002" class="set-btn px-2 py-1 rounded text-[11px] font-medium transition gold-pill-active">Paiste 2002 (CuSn8)</button>
+        <button data-set="zildjian_b20" class="set-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Zildjian B20 Cast</button>
+        <button data-set="sabian_hh" class="set-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Sabian Hammered</button>
+        <button data-set="kolberg_pedal" class="set-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Kolberg Damper Frame</button>
+        <button data-set="debussy_antique" class="set-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Cymbales Antiques (1894)</button>
+        <button data-set="pompeii_ritual" class="set-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Pompeii Bronze Pair</button>
+      </div>
+
+      <!-- Live Pitch / Transposition Telemetry & View Controls -->
+      <div class="flex items-center gap-2">
+        <div class="hidden xl:flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] font-mono-tech">
+          <div><span class="text-slate-400">Sounding:</span> <span id="hud-sounding-note" class="text-amber-300 font-semibold">E6 (1318.5 Hz)</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Written (15ma):</span> <span id="hud-written-note" class="text-cyan-300 font-semibold">E4</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Active Disks:</span> <span id="hud-ringing-count" class="text-emerald-300 font-semibold">0 ringing</span></div>
+        </div>
+
+        <button id="btn-chladni-overlay" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition">
+          Chladni Hologram: ON
+        </button>
+        <button id="btn-cam-reset" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          Reset View
+        </button>
+        <button id="btn-info-modal" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition">
+          Acoustics &amp; Lore
+        </button>
+      </div>
+    </header>
+
+    <!-- ROW 2: Middle Interactive Stage with Non-Overlapping Dock Toggles & Side Docks -->
+    <div class="relative flex-1 min-h-0 w-full pointer-events-none">
+
+      <!-- Dock Toggle Pill Buttons Along Top of Stage -->
+      <div class="absolute top-2 left-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-left-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-amber-300 border border-amber-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          <span id="left-dock-arrow">◀</span> Beaters, Bow &amp; Plate Physics
+        </button>
+      </div>
+
+      <div class="absolute top-2 right-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-right-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-cyan-300 border border-cyan-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          Chladni Modes &amp; Repertoire <span id="right-dock-arrow">▶</span>
+        </button>
+      </div>
+
+      <!-- Center Floating Live Note & Transposition Banner -->
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        <div class="px-4 py-1 rounded-full bg-slate-950/85 border border-amber-500/35 backdrop-blur-md flex items-center gap-3 shadow-xl">
+          <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">Selected Crotale:</span>
+          <span id="live-crotale-banner" class="text-xs md:text-sm font-display font-bold text-amber-300">Disk #5 — Sounding E6 (1318.5 Hz) • Written E4</span>
+          <span id="live-mode-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/15 text-amber-200 border border-amber-400/30">(2,0) + (3,0)=2.00f0</span>
+        </div>
+        <div class="text-[10px] font-mono-tech text-slate-400 mt-1 bg-slate-950/65 px-3 py-0.5 rounded-full border border-slate-800/80">
+          Click/Drag Across 25-Disk 3D Chromatic Rack to Strike or Glissando • Keys <span class="text-amber-300">[Z–M / Q–P]</span> Play Scale • Hold <span class="text-rose-300">[Shift]</span> Felt Damper Bar
+        </div>
+      </div>
+
+      <!-- LEFT DOCK: Articulation Mode, Beater Hardness, Lathe Undercut Tuning & Damper Controls -->
+      <aside id="left-dock" class="absolute top-10 bottom-2 left-3 z-20 w-[335px] max-w-[92vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-amber-300">1. Implement &amp; Disk Physics</h2>
+            <p class="text-[10px] text-slate-400">Brass/Acrylic Mallets, Double-Bass Bow &amp; Pair Clash</p>
+          </div>
+          <button id="btn-pedal-damp" class="px-2.5 py-1 rounded text-[10px] font-mono-tech font-bold bg-rose-500/20 hover:bg-rose-500/35 text-rose-300 border border-rose-500/40 transition" title="Engage felt damper bar across all 25 disks [Shift]">
+            Felt Damper [Shift]
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- 5 Authentic Crotale Playing Articulations -->
+          <div>
+            <span class="text-[11px] font-semibold text-slate-300 block mb-1.5">Excitation Implement &amp; Technique</span>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button data-artic="brass_mallet" class="artic-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition gold-pill-active">
+                🔔 1. Hard Brass Beater
+              </button>
+              <button data-artic="poly_mallet" class="artic-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🥢 2. Lexan / Poly Ball
+              </button>
+              <button data-artic="bowed_edge" class="artic-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🎻 3. Bass Bow Edge Sing
+              </button>
+              <button data-artic="antique_clash" class="artic-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🪙 4. Antique Pair Clash
+              </button>
+              <button data-artic="secco_mute" class="artic-btn col-span-2 py-1.5 px-2.5 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                ✋ 5. Hand-Damped Secco / Finger-Pinched Harmonic
+              </button>
+            </div>
+          </div>
+
+          <!-- Radial Strike Zone Pad (Boss Nipple r=0 -> Nodal Circle r=0.68 -> Rim Edge r=1.0) -->
+          <div class="p-2.5 rounded-lg bg-gradient-to-br from-amber-500/12 via-slate-900/95 to-slate-950 border border-amber-500/35 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-amber-300 text-[11px] uppercase tracking-wider">Radial Strike Position ($r / R$)</span>
+              <span id="lbl-radial-zone" class="font-mono-tech text-amber-300 font-bold">r/R = 0.88 (Outer Rim)</span>
+            </div>
+            <input id="slider-radial-pos" type="range" min="0.12" max="0.98" step="0.01" value="0.88" class="w-full" />
+            <div class="flex justify-between text-[9px] font-mono-tech text-slate-400">
+              <span>0.15 Center Boss (0,1)</span>
+              <span>0.68 Nodal Circle</span>
+              <span>0.92 Rim Edge (2,0)</span>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-snug pt-0.5">
+              Striking the outer rim drives the $(2,0)$ fundamental and $(3,0)$ nodal-diameter bell modes; striking near the central boss excites the high $(0,1)$ umbrella partial!
+            </p>
+          </div>
+
+          <!-- Plate Physics & Lathe Undercut Sliders -->
+          <div class="space-y-2.5 p-2.5 rounded-lg bg-slate-900/85 border border-slate-800">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Underside Lathe $(3,0)/(2,0)$ Ratio</span>
+                <span id="lbl-lathe-ratio" class="font-mono-tech text-cyan-300 font-bold">2.000× (Exact Octave)</span>
+              </div>
+              <input id="slider-lathe-ratio" type="range" min="1.85" max="2.55" step="0.005" value="2.000" class="w-full" />
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-0.5">
+                <span>1.85× Deep Groove</span>
+                <span>2.00× Concert Octave</span>
+                <span>2.28× Unlathed Flat</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Doublet Shimmer Beating ($\Delta f_{2,0}$)</span>
+                <span id="lbl-doublet-beat" class="font-mono-tech text-amber-300 font-bold">1.4 Hz</span>
+              </div>
+              <input id="slider-doublet-beat" type="range" min="0.0" max="5.5" step="0.1" value="1.4" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Crystalline Ring Sustain ($\tau_{60}$)</span>
+                <span id="lbl-sustain-sec" class="font-mono-tech text-emerald-300 font-bold">14.0 s</span>
+              </div>
+              <input id="slider-sustain-sec" type="range" min="1.5" max="24.0" step="0.5" value="14.0" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-200 font-medium">Octave Transposition Display</span>
+                <span class="font-mono-tech text-cyan-300">Sounds +2 Octaves (15ma)</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- RIGHT DOCK: Interactive Chladni Eigenmode Visualizer, Spectrum & Orchestral/Rock Repertoire -->
+      <aside id="right-dock" class="absolute top-10 bottom-2 right-3 z-20 w-[395px] max-w-[94vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">Chladni Nodal Map &amp; Repertoire</h2>
+            <p class="text-[10px] text-slate-400">Live Circular Plate Eigenmodes $(2,0), (3,0), (0,1), (4,0)$</p>
+          </div>
+          <span id="chladni-mode-pill" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-amber-500/20 text-amber-300 border border-amber-500/30">Mode (2,0) + (3,0)</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- Canvas 1: Live 2D Chladni Nodal Pattern & Radial Strike Inspector -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-amber-300">Chladni Nodal Pattern $w_{mn}(r,\theta)$ (Click Disk to Strike)</span>
+              <span id="chladni-freq-readout" class="text-[10px] font-mono-tech text-cyan-300">f(2,0) = 1318.5 Hz</span>
+            </div>
+            <canvas id="canvas-chladni-disk" width="355" height="135" class="w-full h-32 rounded bg-[#050811] border border-slate-800/80 cursor-pointer"></canvas>
+            <div class="grid grid-cols-4 gap-1 mt-1.5">
+              <button data-chladni="2,0" class="chladni-btn py-1 rounded text-[10px] font-mono-tech border border-slate-700 bg-slate-900 text-amber-300 gold-pill-active">(2,0) Fund</button>
+              <button data-chladni="3,0" class="chladni-btn py-1 rounded text-[10px] font-mono-tech border border-slate-700 bg-slate-900 text-slate-300">(3,0) Oct</button>
+              <button data-chladni="0,1" class="chladni-btn py-1 rounded text-[10px] font-mono-tech border border-slate-700 bg-slate-900 text-slate-300">(0,1) Ring</button>
+              <button data-chladni="4,0" class="chladni-btn py-1 rounded text-[10px] font-mono-tech border border-slate-700 bg-slate-900 text-slate-300">(4,0) Star</button>
+            </div>
+          </div>
+
+          <!-- Canvas 2: High-Resolution Crystalline Partial Spectrum (1 kHz – 16 kHz) -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-cyan-300">High-Q Crystalline Partial Spectrum ($\text{C}_6\text{–}\text{C}_8$)</span>
+              <span id="partial-list-readout" class="text-[10px] font-mono-tech text-emerald-300">f2 = 2637 Hz</span>
+            </div>
+            <canvas id="canvas-crotale-spectrum" width="355" height="82" class="w-full h-20 rounded bg-[#050811] border border-slate-800/80"></canvas>
+          </div>
+
+          <!-- 10 Iconic Orchestral, Impressionist & Rock Crotale Repertoire Passages -->
+          <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-amber-300">10 Iconic Orchestral &amp; Rock Repertoire Excerpts</span>
+              <span class="text-[10px] font-mono-tech text-slate-400">Auto-Perform</span>
+            </div>
+            <select id="select-repertoire" class="w-full bg-slate-950 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-xs text-amber-100 font-medium">
+              <optgroup label="19th &amp; 20th Century Orchestral Masterworks">
+                <option value="debussy_faune">1. Debussy: Prélude à l'après-midi d'un faune (E6 &amp; B6 Antique Pair)</option>
+                <option value="berlioz_romeo">2. Berlioz: Roméo et Juliette "Queen Mab Scherzo" (Bb6 &amp; F7 Clash)</option>
+                <option value="ravel_alborada">3. Ravel: Alborada del gracioso — Sparkling Chromatic Cascade</option>
+                <option value="stravinsky_sacre">4. Stravinsky: Le Sacre du printemps / Les Noces Ostinato</option>
+                <option value="adams_short_ride">5. John Adams: Short Ride in a Fast Machine Driving Pulse</option>
+              </optgroup>
+              <optgroup label="Progressive Rock &amp; Contemporary Extended Techniques">
+                <option value="peart_yyz">6. Neil Peart (Rush): "YYZ" 5/4 Morse-Code Crotale Intro (C7–F#6)</option>
+                <option value="white_awaken">7. Alan White (Yes): "Awaken" High-Register Crotale Arpeggio</option>
+                <option value="bowed_choir">8. Bowed Crotale Celestial Triad (C6 + G6 + D7 + A7)</option>
+                <option value="glissando_2oct">9. Full Two-Octave C6→C8 Chromatic Brass Glissando</option>
+                <option value="lathe_vs_flat">10. Acoustic Proof: Octave-Tuned (2.00f0) vs Unlathed (2.28f0)</option>
+              </optgroup>
+            </select>
+            <p id="repertoire-blurb" class="text-[10px] text-slate-300 leading-snug">
+              Claude Debussy's luminous closing bars of <em>Prélude à l'après-midi d'un faune</em> (1894): gentle antique cymbal strikes on sounding $\text{E}_6$ ($1318.5\text{ Hz}$) and $\text{B}_6$ ($1975.5\text{ Hz}$).
+            </p>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <!-- ROW 3: Bottom Performance Triggers, Repertoire Sequencer & Lossless WAV Export -->
+    <footer class="shrink-0 w-full px-3 py-2 bg-slate-950/92 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <!-- Direct Playable Articulation Triggers -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="btn-strike-selected" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1">
+          <span>🔔 Strike Disk</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[Space]</span>
+        </button>
+        <button id="btn-bow-selected" class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/45 font-semibold text-xs transition">
+          🎻 Bow Edge [B]
+        </button>
+        <button id="btn-clash-pair" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/45 font-semibold text-xs transition">
+          🪙 Clash E6+B6 Pair [C]
+        </button>
+        <button id="btn-gliss-sweep" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/45 font-semibold text-xs transition">
+          ✨ 2-Octave Glissando [G]
+        </button>
+      </div>
+
+      <!-- Repertoire Playback Transport -->
+      <div class="flex items-center gap-2">
+        <button id="btn-play-repertoire" class="px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+          <span id="rep-icon">▶</span>
+          <span id="rep-text">Play Repertoire Sequence</span>
+        </button>
+      </div>
+
+      <!-- Lossless 44.1 kHz 16-Bit Stereo WAV Export -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-export-oneshot" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-xs font-mono-tech transition">
+          ⬇ WAV Crotale One-Shot
+        </button>
+        <button id="btn-export-passage" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/40 text-xs font-mono-tech transition">
+          ⬇ Export Repertoire WAV
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ACOUSTICS & ORGANOLOGY MODAL -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-slate-950/82 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-dock max-w-2xl w-full rounded-2xl border border-amber-500/40 p-5 space-y-3 text-xs text-slate-200 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 class="font-display text-base font-bold text-amber-300">Orchestral Crotales (Antique Cymbals) — Circular Plate Acoustics &amp; Transposition</h3>
+          <p class="text-[11px] text-slate-400">Hornbostel–Sachs 111.22 • Two-Octave Chromatic $\text{C}_6\text{–}\text{C}_8$ • Chladni $(2,0), (3,0), (0,1)$ Eigenmodes</p>
+        </div>
+        <button id="btn-close-modal" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-tech">✕ ESC</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-amber-300">1. Thick Cast Bronze Disks &amp; Chladni Modes</h4>
+          <p class="text-slate-300">
+            Unlike thin crash cymbals that exhibit chaotic wave turbulence, crotales are thick ($\approx 6\text{ mm}$), small ($\approx 10\text{ cm}$) cast bronze plaques with a central mounting nipple. Their primary pitch is set by the $(2,0)$ mode (two nodal diameters), while precision lathe undercutting on the underside tunes the $(3,0)$ mode to an exact octave ($2.000 f_0$) and suppresses harsh inharmonic clang.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-cyan-300">2. $15\text{ma}$ Transposition &amp; Piano-Top Register</h4>
+          <p class="text-slate-300">
+            Modern crotales span two chromatic octaves sounding from $\text{C}_6$ ($1046.5\text{ Hz}$) to $\text{C}_8$ ($4186.0\text{ Hz}$, the highest note on an 88-key piano). To avoid excessive ledger lines, parts are written two octaves lower ($\text{C}_4\text{–}\text{C}_6$). Because of their extreme register and ultra-low internal damping ($\tau_{60} \approx 15\text{–}24\text{ s}$), a single crotale cuts effortlessly through a full tutti orchestra.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-emerald-300">3. Double-Bass Bowing vs. Antique Pair Clash</h4>
+          <p class="text-slate-300">
+            Drawing a rosined double-bass or cello bow across the outer rim locks the $(2,0)$ mode into a continuous Helmholtz stick-slip oscillation that blooms without percussive attack. Conversely, 19th-century scores by Berlioz (<em>Roméo et Juliette</em>) and Debussy (<em>L'après-midi d'un faune</em>) call for two matching handheld disks clashed edge-to-edge.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-purple-300">4. From Symphonic Impressionism to Rush's "YYZ"</h4>
+          <p class="text-slate-300">
+            Beyond orchestral landmarks by Ravel, Stravinsky, Messiaen, and John Adams, crotales entered progressive rock through Neil Peart of Rush (who played the $5/4$ Morse-code intro of <em>"YYZ"</em> on his two-octave crotale rack) and Alan White of Yes (<em>"Awaken"</em>).
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. 25-DISK TWO-OCTAVE CHROMATIC CROTALE RACK (C6 = MIDI 84 TO C8 = MIDI 108)
+    // =========================================================================
+    const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const BLACK_KEYS = new Set([1, 3, 6, 8, 10]);
+
+    const CROTALE_SETS = {
+      paiste2002: {
+        name: 'Paiste 2002 Concert Set (CuSn8 Bronze)',
+        ratio30: 2.000, ratio01: 2.920, ratio40: 3.860,
+        doubletHz: 1.2, sustainSec: 15.0,
+        diskColor: 0xeab308, bossColor: 0xfef08a
+      },
+      zildjian_b20: {
+        name: 'Zildjian Avedis Cast B20 Orchestral Set',
+        ratio30: 2.008, ratio01: 2.880, ratio40: 3.820,
+        doubletHz: 1.8, sustainSec: 16.5,
+        diskColor: 0xd97706, bossColor: 0xfde68a
+      },
+      sabian_hh: {
+        name: 'Sabian Hand-Hammered B20 Crotales',
+        ratio30: 2.015, ratio01: 2.840, ratio40: 3.790,
+        doubletHz: 2.4, sustainSec: 14.5,
+        diskColor: 0xb45309, bossColor: 0xfcd34d
+      },
+      kolberg_pedal: {
+        name: 'Kolberg Chromatic Frame Set w/ Pedal Damper',
+        ratio30: 2.000, ratio01: 2.950, ratio40: 3.900,
+        doubletHz: 0.9, sustainSec: 13.5,
+        diskColor: 0xf59e0b, bossColor: 0xfef3c7
+      },
+      debussy_antique: {
+        name: '1894 French Cymbales Antiques (Unlathed Pair)',
+        ratio30: 2.282, ratio01: 3.040, ratio40: 3.980,
+        doubletHz: 2.8, sustainSec: 12.0,
+        diskColor: 0xa16207, bossColor: 0xfde047
+      },
+      pompeii_ritual: {
+        name: 'Ancient Pompeii High-Tin Bronze Crotala',
+        ratio30: 2.345, ratio01: 3.120, ratio40: 4.110,
+        doubletHz: 3.4, sustainSec: 9.5,
+        diskColor: 0x854d0e, bossColor: 0xfacc15
+      }
+    };
+
+    const REPERTOIRE_PASSAGES = {
+      debussy_faune: {
+        blurb: 'Claude Debussy\'s luminous closing bars of Prélude à l\'après-midi d\'un faune (1894): gentle antique cymbal strikes on sounding E6 (1318.5 Hz) and B6 (1975.5 Hz).',
+        events: [
+          { idx: 4,  time: 0.0,  artic: 'antique_clash' }, // E6
+          { idx: 11, time: 0.95, artic: 'antique_clash' }, // B6
+          { idx: 4,  time: 1.90, artic: 'poly_mallet' },   // E6
+          { idx: 11, time: 2.75, artic: 'poly_mallet' },   // B6
+          { idx: 16, time: 3.60, artic: 'brass_mallet' }   // E7
+        ]
+      },
+      berlioz_romeo: {
+        blurb: 'Hector Berlioz\'s Roméo et Juliette ("Queen Mab Scherzo", 1839): rapid shimmering antique cymbal pairs on Bb6 and F7.',
+        events: [
+          { idx: 10, time: 0.0,  artic: 'antique_clash' }, // Bb6
+          { idx: 17, time: 0.35, artic: 'antique_clash' }, // F7
+          { idx: 10, time: 0.70, artic: 'antique_clash' },
+          { idx: 17, time: 1.05, artic: 'antique_clash' },
+          { idx: 22, time: 1.50, artic: 'brass_mallet' }   // Bb7
+        ]
+      },
+      ravel_alborada: {
+        blurb: 'Maurice Ravel\'s Alborada del gracioso (1918): sparkling brass-beater chromatic cascade across the upper octave.',
+        events: [
+          { idx: 2,  time: 0.0,  artic: 'brass_mallet' },
+          { idx: 6,  time: 0.22, artic: 'brass_mallet' },
+          { idx: 9,  time: 0.44, artic: 'brass_mallet' },
+          { idx: 14, time: 0.66, artic: 'brass_mallet' },
+          { idx: 18, time: 0.88, artic: 'brass_mallet' },
+          { idx: 21, time: 1.10, artic: 'brass_mallet' }
+        ]
+      },
+      stravinsky_sacre: {
+        blurb: 'Igor Stravinsky\'s Le Sacre du printemps / Les Noces: bitonal metallic ostinato pairing C#7, D7, and G#7.',
+        events: [
+          { idx: 13, time: 0.0,  artic: 'brass_mallet' },
+          { idx: 14, time: 0.28, artic: 'brass_mallet' },
+          { idx: 20, time: 0.56, artic: 'brass_mallet' },
+          { idx: 13, time: 0.84, artic: 'brass_mallet' },
+          { idx: 20, time: 1.12, artic: 'brass_mallet' }
+        ]
+      },
+      adams_short_ride: {
+        blurb: 'John Adams\' Short Ride in a Fast Machine (1986): brilliant minimalist poly-mallet figures cutting above the brass.',
+        events: [
+          { idx: 9,  time: 0.0,  artic: 'poly_mallet' },
+          { idx: 16, time: 0.20, artic: 'poly_mallet' },
+          { idx: 14, time: 0.40, artic: 'poly_mallet' },
+          { idx: 21, time: 0.60, artic: 'brass_mallet' },
+          { idx: 23, time: 0.80, artic: 'brass_mallet' }
+        ]
+      },
+      peart_yyz: {
+        blurb: 'Neil Peart (Rush) — "YYZ" (Moving Pictures, 1981): iconic 5/4 Morse-code rhythm (-.--; -.--; --..) struck on C7 and F#6 tritone crotales!',
+        events: [
+          // Y: - . - - (on C7 idx 12 & F#6 idx 6)
+          { idx: 12, time: 0.00, artic: 'brass_mallet' },
+          { idx: 6,  time: 0.30, artic: 'brass_mallet' },
+          { idx: 12, time: 0.45, artic: 'brass_mallet' },
+          { idx: 12, time: 0.75, artic: 'brass_mallet' },
+          // Y: - . - -
+          { idx: 12, time: 1.05, artic: 'brass_mallet' },
+          { idx: 6,  time: 1.35, artic: 'brass_mallet' },
+          { idx: 12, time: 1.50, artic: 'brass_mallet' },
+          { idx: 12, time: 1.80, artic: 'brass_mallet' },
+          // Z: - - . .
+          { idx: 12, time: 2.10, artic: 'brass_mallet' },
+          { idx: 12, time: 2.40, artic: 'brass_mallet' },
+          { idx: 6,  time: 2.70, artic: 'brass_mallet' },
+          { idx: 6,  time: 2.85, artic: 'brass_mallet' }
+        ]
+      },
+      white_awaken: {
+        blurb: 'Alan White (Yes) — "Awaken" (Going for the One, 1977): celestial high-octave crotale arpeggio over harp and organ.',
+        events: [
+          { idx: 4,  time: 0.0,  artic: 'brass_mallet' },
+          { idx: 11, time: 0.32, artic: 'brass_mallet' },
+          { idx: 15, time: 0.64, artic: 'brass_mallet' },
+          { idx: 16, time: 0.96, artic: 'brass_mallet' },
+          { idx: 23, time: 1.28, artic: 'brass_mallet' }
+        ]
+      },
+      bowed_choir: {
+        blurb: 'Bowed Crotale Fifths Choir (C6 + G6 + D7 + A7): attackless double-bass bow strokes blooming into an ethereal metallic halo.',
+        events: [
+          { idx: 0,  time: 0.0,  artic: 'bowed_edge' },
+          { idx: 7,  time: 0.45, artic: 'bowed_edge' },
+          { idx: 14, time: 0.90, artic: 'bowed_edge' },
+          { idx: 21, time: 1.35, artic: 'bowed_edge' }
+        ]
+      },
+      glissando_2oct: {
+        blurb: 'Full two-octave C6 to C8 white-key diatonic glissando with hard brass mallets.',
+        events: [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24].map((idx, k) => ({
+          idx, time: k * 0.09, artic: 'brass_mallet'
+        }))
+      },
+      lathe_vs_flat: {
+        blurb: 'Auditions Disk #4 (E6) first with precision lathe-tuned octave overtone (3,0)=2.00f0, then with unlathed antique ratio (3,0)=2.28f0.',
+        events: [
+          { idx: 4, time: 0.0, artic: 'brass_mallet', customRatio30: 2.000 },
+          { idx: 4, time: 1.1, artic: 'brass_mallet', customRatio30: 2.282 }
+        ]
+      }
+    };
+
+    // =========================================================================
+    // 2. APPLICATION STATE & 25-DISK ARRAY
+    // =========================================================================
+    const state = {
+      setKey: 'paiste2002',
+      articulation: 'brass_mallet', // 'brass_mallet' | 'poly_mallet' | 'bowed_edge' | 'antique_clash' | 'secco_mute'
+      radialPos: 0.88,              // r/R in [0.12, 0.98]
+      latheRatio30: 2.000,          // f(3,0) / f(2,0)
+      doubletBeatHz: 1.4,
+      sustainSec: 14.0,
+      chladniOverlay: true,
+      selectedChladniMode: [2, 0],
+      selectedDisk: 4,              // Default E6 (1318.5 Hz)
+      disks: [],                    // 25 chromatic disks from C6 (idx 0) to C8 (idx 24)
+      activeVoices: new Set()
+    };
+
+    function buildChromaticDisksData() {
+      state.disks = [];
+      for (let i = 0; i <= 24; i++) {
+        const midiSounding = 84 + i; // C6 (84) to C8 (108)
+        const midiWritten = midiSounding - 24; // C4 (60) to C6 (84)
+        const freqHz = 440.0 * Math.pow(2, (midiSounding - 69) / 12.0);
+        const noteName = NOTE_NAMES[i % 12];
+        const octSounding = Math.floor(midiSounding / 12) - 1;
+        const octWritten = Math.floor(midiWritten / 12) - 1;
+        const isBlack = BLACK_KEYS.has(i % 12);
+
+        // Disk diameter scales smoothly from 13.0 cm (C6) down to 7.4 cm (C8)
+        const diameterCm = 13.0 - (i / 24.0) * 5.6;
+        state.disks.push({
+          index: i,
+          soundingName: `${noteName}${octSounding}`,
+          writtenName: `${noteName}${octWritten}`,
+          freqHz,
+          isBlack,
+          diameterCm,
+          energy: 0.0
+        });
+      }
+    }
+    buildChromaticDisksData();
+
+    // =========================================================================
+    // 3. WEB AUDIO API HIGH-Q CIRCULAR PLATE CHLADNI SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let analyserNode = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.82;
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 1024;
+        analyserNode.smoothingTimeConstant = 0.76;
+
+        masterGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function engageFeltDamperBar() {
+      if (audioCtx) {
+        const now = audioCtx.currentTime;
+        state.activeVoices.forEach(v => {
+          v.gains.forEach(g => {
+            try {
+              g.gain.cancelScheduledValues(now);
+              g.gain.setTargetAtTime(0.00001, now, 0.025);
+            } catch (_) {}
+          });
+        });
+        state.activeVoices.clear();
+      }
+      state.disks.forEach(d => { d.energy *= 0.1; });
+      updateHUDReadouts();
+    }
+
+    function strikeCrotaleDisk(diskIdx, options = {}) {
+      const targetCtx = options.offlineCtx || (initAudio(), audioCtx);
+      const dest = options.destNode || masterGain;
+      const now = (options.startTime !== undefined) ? options.startTime : targetCtx.currentTime;
+
+      const d = state.disks[Math.max(0, Math.min(24, diskIdx))];
+      const setCfg = CROTALE_SETS[state.setKey] || CROTALE_SETS.paiste2002;
+      const artic = options.artic || state.articulation;
+      const rNorm = state.radialPos;
+      const ratio30 = options.customRatio30 || state.latheRatio30;
+
+      const f0 = d.freqHz;
+      const isBow = artic === 'bowed_edge';
+      const isClash = artic === 'antique_clash';
+      const isSecco = artic === 'secco_mute';
+      const isBrass = artic === 'brass_mallet';
+
+      const attackSec = isBow ? 0.34 : isClash ? 0.002 : 0.0018;
+      const tau0 = isSecco ? 0.45 : (state.sustainSec * (1046.5 / f0) * 0.65 + state.sustainSec * 0.35);
+
+      // Chladni Eigenmodes:
+      // 1. (2,0)_a & (2,0)_b Doublet at f0 and f0 + doubletBeatHz
+      // 2. (3,0) First Over-Mode at ratio30 * f0
+      // 3. (0,1) Axisymmetric Ring Mode at setCfg.ratio01 * f0 (has nodal circle at r/R = 0.68!)
+      // 4. (4,0) Star Mode at setCfg.ratio40 * f0
+      const ringNodeFactor = Math.abs(rNorm - 0.68) * 2.2; // vanishes when struck right on r/R = 0.68 nodal circle
+      const rimDriveFactor = Math.pow(rNorm, 1.4);
+
+      const partials = [
+        { freq: f0,                           amp: 0.36 * rimDriveFactor, decay: tau0 },
+        { freq: f0 + state.doubletBeatHz,     amp: 0.24 * rimDriveFactor, decay: tau0 * 0.92 },
+        { freq: f0 * ratio30,                 amp: (isBrass || isClash ? 0.26 : 0.14) * rimDriveFactor, decay: tau0 * 0.52 },
+        { freq: f0 * setCfg.ratio01,          amp: (isBow ? 0.04 : 0.18) * ringNodeFactor, decay: tau0 * 0.32 },
+        { freq: f0 * setCfg.ratio40,          amp: (isBrass || isClash ? 0.14 : 0.05) * rimDriveFactor, decay: tau0 * 0.18 }
+      ];
+
+      // If Antique Pair Clash, add a second slightly detuned twin disk (+4.5 cents) + edge-kiss metallic transient
+      if (isClash) {
+        partials.push({ freq: f0 * 1.0026, amp: 0.28, decay: tau0 * 0.88 });
+      }
+
+      const voiceGains = [];
+      partials.forEach((p) => {
+        if (p.freq > 17500 || p.amp <= 0.0005) return;
+        const osc = targetCtx.createOscillator();
+        const g = targetCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(p.freq, now);
+
+        g.gain.setValueAtTime(0.00001, now);
+        g.gain.linearRampToValueAtTime(p.amp, now + attackSec);
+        if (isBow) {
+          g.gain.setValueAtTime(p.amp * 0.9, now + attackSec + 0.55);
+        }
+        g.gain.exponentialRampToValueAtTime(0.00001, now + attackSec + p.decay);
+
+        osc.connect(g);
+        g.connect(dest);
+        osc.start(now);
+        osc.stop(now + attackSec + p.decay + 0.05);
+        voiceGains.push(g);
+      });
+
+      // Metal beater / edge-clash transient click
+      if (!isBow) {
+        const cLen = Math.floor(targetCtx.sampleRate * 0.012);
+        const cBuf = targetCtx.createBuffer(1, cLen, targetCtx.sampleRate);
+        const cData = cBuf.getChannelData(0);
+        for (let i = 0; i < cLen; i++) {
+          cData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (targetCtx.sampleRate * 0.0022));
+        }
+        const cSrc = targetCtx.createBufferSource();
+        cSrc.buffer = cBuf;
+        const cHp = targetCtx.createBiquadFilter();
+        cHp.type = 'bandpass';
+        cHp.frequency.value = isBrass ? 7200 : 4200;
+        const cG = targetCtx.createGain();
+        cG.gain.value = isBrass || isClash ? 0.28 : 0.14;
+        cSrc.connect(cHp);
+        cHp.connect(cG);
+        cG.connect(dest);
+        cSrc.start(now);
+      }
+
+      if (!options.offlineCtx) {
+        state.selectedDisk = d.index;
+        d.energy = Math.min(1.5, d.energy + 1.0);
+        const vRec = { gains: voiceGains, stopTime: now + tau0 };
+        state.activeVoices.add(vRec);
+        setTimeout(() => {
+          state.activeVoices.delete(vRec);
+          updateHUDReadouts();
+        }, tau0 * 1000);
+        updateHUDReadouts();
+      }
+    }
+
+    // =========================================================================
+    // 4. THREE.JS 3D TWO-OCTAVE 25-DISK CROTALE RACK & CHLADNI HOLOGRAM
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x04060b, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+    let camSpherical = { radius: 11.4, theta: 0.0, phi: 0.88 };
+    let camTarget = new THREE.Vector3(0, 0.1, 0);
+
+    function updateCameraFromSpherical() {
+      camera.position.x = camTarget.x + camSpherical.radius * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+      camera.position.z = camTarget.z + camSpherical.radius * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.lookAt(camTarget);
+    }
+    updateCameraFromSpherical();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Golden Studio Lighting
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.75));
+    const keyLight = new THREE.DirectionalLight(0xfffbeb, 1.45);
+    keyLight.position.set(5, 11, 7);
+    scene.add(keyLight);
+
+    const goldRimLight = new THREE.PointLight(0xf59e0b, 1.35, 18);
+    goldRimLight.position.set(-6, 4, 3);
+    scene.add(goldRimLight);
+
+    const cyanAccentLight = new THREE.PointLight(0x22d3ee, 1.1, 16);
+    cyanAccentLight.position.set(6, 3, -3);
+    scene.add(cyanAccentLight);
+
+    const floorGrid = new THREE.GridHelper(24, 24, 0x1e293b, 0x0f172a);
+    floorGrid.position.y = -2.1;
+    scene.add(floorGrid);
+
+    const rackGroup = new THREE.Group();
+    scene.add(rackGroup);
+
+    let diskMeshes = [];
+    let hologramMesh = null;
+    let hologramBasePos = null;
+
+    // White-key horizontal positions for 2-octave piano layout (15 white keys from C6 to C8)
+    function computeDisk3DPosition(diskObj) {
+      let whiteIndex = 0;
+      for (let k = 0; k < diskObj.index; k++) {
+        if (!BLACK_KEYS.has(k % 12)) whiteIndex++;
+      }
+      const spacing = 0.66;
+      const startX = -7 * spacing;
+      if (!diskObj.isBlack) {
+        return { x: startX + whiteIndex * spacing, y: 0.0, z: 0.72 };
+      } else {
+        return { x: startX + (whiteIndex - 0.5) * spacing, y: 0.22, z: -0.58 };
+      }
+    }
+
+    function buildCrotaleRack3D() {
+      while (rackGroup.children.length > 0) {
+        rackGroup.remove(rackGroup.children[0]);
+      }
+      diskMeshes = [];
+
+      const setCfg = CROTALE_SETS[state.setKey] || CROTALE_SETS.paiste2002;
+
+      // Steel Mounting Rails for Natural (Lower) and Accidental (Upper) Rows
+      const railMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+      const frontRail = new THREE.Mesh(new THREE.BoxGeometry(10.4, 0.08, 0.14), railMat);
+      frontRail.position.set(0, -0.18, 0.72);
+      rackGroup.add(frontRail);
+
+      const backRail = new THREE.Mesh(new THREE.BoxGeometry(9.8, 0.08, 0.14), railMat);
+      backRail.position.set(0, 0.04, -0.58);
+      rackGroup.add(backRail);
+
+      // Build 25 Cast Bronze Crotale Disks + Central Mounting Boss Nipples
+      state.disks.forEach((d, idx) => {
+        const pos = computeDisk3DPosition(d);
+        const radius3D = (d.diameterCm / 13.0) * 0.31;
+        const thickness3D = 0.055;
+
+        const diskHolder = new THREE.Group();
+        diskHolder.position.set(pos.x, pos.y, pos.z);
+
+        // Main thick cast bronze disk
+        const diskGeo = new THREE.CylinderGeometry(radius3D, radius3D * 0.98, thickness3D, 36);
+        const isSel = idx === state.selectedDisk;
+        const diskMat = new THREE.MeshStandardMaterial({
+          color: isSel ? 0x38bdf8 : setCfg.diskColor,
+          emissive: isSel ? 0x0284c7 : 0x78350f,
+          emissiveIntensity: isSel ? 0.55 : 0.18,
+          metalness: 0.88,
+          roughness: 0.18
+        });
+        const diskMesh = new THREE.Mesh(diskGeo, diskMat);
+        diskMesh.userData = { diskIdx: idx, baseY: pos.y };
+        diskMesh.name = 'crotale_disk';
+        diskHolder.add(diskMesh);
+        diskMeshes.push(diskMesh);
+
+        // Central raised mounting boss / nipple + grommet nut
+        const bossGeo = new THREE.CylinderGeometry(radius3D * 0.24, radius3D * 0.30, thickness3D * 1.5, 20);
+        const bossMat = new THREE.MeshStandardMaterial({
+          color: setCfg.bossColor,
+          metalness: 0.92,
+          roughness: 0.15
+        });
+        const bossMesh = new THREE.Mesh(bossGeo, bossMat);
+        bossMesh.position.y = 0.015;
+        diskHolder.add(bossMesh);
+
+        // Vertical mounting post down to steel rail
+        const postGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.22, 10);
+        const postMesh = new THREE.Mesh(postGeo, railMat);
+        postMesh.position.y = -0.11;
+        diskHolder.add(postMesh);
+
+        rackGroup.add(diskHolder);
+      });
+
+      // Floating Magnified 3D Chladni Eigenmode Hologram Disk above the rack
+      const holoGeo = new THREE.CircleGeometry(1.45, 56, 24);
+      holoGeo.rotateX(-Math.PI / 2);
+      hologramBasePos = new Float32Array(holoGeo.attributes.position.array);
+      const holoColors = new Float32Array(holoGeo.attributes.position.count * 3);
+      holoGeo.setAttribute('color', new THREE.BufferAttribute(holoColors, 3));
+
+      const holoMat = new THREE.MeshStandardMaterial({
+        vertexColors: true,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.86,
+        metalness: 0.4,
+        roughness: 0.25
+      });
+      hologramMesh = new THREE.Mesh(holoGeo, holoMat);
+      hologramMesh.position.set(0, 1.55, -1.85);
+      hologramMesh.rotation.x = 0.48;
+      hologramMesh.visible = state.chladniOverlay;
+      rackGroup.add(hologramMesh);
+    }
+
+    buildCrotaleRack3D();
+
+    // =========================================================================
+    // 5. RAYCASTING: CLICK OR DRAG GLISSANDO ACROSS 25 CROTALE DISKS
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let isGlissDragging = false;
+    let isOrbitDragging = false;
+    let lastStruckDisk = -1;
+    let prevX = 0, prevY = 0;
+
+    container.addEventListener('pointerdown', (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(diskMeshes, false);
+      if (hits.length > 0) {
+        isGlissDragging = true;
+        const dIdx = hits[0].object.userData.diskIdx;
+        lastStruckDisk = dIdx;
+        strikeCrotaleDisk(dIdx);
+        buildCrotaleRack3D();
+        return;
+      }
+      isOrbitDragging = true;
+      prevX = e.clientX;
+      prevY = e.clientY;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (isGlissDragging) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(diskMeshes, false);
+        if (hits.length > 0) {
+          const dIdx = hits[0].object.userData.diskIdx;
+          if (dIdx !== lastStruckDisk) {
+            lastStruckDisk = dIdx;
+            strikeCrotaleDisk(dIdx);
+            buildCrotaleRack3D();
+          }
+        }
+        return;
+      }
+      if (isOrbitDragging) {
+        const dx = e.clientX - prevX;
+        const dy = e.clientY - prevY;
+        prevX = e.clientX;
+        prevY = e.clientY;
+        camSpherical.theta -= dx * 0.006;
+        camSpherical.phi = Math.max(0.25, Math.min(Math.PI * 0.48, camSpherical.phi - dy * 0.006));
+        updateCameraFromSpherical();
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      isGlissDragging = false;
+      isOrbitDragging = false;
+      lastStruckDisk = -1;
+    });
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camSpherical.radius = Math.max(5.5, Math.min(18.0, camSpherical.radius + e.deltaY * 0.005));
+      updateCameraFromSpherical();
+    }, { passive: false });
+
+    // =========================================================================
+    // 6. 2D CHLADNI NODAL DISK INSPECTOR & SPECTRUM CANVASES
+    // =========================================================================
+    const chladniCanvas = document.getElementById('canvas-chladni-disk');
+    const chladniCtx = chladniCanvas.getContext('2d');
+    const specCanvas = document.getElementById('canvas-crotale-spectrum');
+    const specCtx = specCanvas.getContext('2d');
+    const fftData = new Uint8Array(512);
+
+    function drawChladniDiskCanvas(elapsed) {
+      const w = chladniCanvas.width;
+      const h = chladniCanvas.height;
+      chladniCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.min(cx, cy) - 10;
+      const [m, n] = state.selectedChladniMode;
+
+      // Draw circular bronze disk background
+      chladniCtx.fillStyle = '#1e293b';
+      chladniCtx.strokeStyle = '#f59e0b';
+      chladniCtx.lineWidth = 2;
+      chladniCtx.beginPath();
+      chladniCtx.arc(cx, cy, maxR, 0, Math.PI * 2);
+      chladniCtx.fill();
+      chladniCtx.stroke();
+
+      // Draw m nodal diameters
+      chladniCtx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+      chladniCtx.lineWidth = 1.6;
+      for (let k = 0; k < m; k++) {
+        const ang = (k / m) * Math.PI + Math.sin(elapsed * 2) * 0.04;
+        chladniCtx.beginPath();
+        chladniCtx.moveTo(cx - Math.cos(ang) * maxR, cy - Math.sin(ang) * maxR);
+        chladniCtx.lineTo(cx + Math.cos(ang) * maxR, cy + Math.sin(ang) * maxR);
+        chladniCtx.stroke();
+      }
+
+      // Draw n nodal circles (e.g. r/R = 0.68 for (0,1) mode)
+      if (n > 0) {
+        chladniCtx.strokeStyle = '#22d3ee';
+        chladniCtx.beginPath();
+        chladniCtx.arc(cx, cy, maxR * 0.68, 0, Math.PI * 2);
+        chladniCtx.stroke();
+      }
+
+      // Central boss nipple
+      chladniCtx.fillStyle = '#fbbf24';
+      chladniCtx.beginPath();
+      chladniCtx.arc(cx, cy, maxR * 0.22, 0, Math.PI * 2);
+      chladniCtx.fill();
+
+      // Radial Strike Marker dot at r = state.radialPos * maxR
+      const sx = cx + state.radialPos * maxR * Math.cos(-0.4);
+      const sy = cy + state.radialPos * maxR * Math.sin(-0.4);
+      chladniCtx.fillStyle = '#22d3ee';
+      chladniCtx.beginPath();
+      chladniCtx.arc(sx, sy, 5, 0, Math.PI * 2);
+      chladniCtx.fill();
+    }
+
+    chladniCanvas.addEventListener('pointerdown', (e) => {
+      const rect = chladniCanvas.getBoundingClientRect();
+      const dx = (e.clientX - rect.left) - rect.width / 2;
+      const dy = (e.clientY - rect.top) - rect.height / 2;
+      const maxR = Math.min(rect.width, rect.height) / 2 - 10;
+      const rNorm = Math.max(0.12, Math.min(0.98, Math.sqrt(dx * dx + dy * dy) / maxR));
+      state.radialPos = rNorm;
+      document.getElementById('slider-radial-pos').value = rNorm.toFixed(2);
+      const zoneName = rNorm < 0.35 ? 'Center Boss (0,1)' : rNorm < 0.74 ? 'Nodal Circle' : 'Outer Rim (2,0)';
+      document.getElementById('lbl-radial-zone').textContent = `r/R = ${rNorm.toFixed(2)} (${zoneName})`;
+      strikeCrotaleDisk(state.selectedDisk);
+    });
+
+    function drawSpectrumCanvas() {
+      const w = specCanvas.width;
+      const h = specCanvas.height;
+      specCtx.clearRect(0, 0, w, h);
+
+      if (analyserNode) analyserNode.getByteFrequencyData(fftData);
+      const bars = 60;
+      const bw = w / bars;
+      for (let i = 0; i < bars; i++) {
+        const v = analyserNode ? fftData[i] / 255 : 0;
+        const bh = v * (h - 10);
+        specCtx.fillStyle = i < 18 ? 'rgba(251, 191, 36, 0.85)' : 'rgba(34, 211, 238, 0.72)';
+        specCtx.fillRect(i * bw + 1, h - bh, bw - 2, bh);
+      }
+    }
+
+    // =========================================================================
+    // 7. HUD READOUTS, UI BINDINGS & WAV EXPORT
+    // =========================================================================
+    function updateHUDReadouts() {
+      const d = state.disks[state.selectedDisk] || state.disks[4];
+      const setCfg = CROTALE_SETS[state.setKey] || CROTALE_SETS.paiste2002;
+      document.getElementById('hud-sounding-note').textContent = `${d.soundingName} (${d.freqHz.toFixed(1)} Hz)`;
+      document.getElementById('hud-written-note').textContent = `${d.writtenName} (15ma)`;
+      document.getElementById('hud-ringing-count').textContent = `${state.activeVoices.size} ringing`;
+
+      document.getElementById('live-crotale-banner').textContent =
+        `Disk #${d.index + 1} — Sounding ${d.soundingName} (${d.freqHz.toFixed(1)} Hz) • Written ${d.writtenName}`;
+      document.getElementById('live-mode-badge').textContent =
+        `(2,0) + (3,0)=${state.latheRatio30.toFixed(2)}f0`;
+
+      const [m, n] = state.selectedChladniMode;
+      const modeMult = (m === 2 && n === 0) ? 1.0 : (m === 3 && n === 0) ? state.latheRatio30 : (m === 0 && n === 1) ? setCfg.ratio01 : setCfg.ratio40;
+      document.getElementById('chladni-freq-readout').textContent = `f(${m},${n}) = ${(d.freqHz * modeMult).toFixed(1)} Hz`;
+      document.getElementById('partial-list-readout').textContent = `f(3,0) = ${(d.freqHz * state.latheRatio30).toFixed(0)} Hz`;
+    }
+
+    // Set Archetype Buttons
+    document.querySelectorAll('.set-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.set-btn').forEach(b => b.classList.remove('gold-pill-active'));
+        btn.classList.add('gold-pill-active');
+        state.setKey = btn.dataset.set;
+        const cfg = CROTALE_SETS[state.setKey];
+        state.latheRatio30 = cfg.ratio30;
+        state.doubletBeatHz = cfg.doubletHz;
+        state.sustainSec = cfg.sustainSec;
+
+        document.getElementById('header-archetype-badge').textContent = cfg.name.split(' (')[0];
+        document.getElementById('slider-lathe-ratio').value = cfg.ratio30;
+        document.getElementById('lbl-lathe-ratio').textContent = `${cfg.ratio30.toFixed(3)}×`;
+        document.getElementById('slider-doublet-beat').value = cfg.doubletHz;
+        document.getElementById('lbl-doublet-beat').textContent = `${cfg.doubletHz.toFixed(1)} Hz`;
+        document.getElementById('slider-sustain-sec').value = cfg.sustainSec;
+        document.getElementById('lbl-sustain-sec').textContent = `${cfg.sustainSec.toFixed(1)} s`;
+
+        buildCrotaleRack3D();
+        updateHUDReadouts();
+        strikeCrotaleDisk(state.selectedDisk);
+      });
+    });
+
+    // Articulation Buttons
+    document.querySelectorAll('.artic-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.artic-btn').forEach(b => b.classList.remove('gold-pill-active'));
+        btn.classList.add('gold-pill-active');
+        state.articulation = btn.dataset.artic;
+        strikeCrotaleDisk(state.selectedDisk);
+      });
+    });
+
+    // Chladni Mode Selector Buttons
+    document.querySelectorAll('.chladni-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chladni-btn').forEach(b => b.classList.remove('gold-pill-active'));
+        btn.classList.add('gold-pill-active');
+        const parts = btn.dataset.chladni.split(',').map(Number);
+        state.selectedChladniMode = parts;
+        document.getElementById('chladni-mode-pill').textContent = `Mode (${parts[0]},${parts[1]})`;
+        updateHUDReadouts();
+        strikeCrotaleDisk(state.selectedDisk);
+      });
+    });
+
+    // Sliders
+    document.getElementById('slider-radial-pos').addEventListener('input', (e) => {
+      state.radialPos = parseFloat(e.target.value);
+      const zoneName = state.radialPos < 0.35 ? 'Center Boss (0,1)' : state.radialPos < 0.74 ? 'Nodal Circle' : 'Outer Rim (2,0)';
+      document.getElementById('lbl-radial-zone').textContent = `r/R = ${state.radialPos.toFixed(2)} (${zoneName})`;
+    });
+
+    document.getElementById('slider-lathe-ratio').addEventListener('input', (e) => {
+      state.latheRatio30 = parseFloat(e.target.value);
+      const tag = Math.abs(state.latheRatio30 - 2.0) < 0.02 ? 'Exact Octave' : 'Inharmonic';
+      document.getElementById('lbl-lathe-ratio').textContent = `${state.latheRatio30.toFixed(3)}× (${tag})`;
+      updateHUDReadouts();
+    });
+
+    document.getElementById('slider-doublet-beat').addEventListener('input', (e) => {
+      state.doubletBeatHz = parseFloat(e.target.value);
+      document.getElementById('lbl-doublet-beat').textContent = `${state.doubletBeatHz.toFixed(1)} Hz`;
+    });
+
+    document.getElementById('slider-sustain-sec').addEventListener('input', (e) => {
+      state.sustainSec = parseFloat(e.target.value);
+      document.getElementById('lbl-sustain-sec').textContent = `${state.sustainSec.toFixed(1)} s`;
+    });
+
+    document.getElementById('btn-pedal-damp').addEventListener('click', engageFeltDamperBar);
+
+    // Repertoire Performer
+    function performRepertoirePassage(repKey) {
+      const p = REPERTOIRE_PASSAGES[repKey];
+      if (!p) return;
+      document.getElementById('repertoire-blurb').textContent = p.blurb;
+      p.events.forEach(ev => {
+        setTimeout(() => {
+          state.selectedDisk = ev.idx;
+          strikeCrotaleDisk(ev.idx, {
+            artic: ev.artic,
+            customRatio30: ev.customRatio30
+          });
+          buildCrotaleRack3D();
+        }, ev.time * 1000);
+      });
+    }
+
+    document.getElementById('select-repertoire').addEventListener('change', (e) => {
+      performRepertoirePassage(e.target.value);
+    });
+    document.getElementById('btn-play-repertoire').addEventListener('click', () => {
+      performRepertoirePassage(document.getElementById('select-repertoire').value);
+    });
+
+    // Footer Performance Triggers
+    document.getElementById('btn-strike-selected').addEventListener('click', () => strikeCrotaleDisk(state.selectedDisk));
+    document.getElementById('btn-bow-selected').addEventListener('click', () => strikeCrotaleDisk(state.selectedDisk, { artic: 'bowed_edge' }));
+    document.getElementById('btn-clash-pair').addEventListener('click', () => {
+      strikeCrotaleDisk(4, { artic: 'antique_clash' });
+      setTimeout(() => strikeCrotaleDisk(11, { artic: 'antique_clash' }), 180);
+    });
+    document.getElementById('btn-gliss-sweep').addEventListener('click', () => performRepertoirePassage('glissando_2oct'));
+
+    document.getElementById('btn-chladni-overlay').addEventListener('click', (e) => {
+      state.chladniOverlay = !state.chladniOverlay;
+      e.target.textContent = `Chladni Hologram: ${state.chladniOverlay ? 'ON' : 'OFF'}`;
+      if (hologramMesh) hologramMesh.visible = state.chladniOverlay;
+    });
+
+    document.getElementById('btn-cam-reset').addEventListener('click', () => {
+      camSpherical = { radius: 11.4, theta: 0.0, phi: 0.88 };
+      updateCameraFromSpherical();
+    });
+
+    // Modal & Side Docks
+    const infoModal = document.getElementById('info-modal');
+    document.getElementById('btn-info-modal').addEventListener('click', () => {
+      infoModal.classList.remove('hidden');
+      infoModal.classList.add('flex');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      infoModal.classList.add('hidden');
+      infoModal.classList.remove('flex');
+    });
+
+    let leftOpen = true, rightOpen = true;
+    document.getElementById('toggle-left-dock').addEventListener('click', () => {
+      leftOpen = !leftOpen;
+      document.getElementById('left-dock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-110%)';
+      document.getElementById('left-dock-arrow').textContent = leftOpen ? '◀' : '▶';
+    });
+    document.getElementById('toggle-right-dock').addEventListener('click', () => {
+      rightOpen = !rightOpen;
+      document.getElementById('right-dock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(110%)';
+      document.getElementById('right-dock-arrow').textContent = rightOpen ? '▶' : '◀';
+    });
+
+    // Lossless 44.1 kHz 16-Bit Stereo WAV Exporter
+    function encodeWAV(audioBuffer) {
+      const numChannels = 2;
+      const sampleRate = audioBuffer.sampleRate;
+      const length = audioBuffer.length;
+      const buffer = new ArrayBuffer(44 + length * numChannels * 2);
+      const view = new DataView(buffer);
+      function writeStr(off, s) { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + length * numChannels * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, length * numChannels * 2, true);
+
+      const chL = audioBuffer.getChannelData(0);
+      const chR = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : chL;
+      let offset = 44;
+      for (let i = 0; i < length; i++) {
+        const sL = Math.max(-1, Math.min(1, chL[i]));
+        const sR = Math.max(-1, Math.min(1, chR[i]));
+        view.setInt16(offset, sL < 0 ? sL * 0x8000 : sL * 0x7FFF, true);
+        view.setInt16(offset + 2, sR < 0 ? sR * 0x8000 : sR * 0x7FFF, true);
+        offset += 4;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function exportCrotaleWAV(isFullPassage = false) {
+      const sr = 44100;
+      const dur = isFullPassage ? 5.2 : 3.6;
+      const offline = new OfflineAudioContext(2, Math.ceil(sr * dur), sr);
+
+      if (!isFullPassage) {
+        strikeCrotaleDisk(state.selectedDisk, { offlineCtx: offline, destNode: offline.destination, startTime: 0.04 });
+      } else {
+        const repKey = document.getElementById('select-repertoire').value;
+        const p = REPERTOIRE_PASSAGES[repKey] || REPERTOIRE_PASSAGES.debussy_faune;
+        p.events.forEach(ev => {
+          strikeCrotaleDisk(ev.idx, {
+            offlineCtx: offline,
+            destNode: offline.destination,
+            startTime: 0.05 + ev.time,
+            artic: ev.artic,
+            customRatio30: ev.customRatio30
+          });
+        });
+      }
+
+      const rendered = await offline.startRendering();
+      const blob = encodeWAV(rendered);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const d = state.disks[state.selectedDisk];
+      a.download = isFullPassage
+        ? `crotales_${state.setKey}_${document.getElementById('select-repertoire').value}.wav`
+        : `crotale_${d.soundingName}_${state.articulation}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('btn-export-oneshot').addEventListener('click', () => exportCrotaleWAV(false));
+    document.getElementById('btn-export-passage').addEventListener('click', () => exportCrotaleWAV(true));
+
+    // Keyboard Mapping (Z..M for Lower Octave, Q..P for Upper Octave)
+    const KEY_TO_DISK = {
+      z: 0, s: 1, x: 2, d: 3, c: 4, v: 5, g: 6, b: 7, h: 8, n: 9, j: 10, m: 11,
+      q: 12, '2': 13, w: 14, '3': 15, e: 16, r: 17, '5': 18, t: 19, '6': 20, y: 21, '7': 22, u: 23, i: 24
+    };
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'Shift') {
+        engageFeltDamperBar();
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if (k === 'escape') {
+        infoModal.classList.add('hidden');
+        infoModal.classList.remove('flex');
+      } else if (k === ' ') {
+        e.preventDefault();
+        strikeCrotaleDisk(state.selectedDisk);
+      } else if (k === 'b') {
+        strikeCrotaleDisk(state.selectedDisk, { artic: 'bowed_edge' });
+      } else if (k === 'c') {
+        document.getElementById('btn-clash-pair').click();
+      } else if (k === 'g') {
+        performRepertoirePassage('glissando_2oct');
+      } else if (KEY_TO_DISK[k] !== undefined) {
+        strikeCrotaleDisk(KEY_TO_DISK[k]);
+        buildCrotaleRack3D();
+      }
+    });
+
+    // =========================================================================
+    // 8. MAIN ANIMATION LOOP (3D CHLADNI HOLOGRAM & DISK SHIMMER)
+    // =========================================================================
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, clock.getDelta());
+      const elapsed = clock.getElapsedTime();
+
+      // Animate ringing 3D disks
+      let maxEnergy = 0;
+      diskMeshes.forEach((mesh, idx) => {
+        const d = state.disks[idx];
+        d.energy *= Math.exp(-dt * 1.8);
+        if (d.energy > maxEnergy) maxEnergy = d.energy;
+        if (d.energy > 0.005) {
+          mesh.rotation.z = Math.sin(elapsed * 45 + idx) * d.energy * 0.06;
+        } else {
+          mesh.rotation.z = 0;
+        }
+      });
+
+      // Deform 3D Chladni Hologram Disk w_mn(r, theta, t)
+      if (hologramMesh && hologramMesh.visible && hologramBasePos) {
+        const pos = hologramMesh.geometry.attributes.position;
+        const col = hologramMesh.geometry.attributes.color;
+        const [m, n] = state.selectedChladniMode;
+        const amp = 0.06 + maxEnergy * 0.14;
+
+        for (let i = 0; i < pos.count; i++) {
+          const bx = hologramBasePos[i * 3];
+          const by = hologramBasePos[i * 3 + 1];
+          const bz = hologramBasePos[i * 3 + 2];
+          const r = Math.sqrt(bx * bx + bz * bz) / 1.45;
+          const theta = Math.atan2(bz, bx);
+
+          const radialFunc = n === 0 ? Math.pow(r, m * 0.65) : Math.cos((r - 0.68) * Math.PI * 2.2) * r;
+          const modalVal = radialFunc * Math.cos(m * theta) * Math.sin(elapsed * 14);
+          const disp = modalVal * amp;
+          pos.setY(i, by + disp);
+
+          // Nodal lines (where |radialFunc * cos(m*theta)| is near 0) glow bright gold; antinodes glow cyan/purple
+          const nodeProximity = Math.exp(-Math.abs(radialFunc * Math.cos(m * theta)) * 7.5);
+          col.setXYZ(
+            i,
+            0.12 + nodeProximity * 0.86,
+            0.45 + nodeProximity * 0.42,
+            0.85 - nodeProximity * 0.65
+          );
+        }
+        pos.needsUpdate = true;
+        col.needsUpdate = true;
+      }
+
+      drawChladniDiskCanvas(elapsed);
+      drawSpectrumCanvas();
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateHUDReadouts();
+    animate();
+  </script>
+</body>
+</html>

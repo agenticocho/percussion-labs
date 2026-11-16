@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WATERPHONE-3D — Hydro-Acoustic Friction Idiophone, Fluid-Slosh Modal Portamento & Stick-Slip Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-abyss: #03070e;
+    }
+    * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background: #03070e; color: #f1f5f9;
+      font-family: 'Inter', sans-serif; overflow: hidden;
+    }
+    .font-mono-tech { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .glass-dock {
+      background: rgba(6, 12, 24, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.80);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.45); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.45); border-radius: 3px; }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      height: 5px; border-radius: 999px;
+      background: rgba(51, 65, 85, 0.85); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #22d3ee; border: 2px solid #ecfeff;
+      cursor: pointer; box-shadow: 0 0 8px rgba(34, 211, 238, 0.85);
+    }
+    .aqua-pill-active {
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.28), rgba(245, 158, 11, 0.22));
+      border-color: rgba(34, 211, 238, 0.85) !important;
+      color: #ecfeff !important;
+      box-shadow: 0 0 14px rgba(34, 211, 238, 0.30);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen overflow-hidden bg-[#03070e] text-slate-100">
+
+  <!-- Full-Screen 3D WebGL Canvas Layer -->
+  <div id="canvas-container" class="fixed inset-0 z-0 cursor-crosshair"></div>
+
+  <!-- Non-Overlapping 3-Row Flex Viewport HUD -->
+  <div class="relative z-10 w-full h-full flex flex-col justify-between pointer-events-none">
+
+    <!-- ROW 1: Top Header Bar -->
+    <header class="shrink-0 w-full px-3 py-2 bg-slate-950/88 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 via-teal-500 to-amber-500 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-300/40">
+          <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+            <path d="M12 2v6m-6-3v5m12-5v5M4 10h16l-2 9H6l-2-9zm3 5c2-1.5 4 1.5 6 0s4 1.5 6 0"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display text-sm md:text-base font-bold tracking-tight text-white">WATERPHONE-3D</h1>
+            <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">US Pat. 3,896,696</span>
+            <span id="header-model-badge" class="hidden sm:inline-block text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">Whaler 12" (Richard Waters)</span>
+          </div>
+          <p class="text-[10px] text-slate-400 leading-tight hidden sm:block">
+            Bronze Cantilever Rods ($1 : 6.267 : 17.55$), Stainless-Steel Dish Modes, Shallow-Water Slosh Portamento &amp; Superball Cetacean Friction
+          </p>
+        </div>
+      </div>
+
+      <!-- 6 Waterphone Archetypes -->
+      <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800 overflow-x-auto max-w-full">
+        <button data-model="standard" class="model-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Standard 7"</button>
+        <button data-model="whaler" class="model-btn px-2 py-1 rounded text-[11px] font-medium transition aqua-pill-active">Whaler 12"</button>
+        <button data-model="bass" class="model-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Bass 14"</button>
+        <button data-model="megabass" class="model-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">MegaBass 16"</button>
+        <button data-model="hyperstellar" class="model-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Hyperstellar Dual</button>
+        <button data-model="sailophone" class="model-btn px-2 py-1 rounded text-[11px] font-medium text-slate-300 hover:text-white transition">Sailophone Bent</button>
+      </div>
+
+      <!-- Live Telemetry & Cutaway Controls -->
+      <div class="flex items-center gap-2">
+        <div class="hidden xl:flex items-center gap-2 bg-slate-900/90 px-2.5 py-1 rounded-lg border border-slate-800 text-[11px] font-mono-tech">
+          <div><span class="text-slate-400">Rod f1:</span> <span id="hud-rod-hz" class="text-amber-300 font-semibold">342.0 Hz</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Water Drift:</span> <span id="hud-slosh-cents" class="text-cyan-300 font-semibold">-48 cents</span></div>
+          <span class="text-slate-700">|</span>
+          <div><span class="text-slate-400">Fill:</span> <span id="hud-fill-pct" class="text-emerald-300 font-semibold">38%</span></div>
+        </div>
+
+        <button id="btn-xray-water" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 transition">
+          X-Ray Bowl: ON
+        </button>
+        <button id="btn-cam-reset" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition">
+          Reset View
+        </button>
+        <button id="btn-info-modal" class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tech bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition">
+          Acoustics &amp; Lore
+        </button>
+      </div>
+    </header>
+
+    <!-- ROW 2: Middle Interactive Stage with Non-Overlapping Dock Toggles & Side Docks -->
+    <div class="relative flex-1 min-h-0 w-full pointer-events-none">
+
+      <!-- Dock Toggle Pill Buttons Along Top of Stage -->
+      <div class="absolute top-2 left-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-left-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-cyan-300 border border-cyan-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          <span id="left-dock-arrow">◀</span> Excitation &amp; Hydro-Slosh Lab
+        </button>
+      </div>
+
+      <div class="absolute top-2 right-3 z-20 flex items-center gap-2 pointer-events-auto">
+        <button id="toggle-right-dock" class="px-2.5 py-1 rounded-md text-[11px] font-mono-tech glass-dock text-amber-300 border border-amber-500/40 hover:bg-slate-900/90 transition flex items-center gap-1.5">
+          36-Rod Ring &amp; Spectral Telemetry <span id="right-dock-arrow">▶</span>
+        </button>
+      </div>
+
+      <!-- Center Floating Live Action Banner -->
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center">
+        <div class="px-4 py-1 rounded-full bg-slate-950/85 border border-cyan-500/35 backdrop-blur-md flex items-center gap-3 shadow-xl">
+          <span class="text-[10px] font-mono-tech uppercase tracking-wider text-slate-400">Active Voice:</span>
+          <span id="live-voice-banner" class="text-xs md:text-sm font-display font-bold text-cyan-300">Rod #14 (342 Hz) • Horsehair Bow + Slosh Portamento</span>
+          <span id="live-slosh-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-200 border border-cyan-400/30">Slosh ω = 1.85 Hz</span>
+        </div>
+        <div class="text-[10px] font-mono-tech text-slate-400 mt-1 bg-slate-950/65 px-3 py-0.5 rounded-full border border-slate-800/80">
+          Click/Drag Across 3D Bronze Rods to Bow or Scrape • Drag Gyro Tilt Pad to Slosh Water Mid-Note • <span class="text-cyan-300">[B]</span> Bow • <span class="text-amber-300">[W]</span> Whale Call • <span class="text-emerald-300">[S]</span> Scrape
+        </div>
+      </div>
+
+      <!-- LEFT DOCK: Playing Excitation Mode, Water Fill, Gyro Tilt Slosh Pad & Rod Parameters -->
+      <aside id="left-dock" class="absolute top-10 bottom-2 left-3 z-20 w-[335px] max-w-[92vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">1. Excitation &amp; Hydro-Slosh Physics</h2>
+            <p class="text-[10px] text-slate-400">Stick-Slip Bowing, Superball Friction &amp; Fluid Tilt</p>
+          </div>
+          <button id="btn-damp-all" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition" title="Hand-damp all ringing rods and bowl modes">
+            Damp Bowl [D]
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- 5 Signature Waterphone Playing Techniques -->
+          <div>
+            <span class="text-[11px] font-semibold text-slate-300 block mb-1.5">Excitation Technique</span>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button data-tech="bow" class="tech-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition aqua-pill-active">
+                🎻 1. Horsehair Bow
+              </button>
+              <button data-tech="superball" class="tech-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🐋 2. Superball Whale
+              </button>
+              <button data-tech="mallet_soft" class="tech-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🥢 3. Yarn Mallet Hit
+              </button>
+              <button data-tech="mallet_hard" class="tech-btn py-1.5 px-2 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🔔 4. Brass Ping Strike
+              </button>
+              <button data-tech="scrape" class="tech-btn col-span-2 py-1.5 px-2.5 rounded-lg border border-slate-700 bg-slate-900/80 text-[11px] text-left transition">
+                🌀 5. 360° Perimeter Rod Cluster Scrape (Horror Glissando)
+              </button>
+            </div>
+          </div>
+
+          <!-- 2D Interactive Hydro-Gyro Tilt & Slosh Pad -->
+          <div class="p-2.5 rounded-lg bg-gradient-to-br from-cyan-500/12 via-slate-900/95 to-slate-950 border border-cyan-500/35 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-semibold text-cyan-300 text-[11px] uppercase tracking-wider">2D Hydro-Tilt Slosh Pad ($\theta_x, \theta_z$)</span>
+              <button id="btn-auto-gyre" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 transition">
+                Auto-Swirl: ON
+              </button>
+            </div>
+            <canvas id="canvas-tilt-pad" width="280" height="125" class="w-full h-28 rounded bg-[#040914] border border-slate-800 cursor-pointer"></canvas>
+            <div class="flex justify-between text-[9px] font-mono-tech text-slate-400">
+              <span id="tilt-angle-readout">Tilt: θx=+6.2°, θz=-4.1°</span>
+              <span id="slosh-depth-readout">Mod Depth: ±68 cents</span>
+            </div>
+          </div>
+
+          <!-- Water Fill & Slosh Dynamics Sliders -->
+          <div class="space-y-2.5 p-2.5 rounded-lg bg-slate-900/85 border border-slate-800">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-cyan-200 font-medium">Internal Water Fill ($W_{\text{fill}}$)</span>
+                <span id="lbl-water-fill" class="font-mono-tech text-cyan-300 font-bold">38% (Optimal Warble)</span>
+              </div>
+              <input id="slider-water-fill" type="range" min="0" max="90" step="1" value="38" class="w-full" />
+              <div class="flex justify-between text-[9px] font-mono-tech text-slate-400 mt-0.5">
+                <span>0% Dry Static Ring</span>
+                <span>40% Vocal Swim</span>
+                <span>85% Drowned Heavy</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Bow Contact Height ($y_{\text{bow}}/L_i$)</span>
+                <span id="lbl-bow-height" class="font-mono-tech text-amber-300">32% (Warm Fundamental)</span>
+              </div>
+              <input id="slider-bow-height" type="range" min="5" max="95" step="1" value="32" class="w-full" />
+              <p class="text-[9px] text-slate-400 mt-0.5">
+                Low contact drives fundamental $f_1$; high tip contact excites the $6.27 f_1$ and $17.55 f_1$ cantilever overtones!
+              </p>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Rosin Bow Pressure &amp; Grit</span>
+                <span id="lbl-bow-grit" class="font-mono-tech text-amber-300">42%</span>
+              </div>
+              <input id="slider-bow-grit" type="range" min="5" max="95" step="1" value="42" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Stainless Bowl Decay ($\tau_{60}$)</span>
+                <span id="lbl-bowl-decay" class="font-mono-tech text-emerald-300">5.2 s</span>
+              </div>
+              <input id="slider-bowl-decay" type="range" min="1.2" max="11.0" step="0.2" value="5.2" class="w-full" />
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- RIGHT DOCK: Interactive 36-Rod Circular Selector, Spectral Shimmer Scope & Cinematic Cues -->
+      <aside id="right-dock" class="absolute top-10 bottom-2 right-3 z-20 w-[395px] max-w-[94vw] glass-dock rounded-xl flex flex-col pointer-events-auto transition-transform duration-200">
+        <div class="p-2.5 border-b border-slate-800/80 flex items-center justify-between shrink-0">
+          <div>
+            <h2 class="font-display text-xs font-bold uppercase tracking-wider text-amber-300">36-Rod Crown &amp; Hydro-Modal Spectrum</h2>
+            <p class="text-[10px] text-slate-400">Click or Drag Around Circular Rod Crown to Play</p>
+          </div>
+          <span id="active-rods-count" class="px-2 py-0.5 rounded text-[10px] font-mono-tech bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">36 Bronze Rods</span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-3 text-xs">
+
+          <!-- Canvas 1: Interactive 2D Top-Down 36-Rod Crown + Internal Sloshing Water Wavefront -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-cyan-300">Top-Down 36-Rod Crown &amp; Fluid Nodal Map</span>
+              <span id="selected-rod-label" class="text-[10px] font-mono-tech text-amber-300">Rod #14 • L=19.4cm</span>
+            </div>
+            <canvas id="canvas-rod-crown" width="355" height="145" class="w-full h-36 rounded bg-[#040811] border border-slate-800/80 cursor-pointer"></canvas>
+          </div>
+
+          <!-- Canvas 2: Live Euler-Bernoulli 1 : 6.27 : 17.55 Spectrum & Water Portamento Ribbon -->
+          <div class="p-2 rounded-lg bg-slate-950/95 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-[10px] font-mono-tech uppercase text-amber-300">Cantilever Partials ($1 : 6.27 : 17.55$) + Water Bend</span>
+              <span id="overtone-ratio-label" class="text-[10px] font-mono-tech text-emerald-300">f2 = 2143 Hz</span>
+            </div>
+            <canvas id="canvas-water-spectrum" width="355" height="90" class="w-full h-22 rounded bg-[#040811] border border-slate-800/80"></canvas>
+          </div>
+
+          <!-- 10 Iconic Cinematic & Interspecies Waterphone Soundscapes -->
+          <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-semibold text-cyan-300">10 Iconic Waterphone Cues &amp; Soundscapes</span>
+              <button id="btn-trigger-cue" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-[10px] font-mono-tech transition">
+                ▶ Perform Cue
+              </button>
+            </div>
+            <select id="select-waterphone-cue" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-cyan-100 font-medium">
+              <optgroup label="Cinema, Suspense &amp; Sci-Fi Soundtracks">
+                <option value="poltergeist_shimmer">1. "Poltergeist / Apparition" — Bowed High Rod + Slow Water Tilt</option>
+                <option value="matrix_mirror">2. "The Matrix Liquefying Mirror" — Chromatic Rod Scrape + Deep Bend</option>
+                <option value="aliens_xenomorph">3. "Aliens Motion Tracker Tension" — Staccato Mallet Clusters</option>
+                <option value="crouching_tiger">4. "Tan Dun Water Music" — Pentatonic Bowed Cantilever Choir</option>
+                <option value="kitchen_stinger">5. "Reality TV Dramatic Stinger" — Violent 6.27× Overtone Bow Bite</option>
+              </optgroup>
+              <optgroup label="Cetacean Whale Calls &amp; Hydro-Acoustic Experiments">
+                <option value="nollman_orca">6. Jim Nollman Orca &amp; Humpback Superball Cetacean Call</option>
+                <option value="abyssal_megabass">7. 16" MegaBass Sub-Harmonic Friction Moan</option>
+                <option value="glennie_hyperstellar">8. Evelyn Glennie Hyperstellar Dual-Chamber Cathedral</option>
+                <option value="dry_vs_wet">9. Dry Static Bowl (0% Fill) vs. 45% Sloshing Water Comparison</option>
+                <option value="sailophone_drone">10. 70cm Bent-Rod Sailophone Sub-Cantilever Drone</option>
+              </optgroup>
+            </select>
+          </div>
+
+        </div>
+      </aside>
+    </div>
+
+    <!-- ROW 3: Bottom Direct Performance Bar & Lossless WAV Export -->
+    <footer class="shrink-0 w-full px-3 py-2 bg-slate-950/92 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 pointer-events-auto">
+      <!-- Direct Playable Triggers -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button id="btn-bow-rod" class="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/20 transition flex items-center gap-1">
+          <span>🎻 Bow Selected Rod</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[B]</span>
+        </button>
+        <button id="btn-whale-call" class="px-2.5 py-1.5 rounded-lg bg-amber-500/25 hover:bg-amber-500/35 text-amber-200 border border-amber-500/50 font-semibold text-xs transition flex items-center gap-1">
+          <span>🐋 Superball Whale Rub</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[W]</span>
+        </button>
+        <button id="btn-scrape-cluster" class="px-2.5 py-1.5 rounded-lg bg-rose-500/25 hover:bg-rose-500/35 text-rose-200 border border-rose-500/50 font-semibold text-xs transition flex items-center gap-1">
+          <span>🌀 36-Rod Horror Scrape</span>
+          <span class="text-[10px] font-mono-tech opacity-80">[S]</span>
+        </button>
+        <button id="btn-slosh-impulse" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/45 font-semibold text-xs transition">
+          🌊 Tilt Water Wave [T]
+        </button>
+      </div>
+
+      <!-- Generative Ambient Ocean Harp Drone Transport -->
+      <div class="flex items-center gap-2">
+        <button id="btn-drone-loop" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+          <span id="drone-icon">▶</span>
+          <span id="drone-text">Auto-Play Ocean Harp</span>
+        </button>
+      </div>
+
+      <!-- Lossless 44.1 kHz 16-Bit Stereo WAV Export -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-export-oneshot" class="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/40 text-xs font-mono-tech transition">
+          ⬇ WAV Bowed Swell
+        </button>
+        <button id="btn-export-cue" class="px-2.5 py-1.5 rounded-lg bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/40 text-xs font-mono-tech transition">
+          ⬇ Export Cinematic Cue (WAV)
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ACOUSTICS & ORGANOLOGY MODAL -->
+  <div id="info-modal" class="fixed inset-0 z-50 bg-slate-950/82 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="glass-dock max-w-2xl w-full rounded-2xl border border-cyan-500/40 p-5 space-y-3 text-xs text-slate-200 max-h-[88vh] overflow-y-auto custom-scroll">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+        <div>
+          <h3 class="font-display text-base font-bold text-cyan-300">Richard Waters' Waterphone — Hydro-Acoustic Friction &amp; Cantilever Physics</h3>
+          <p class="text-[11px] text-slate-400">U.S. Patent 3,896,696 (1975) • Clamped-Free Bronze Rods • Shallow-Water Sloshing Portamento</p>
+        </div>
+        <button id="btn-close-modal" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono-tech">✕ ESC</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 leading-relaxed">
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-amber-300">1. Clamped-Free Bronze Cantilever Rods ($1 : 6.27 : 17.55$)</h4>
+          <p class="text-slate-300">
+            Around the rim of the stainless-steel pan, bronze rods of alternating lengths are welded at their base. Acting as clamped-free Euler–Bernoulli beams ($\beta_n L = \{1.875, 4.694, 7.855\}$), their second and third transverse modes sit at $6.267 f_1$ and $17.548 f_1$—allowing a bow stroke near the tip to leap from a warm fundamental into an eerie metallic shriek.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-cyan-300">2. Internal Water Mass-Loading &amp; Slosh Portamento</h4>
+          <p class="text-slate-300">
+            Inspired by the Tibetan water drum, a small fill of water inside the resonator shifts across the bottom plate's vibrational antinodes as the player tilts the cylindrical neck. The moving fluid mass dynamically alters the effective modal stiffness/mass ratio, creating natural microtonal pitch bends, vibrato, and aquatic chorus shimmer.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-emerald-300">3. Superball Friction Mallets &amp; Cetacean Calls</h4>
+          <p class="text-slate-300">
+            Dragging a high-friction rubber Superball mallet across the bottom stainless-steel pan excites sub-harmonic stick-slip vibrations that couple through the water layer—producing haunting whale-like glissandi used by Jim Nollman to communicate with wild orcas.
+          </p>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+          <h4 class="font-semibold text-purple-300">4. Classic Models &amp; Hyperstellar Innovations</h4>
+          <p class="text-slate-300">
+            Richard Waters built four core sizes—Standard ($7''$), Whaler ($12''$), Bass ($14''$), and MegaBass ($16''$)—while Sławek Janus and Evelyn Glennie later introduced the dual-chamber Hyperstellar Waterphone and bent-rod Sailophone.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. WATERPHONE ARCHETYPE DATABASE & EULER-BERNOULLI ROD RATIOS
+    // =========================================================================
+    // Clamped-free cantilever overtone ratios: (beta_n / beta_1)^2
+    const CANTILEVER_RATIOS = [1.0000, 6.2669, 17.5475, 34.3860];
+
+    const WATERPHONE_MODELS = {
+      standard: {
+        id: 'standard', name: 'Standard 7" (Richard Waters)',
+        diameterIn: 7.0, scaleFactor: 0.78, baseFreqMin: 290, baseFreqMax: 1180,
+        bowlFreq: 245, decay: 4.2, dualChamber: false, bentRods: false
+      },
+      whaler: {
+        id: 'whaler', name: 'Whaler 12" (Richard Waters)',
+        diameterIn: 12.0, scaleFactor: 1.00, baseFreqMin: 185, baseFreqMax: 860,
+        bowlFreq: 162, decay: 5.4, dualChamber: false, bentRods: false
+      },
+      bass: {
+        id: 'bass', name: 'Bass 14" (Richard Waters)',
+        diameterIn: 14.0, scaleFactor: 1.15, baseFreqMin: 135, baseFreqMax: 680,
+        bowlFreq: 118, decay: 6.5, dualChamber: false, bentRods: false
+      },
+      megabass: {
+        id: 'megabass', name: 'MegaBass 16" (Richard Waters)',
+        diameterIn: 16.0, scaleFactor: 1.30, baseFreqMin: 95, baseFreqMax: 520,
+        bowlFreq: 86, decay: 7.8, dualChamber: false, bentRods: false
+      },
+      hyperstellar: {
+        id: 'hyperstellar', name: 'Hyperstellar Dual-Chamber (Glennie / Janus)',
+        diameterIn: 15.5, scaleFactor: 1.24, baseFreqMin: 105, baseFreqMax: 640,
+        bowlFreq: 92, decay: 9.2, dualChamber: true, bentRods: false
+      },
+      sailophone: {
+        id: 'sailophone', name: 'Sailophone 70cm Bent-Rod (Sławek Janus)',
+        diameterIn: 15.0, scaleFactor: 1.22, baseFreqMin: 82, baseFreqMax: 490,
+        bowlFreq: 88, decay: 8.4, dualChamber: false, bentRods: true
+      }
+    };
+
+    const ROD_COUNT = 36;
+
+    // =========================================================================
+    // 2. APPLICATION STATE & 36-ROD MICROTONAL/PENTATONIC TUNING ARRAY
+    // =========================================================================
+    const state = {
+      model: 'whaler',
+      technique: 'bow',        // 'bow' | 'superball' | 'mallet_soft' | 'mallet_hard' | 'scrape'
+      waterFill: 0.38,         // 0..0.90
+      bowHeight: 0.32,         // 0.05..0.95 (controls fundamental vs 6.27x / 17.55x overtone excitation)
+      bowGrit: 0.42,
+      bowlDecay: 5.4,
+      xrayBowl: true,
+      autoGyre: true,
+      tiltX: 0.25,             // -1..+1 normalized tilt
+      tiltZ: -0.18,
+      sloshPhase: 0.0,
+      sloshAmp: 0.45,
+      currentPitchShiftRatio: 1.0,
+      currentCentsOffset: -48,
+      selectedRod: 14,
+      rods: [],                // Array of 36 { index, angle, lengthCm, baseFreq, energy }
+      isAutoPlaying: false,
+      activeVoices: new Set()
+    };
+
+    function buildRodTuningArray() {
+      const m = WATERPHONE_MODELS[state.model] || WATERPHONE_MODELS.whaler;
+      state.rods = [];
+      for (let i = 0; i < ROD_COUNT; i++) {
+        const angle = (i / ROD_COUNT) * Math.PI * 2;
+        // Richard Waters alternates long (low) and short (high) bronze rods around the perimeter with microtonal + pentatonic intervals
+        const isLong = i % 2 === 0;
+        const spiralProg = i / ROD_COUNT;
+        const freqSpan = m.baseFreqMax - m.baseFreqMin;
+        const rawFreq = isLong
+          ? m.baseFreqMin + spiralProg * (freqSpan * 0.48)
+          : m.baseFreqMin + freqSpan * 0.42 + spiralProg * (freqSpan * 0.58);
+
+        // Add subtle authentic hand-brazed microtonal detuning
+        const microDetune = 1.0 + Math.sin(i * 2.37) * 0.014;
+        const baseFreq = rawFreq * microDetune;
+        // Length inversely proportional to sqrt(f) for Euler-Bernoulli cantilever
+        const lengthCm = Math.max(7.5, Math.min(48.0, 340 / Math.sqrt(baseFreq)));
+        state.rods.push({
+          index: i,
+          angle,
+          isLong,
+          lengthCm,
+          baseFreq,
+          energy: 0.0
+        });
+      }
+    }
+    buildRodTuningArray();
+
+    // =========================================================================
+    // 3. WEB AUDIO API HYDRO-ACOUSTIC STICK-SLIP & FLUID PORTAMENTO ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let masterGain = null;
+    let analyserNode = null;
+    let reverbNode = null;
+
+    function createMetallicImpulseResponse(ctx, duration = 3.2) {
+      const len = Math.floor(ctx.sampleRate * duration);
+      const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const data = buf.getChannelData(ch);
+        for (let i = 0; i < len; i++) {
+          const t = i / ctx.sampleRate;
+          // Stainless-steel resonator chamber shimmer
+          const mod = 1 + 0.25 * Math.sin(t * 19 + ch * 1.4);
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-t / (duration * 0.34)) * mod * 0.32;
+        }
+      }
+      return buf;
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.84;
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 1024;
+        analyserNode.smoothingTimeConstant = 0.78;
+
+        reverbNode = audioCtx.createConvolver();
+        reverbNode.buffer = createMetallicImpulseResponse(audioCtx, 3.0);
+        const wetGain = audioCtx.createGain();
+        wetGain.gain.value = 0.42;
+
+        masterGain.connect(analyserNode);
+        masterGain.connect(reverbNode);
+        reverbNode.connect(wetGain);
+        wetGain.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    // Real-time update of all active ringing voices as water sloshes inside the resonator bowl!
+    function updateActiveVoicesSloshPitch() {
+      // Compute instantaneous fluid mass-loading factor at the rim/bottom pan
+      const rTilt = Math.min(1.0, Math.sqrt(state.tiltX * state.tiltX + state.tiltZ * state.tiltZ));
+      const sloshWave = Math.sin(state.sloshPhase) * state.sloshAmp;
+      // Water loading depresses and warbles frequency by up to -140 cents when water crosses antinodes
+      const modFactor = 1.0 - state.waterFill * (0.045 + 0.042 * (rTilt * 0.7 + sloshWave * 0.5));
+      state.currentPitchShiftRatio = Math.max(0.88, Math.min(1.05, modFactor));
+      state.currentCentsOffset = Math.round(1200 * Math.log2(state.currentPitchShiftRatio));
+
+      if (audioCtx && state.activeVoices.size > 0) {
+        const now = audioCtx.currentTime;
+        state.activeVoices.forEach(v => {
+          if (now < v.stopTime) {
+            // Rod angle relative to water tilt direction creates directional warble
+            const dirAlignment = Math.cos(v.rodAngle - Math.atan2(state.tiltZ, state.tiltX));
+            const localWaterShift = 1.0 - state.waterFill * (0.04 + 0.048 * (0.5 + 0.5 * dirAlignment) * (0.6 + 0.4 * Math.sin(state.sloshPhase + v.rodIndex * 0.3)));
+            v.oscillators.forEach(oRec => {
+              const targetHz = oRec.baseHz * localWaterShift;
+              oRec.osc.frequency.setTargetAtTime(Math.max(35, targetHz), now, 0.035);
+            });
+          }
+        });
+      }
+    }
+
+    // Trigger a single bronze rod or Superball whale call
+    function exciteWaterphoneRod(rodIdx, techOverride = null, targetCtx = null, destNode = null, startTimeOffset = 0) {
+      if (!targetCtx) initAudio();
+      const ctx = targetCtx || audioCtx;
+      const out = destNode || masterGain;
+      const now = ctx.currentTime + startTimeOffset;
+
+      const tech = techOverride || state.technique;
+      const rod = state.rods[rodIdx % ROD_COUNT] || state.rods[0];
+      const model = WATERPHONE_MODELS[state.model] || WATERPHONE_MODELS.whaler;
+
+      if (tech === 'scrape') {
+        // Trigger a rapid 18-rod chromatic/microtonal horror cascade around the perimeter!
+        for (let k = 0; k < 18; k++) {
+          const rIdx = (rodIdx + k) % ROD_COUNT;
+          exciteWaterphoneRod(rIdx, 'mallet_hard', ctx, out, startTimeOffset + k * 0.042);
+        }
+        return;
+      }
+
+      const isBow = tech === 'bow';
+      const isSuperball = tech === 'superball';
+      const attackSec = isBow ? 0.38 : isSuperball ? 0.55 : tech === 'mallet_soft' ? 0.018 : 0.003;
+      const holdSec = isBow ? 0.95 : isSuperball ? 1.45 : 0.02;
+      const releaseSec = state.bowlDecay * (1.0 - state.waterFill * 0.22);
+      const totalDur = attackSec + holdSec + releaseSec;
+
+      const voiceOscs = [];
+
+      if (isSuperball) {
+        // SUPERBALL FRICTION MALLET ON BOTTOM PAN ("Cetacean Whale Call" Glissando)
+        const fStart = model.bowlFreq * (0.85 + Math.random() * 0.35);
+        const fPeak = fStart * (1.65 + state.bowHeight * 0.85);
+        const fEnd = fStart * 1.15;
+
+        [1.0, 2.02, 3.14, 4.45].forEach((harm, idx) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = idx === 0 ? 'sine' : 'triangle';
+
+          osc.frequency.setValueAtTime(fStart * harm, now);
+          osc.frequency.exponentialRampToValueAtTime(fPeak * harm, now + attackSec + holdSec * 0.55);
+          osc.frequency.exponentialRampToValueAtTime(fEnd * harm, now + totalDur * 0.85);
+
+          const amp = (0.34 / Math.pow(idx + 1, 0.95)) * (idx === 1 ? 1.25 : 1.0);
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(amp, now + attackSec);
+          g.gain.exponentialRampToValueAtTime(0.0001, now + totalDur);
+
+          osc.connect(g);
+          g.connect(out);
+          osc.start(now);
+          osc.stop(now + totalDur + 0.05);
+          voiceOscs.push({ osc, baseHz: fPeak * harm });
+        });
+      } else {
+        // EULER-BERNOULLI CANTILEVER ROD MODES (1 : 6.267 : 17.548 : 34.386) + BOWL SYMPATHETIC MODE
+        CANTILEVER_RATIOS.forEach((ratio, modeIdx) => {
+          const fMode = rod.baseFreq * ratio;
+          if (fMode > 13500) return;
+
+          // Bow contact height y_bow/L controls modal weighting: high bow height emphasizes 6.27x and 17.55x shriek modes!
+          let modeWeight = 1.0;
+          if (modeIdx === 0) {
+            modeWeight = 1.0 - state.bowHeight * 0.52;
+          } else if (modeIdx === 1) {
+            modeWeight = 0.18 + state.bowHeight * 0.85 + (tech === 'mallet_hard' ? 0.35 : 0);
+          } else {
+            modeWeight = (state.bowHeight * state.bowGrit * 0.65) / modeIdx;
+          }
+
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = isBow && modeIdx <= 1 ? 'sawtooth' : 'sine';
+
+          const waterShift = state.currentPitchShiftRatio;
+          osc.frequency.setValueAtTime(fMode * waterShift, now);
+
+          // Lowpass filter for bowed sawtooth warmth
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(fMode, now);
+          filter.Q.value = isBow ? (3.5 + (1 - state.bowGrit) * 6.0) : 12.0;
+
+          const amp = Math.max(0.0002, 0.24 * modeWeight / Math.pow(modeIdx + 1, 0.55));
+          const modeDur = totalDur / Math.pow(modeIdx + 1, 0.42);
+
+          g.gain.setValueAtTime(0.0001, now);
+          g.gain.linearRampToValueAtTime(amp, now + attackSec);
+          if (isBow) {
+            g.gain.setValueAtTime(amp * 0.92, now + attackSec + holdSec);
+          }
+          g.gain.exponentialRampToValueAtTime(0.0001, now + modeDur);
+
+          osc.connect(filter);
+          filter.connect(g);
+          g.connect(out);
+          osc.start(now);
+          osc.stop(now + modeDur + 0.05);
+          voiceOscs.push({ osc, baseHz: fMode });
+        });
+
+        // Coupled Stainless-Steel Resonator Bowl Fundamental Hum
+        const bowlOsc = ctx.createOscillator();
+        const bowlGain = ctx.createGain();
+        bowlOsc.type = 'sine';
+        bowlOsc.frequency.setValueAtTime(model.bowlFreq * state.currentPitchShiftRatio, now);
+        bowlGain.gain.setValueAtTime(0.0001, now);
+        bowlGain.gain.linearRampToValueAtTime(0.11, now + attackSec + 0.04);
+        bowlGain.gain.exponentialRampToValueAtTime(0.0001, now + totalDur * 1.1);
+        bowlOsc.connect(bowlGain);
+        bowlGain.connect(out);
+        bowlOsc.start(now);
+        bowlOsc.stop(now + totalDur * 1.15);
+        voiceOscs.push({ osc: bowlOsc, baseHz: model.bowlFreq });
+      }
+
+      if (ctx === audioCtx) {
+        state.selectedRod = rodIdx % ROD_COUNT;
+        rod.energy = Math.min(1.5, rod.energy + 1.0);
+        state.sloshAmp = Math.min(1.0, state.sloshAmp + 0.22);
+
+        const rec = {
+          rodIndex: rodIdx % ROD_COUNT,
+          rodAngle: rod.angle,
+          oscillators: voiceOscs,
+          stopTime: now + totalDur
+        };
+        state.activeVoices.add(rec);
+        setTimeout(() => state.activeVoices.delete(rec), (totalDur + 0.2) * 1000);
+        updateHUDReadouts();
+      }
+    }
+
+    // =========================================================================
+    // 4. THREE.JS 3D STAINLESS-STEEL WATERPHONE, 36 BRONZE RODS & SLOSHING WATER
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x03070e, 0.038);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+    let camSpherical = { radius: 9.6, theta: 0.38, phi: 1.08 };
+    let camTarget = new THREE.Vector3(0, 0.25, 0);
+
+    function updateCameraFromSpherical() {
+      camera.position.x = camTarget.x + camSpherical.radius * Math.sin(camSpherical.phi) * Math.sin(camSpherical.theta);
+      camera.position.y = camTarget.y + camSpherical.radius * Math.cos(camSpherical.phi);
+      camera.position.z = camTarget.z + camSpherical.radius * Math.sin(camSpherical.phi) * Math.cos(camSpherical.theta);
+      camera.lookAt(camTarget);
+    }
+    updateCameraFromSpherical();
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // Aquatic Studio Lighting
+    scene.add(new THREE.AmbientLight(0x94a3b8, 0.72));
+    const keyLight = new THREE.DirectionalLight(0xf8fafc, 1.35);
+    keyLight.position.set(6, 10, 6);
+    scene.add(keyLight);
+
+    const bronzeRimLight = new THREE.PointLight(0xf59e0b, 1.3, 16);
+    bronzeRimLight.position.set(-5, 4, -4);
+    scene.add(bronzeRimLight);
+
+    const aquaInternalLight = new THREE.PointLight(0x22d3ee, 1.5, 10);
+    aquaInternalLight.position.set(0, -0.4, 0);
+    scene.add(aquaInternalLight);
+
+    const floorGrid = new THREE.GridHelper(22, 22, 0x1e293b, 0x0f172a);
+    floorGrid.position.y = -2.5;
+    scene.add(floorGrid);
+
+    const waterphoneGroup = new THREE.Group();
+    scene.add(waterphoneGroup);
+
+    let rodMeshes = [];
+    let waterSurfaceMesh = null;
+    let waterBasePositions = null;
+    let horsehairBowGroup = null;
+
+    function buildWaterphone3D() {
+      while (waterphoneGroup.children.length > 0) {
+        waterphoneGroup.remove(waterphoneGroup.children[0]);
+      }
+      rodMeshes = [];
+
+      const m = WATERPHONE_MODELS[state.model] || WATERPHONE_MODELS.whaler;
+      const panRadius = 2.15 * m.scaleFactor;
+
+      // 1. Stainless-Steel Resonator Pan & Conical Upper Dome + Cylindrical Neck Handle
+      const lathePts = [
+        new THREE.Vector2(0.0, -0.78),
+        new THREE.Vector2(panRadius * 0.92, -0.72),
+        new THREE.Vector2(panRadius, -0.35),
+        new THREE.Vector2(panRadius * 1.02, 0.0),
+        new THREE.Vector2(0.28, 0.72),
+        new THREE.Vector2(0.24, 2.55),
+        new THREE.Vector2(0.31, 2.62)
+      ];
+      const bowlGeo = new THREE.LatheGeometry(lathePts, 56);
+      const bowlMat = new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1,
+        metalness: 0.85,
+        roughness: 0.22,
+        transparent: state.xrayBowl,
+        opacity: state.xrayBowl ? 0.34 : 0.96,
+        side: THREE.DoubleSide
+      });
+      const bowlMesh = new THREE.Mesh(bowlGeo, bowlMat);
+      waterphoneGroup.add(bowlMesh);
+
+      // If Hyperstellar Dual-Chamber, add lower coupled secondary resonator chamber
+      if (m.dualChamber) {
+        const lowerGeo = new THREE.CylinderGeometry(panRadius * 0.72, panRadius * 0.85, 0.55, 40);
+        const lowerMesh = new THREE.Mesh(lowerGeo, bowlMat);
+        lowerMesh.position.y = -1.35;
+        waterphoneGroup.add(lowerMesh);
+
+        const pipeGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.65, 20);
+        const pipeMesh = new THREE.Mesh(pipeGeo, bowlMat);
+        pipeMesh.position.y = -0.95;
+        waterphoneGroup.add(pipeMesh);
+      }
+
+      // 2. Internal Sloshing Water Surface (Deformable Shallow-Water Gravity Wave Mesh)
+      const waterGeo = new THREE.CircleGeometry(panRadius * 0.93, 40, 16);
+      waterGeo.rotateX(-Math.PI / 2);
+      waterBasePositions = new Float32Array(waterGeo.attributes.position.array);
+
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x06b6d4,
+        emissive: 0x0891b2,
+        emissiveIntensity: 0.48,
+        roughness: 0.15,
+        metalness: 0.25,
+        transparent: true,
+        opacity: state.waterFill > 0.01 ? 0.78 : 0.05,
+        side: THREE.DoubleSide
+      });
+      waterSurfaceMesh = new THREE.Mesh(waterGeo, waterMat);
+      waterSurfaceMesh.position.y = -0.62 + state.waterFill * 0.35;
+      waterphoneGroup.add(waterSurfaceMesh);
+
+      // 3. 36 Perimeter Cantilever Bronze Rods
+      state.rods.forEach((rod, idx) => {
+        const rodHeight = (rod.lengthCm / 15.0) * 1.35;
+        const rRim = panRadius * 0.99;
+        const rx = Math.cos(rod.angle) * rRim;
+        const rz = Math.sin(rod.angle) * rRim;
+
+        let rodGeo;
+        if (m.bentRods) {
+          // Sailophone curved/bent cantilever rods
+          const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0.06, rodHeight * 0.55, 0),
+            new THREE.Vector3(-0.12, rodHeight, 0)
+          ]);
+          rodGeo = new THREE.TubeGeometry(curve, 12, 0.028, 8, false);
+        } else {
+          rodGeo = new THREE.CylinderGeometry(0.024, 0.030, rodHeight, 10);
+          rodGeo.translate(0, rodHeight / 2, 0);
+        }
+
+        const isSel = idx === state.selectedRod;
+        const rodMat = new THREE.MeshStandardMaterial({
+          color: isSel ? 0x22d3ee : 0xd97706,
+          emissive: isSel ? 0x06b6d4 : 0x78350f,
+          emissiveIntensity: isSel ? 0.65 : 0.22,
+          metalness: 0.78,
+          roughness: 0.28
+        });
+
+        const mesh = new THREE.Mesh(rodGeo, rodMat);
+        mesh.position.set(rx, -0.05, rz);
+        // Slight outward flare
+        mesh.rotation.y = -rod.angle;
+        mesh.rotation.z = -0.05;
+        mesh.userData = { rodIdx: idx, baseX: rx, baseZ: rz, rodHeight };
+        mesh.name = 'bronze_rod';
+        waterphoneGroup.add(mesh);
+        rodMeshes.push(mesh);
+      });
+
+      // 4. Horsehair Bow Visual Indicator positioned at active rod & bow height
+      horsehairBowGroup = new THREE.Group();
+      const bowStickGeo = new THREE.CylinderGeometry(0.02, 0.02, 3.2, 8);
+      bowStickGeo.rotateZ(Math.PI / 2);
+      const bowMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, emissive: 0xf59e0b, emissiveIntensity: 0.35 });
+      const bowMesh = new THREE.Mesh(bowStickGeo, bowMat);
+      horsehairBowGroup.add(bowMesh);
+      waterphoneGroup.add(horsehairBowGroup);
+    }
+
+    buildWaterphone3D();
+
+    // =========================================================================
+    // 5. RAYCASTING: CLICK OR DRAG ACROSS 3D BRONZE RODS TO BOW / SCRAPE
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let isPointerDownOnStage = false;
+    let isOrbiting = false;
+    let lastHoveredRod = -1;
+    let prevX = 0, prevY = 0;
+
+    container.addEventListener('pointerdown', (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const hits = raycaster.intersectObjects(rodMeshes, false);
+      if (hits.length > 0) {
+        isPointerDownOnStage = true;
+        const rIdx = hits[0].object.userData.rodIdx;
+        lastHoveredRod = rIdx;
+        exciteWaterphoneRod(rIdx);
+        return;
+      }
+
+      isOrbiting = true;
+      prevX = e.clientX;
+      prevY = e.clientY;
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (isPointerDownOnStage) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(rodMeshes, false);
+        if (hits.length > 0) {
+          const rIdx = hits[0].object.userData.rodIdx;
+          if (rIdx !== lastHoveredRod) {
+            lastHoveredRod = rIdx;
+            exciteWaterphoneRod(rIdx);
+          }
+        }
+        return;
+      }
+      if (isOrbiting) {
+        const dx = e.clientX - prevX;
+        const dy = e.clientY - prevY;
+        prevX = e.clientX;
+        prevY = e.clientY;
+        camSpherical.theta -= dx * 0.006;
+        camSpherical.phi = Math.max(0.25, Math.min(Math.PI - 0.25, camSpherical.phi - dy * 0.006));
+        updateCameraFromSpherical();
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      isPointerDownOnStage = false;
+      isOrbiting = false;
+      lastHoveredRod = -1;
+    });
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      camSpherical.radius = Math.max(5.0, Math.min(16.5, camSpherical.radius + e.deltaY * 0.005));
+      updateCameraFromSpherical();
+    }, { passive: false });
+
+    // =========================================================================
+    // 6. 2D INTERACTIVE HYDRO-TILT PAD, 36-ROD CROWN & SPECTRUM CANVASES
+    // =========================================================================
+    const tiltCanvas = document.getElementById('canvas-tilt-pad');
+    const tiltCtx = tiltCanvas.getContext('2d');
+    const crownCanvas = document.getElementById('canvas-rod-crown');
+    const crownCtx = crownCanvas.getContext('2d');
+    const specCanvas = document.getElementById('canvas-water-spectrum');
+    const specCtx = specCanvas.getContext('2d');
+    const fftData = new Uint8Array(512);
+
+    function drawTiltPadCanvas() {
+      const w = tiltCanvas.width;
+      const h = tiltCanvas.height;
+      tiltCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.min(cx, cy) - 10;
+
+      // Concentric nodal rings
+      [0.35, 0.7, 1.0].forEach(frac => {
+        tiltCtx.strokeStyle = 'rgba(34, 211, 238, 0.22)';
+        tiltCtx.beginPath();
+        tiltCtx.arc(cx, cy, maxR * frac, 0, Math.PI * 2);
+        tiltCtx.stroke();
+      });
+
+      const px = cx + state.tiltX * maxR;
+      const py = cy + state.tiltZ * maxR;
+
+      const grad = tiltCtx.createRadialGradient(px, py, 2, px, py, 28 * state.waterFill + 8);
+      grad.addColorStop(0, 'rgba(34, 211, 238, 0.85)');
+      grad.addColorStop(1, 'rgba(34, 211, 238, 0)');
+      tiltCtx.fillStyle = grad;
+      tiltCtx.beginPath();
+      tiltCtx.arc(px, py, 28 * state.waterFill + 8, 0, Math.PI * 2);
+      tiltCtx.fill();
+
+      tiltCtx.fillStyle = '#ecfeff';
+      tiltCtx.beginPath();
+      tiltCtx.arc(px, py, 4.5, 0, Math.PI * 2);
+      tiltCtx.fill();
+    }
+
+    let isDraggingTilt = false;
+    function handleTiltDrag(e) {
+      state.autoGyre = false;
+      document.getElementById('btn-auto-gyre').textContent = 'Auto-Swirl: OFF';
+      const rect = tiltCanvas.getBoundingClientRect();
+      state.tiltX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / rect.width) * 2 - 1));
+      state.tiltZ = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / rect.height) * 2 - 1));
+      state.sloshAmp = Math.min(1.0, state.sloshAmp + 0.15);
+      updateActiveVoicesSloshPitch();
+      updateHUDReadouts();
+    }
+    tiltCanvas.addEventListener('pointerdown', (e) => { isDraggingTilt = true; handleTiltDrag(e); });
+    window.addEventListener('pointermove', (e) => { if (isDraggingTilt) handleTiltDrag(e); });
+    window.addEventListener('pointerup', () => { isDraggingTilt = false; });
+
+    // Top-Down 36-Rod Crown Interactive Selector
+    let isDraggingCrown = false;
+    let lastCrownRod = -1;
+    function handleCrownPointer(e) {
+      const rect = crownCanvas.getBoundingClientRect();
+      const dx = (e.clientX - rect.left) - rect.width / 2;
+      const dy = (e.clientY - rect.top) - rect.height / 2;
+      let ang = Math.atan2(dy, dx);
+      if (ang < 0) ang += Math.PI * 2;
+      const rIdx = Math.floor((ang / (Math.PI * 2)) * ROD_COUNT) % ROD_COUNT;
+      if (rIdx !== lastCrownRod) {
+        lastCrownRod = rIdx;
+        exciteWaterphoneRod(rIdx);
+      }
+    }
+    crownCanvas.addEventListener('pointerdown', (e) => { isDraggingCrown = true; handleCrownPointer(e); });
+    window.addEventListener('pointermove', (e) => { if (isDraggingCrown) handleCrownPointer(e); });
+    window.addEventListener('pointerup', () => { isDraggingCrown = false; lastCrownRod = -1; });
+
+    function drawRodCrownCanvas() {
+      const w = crownCanvas.width;
+      const h = crownCanvas.height;
+      crownCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const ringR = Math.min(cx, cy) - 16;
+
+      // Internal sloshing water pool indicator
+      const wx = cx + state.tiltX * ringR * 0.35;
+      const wy = cy + state.tiltZ * ringR * 0.35;
+      const wGrad = crownCtx.createRadialGradient(wx, wy, 4, cx, cy, ringR * 0.85);
+      wGrad.addColorStop(0, `rgba(6, 182, 212, ${0.15 + state.waterFill * 0.55})`);
+      wGrad.addColorStop(1, 'rgba(15, 23, 42, 0.2)');
+      crownCtx.fillStyle = wGrad;
+      crownCtx.beginPath();
+      crownCtx.arc(cx, cy, ringR * 0.88, 0, Math.PI * 2);
+      crownCtx.fill();
+
+      // 36 Perimeter Rods
+      state.rods.forEach((rod, idx) => {
+        const px = cx + Math.cos(rod.angle) * ringR;
+        const py = cy + Math.sin(rod.angle) * ringR;
+        const isSel = idx === state.selectedRod;
+        const rad = (rod.isLong ? 4.2 : 3.0) + rod.energy * 3.5;
+
+        crownCtx.fillStyle = isSel ? '#22d3ee' : rod.energy > 0.05 ? '#fbbf24' : (rod.isLong ? '#d97706' : '#94a3b8');
+        crownCtx.beginPath();
+        crownCtx.arc(px, py, rad, 0, Math.PI * 2);
+        crownCtx.fill();
+      });
+    }
+
+    function drawWaterSpectrumCanvas() {
+      const w = specCanvas.width;
+      const h = specCanvas.height;
+      specCtx.clearRect(0, 0, w, h);
+
+      if (analyserNode) analyserNode.getByteFrequencyData(fftData);
+
+      const bars = 56;
+      const bw = w / bars;
+      for (let i = 0; i < bars; i++) {
+        const v = analyserNode ? fftData[i] / 255 : 0;
+        const bh = v * (h - 12);
+        specCtx.fillStyle = i < 14 ? 'rgba(34, 211, 238, 0.78)' : 'rgba(245, 158, 11, 0.70)';
+        specCtx.fillRect(i * bw + 1, h - bh, bw - 2, bh);
+      }
+
+      // Mark Euler-Bernoulli 1 : 6.27 : 17.55 overtone lines for selected rod
+      const rod = state.rods[state.selectedRod] || state.rods[0];
+      CANTILEVER_RATIOS.slice(0, 3).forEach((ratio, idx) => {
+        const fHz = rod.baseFreq * ratio * state.currentPitchShiftRatio;
+        const x = Math.min(w - 5, (Math.log10(Math.max(60, fHz)) - Math.log10(60)) / (Math.log10(8000) - Math.log10(60)) * w);
+        specCtx.strokeStyle = idx === 0 ? '#22d3ee' : '#fbbf24';
+        specCtx.lineWidth = idx === 0 ? 2 : 1.2;
+        specCtx.beginPath();
+        specCtx.moveTo(x, 2);
+        specCtx.lineTo(x, h);
+        specCtx.stroke();
+      });
+    }
+
+    // =========================================================================
+    // 7. HUD READOUTS, CINEMATIC CUES & WAV EXPORT
+    // =========================================================================
+    function updateHUDReadouts() {
+      const rod = state.rods[state.selectedRod] || state.rods[0];
+      const fInstant = rod.baseFreq * state.currentPitchShiftRatio;
+      document.getElementById('hud-rod-hz').textContent = `${fInstant.toFixed(1)} Hz`;
+      document.getElementById('hud-slosh-cents').textContent = `${state.currentCentsOffset >= 0 ? '+' : ''}${state.currentCentsOffset} cents`;
+      document.getElementById('hud-fill-pct').textContent = `${Math.round(state.waterFill * 100)}%`;
+
+      document.getElementById('selected-rod-label').textContent = `Rod #${state.selectedRod + 1} • L=${rod.lengthCm.toFixed(1)}cm (${rod.baseFreq.toFixed(0)}Hz)`;
+      document.getElementById('overtone-ratio-label').textContent = `6.27× Mode: ${(fInstant * 6.267).toFixed(0)} Hz`;
+      document.getElementById('live-voice-banner').textContent =
+        `Rod #${state.selectedRod + 1} (${fInstant.toFixed(1)} Hz) • ${state.technique.toUpperCase()} (${state.currentCentsOffset} ct water drift)`;
+
+      document.getElementById('tilt-angle-readout').textContent =
+        `Tilt: θx=${(state.tiltX * 18).toFixed(1)}°, θz=${(state.tiltZ * 18).toFixed(1)}°`;
+      document.getElementById('slosh-depth-readout').textContent =
+        `Mod Depth: ±${Math.round(state.waterFill * 135)} cents`;
+    }
+
+    // Bind Model Archetype Buttons
+    document.querySelectorAll('.model-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('aqua-pill-active'));
+        btn.classList.add('aqua-pill-active');
+        state.model = btn.dataset.model;
+        const m = WATERPHONE_MODELS[state.model];
+        state.bowlDecay = m.decay;
+        document.getElementById('header-model-badge').textContent = m.name;
+        document.getElementById('slider-bowl-decay').value = m.decay;
+        document.getElementById('lbl-bowl-decay').textContent = `${m.decay.toFixed(1)} s`;
+
+        buildRodTuningArray();
+        buildWaterphone3D();
+        updateHUDReadouts();
+        exciteWaterphoneRod(state.selectedRod);
+      });
+    });
+
+    // Bind Excitation Technique Buttons
+    document.querySelectorAll('.tech-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tech-btn').forEach(b => b.classList.remove('aqua-pill-active'));
+        btn.classList.add('aqua-pill-active');
+        state.technique = btn.dataset.tech;
+        exciteWaterphoneRod(state.selectedRod);
+      });
+    });
+
+    // Sliders
+    document.getElementById('slider-water-fill').addEventListener('input', (e) => {
+      state.waterFill = parseFloat(e.target.value) / 100;
+      const desc = state.waterFill < 0.05 ? 'Dry Static' : state.waterFill < 0.55 ? 'Optimal Warble' : 'Heavy Slosh';
+      document.getElementById('lbl-water-fill').textContent = `${e.target.value}% (${desc})`;
+      if (waterSurfaceMesh) {
+        waterSurfaceMesh.position.y = -0.62 + state.waterFill * 0.35;
+        waterSurfaceMesh.material.opacity = state.waterFill > 0.01 ? 0.78 : 0.05;
+      }
+      updateActiveVoicesSloshPitch();
+      updateHUDReadouts();
+    });
+
+    document.getElementById('slider-bow-height').addEventListener('input', (e) => {
+      state.bowHeight = parseFloat(e.target.value) / 100;
+      const tag = state.bowHeight < 0.4 ? 'Warm Fundamental' : state.bowHeight < 0.75 ? 'Balanced Halo' : '6.27× Overtone Shriek';
+      document.getElementById('lbl-bow-height').textContent = `${e.target.value}% (${tag})`;
+    });
+
+    document.getElementById('slider-bow-grit').addEventListener('input', (e) => {
+      state.bowGrit = parseFloat(e.target.value) / 100;
+      document.getElementById('lbl-bow-grit').textContent = `${e.target.value}%`;
+    });
+
+    document.getElementById('slider-bowl-decay').addEventListener('input', (e) => {
+      state.bowlDecay = parseFloat(e.target.value);
+      document.getElementById('lbl-bowl-decay').textContent = `${state.bowlDecay.toFixed(1)} s`;
+    });
+
+    document.getElementById('btn-auto-gyre').addEventListener('click', (e) => {
+      state.autoGyre = !state.autoGyre;
+      e.target.textContent = `Auto-Swirl: ${state.autoGyre ? 'ON' : 'OFF'}`;
+    });
+
+    document.getElementById('btn-damp-all').addEventListener('click', () => {
+      if (audioCtx) {
+        const now = audioCtx.currentTime;
+        state.activeVoices.forEach(v => {
+          v.oscillators.forEach(oRec => {
+            try { oRec.osc.stop(now + 0.04); } catch (_) {}
+          });
+        });
+        state.activeVoices.clear();
+      }
+      state.rods.forEach(r => { r.energy = 0; });
+    });
+
+    // Cinematic Cue Performer
+    function performWaterphoneCue(cueKey) {
+      initAudio();
+      if (cueKey === 'poltergeist_shimmer') {
+        state.waterFill = 0.42;
+        state.bowHeight = 0.68;
+        exciteWaterphoneRod(15, 'bow');
+        setTimeout(() => exciteWaterphoneRod(22, 'bow'), 420);
+      } else if (cueKey === 'matrix_mirror') {
+        state.waterFill = 0.55;
+        exciteWaterphoneRod(0, 'scrape');
+      } else if (cueKey === 'aliens_xenomorph') {
+        [3, 11, 19, 27, 33].forEach((r, idx) => {
+          setTimeout(() => exciteWaterphoneRod(r, 'mallet_hard'), idx * 140);
+        });
+      } else if (cueKey === 'crouching_tiger') {
+        [0, 6, 12, 18, 24].forEach((r, idx) => {
+          setTimeout(() => exciteWaterphoneRod(r, 'bow'), idx * 380);
+        });
+      } else if (cueKey === 'kitchen_stinger') {
+        state.bowHeight = 0.92;
+        state.bowGrit = 0.85;
+        exciteWaterphoneRod(29, 'bow');
+        exciteWaterphoneRod(31, 'mallet_hard');
+      } else if (cueKey === 'nollman_orca') {
+        exciteWaterphoneRod(8, 'superball');
+      } else if (cueKey === 'abyssal_megabass') {
+        document.querySelector('[data-model="megabass"]').click();
+        exciteWaterphoneRod(2, 'superball');
+      } else if (cueKey === 'glennie_hyperstellar') {
+        document.querySelector('[data-model="hyperstellar"]').click();
+        exciteWaterphoneRod(10, 'bow');
+        setTimeout(() => exciteWaterphoneRod(21, 'mallet_soft'), 350);
+      } else if (cueKey === 'dry_vs_wet') {
+        state.waterFill = 0.0;
+        updateHUDReadouts();
+        exciteWaterphoneRod(14, 'bow');
+        setTimeout(() => {
+          state.waterFill = 0.48;
+          document.getElementById('slider-water-fill').value = 48;
+          updateHUDReadouts();
+          exciteWaterphoneRod(14, 'bow');
+        }, 1200);
+      } else if (cueKey === 'sailophone_drone') {
+        document.querySelector('[data-model="sailophone"]').click();
+        exciteWaterphoneRod(0, 'bow');
+      }
+    }
+
+    document.getElementById('select-waterphone-cue').addEventListener('change', (e) => {
+      performWaterphoneCue(e.target.value);
+    });
+    document.getElementById('btn-trigger-cue').addEventListener('click', () => {
+      performWaterphoneCue(document.getElementById('select-waterphone-cue').value);
+    });
+
+    // Footer Performance Triggers
+    document.getElementById('btn-bow-rod').addEventListener('click', () => {
+      state.selectedRod = (state.selectedRod + 3) % ROD_COUNT;
+      exciteWaterphoneRod(state.selectedRod, 'bow');
+    });
+    document.getElementById('btn-whale-call').addEventListener('click', () => {
+      exciteWaterphoneRod(state.selectedRod, 'superball');
+    });
+    document.getElementById('btn-scrape-cluster').addEventListener('click', () => {
+      exciteWaterphoneRod(0, 'scrape');
+    });
+    document.getElementById('btn-slosh-impulse').addEventListener('click', () => {
+      state.sloshAmp = 1.0;
+      state.tiltX = (Math.random() * 1.6 - 0.8);
+      state.tiltZ = (Math.random() * 1.6 - 0.8);
+      updateActiveVoicesSloshPitch();
+    });
+
+    // Auto-Play Generative Ocean Harp Loop
+    let droneTimer = null;
+    document.getElementById('btn-drone-loop').addEventListener('click', () => {
+      state.isAutoPlaying = !state.isAutoPlaying;
+      document.getElementById('drone-icon').textContent = state.isAutoPlaying ? '■' : '▶';
+      document.getElementById('drone-text').textContent = state.isAutoPlaying ? 'Stop Ocean Harp' : 'Auto-Play Ocean Harp';
+      if (state.isAutoPlaying) {
+        exciteWaterphoneRod(state.selectedRod, 'bow');
+        droneTimer = setInterval(() => {
+          const nextRod = Math.floor(Math.random() * ROD_COUNT);
+          const techs = ['bow', 'bow', 'superball', 'mallet_soft'];
+          const t = techs[Math.floor(Math.random() * techs.length)];
+          exciteWaterphoneRod(nextRod, t);
+        }, 1350);
+      } else if (droneTimer) {
+        clearInterval(droneTimer);
+        droneTimer = null;
+      }
+    });
+
+    // Top Header Controls & Modals
+    document.getElementById('btn-xray-water').addEventListener('click', (e) => {
+      state.xrayBowl = !state.xrayBowl;
+      e.target.textContent = `X-Ray Bowl: ${state.xrayBowl ? 'ON' : 'OFF'}`;
+      buildWaterphone3D();
+    });
+
+    document.getElementById('btn-cam-reset').addEventListener('click', () => {
+      camSpherical = { radius: 9.6, theta: 0.38, phi: 1.08 };
+      updateCameraFromSpherical();
+    });
+
+    const infoModal = document.getElementById('info-modal');
+    document.getElementById('btn-info-modal').addEventListener('click', () => {
+      infoModal.classList.remove('hidden');
+      infoModal.classList.add('flex');
+    });
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      infoModal.classList.add('hidden');
+      infoModal.classList.remove('flex');
+    });
+
+    let leftOpen = true, rightOpen = true;
+    document.getElementById('toggle-left-dock').addEventListener('click', () => {
+      leftOpen = !leftOpen;
+      document.getElementById('left-dock').style.transform = leftOpen ? 'translateX(0)' : 'translateX(-110%)';
+      document.getElementById('left-dock-arrow').textContent = leftOpen ? '◀' : '▶';
+    });
+    document.getElementById('toggle-right-dock').addEventListener('click', () => {
+      rightOpen = !rightOpen;
+      document.getElementById('right-dock').style.transform = rightOpen ? 'translateX(0)' : 'translateX(110%)';
+      document.getElementById('right-dock-arrow').textContent = rightOpen ? '▶' : '◀';
+    });
+
+    // Lossless 44.1 kHz 16-bit Stereo WAV Exporter
+    function encodeWAV(audioBuffer) {
+      const numChannels = 2;
+      const sampleRate = audioBuffer.sampleRate;
+      const length = audioBuffer.length;
+      const buffer = new ArrayBuffer(44 + length * numChannels * 2);
+      const view = new DataView(buffer);
+      function writeStr(off, s) { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); }
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + length * numChannels * 2, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, length * numChannels * 2, true);
+
+      const chL = audioBuffer.getChannelData(0);
+      const chR = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : chL;
+      let offset = 44;
+      for (let i = 0; i < length; i++) {
+        const sL = Math.max(-1, Math.min(1, chL[i]));
+        const sR = Math.max(-1, Math.min(1, chR[i]));
+        view.setInt16(offset, sL < 0 ? sL * 0x8000 : sL * 0x7FFF, true);
+        view.setInt16(offset + 2, sR < 0 ? sR * 0x8000 : sR * 0x7FFF, true);
+        offset += 4;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function exportWaterphoneWAV(isCinematicSequence = false) {
+      const sr = 44100;
+      const dur = isCinematicSequence ? 4.2 : 3.0;
+      const offline = new OfflineAudioContext(2, Math.ceil(sr * dur), sr);
+
+      if (!isCinematicSequence) {
+        exciteWaterphoneRod(state.selectedRod, state.technique, offline, offline.destination, 0.05);
+      } else {
+        exciteWaterphoneRod(state.selectedRod, 'bow', offline, offline.destination, 0.05);
+        exciteWaterphoneRod((state.selectedRod + 7) % ROD_COUNT, 'superball', offline, offline.destination, 0.95);
+        exciteWaterphoneRod((state.selectedRod + 15) % ROD_COUNT, 'bow', offline, offline.destination, 1.85);
+      }
+
+      const rendered = await offline.startRendering();
+      const blob = encodeWAV(rendered);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = isCinematicSequence
+        ? `waterphone_${state.model}_cinematic_cue.wav`
+        : `waterphone_${state.model}_rod${state.selectedRod + 1}_${state.technique}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('btn-export-oneshot').addEventListener('click', () => exportWaterphoneWAV(false));
+    document.getElementById('btn-export-cue').addEventListener('click', () => exportWaterphoneWAV(true));
+
+    // Keyboard Shortcuts
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'escape') {
+        infoModal.classList.add('hidden');
+        infoModal.classList.remove('flex');
+      } else if (k === 'b') {
+        exciteWaterphoneRod(state.selectedRod, 'bow');
+      } else if (k === 'w') {
+        exciteWaterphoneRod(state.selectedRod, 'superball');
+      } else if (k === 's') {
+        exciteWaterphoneRod(0, 'scrape');
+      } else if (k === 't') {
+        document.getElementById('btn-slosh-impulse').click();
+      } else if (k === 'd') {
+        document.getElementById('btn-damp-all').click();
+      }
+    });
+
+    // =========================================================================
+    // 8. MAIN ANIMATION LOOP (SHALLOW-WATER WAVE DEFORMATION & CANTILEVER BENDING)
+    // =========================================================================
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.05, clock.getDelta());
+      const elapsed = clock.getElapsedTime();
+
+      // Advance shallow-water slosh phase & gentle gyro swirl
+      state.sloshPhase += dt * 4.8;
+      state.sloshAmp = Math.max(0.18, state.sloshAmp * Math.exp(-dt * 0.45));
+
+      if (state.autoGyre) {
+        state.tiltX = Math.cos(elapsed * 0.85) * 0.42;
+        state.tiltZ = Math.sin(elapsed * 0.85) * 0.42;
+        updateActiveVoicesSloshPitch();
+      }
+
+      // Tilt the 3D Waterphone assembly according to (tiltX, tiltZ)
+      waterphoneGroup.rotation.z = -state.tiltX * 0.24;
+      waterphoneGroup.rotation.x = state.tiltZ * 0.24;
+
+      // Deform internal sloshing water surface mesh
+      if (waterSurfaceMesh && waterBasePositions && state.waterFill > 0.01) {
+        const pos = waterSurfaceMesh.geometry.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const bx = waterBasePositions[i * 3];
+          const by = waterBasePositions[i * 3 + 1];
+          const bz = waterBasePositions[i * 3 + 2];
+          const r = Math.sqrt(bx * bx + bz * bz);
+          const theta = Math.atan2(bz, bx);
+          // Gravity tilt plane + Bessel J1(1.841 r/R) sloshing mode + concentric capillary ripples
+          const tiltPlane = (bx * state.tiltX + bz * state.tiltZ) * 0.14;
+          const sloshMode = Math.sin(r * 1.4 - state.sloshPhase) * Math.cos(theta - elapsed) * state.sloshAmp * 0.07;
+          const ripple = Math.sin(r * 8.5 - elapsed * 14) * 0.015 * state.sloshAmp;
+          pos.setY(i, by + tiltPlane + sloshMode + ripple);
+        }
+        pos.needsUpdate = true;
+      }
+
+      // Animate vibrating bronze cantilever rods & position horsehair bow
+      rodMeshes.forEach((mesh, idx) => {
+        const rod = state.rods[idx];
+        rod.energy *= Math.exp(-dt * 2.2);
+        const { baseX, baseZ, rodHeight } = mesh.userData;
+        if (rod.energy > 0.005) {
+          const vib = Math.sin(elapsed * 55 + idx) * rod.energy * 0.045;
+          mesh.position.x = baseX + Math.cos(rod.angle) * vib;
+          mesh.position.z = baseZ + Math.sin(rod.angle) * vib;
+        }
+        if (idx === state.selectedRod && horsehairBowGroup) {
+          const bowY = rodHeight * state.bowHeight;
+          horsehairBowGroup.position.set(baseX * 1.08, bowY, baseZ * 1.08);
+          horsehairBowGroup.rotation.y = -rod.angle + Math.sin(elapsed * 4.5) * 0.18;
+        }
+      });
+
+      drawTiltPadCanvas();
+      drawRodCrownCanvas();
+      drawWaterSpectrumCanvas();
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    updateHUDReadouts();
+    animate();
+  </script>
+</body>
+</html>

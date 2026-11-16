@@ -1,6 +1,6 @@
 # Percussion Labs
 
-Twenty-four self-contained, browser-native percussion laboratories, plus two
+Twenty-six self-contained, browser-native percussion laboratories, plus two
 specialty pendulum pieces. Each one builds an instrument out of a different
 piece of physics or mathematics, and generates its sound from the model rather
 than playing samples over it.
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The twenty-four
+## The twenty-six
 
 | # | Module | Built on |
 |---|---|---|
@@ -40,6 +40,8 @@ as well — technique first, then visible physics, then abstractions.
 | 22 | **BEAT-FORGE 3D** | Euclidean necklaces, microtiming, groove and polyrhythm architecture |
 | 23 | **COCHLEA-MASK 3D** | Auditory masking thresholds and pitch perception |
 | 24 | **TALKING-DRUM 3D** | Hourglass tension-cord pitch modulation, speech-surrogate physics |
+| 25 | **CROTALES-3D** | Chladni disk modes, chromatic antique cymbals, bowed edge |
+| 26 | **WATERPHONE-3D** | Hydro-acoustic friction idiophone, fluid slosh, modal portamento |
 
 ## Specialty
 
@@ -84,7 +86,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          twenty-four laboratory modules + two specialty pendulum pieces
+*.html          twenty-six laboratory modules + two specialty pendulum pieces
 ```
 
 ## Licence
