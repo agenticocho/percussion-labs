@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRASHING-WAVE 3D — Shoaling, Miche Breaker Index &amp; Minnaert Bubble Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #050a12;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 999px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .glass-panel {
+      background: rgba(10, 18, 32, 0.84);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(56, 189, 248, 0.16);
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 5px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.35);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-[#050a12] text-slate-100 select-none">
+
+  <!-- TOP HEADER & THESIS BAR -->
+  <header class="shrink-0 border-b border-slate-800/80 bg-[#070d18]/95 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20">
+    <div class="flex items-center gap-3 min-w-0">
+      <div class="h-8 w-8 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center shrink-0">
+        <span class="font-mono text-cyan-300 font-bold text-sm">CW</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-sm sm:text-base font-bold tracking-wider uppercase text-slate-100">CRASHING-WAVE 3D</h1>
+          <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800/90 text-cyan-300 border border-slate-700/70">SHOALING · MICHE 0.78 · MINNAERT</span>
+        </div>
+        <p class="text-[11px] text-slate-400 truncate max-w-2xl">
+          Water falling is silent. The wave's voice is the size distribution of the air it swallowed.
+        </p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 flex-wrap">
+      <button id="btn-audio-toggle" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-cyan-500/40 bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25">
+        AUDIO: OFF (CLICK TO ENABLE)
+      </button>
+      <button id="btn-trigger-wave" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-emerald-500/40 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25">
+        SEND WAVE
+      </button>
+      <button id="btn-export-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700/80">
+        EXPORT .WAV
+      </button>
+      <button id="btn-verify" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25">
+        VERIFY 4 CHECKS
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 min-h-0 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- 3D CROSS-SECTION & SPECTRUM VIEWPORT -->
+    <section class="flex-1 min-w-0 min-h-0 relative flex flex-col bg-[#050a12]">
+      <!-- Three.js Canvas Container -->
+      <div id="viewport-3d" class="flex-1 min-h-0 w-full relative overflow-hidden">
+        <!-- Top-Left: Thesis & Minnaert Card -->
+        <div class="absolute top-3 left-3 z-10 max-w-md pointer-events-none">
+          <div class="glass-panel rounded-xl p-3 shadow-xl pointer-events-auto">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-[10px] font-mono uppercase tracking-widest text-cyan-400">Thesis — The Void Is The Instrument</span>
+              <button id="btn-toggle-thesis" type="button" class="text-[10px] font-mono text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded bg-slate-800/70">HIDE</button>
+            </div>
+            <div id="thesis-body" class="space-y-1.5 text-xs text-slate-300 leading-relaxed">
+              <p>
+                Water falling is silent. The roar of a breaking wave is entrained air: the crest curls, traps a void, and that void shatters into a bubble cloud. Each bubble rings at its Minnaert frequency and the cloud as a whole rings lower.
+              </p>
+              <div class="font-mono text-[11px] bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 text-cyan-200 flex flex-wrap items-center justify-between gap-2">
+                <span>f_M = (1 / 2πR)·√(3γP / ρ)</span>
+                <span class="text-slate-400">R=1 mm → ≈3.3 kHz</span>
+              </div>
+              <p class="text-[11px] text-slate-400">
+                <strong class="text-slate-200">The wave's voice is the size distribution of the air it swallowed.</strong> Same height, same depth — change the seabed slope and a broadband hiss becomes a deep plunging crump.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top-Right: Breaker-Type Indicator & Miche Index -->
+        <div class="absolute top-3 right-3 z-10 w-64 pointer-events-none">
+          <div class="glass-panel rounded-xl p-3 shadow-xl pointer-events-auto space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-mono uppercase tracking-widest text-slate-400">Breaker-Type Indicator</span>
+              <span id="badge-regime" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded border">UNBROKEN</span>
+            </div>
+
+            <!-- Miche Index Bar -->
+            <div>
+              <div class="flex justify-between text-[11px] font-mono mb-1">
+                <span class="text-slate-400">Miche Index H/h</span>
+                <span id="hud-miche-val" class="font-bold text-slate-100">0.600</span>
+              </div>
+              <div class="relative h-2.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                <div id="hud-miche-bar" class="h-full transition-all duration-150 rounded-full bg-cyan-400" style="width: 40%"></div>
+                <!-- 0.78 threshold marker (on 0..1.5 scale -> 52%) -->
+                <div class="absolute top-0 bottom-0 w-0.5 bg-amber-400 shadow-[0_0_6px_#fbbf24]" style="left: 52%" title="Miche Threshold 0.78"></div>
+              </div>
+              <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-0.5">
+                <span>0.00</span>
+                <span class="text-amber-400">0.78 crit</span>
+                <span>1.50</span>
+              </div>
+            </div>
+
+            <!-- Camera View Switcher -->
+            <div class="pt-1 border-t border-slate-800/80 flex items-center justify-between gap-1">
+              <span class="text-[10px] font-mono text-slate-400">VIEW</span>
+              <div class="flex gap-1">
+                <button data-cam="cross" type="button" class="cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-200 border border-cyan-500/40">CROSS-SEC</button>
+                <button data-cam="oblique" type="button" class="cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700">3/4 TANK</button>
+                <button data-cam="crest" type="button" class="cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700">VOID</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom-Left: Live Spectrum Analyzer + Cross-Section Void State -->
+        <div class="absolute bottom-3 left-3 right-3 lg:right-auto lg:w-[460px] z-10 pointer-events-none">
+          <div class="glass-panel rounded-xl p-3 shadow-xl pointer-events-auto">
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono uppercase tracking-widest text-cyan-400">Acoustic Spectrum (40 Hz – 12 kHz)</span>
+                <span id="hud-null-pill" class="hidden text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">SILENT NULL</span>
+              </div>
+              <span id="hud-peak-freq" class="text-[11px] font-mono text-slate-300">Peak: — Hz</span>
+            </div>
+            <div class="relative h-28 w-full bg-[#03070e] rounded-lg border border-slate-800/90 overflow-hidden">
+              <canvas id="canvas-spectrum" class="w-full h-full block"></canvas>
+            </div>
+            <div class="mt-1.5 flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span id="hud-layer-foam">Foam (2–8 kHz): 0.0%</span>
+              <span id="hud-layer-bubbles">Bubbles f_M: — | Cloud: —</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT CONTROL & TELEMETRY SIDEBAR -->
+    <aside class="w-full lg:w-80 shrink-0 border-t lg:border-t-0 lg:border-l border-slate-800/90 bg-[#080f1c] flex flex-col min-h-0 max-h-[44vh] lg:max-h-none">
+      <div class="flex-1 overflow-y-auto scrollbar-thin p-4 space-y-4">
+
+        <!-- CONTROLS HEADER -->
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold">Physical Parameters</h2>
+          <label class="flex items-center gap-1.5 text-[11px] font-mono text-slate-300 cursor-pointer">
+            <input id="chk-auto-train" type="checkbox" checked class="rounded border-slate-600 bg-slate-800 text-cyan-400 focus:ring-0" />
+            <span>Wave Train</span>
+          </label>
+        </div>
+
+        <!-- 1. Wave Height H -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-H" class="text-xs font-medium text-slate-200">Wave Height <span class="font-mono text-cyan-300">H</span></label>
+            <span id="val-H" class="text-xs font-mono text-cyan-300 font-semibold">18.0 m</span>
+          </div>
+          <input id="slider-H" type="range" min="1.0" max="32.0" step="0.5" value="18.0" class="lab-slider" />
+          <p class="text-[10px] text-slate-500">Primary sweep — cross Miche's 0.78 breaker index.</p>
+        </div>
+
+        <!-- 2. Water Depth h -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-h" class="text-xs font-medium text-slate-200">Water Depth <span class="font-mono text-cyan-300">h</span></label>
+            <span id="val-h" class="text-xs font-mono text-cyan-300 font-semibold">20.0 m</span>
+          </div>
+          <input id="slider-h" type="range" min="2.0" max="45.0" step="0.5" value="20.0" class="lab-slider" />
+          <p class="text-[10px] text-slate-500">Shallow water breaks; deep water passes cleanly.</p>
+        </div>
+
+        <!-- 3. Seabed Slope -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-slope" class="text-xs font-medium text-slate-200">Seabed Slope <span class="font-mono text-amber-300">m</span></label>
+            <span id="val-slope" class="text-xs font-mono text-amber-300 font-semibold">1:12 (0.085)</span>
+          </div>
+          <input id="slider-slope" type="range" min="0.020" max="0.160" step="0.002" value="0.085" class="lab-slider" />
+          <div class="flex justify-between text-[10px] font-mono text-slate-500">
+            <span>1:50 SPILLING</span>
+            <span>1:12+ PLUNGING</span>
+          </div>
+        </div>
+
+        <!-- 4. Wave Period T -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-T" class="text-xs font-medium text-slate-200">Wave Period <span class="font-mono text-cyan-300">T</span></label>
+            <span id="val-T" class="text-xs font-mono text-cyan-300 font-semibold">12.0 s</span>
+          </div>
+          <input id="slider-T" type="range" min="4.0" max="22.0" step="0.5" value="12.0" class="lab-slider" />
+          <p class="text-[10px] text-slate-500">Interacts with slope via Iribarren ξ; long swells plunge.</p>
+        </div>
+
+        <!-- 5. Void Fraction -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-baseline">
+            <label for="slider-void" class="text-xs font-medium text-slate-200">Void Fraction <span class="font-mono text-emerald-300">α</span></label>
+            <span id="val-void" class="text-xs font-mono text-emerald-300 font-semibold">0.72</span>
+          </div>
+          <input id="slider-void" type="range" min="0.00" max="1.00" step="0.01" value="0.72" class="lab-slider" />
+          <p class="text-[10px] text-slate-500">Air entrained (0.00 = airless break, silent null).</p>
+        </div>
+
+        <!-- LIVE PHYSICS TELEMETRY -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <h3 class="text-[11px] font-mono uppercase tracking-widest text-slate-400">Three-Layer Telemetry</h3>
+          <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Dispersion λ / c</div>
+              <div id="tel-disp" class="text-slate-200 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Green's h^(-1/4)</div>
+              <div id="tel-green" class="text-slate-200 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Iribarren ξ₀</div>
+              <div id="tel-iribarren" class="text-slate-200 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Void Volume V</div>
+              <div id="tel-void-vol" class="text-slate-200 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Mean Bubble R</div>
+              <div id="tel-radius" class="text-cyan-300 font-semibold">—</div>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-2">
+              <div class="text-slate-500 text-[10px]">Minnaert / Cloud</div>
+              <div id="tel-minnaert" class="text-amber-300 font-semibold">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  </main>
+
+  <!-- VERIFICATION MODAL -->
+  <div id="modal-verify" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-[#0b1322] border border-slate-700 rounded-2xl max-w-xl w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-100">Physics &amp; Audio Verification Suite</h3>
+          <p class="text-xs text-slate-400">Live diagnostic tests against the active simulation &amp; synthesis engine</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-300">CLOSE</button>
+      </div>
+      <div id="verify-results" class="space-y-2.5 text-xs font-mono"></div>
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 text-xs font-mono hover:bg-cyan-500/30">RE-RUN CHECKS</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.addEventListener('load', () => {
+      'use strict';
+
+      // =========================================================================
+      // 1. PHYSICAL CONSTANTS & EXACT ANALYTICAL SOLVERS
+      // =========================================================================
+      const G = 9.81;
+      const GAMMA_AIR = 1.4;
+      const P_ATM = 101325;     // Pa
+      const RHO_WATER = 1000;   // kg/m^3
+      const MICHE_CRIT = 0.78;
+
+      // Exact Minnaert frequency (Hz) for bubble radius R (meters)
+      function minnaertFreq(R_meters) {
+        if (R_meters <= 0) return 0;
+        return (1 / (2 * Math.PI * R_meters)) * Math.sqrt((3 * GAMMA_AIR * P_ATM) / RHO_WATER);
+      }
+
+      // Solve dispersion relation: omega^2 = g * k * tanh(k * h) via Newton-Raphson
+      function solveWavenumber(T, h) {
+        const omega = (2 * Math.PI) / Math.max(0.5, T);
+        const target = (omega * omega) / G;
+        // Deep water initial guess
+        let k = target;
+        if (k * h < 1.0) {
+          k = omega / Math.sqrt(G * Math.max(0.05, h));
+        }
+        for (let i = 0; i < 12; i++) {
+          const kh = Math.min(20, Math.max(1e-5, k * h));
+          const th = Math.tanh(kh);
+          const sech2 = 1 - th * th;
+          const f = k * th - target;
+          const df = th + kh * sech2;
+          const step = f / Math.max(1e-9, df);
+          k -= step;
+          if (k <= 0) k = 1e-4;
+          if (Math.abs(step) < 1e-10) break;
+        }
+        return k;
+      }
+
+      // Green's law shoaling: a(h) = a_ref * (h_ref / h)^(1/4)
+      function greensShoalingAmplitude(aRef, hRef, hLocal) {
+        return aRef * Math.pow(Math.max(0.05, hRef) / Math.max(0.05, hLocal), 0.25);
+      }
+
+      // Compute full physical state from the 5 user controls
+      function computePhysicsState(params) {
+        const { H, h, slope, T, voidFraction } = params;
+        const micheRatio = H / Math.max(0.05, h);
+        const isBreaking = micheRatio > MICHE_CRIT;
+
+        // Dispersion at target depth h
+        const omega = (2 * Math.PI) / T;
+        const k = solveWavenumber(T, h);
+        const wavelength = (2 * Math.PI) / k;
+        const phaseSpeed = omega / k;
+        const kh = Math.min(20, k * h);
+        const groupSpeed = 0.5 * phaseSpeed * (1 + (2 * kh) / Math.max(1e-6, Math.sinh(2 * kh)));
+
+        // Deep water wavelength L0 = g*T^2 / (2*pi)
+        const L0 = (G * T * T) / (2 * Math.PI);
+        // Iribarren number xi0 = slope / sqrt(H / L0)
+        const xi0 = slope / Math.sqrt(Math.max(1e-4, H / L0));
+
+        // Plunging factor p in [0, 1] driven by seabed slope & period interaction (xi0)
+        // Gentle (< 1:20 = 0.05) -> Spilling (p ~ 0), Steep (> 1:12 = 0.0833) -> Plunging (p ~ 1)
+        // At T=8s, H=1.2m, L0=99.9m: slope=0.05 -> xi0=0.456; slope=0.0833 -> xi0=0.760
+        const xiNorm = (xi0 - 0.42) / (0.82 - 0.42);
+        const slopeNorm = (slope - 0.045) / (0.090 - 0.045);
+        const combined = 0.60 * slopeNorm + 0.40 * xiNorm;
+        const plungingFactor = Math.max(0, Math.min(1, combined));
+
+        let regime = 'UNBROKEN';
+        if (isBreaking) {
+          if (plungingFactor < 0.35) regime = 'SPILLING';
+          else if (plungingFactor < 0.68) regime = 'TRANSITIONAL';
+          else regime = 'PLUNGING';
+        }
+
+        // Green's law factor relative to offshore reference depth h0 = h + 1.5
+        const h0 = h + 10.0;
+        const greenFactor = Math.pow(h0 / h, 0.25);
+
+        // Entrained air void volume (per unit crest width, m^2 -> scaled to m^3 for 1m flume slice)
+        // Zero if unbroken OR if voidFraction === 0
+        const excessBreak = isBreaking ? Math.min(1.5, (micheRatio - MICHE_CRIT) + 0.25) : 0;
+        const Hnorm = H / 12.0;
+        const voidArea = isBreaking
+          ? voidFraction * (0.02 + 0.28 * Math.pow(plungingFactor, 1.35)) * H * H * excessBreak
+          : 0;
+
+        // Bubble size distribution parameters (meters)
+        // Spilling: small bubbles R_mean ~ 0.55 mm (f_M ~ 6.0 kHz)
+        // Plunging: large void shatters into larger bubbles R_mean ~ 3.2 mm (f_M ~ 1.0 kHz) + big cloud
+        const R_mean = 0.00055 + 0.00285 * Math.pow(plungingFactor, 1.25) * (0.5 + 0.5 * voidFraction);
+        const R_max = R_mean * (2.2 + 2.4 * plungingFactor);
+        const R_min = 0.00022;
+        const fM_mean = minnaertFreq(R_mean);
+
+        // Collective bubble cloud resonance (sits lower than any individual bubble)
+        // f_cloud ~ (1 / (2*pi*R_cloud)) * sqrt(3*gamma*P / (rho * localBeta))
+        const R_cloud = Math.max(0.05, Math.min(0.65, Math.sqrt(Math.max(1e-5, voidArea) / Math.PI) * 0.12));
+        const localBeta = 0.04 + 0.14 * plungingFactor * Math.max(0.1, voidFraction);
+        const fCloud = (isBreaking && voidFraction > 0)
+          ? Math.max(48, Math.min(280, (1 / (2 * Math.PI * R_cloud)) * Math.sqrt((3 * GAMMA_AIR * P_ATM) / (RHO_WATER * localBeta)) * 0.35))
+          : 0;
+
+        // Foam vs Bubble acoustic energy split
+        const foamWeight = (isBreaking && voidFraction > 0) ? (1.0 - 0.65 * plungingFactor) * voidFraction : 0;
+        const bubbleWeight = (isBreaking && voidFraction > 0) ? (0.30 + 0.70 * plungingFactor) * voidFraction : 0;
+
+        return {
+          H, h, slope, T, voidFraction,
+          micheRatio, isBreaking,
+          omega, k, wavelength, phaseSpeed, groupSpeed,
+          L0, xi0, plungingFactor, regime,
+          greenFactor, voidArea,
+          R_mean, R_max, R_min, fM_mean, fCloud,
+          foamWeight, bubbleWeight
+        };
+      }
+
+      // =========================================================================
+      // 2. PURE PHYSICALLY-MODELED AUDIO ENGINE (NO SAMPLES, NO REVERB, NO LOOP)
+      // =========================================================================
+      const SAMPLE_RATE = 44100;
+      let audioCtx = null;
+      let masterGain = null;
+      let analyserNode = null;
+      let audioEnabled = false;
+
+      // Deterministic-friendly PRNG for reproducible verification & crisp synthesis
+      function mulberry32(seed) {
+        let a = seed >>> 0;
+        return function () {
+          a |= 0; a = (a + 0x6D2B79F5) | 0;
+          let t = Math.imul(a ^ (a >>> 15), 1 | a);
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      // Synthesize a complete breaking-wave stereo/mono buffer from physical parameters.
+      // STRICT NULL ENFORCEMENT:
+      //   If !state.isBreaking OR state.voidFraction <= 0 -> returns exact all-zero Float32Array!
+      function computeCrashDuration(state) {
+        // Realistic resonant crash & surf-bore duration: 4.5s (small) up to 8.5s (large long-period swell)
+        return Math.min(9.5, Math.max(4.5, 4.0 + 0.14 * state.H + 0.10 * state.T));
+      }
+
+      function synthesizeWaveAudioBuffers(state, durationSec = null, seed = 1337) {
+        const dur = durationSec !== null ? durationSec : computeCrashDuration(state);
+        const numSamples = Math.floor(SAMPLE_RATE * dur);
+        const foamBuf = new Float32Array(numSamples);
+        const bubbleBuf = new Float32Array(numSamples);
+        const mixBuf = new Float32Array(numSamples);
+
+        if (!state.isBreaking || state.voidFraction <= 0) {
+          return { foamBuf, bubbleBuf, mixBuf, bubbleCount: 0, durationSec: dur };
+        }
+
+        const rng = mulberry32(seed);
+        const p = state.plungingFactor;
+        const vf = state.voidFraction;
+        const ampScale = Math.min(1.35, 0.42 + 0.90 * Math.min(1.0, state.H / 28.0));
+
+        // --- LAYER 1: FOAM & SURGING BORE WASH (2-8 kHz + 1-3 kHz turbulent surf, 4.5-8.5s) ---
+        const boreDur = dur * (0.86 + 0.12 * (1 - p));
+        const foamAttack = 0.03 + 0.25 * (1 - p);
+        let bp1 = 0, lp1 = 0;
+        let bp2 = 0, lp2 = 0;
+        const fc1 = 3600 + 1300 * (1 - p);
+        const fc2 = 1800 + 500 * (1 - p);
+        const fCoeff1 = 2 * Math.sin((Math.PI * fc1) / SAMPLE_RATE);
+        const fCoeff2 = 2 * Math.sin((Math.PI * fc2) / SAMPLE_RATE);
+
+        const surgeFreq1 = 0.55 + 0.25 * (1 - p);
+        const surgeFreq2 = 1.45;
+
+        for (let i = 0; i < numSamples; i++) {
+          const t = i / SAMPLE_RATE;
+          if (t > dur) break;
+          const white = rng() * 2 - 1;
+
+          lp1 += fCoeff1 * bp1;
+          const hp1 = white - lp1 - 0.50 * bp1;
+          bp1 += fCoeff1 * hp1;
+
+          lp2 += fCoeff2 * bp2;
+          const hp2 = white - lp2 - 0.62 * bp2;
+          bp2 += fCoeff2 * hp2;
+
+          const envAtt = Math.min(1, t / foamAttack);
+          const impactBurst = Math.exp(-Math.max(0, t - foamAttack) / (0.55 + 0.85 * (1 - p)));
+          const boreSurge = 0.68 + 0.32 * Math.sin(2 * Math.PI * surgeFreq1 * t + 0.5 * Math.sin(2 * Math.PI * surgeFreq2 * t));
+          // Slow, realistic surf-wash tail that sustains across the full bore travel
+          const boreTail = Math.exp(-Math.max(0, t - 0.4) / (boreDur * 0.62)) * (1 - Math.exp(-t / 0.22));
+          const fadeOut = t > dur - 0.65 ? Math.max(0, (dur - t) / 0.65) : 1.0;
+
+          const env = envAtt * (0.48 * impactBurst + 0.78 * boreTail * boreSurge) * fadeOut;
+          foamBuf[i] = (bp1 * 0.70 + bp2 * 0.52) * env * state.foamWeight * 0.46 * ampScale;
+        }
+
+        // --- LAYER 2: MINNAERT BUBBLE CLOUD & SUSTAINED RESONANT PLUME ---
+        const bubbleCount = Math.floor((2200 + 4800 * p) * vf);
+        const tImpact = 0.04;
+
+        for (let b = 0; b < bubbleCount; b++) {
+          const u = rng();
+          const spread = 0.45 + 0.50 * p;
+          const z = (rng() + rng() + rng() - 1.5) * 1.15;
+          let R = state.R_mean * Math.exp(z * spread);
+          R = Math.max(state.R_min, Math.min(state.R_max, R));
+
+          const fM = Math.min(14000, minnaertFreq(R));
+          const omegaB = 2 * Math.PI * fM;
+
+          // Three temporal phases: impact entrainment, vortex churning, and long bore degassing
+          const phaseRoll = rng();
+          let t0, atten;
+          if (phaseRoll < 0.35) {
+            t0 = tImpact + Math.pow(u, 1.35) * (0.45 + 0.9 * (1 - p));
+            atten = 1.0;
+          } else if (phaseRoll < 0.70) {
+            t0 = 0.35 + Math.pow(u, 1.05) * (dur * 0.42);
+            atten = 0.78;
+          } else {
+            t0 = 0.85 + Math.pow(u, 0.92) * (dur * 0.78);
+            atten = 0.52;
+          }
+          const startIdx = Math.floor(t0 * SAMPLE_RATE);
+          if (startIdx >= numSamples) continue;
+
+          const tau = Math.min(0.11, 0.010 + 11.5 * R);
+          const burstLen = Math.min(numSamples - startIdx, Math.floor(tau * 4.5 * SAMPLE_RATE));
+          const bAmp = (0.015 / Math.sqrt(bubbleCount / 1400)) * Math.pow(R / state.R_mean, 1.2) * state.bubbleWeight * ampScale * atten;
+          const phase0 = rng() * Math.PI * 2;
+
+          for (let j = 0; j < burstLen; j++) {
+            const dt = j / SAMPLE_RATE;
+            const env = Math.exp(-dt / tau);
+            bubbleBuf[startIdx + j] += bAmp * env * Math.sin(omegaB * dt + phase0);
+          }
+        }
+
+        // Collective bubble cloud resonances: deep primary "crump" + 5 staggered bore sub-cloud collapses
+        if (state.fCloud > 0 && p > 0.10) {
+          const numClouds = p > 0.45 ? 6 : 3;
+          for (let c = 0; c < numClouds; c++) {
+            const tCloud = tImpact + c * (0.28 + 0.16 * c);
+            const startC = Math.floor(tCloud * SAMPLE_RATE);
+            if (startC >= numSamples) continue;
+            const cloudAmp = (0.68 * Math.pow(p, 1.25) * vf * ampScale) / (1 + c * 0.42);
+            const omegaC = 2 * Math.PI * state.fCloud * (1 + c * 0.12);
+            const tauC = (0.55 + 0.85 * p) / (1 + c * 0.15);
+            const maxLen = Math.min(numSamples - startC, Math.floor(tauC * 5.0 * SAMPLE_RATE));
+            for (let j = 0; j < maxLen; j++) {
+              const dt = j / SAMPLE_RATE;
+              const chirp = 1.0 + 0.30 * Math.exp(-dt / 0.08);
+              const env = (1 - Math.exp(-dt / 0.015)) * Math.exp(-dt / tauC);
+              bubbleBuf[startC + j] += cloudAmp * env * Math.sin(omegaC * chirp * dt);
+            }
+          }
+        }
+
+        for (let i = 0; i < numSamples; i++) {
+          const s = foamBuf[i] + bubbleBuf[i];
+          mixBuf[i] = Math.tanh(s * 1.15);
+        }
+
+        return { foamBuf, bubbleBuf, mixBuf, bubbleCount, durationSec: dur };
+      }
+
+      // Compute DFT/FFT magnitude spectrum for any Float32Array (used for Verification #3 and #4)
+      function computeMagnitudeSpectrum(signal, fftSize = 4096) {
+        const N = Math.min(fftSize, signal.length);
+        // Simple radix-2 Cooley-Tukey FFT
+        const re = new Float32Array(fftSize);
+        const im = new Float32Array(fftSize);
+        for (let i = 0; i < N; i++) {
+          // Hann window
+          const w = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (N - 1)));
+          re[i] = signal[i] * w;
+        }
+        // Bit-reversal
+        let j = 0;
+        for (let i = 0; i < fftSize; i++) {
+          if (i < j) {
+            let tr = re[i]; re[i] = re[j]; re[j] = tr;
+            let ti = im[i]; im[i] = im[j]; im[j] = ti;
+          }
+          let m = fftSize >> 1;
+          while (m >= 1 && j >= m) {
+            j -= m;
+            m >>= 1;
+          }
+          j += m;
+        }
+        // Butterfly
+        for (let size = 2; size <= fftSize; size <<= 1) {
+          const half = size >> 1;
+          const step = (-2 * Math.PI) / size;
+          for (let i = 0; i < fftSize; i += size) {
+            for (let k = 0; k < half; k++) {
+              const angle = k * step;
+              const wr = Math.cos(angle);
+              const wi = Math.sin(angle);
+              const idx1 = i + k;
+              const idx2 = idx1 + half;
+              const tr = wr * re[idx2] - wi * im[idx2];
+              const ti = wr * im[idx2] + wi * re[idx2];
+              re[idx2] = re[idx1] - tr;
+              im[idx2] = im[idx1] - ti;
+              re[idx1] += tr;
+              im[idx1] += ti;
+            }
+          }
+        }
+        const mags = new Float32Array(fftSize / 2);
+        for (let i = 0; i < fftSize / 2; i++) {
+          mags[i] = Math.hypot(re[i], im[i]);
+        }
+        return mags;
+      }
+
+      function ensureAudioContext() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC({ sampleRate: SAMPLE_RATE });
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.85;
+          analyserNode = audioCtx.createAnalyser();
+          analyserNode.fftSize = 2048;
+          analyserNode.smoothingTimeConstant = 0.72;
+          masterGain.connect(analyserNode);
+          analyserNode.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      }
+
+      function playWaveBreakSound(state) {
+        if (!audioEnabled || !audioCtx) return;
+        // STRICT NULL CHECK: never schedule any audio node if unbroken or airless
+        if (!state.isBreaking || state.voidFraction <= 0) return;
+
+        const { mixBuf } = synthesizeWaveAudioBuffers(state, null, Math.floor(Math.random() * 100000));
+        const audioBuf = audioCtx.createBuffer(1, mixBuf.length, SAMPLE_RATE);
+        audioBuf.copyToChannel(mixBuf, 0);
+
+        const src = audioCtx.createBufferSource();
+        src.buffer = audioBuf;
+        src.connect(masterGain);
+        src.start();
+      }
+
+      // Export 44.1 kHz 16-bit stereo .WAV of current wave break
+      function exportCurrentWav(state) {
+        const { mixBuf } = synthesizeWaveAudioBuffers(state, null, 4242);
+        const numSamples = mixBuf.length;
+        const numChannels = 2;
+        const bitsPerSample = 16;
+        const blockAlign = numChannels * (bitsPerSample / 8);
+        const byteRate = SAMPLE_RATE * blockAlign;
+        const dataSize = numSamples * blockAlign;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+
+        function writeStr(offset, str) {
+          for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+        }
+
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, SAMPLE_RATE, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+        writeStr(36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        let offset = 44;
+        for (let i = 0; i < numSamples; i++) {
+          const sample = Math.max(-1, Math.min(1, mixBuf[i]));
+          const int16 = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+          view.setInt16(offset, int16, true);
+          view.setInt16(offset + 2, int16, true);
+          offset += 4;
+        }
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `crashing_wave_${state.regime.toLowerCase()}_Hh${state.micheRatio.toFixed(2)}_void${state.voidFraction.toFixed(2)}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // =========================================================================
+      // 3. THREE.JS 3D CROSS-SECTION FLUME — REALISTIC SHADERS, CURL & BUBBLES
+      // =========================================================================
+      const container = document.getElementById('viewport-3d');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03070e);
+      scene.fog = new THREE.FogExp2(0x03070e, 0.018);
+
+      const camera = new THREE.PerspectiveCamera(40, container.clientWidth / Math.max(1, container.clientHeight), 0.1, 140);
+      camera.position.set(0, 1.5, 14.2);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+      container.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0x67e8f9, 0.45);
+      scene.add(ambientLight);
+      const sunLight = new THREE.DirectionalLight(0xf0f9ff, 1.45);
+      sunLight.position.set(5, 14, 7);
+      scene.add(sunLight);
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.75);
+      rimLight.position.set(-7, 6, -8);
+      scene.add(rimLight);
+
+      // Tank dimensions (world units ~ meters)
+      const TANK_LEN = 18;
+      const TANK_WIDTH = 3.6;
+      const X_MIN = -TANK_LEN / 2;
+      const X_MAX = TANK_LEN / 2;
+      const NX = 160;
+      const NZ = 24;
+
+      // Procedural Soft Bubble & Foam Sprite Textures (zero external assets)
+      function makeBubbleSpriteTexture() {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        const ctx = c.getContext('2d');
+        const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+        g.addColorStop(0.0, 'rgba(255, 255, 255, 0.15)');
+        g.addColorStop(0.55, 'rgba(186, 230, 253, 0.45)');
+        g.addColorStop(0.82, 'rgba(224, 242, 254, 0.95)');
+        g.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 64, 64);
+        // Specular highlight dot
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.beginPath();
+        ctx.arc(22, 20, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        const tex = new THREE.CanvasTexture(c);
+        tex.needsUpdate = true;
+        return tex;
+      }
+
+      function makeFoamSpriteTexture() {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 64;
+        const ctx = c.getContext('2d');
+        const g = ctx.createRadialGradient(32, 32, 1, 32, 32, 30);
+        g.addColorStop(0.0, 'rgba(255, 255, 255, 0.95)');
+        g.addColorStop(0.45, 'rgba(224, 242, 254, 0.55)');
+        g.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, 64, 64);
+        const tex = new THREE.CanvasTexture(c);
+        tex.needsUpdate = true;
+        return tex;
+      }
+
+      const bubbleTex = makeBubbleSpriteTexture();
+      const foamTex = makeFoamSpriteTexture();
+
+      // Glass Laboratory Flume Frame
+      const tankBox = new THREE.BoxGeometry(TANK_LEN, 6.8, TANK_WIDTH);
+      const tankEdges = new THREE.EdgesGeometry(tankBox);
+      const tankLines = new THREE.LineSegments(
+        tankEdges,
+        new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.25 })
+      );
+      tankLines.position.set(0, 0.1, 0);
+      scene.add(tankLines);
+
+      // Subtle back glass wall for depth contrast
+      // Atmospheric deep-twilight ocean sky dome for realistic Fresnel horizon reflections
+      const skyBackdrop = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 24),
+        new THREE.ShaderMaterial({
+          vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+          fragmentShader: `
+            varying vec2 vUv;
+            void main() {
+              vec3 abyss = vec3(0.015, 0.030, 0.060);
+              vec3 horizon = vec3(0.055, 0.165, 0.285);
+              vec3 zenith = vec3(0.012, 0.025, 0.055);
+              float hGlow = exp(-pow((vUv.y - 0.42) * 3.8, 2.0));
+              vec3 col = mix(abyss, zenith, vUv.y) + horizon * hGlow * 0.75;
+              gl_FragColor = vec4(col, 1.0);
+            }
+          `,
+          depthWrite: false
+        })
+      );
+      skyBackdrop.position.set(0, 2.0, -14.0);
+      scene.add(skyBackdrop);
+
+      const backWall = new THREE.Mesh(
+        new THREE.PlaneGeometry(TANK_LEN, 6.8),
+        new THREE.MeshBasicMaterial({ color: 0x06101f, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false })
+      );
+      backWall.position.set(0, 0.1, -TANK_WIDTH / 2 - 0.01);
+      scene.add(backWall);
+
+      // Shared Uniforms for Water, Cross-Section, and Seabed Caustics
+      const waterUniforms = {
+        uTime: { value: 0 },
+        uSunDir: { value: new THREE.Vector3(0.35, 0.85, 0.42).normalize() },
+        uPlunging: { value: 0.5 },
+        uBreaking: { value: 0.0 },
+        uVoidFrac: { value: 0.65 },
+        uBreakX: { value: 2.5 },
+        uCrestX: { value: -5.0 },
+        uWaveH: { value: 1.2 },
+        uWaterBaseY: { value: 0.8 }
+      };
+
+      // 1. REALISTIC SEABED WITH SAND RIPPLES & ANIMATED CAUSTICS
+      const seabedGeo = new THREE.PlaneGeometry(TANK_LEN, TANK_WIDTH, NX, 10);
+      seabedGeo.rotateX(-Math.PI / 2);
+      const seabedMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: waterUniforms.uTime,
+          uSunDir: waterUniforms.uSunDir,
+          uWaterBaseY: waterUniforms.uWaterBaseY
+        },
+        vertexShader: `
+          varying vec3 vWorldPos;
+          varying vec3 vNormal;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uSunDir;
+          uniform float uWaterBaseY;
+          varying vec3 vWorldPos;
+          varying vec3 vNormal;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+          }
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+          }
+
+          void main() {
+            // Sand ripple pattern
+            float ripple = sin(vWorldPos.x * 7.5 + noise(vWorldPos.xz * 2.2) * 3.0) * 0.5 + 0.5;
+            vec3 sandDark = vec3(0.09, 0.11, 0.14);
+            vec3 sandLight = vec3(0.22, 0.21, 0.18);
+            vec3 baseCol = mix(sandDark, sandLight, ripple * 0.65 + 0.2);
+
+            // Depth attenuation
+            float depth = max(0.1, uWaterBaseY - vWorldPos.y);
+            float atten = exp(-depth * 0.28);
+
+            // Delicate animated underwater caustics
+            vec2 cUV = vWorldPos.xz * 2.6;
+            float c1 = sin(cUV.x * 3.3 + uTime * 1.5 + cos(cUV.y * 2.8 - uTime * 1.1));
+            float c2 = sin(cUV.y * 3.9 - uTime * 1.3 + sin(cUV.x * 3.1 + uTime * 1.4));
+            float c3 = cos((cUV.x + cUV.y) * 2.7 + uTime * 0.9);
+            float caustic = pow(max(0.0, (c1 + c2 + c3) / 3.0), 5.0) * 1.6;
+
+            float diff = max(0.28, dot(normalize(vNormal), uSunDir));
+            vec3 col = baseCol * diff * (0.48 + 0.52 * atten);
+            col += vec3(0.10, 0.52, 0.68) * caustic * atten * 0.55;
+
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `,
+        side: THREE.DoubleSide
+      });
+      const seabedMesh = new THREE.Mesh(seabedGeo, seabedMat);
+      scene.add(seabedMesh);
+
+      // Seabed front cross-section highlight line
+      const bedLineGeo = new THREE.BufferGeometry();
+      const bedLinePos = new Float32Array((NX + 1) * 3);
+      bedLineGeo.setAttribute('position', new THREE.BufferAttribute(bedLinePos, 3));
+      const bedLine = new THREE.Line(bedLineGeo, new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.85 }));
+      scene.add(bedLine);
+
+      // 2. REALISTIC 3D WATER SURFACE SHADER (FRESNEL + SSS + CAPILLARY RIPPLES + CREST FOAM)
+      const waterSurfGeo = new THREE.PlaneGeometry(TANK_LEN, TANK_WIDTH, NX, NZ);
+      waterSurfGeo.rotateX(-Math.PI / 2);
+      // Custom attribute to pass local crest foam/breaking intensity per vertex
+      const foamAttr = new Float32Array((NX + 1) * (NZ + 1));
+      waterSurfGeo.setAttribute('aFoam', new THREE.BufferAttribute(foamAttr, 1));
+
+      const waterSurfMat = new THREE.ShaderMaterial({
+        uniforms: waterUniforms,
+        vertexShader: `
+          attribute float aFoam;
+          varying vec3 vWorldPos;
+          varying vec3 vNormal;
+          varying float vFoam;
+          void main() {
+            vFoam = aFoam;
+            vNormal = normalize(normalMatrix * normal);
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform vec3 uSunDir;
+          uniform float uWaterBaseY;
+          uniform float uWaveH;
+          varying vec3 vWorldPos;
+          varying vec3 vNormal;
+          varying float vFoam;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+          }
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            f = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+          }
+          float fbm(vec2 p) {
+            float v = 0.0;
+            float a = 0.5;
+            for (int i = 0; i < 4; i++) {
+              v += a * noise(p);
+              p *= 2.03;
+              a *= 0.5;
+            }
+            return v;
+          }
+
+          void main() {
+            // Fine capillary ripples + stretched vertical face striations
+            vec2 p = vWorldPos.xz * 1.45;
+            float eps = 0.035;
+            float h0 = sin(p.x * 5.2 - uTime * 3.1 + p.y * 2.1) * 0.035
+                     + sin(p.x * 11.4 - uTime * 4.5 - p.y * 6.3) * 0.015
+                     + fbm(p * 3.8 + vec2(-uTime * 0.8, uTime * 0.25)) * 0.045;
+            float hx = sin((p.x + eps) * 5.2 - uTime * 3.1 + p.y * 2.1) * 0.035
+                     + sin((p.x + eps) * 11.4 - uTime * 4.5 - p.y * 6.3) * 0.015
+                     + fbm((p + vec2(eps, 0.0)) * 3.8 + vec2(-uTime * 0.8, uTime * 0.25)) * 0.045;
+            float hz = sin(p.x * 5.2 - uTime * 3.1 + (p.y + eps) * 2.1) * 0.035
+                     + sin(p.x * 11.4 - uTime * 4.5 - (p.y + eps) * 6.3) * 0.015
+                     + fbm((p + vec2(0.0, eps)) * 3.8 + vec2(-uTime * 0.8, uTime * 0.25)) * 0.045;
+
+            vec3 rippleN = normalize(vec3((h0 - hx) / eps * 0.32, 1.0, (h0 - hz) / eps * 0.32));
+            vec3 N = normalize(vNormal + vec3(rippleN.x, 0.0, rippleN.z) * 0.55);
+            vec3 V = normalize(cameraPosition - vWorldPos);
+            vec3 L = normalize(uSunDir);
+            vec3 H = normalize(L + V);
+
+            // Schlick Fresnel
+            float cosTheta = max(dot(N, V), 0.0);
+            float fresnel = 0.02 + 0.98 * pow(1.0 - cosTheta, 5.0);
+
+            // Deep ocean body & twilight sky reflection
+            vec3 deepWater = vec3(0.015, 0.14, 0.26);
+            vec3 shallowTeal = vec3(0.02, 0.38, 0.48);
+            vec3 skyCol = mix(vec3(0.05, 0.14, 0.26), vec3(0.32, 0.58, 0.78), pow(max(N.y, 0.0), 1.5));
+
+            // Subsurface Scattering (luminous emerald-turquoise glow in elevated thin crest)
+            float crestElev = clamp((vWorldPos.y - uWaterBaseY) / max(0.25, uWaveH * 0.65), 0.0, 1.5);
+            float sssFactor = pow(max(0.0, crestElev), 1.4) * (0.4 + 0.6 * max(0.0, dot(V, -L) * 0.5 + 0.5));
+            vec3 sssCol = vec3(0.04, 0.78, 0.72) * sssFactor * 0.85;
+
+            vec3 waterCol = mix(deepWater, shallowTeal, clamp(crestElev * 0.7, 0.0, 1.0));
+            waterCol += sssCol;
+
+            // Specular sun glint
+            float spec = pow(max(dot(N, H), 0.0), 190.0) * 1.85;
+            vec3 col = mix(waterCol, skyCol, clamp(fresnel * 0.88, 0.0, 0.92)) + vec3(0.92, 0.97, 1.0) * spec;
+
+            // Multi-scale lacy ocean whitewater (frothy lip + turbulent bore streaks)
+            float fineFoam = fbm(vWorldPos.xz * 9.5 - vec2(uTime * 1.8, 0.0));
+            float microFoam = noise(vWorldPos.xz * 28.0 + vec2(-uTime * 2.6, uTime * 0.9));
+            float foamPattern = fineFoam * 0.62 + microFoam * 0.38;
+            float foamMask = smoothstep(0.18, 0.62, vFoam * (0.65 + 1.05 * foamPattern));
+            vec3 foamCol = vec3(0.94, 0.98, 1.0) * (0.82 + 0.18 * max(dot(N, L), 0.0));
+            col = mix(col, foamCol, clamp(foamMask, 0.0, 0.97));
+
+            float alpha = mix(0.76, 0.97, max(fresnel * 0.5, foamMask));
+            gl_FragColor = vec4(col, alpha);
+          }
+        `,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
+      const waterSurfMesh = new THREE.Mesh(waterSurfGeo, waterSurfMat);
+      scene.add(waterSurfMesh);
+
+
+
+      // 3. WATERTIGHT TRIANGULATED CROSS-SECTION WATER COLUMN (HOLLOW BARREL CUTOUT)
+      const curtainGeo = new THREE.BufferGeometry();
+      const TOTAL_CS_VERTS = (NX + 1) * 2;
+      const curtainVerts = new Float32Array(TOTAL_CS_VERTS * 3);
+      const curtainNormDepth = new Float32Array(TOTAL_CS_VERTS);
+      const curtainIndexArr = new Uint16Array(TOTAL_CS_VERTS * 3);
+      curtainGeo.setAttribute('position', new THREE.BufferAttribute(curtainVerts, 3));
+      curtainGeo.setAttribute('aSurfaceFrac', new THREE.BufferAttribute(curtainNormDepth, 1));
+      curtainGeo.setIndex(new THREE.BufferAttribute(curtainIndexArr, 1));
+
+      const curtainMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: waterUniforms.uTime
+        },
+        vertexShader: `
+          attribute float aSurfaceFrac;
+          varying float vSurfFrac;
+          varying vec3 vWorldPos;
+          void main() {
+            vSurfFrac = aSurfaceFrac;
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          varying float vSurfFrac;
+          varying vec3 vWorldPos;
+          void main() {
+            vec3 topCol = vec3(0.05, 0.58, 0.72);
+            vec3 botCol = vec3(0.01, 0.10, 0.20);
+            vec3 col = mix(botCol, topCol, pow(vSurfFrac, 1.3));
+            // Subtle volumetric light rays descending from surface
+            float ray = sin(vWorldPos.x * 2.6 - uTime * 1.8 + vWorldPos.y * 0.9) * 0.5 + 0.5;
+            col += vec3(0.06, 0.42, 0.55) * pow(ray, 3.0) * vSurfFrac * 0.42;
+            float alpha = mix(0.46, 0.28, vSurfFrac);
+            gl_FragColor = vec4(col, alpha);
+          }
+        `,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const curtainMesh = new THREE.Mesh(curtainGeo, curtainMat);
+      scene.add(curtainMesh);
+
+      // Cross-section luminous surface meniscus line
+      const crestLineGeo = new THREE.BufferGeometry();
+      const crestLinePos = new Float32Array((NX + 1) * 3);
+      crestLineGeo.setAttribute('position', new THREE.BufferAttribute(crestLinePos, 3));
+      const crestLine = new THREE.Line(crestLineGeo, new THREE.LineBasicMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.35 }));
+      scene.add(crestLine);
+
+      // 4. SUBSURFACE ORBITAL VELOCITY TRACERS (ELLIPTICAL WATER-PARCEL ORBITS)
+      const ORBIT_COUNT = 180;
+      const orbitPos = new Float32Array(ORBIT_COUNT * 3);
+      const orbitGeo = new THREE.BufferGeometry();
+      orbitGeo.setAttribute('position', new THREE.BufferAttribute(orbitPos, 3));
+      const orbitMat = new THREE.PointsMaterial({
+        size: 0.08,
+        color: 0x7dd3fc,
+        map: bubbleTex,
+        transparent: true,
+        opacity: 0.45,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const orbitPoints = new THREE.Points(orbitGeo, orbitMat);
+      scene.add(orbitPoints);
+
+      const orbitTracers = [];
+      for (let i = 0; i < ORBIT_COUNT; i++) {
+        orbitTracers.push({
+          x0: X_MIN + 0.5 + Math.random() * (TANK_LEN - 1.0),
+          depthFrac: 0.12 + Math.random() * 0.78,
+          z: TANK_WIDTH / 2 - 0.08 - Math.random() * (TANK_WIDTH * 0.4)
+        });
+      }
+
+
+
+      // 5. VOLUMETRIC SWIRLING VOID MIST SPRITES (INSIDE THE HOLLOW BARREL)
+      const MAX_VOID_MIST = 280;
+      const voidMistPos = new Float32Array(MAX_VOID_MIST * 3);
+      const voidMistCol = new Float32Array(MAX_VOID_MIST * 3);
+      const voidMistGeo = new THREE.BufferGeometry();
+      voidMistGeo.setAttribute('position', new THREE.BufferAttribute(voidMistPos, 3));
+      voidMistGeo.setAttribute('color', new THREE.BufferAttribute(voidMistCol, 3));
+      const voidMistPoints = new THREE.Points(voidMistGeo, new THREE.PointsMaterial({
+        size: 0.28,
+        map: foamTex,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.75,
+        depthWrite: false
+      }));
+      scene.add(voidMistPoints);
+      const voidMistSeeds = Array.from({ length: MAX_VOID_MIST }, () => ({
+        ang: Math.random() * Math.PI * 2,
+        rad: 0.25 + Math.random() * 0.75,
+        z: (Math.random() - 0.5) * (TANK_WIDTH * 0.88),
+        spd: 1.5 + Math.random() * 2.5
+      }));
+
+      // 6. SOFT-SPRITE BUBBLE CLOUD & WHITEWATER FOAM/SPRAY PARTICLES
+      const MAX_BUBBLES = 4800;
+      const bubblePositions = new Float32Array(MAX_BUBBLES * 3);
+      const bubbleColors = new Float32Array(MAX_BUBBLES * 3);
+      const bubbleGeo = new THREE.BufferGeometry();
+      bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bubblePositions, 3));
+      bubbleGeo.setAttribute('color', new THREE.BufferAttribute(bubbleColors, 3));
+      const bubbleMat = new THREE.PointsMaterial({
+        size: 0.16,
+        map: bubbleTex,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.92,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const bubblePoints = new THREE.Points(bubbleGeo, bubbleMat);
+      scene.add(bubblePoints);
+
+      const MAX_FOAM = 2400;
+      const foamPositions = new Float32Array(MAX_FOAM * 3);
+      const foamColors = new Float32Array(MAX_FOAM * 3);
+      const foamGeo = new THREE.BufferGeometry();
+      foamGeo.setAttribute('position', new THREE.BufferAttribute(foamPositions, 3));
+      foamGeo.setAttribute('color', new THREE.BufferAttribute(foamColors, 3));
+      const foamMat = new THREE.PointsMaterial({
+        size: 0.24,
+        map: foamTex,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false
+      });
+      const foamPoints = new THREE.Points(foamGeo, foamMat);
+      scene.add(foamPoints);
+
+      const bubbles = [];
+      for (let i = 0; i < MAX_BUBBLES; i++) {
+        bubbles.push({ active: false, x: 0, y: -50, z: 0, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 1, swirl: 0 });
+      }
+      const foamParticles = [];
+      for (let i = 0; i < MAX_FOAM; i++) {
+        foamParticles.push({ active: false, x: 0, y: -50, z: 0, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 1 });
+      }
+
+      function spawnBubbleCloud(xBreak, ySurface, state) {
+        if (!state.isBreaking || state.voidFraction <= 0) return;
+        const p = state.plungingFactor;
+        const vf = state.voidFraction;
+
+        // Underwater Minnaert bubble cloud (vortex roller)
+        const bCount = Math.floor((260 + 1100 * p) * vf);
+        let bSpawned = 0;
+        for (let i = 0; i < MAX_BUBBLES && bSpawned < bCount; i++) {
+          const b = bubbles[i];
+          if (!b.active) {
+            b.active = true;
+            const angle = Math.random() * Math.PI * 2;
+            const rad = Math.random() * (0.35 + 0.65 * p) * (state.H * WORLD_PER_METER) * 0.48;
+            b.x = xBreak + Math.cos(angle) * rad * 0.8 + 0.2;
+            b.y = ySurface - 0.12 - Math.abs(Math.sin(angle)) * rad * (0.4 + 0.9 * p);
+            b.z = (Math.random() - 0.5) * (TANK_WIDTH * 0.92);
+            b.vx = 0.6 + Math.random() * 1.4 + Math.sin(angle) * 0.8 * p;
+            b.vy = -0.3 - Math.random() * 1.6 * p;
+            b.vz = (Math.random() - 0.5) * 0.45;
+            b.swirl = (Math.random() - 0.3) * 2.2 * p;
+            b.life = 0;
+            b.maxLife = 2.4 + Math.random() * 3.4;
+            bSpawned++;
+          }
+        }
+
+        // Surface crest foam & ballistic spray droplets
+        const fCount = Math.floor((280 + 380 * (1 - p * 0.4)) * vf);
+        let fSpawned = 0;
+        for (let i = 0; i < MAX_FOAM && fSpawned < fCount; i++) {
+          const f = foamParticles[i];
+          if (!f.active) {
+            f.active = true;
+            f.x = xBreak + (Math.random() - 0.4) * (0.6 + 0.8 * (1 - p));
+            f.y = ySurface + Math.random() * 0.18;
+            f.z = (Math.random() - 0.5) * (TANK_WIDTH * 0.94);
+            f.vx = 0.9 + Math.random() * 1.9;
+            f.vy = (0.35 + Math.random() * 1.55) * (0.5 + 0.8 * p);
+            f.vz = (Math.random() - 0.5) * 0.55;
+            f.life = 0;
+            f.maxLife = 1.2 + Math.random() * 1.8;
+            fSpawned++;
+          }
+        }
+      }
+
+      // Compute local seabed elevation y_bed(x)
+      const WORLD_PER_METER = 1.0 / 12.0; // 30m wave = 2.5 world units tall
+      function getBedY(x, state) {
+        const waterSurfaceY = 0.95;
+        const hVis = Math.max(0.35, state.h * WORLD_PER_METER);
+        const yShelf = waterSurfaceY - hVis;
+        const xBreak = 2.5;
+        const dx = xBreak - x;
+        const smoothRamp = 0.5 * (dx + Math.sqrt(dx * dx + 0.85));
+        const slopeVis = state.slope * 2.4;
+        return yShelf - smoothRamp * slopeVis;
+      }
+
+      // Interactive Orbit Drag on 3D Canvas
+      let isDragging = false;
+      let prevPtr = { x: 0, y: 0 };
+      let camOrbitOffset = { yaw: 0, pitch: 0 };
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        prevPtr = { x: e.clientX, y: e.clientY };
+      });
+      window.addEventListener('pointerup', () => { isDragging = false; });
+      window.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - prevPtr.x;
+        const dy = e.clientY - prevPtr.y;
+        prevPtr = { x: e.clientX, y: e.clientY };
+        camOrbitOffset.yaw = Math.max(-0.85, Math.min(0.85, camOrbitOffset.yaw - dx * 0.005));
+        camOrbitOffset.pitch = Math.max(-0.35, Math.min(0.55, camOrbitOffset.pitch + dy * 0.004));
+      });
+
+      // =========================================================================
+      // 4. STATE, CONTROLS & UI SYNC
+      // =========================================================================
+      const stateParams = {
+        H: 18.0,
+        h: 20.0,
+        slope: 0.085,
+        T: 12.0,
+        voidFraction: 0.72
+      };
+      let currentPhysics = computePhysicsState(stateParams);
+
+      // Camera target presets
+      const camPresets = {
+        cross: { pos: new THREE.Vector3(0, 1.3, 14.2), look: new THREE.Vector3(0, 0.2, 0) },
+        oblique: { pos: new THREE.Vector3(-5.5, 4.2, 11.5), look: new THREE.Vector3(1.2, 0.0, 0) },
+        crest: { pos: new THREE.Vector3(2.2, 1.4, 6.2), look: new THREE.Vector3(2.2, 0.6, 0) }
+      };
+      let activeCamPreset = 'cross';
+
+      const elH = document.getElementById('slider-H');
+      const elh = document.getElementById('slider-h');
+      const elSlope = document.getElementById('slider-slope');
+      const elT = document.getElementById('slider-T');
+      const elVoid = document.getElementById('slider-void');
+
+      function updateUI() {
+        currentPhysics = computePhysicsState(stateParams);
+        const s = currentPhysics;
+
+        document.getElementById('val-H').textContent = `${s.H.toFixed(2)} m`;
+        document.getElementById('val-h').textContent = `${s.h.toFixed(2)} m`;
+        const invSlope = Math.round(1 / s.slope);
+        document.getElementById('val-slope').textContent = `1:${invSlope} (${s.slope.toFixed(3)})`;
+        document.getElementById('val-T').textContent = `${s.T.toFixed(1)} s`;
+        document.getElementById('val-void').textContent = s.voidFraction.toFixed(2);
+
+        // Miche indicator
+        document.getElementById('hud-miche-val').textContent = s.micheRatio.toFixed(3);
+        const barPct = Math.min(100, (s.micheRatio / 1.5) * 100);
+        const barEl = document.getElementById('hud-miche-bar');
+        barEl.style.width = `${barPct}%`;
+
+        const badge = document.getElementById('badge-regime');
+        const nullPill = document.getElementById('hud-null-pill');
+
+        if (!s.isBreaking) {
+          badge.textContent = 'UNBROKEN (NULL)';
+          badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-slate-800 text-slate-300 border-slate-600';
+          barEl.className = 'h-full transition-all duration-150 rounded-full bg-cyan-400';
+          nullPill.classList.remove('hidden');
+          nullPill.textContent = 'SILENT NULL (H/h ≤ 0.78)';
+        } else if (s.voidFraction <= 0) {
+          badge.textContent = `${s.regime} (AIRLESS)`;
+          badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-emerald-500/15 text-emerald-300 border-emerald-500/40';
+          barEl.className = 'h-full transition-all duration-150 rounded-full bg-emerald-400';
+          nullPill.classList.remove('hidden');
+          nullPill.textContent = 'SILENT NULL (VOID α = 0)';
+        } else {
+          nullPill.classList.add('hidden');
+          if (s.regime === 'SPILLING') {
+            badge.textContent = 'SPILLING (HISS)';
+            badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-sky-500/20 text-sky-200 border-sky-400/50';
+            barEl.className = 'h-full transition-all duration-150 rounded-full bg-sky-400';
+          } else if (s.regime === 'TRANSITIONAL') {
+            badge.textContent = 'TRANSITIONAL';
+            badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-amber-500/20 text-amber-200 border-amber-400/50';
+            barEl.className = 'h-full transition-all duration-150 rounded-full bg-amber-400';
+          } else {
+            badge.textContent = 'PLUNGING (CRUMP)';
+            badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded border bg-rose-500/20 text-rose-200 border-rose-400/50';
+            barEl.className = 'h-full transition-all duration-150 rounded-full bg-rose-400';
+          }
+        }
+
+        // Telemetry
+        document.getElementById('tel-disp').textContent = `${s.wavelength.toFixed(1)} m / ${s.phaseSpeed.toFixed(2)} m/s`;
+        document.getElementById('tel-green').textContent = `${s.greenFactor.toFixed(3)}×`;
+        document.getElementById('tel-iribarren').textContent = s.xi0.toFixed(3);
+        document.getElementById('tel-void-vol').textContent = `${s.voidArea.toFixed(3)} m³/m`;
+        document.getElementById('tel-radius').textContent = `${(s.R_mean * 1000).toFixed(2)} mm`;
+        document.getElementById('tel-minnaert').textContent = (s.isBreaking && s.voidFraction > 0)
+          ? `${Math.round(s.fM_mean)} Hz / ${Math.round(s.fCloud)} Hz`
+          : 'Silent (Null)';
+
+        document.getElementById('hud-layer-foam').textContent = `Foam (2–8 kHz): ${(s.foamWeight * 100).toFixed(0)}%`;
+        document.getElementById('hud-layer-bubbles').textContent = (s.isBreaking && s.voidFraction > 0)
+          ? `Bubbles f_M: ${Math.round(s.fM_mean)} Hz | Cloud: ${Math.round(s.fCloud)} Hz`
+          : 'Bubbles: 0 (Silent Null)';
+      }
+
+      elH.addEventListener('input', (e) => { stateParams.H = parseFloat(e.target.value); updateUI(); });
+      elh.addEventListener('input', (e) => { stateParams.h = parseFloat(e.target.value); updateUI(); });
+      elSlope.addEventListener('input', (e) => { stateParams.slope = parseFloat(e.target.value); updateUI(); });
+      elT.addEventListener('input', (e) => { stateParams.T = parseFloat(e.target.value); updateUI(); });
+      elVoid.addEventListener('input', (e) => { stateParams.voidFraction = parseFloat(e.target.value); updateUI(); });
+
+      document.getElementById('btn-toggle-thesis').addEventListener('click', () => {
+        const body = document.getElementById('thesis-body');
+        const btn = document.getElementById('btn-toggle-thesis');
+        body.classList.toggle('hidden');
+        btn.textContent = body.classList.contains('hidden') ? 'SHOW' : 'HIDE';
+      });
+
+      document.querySelectorAll('.cam-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeCamPreset = btn.getAttribute('data-cam');
+          document.querySelectorAll('.cam-btn').forEach((b) => {
+            b.className = 'cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800/80 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'cam-btn px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-200 border border-cyan-500/40';
+        });
+      });
+
+      document.getElementById('btn-audio-toggle').addEventListener('click', () => {
+        ensureAudioContext();
+        audioEnabled = !audioEnabled;
+        const btn = document.getElementById('btn-audio-toggle');
+        if (audioEnabled) {
+          btn.textContent = 'AUDIO: ON';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-emerald-500/50 bg-emerald-500/20 text-emerald-200';
+        } else {
+          btn.textContent = 'AUDIO: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-cyan-500/40 bg-cyan-500/15 text-cyan-200';
+        }
+      });
+
+      let waveTrainPhase = 0;
+      let manualTriggerQueued = false;
+
+      document.getElementById('btn-trigger-wave').addEventListener('click', () => {
+        ensureAudioContext();
+        if (!audioEnabled) {
+          audioEnabled = true;
+          const btn = document.getElementById('btn-audio-toggle');
+          btn.textContent = 'AUDIO: ON';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition border border-emerald-500/50 bg-emerald-500/20 text-emerald-200';
+        }
+        manualTriggerQueued = true;
+        waveTrainPhase = 0.62; // Jump crest right up to the breaking zone
+      });
+
+      document.getElementById('btn-export-wav').addEventListener('click', () => {
+        exportCurrentWav(currentPhysics);
+      });
+
+      // =========================================================================
+      // 5. VERIFICATION SUITE — FOUR CHECKS
+      // =========================================================================
+      function runFourChecks() {
+        // Check 1: Shoaling h^(-1/4) across 3 depths
+        const depths = [4.0, 2.0, 1.0];
+        const amps = depths.map((d) => greensShoalingAmplitude(0.5, 4.0, d));
+        const xs = depths.map((d) => Math.log(d));
+        const ys = amps.map((a) => Math.log(a));
+        const mx = xs.reduce((a, b) => a + b, 0) / 3;
+        const my = ys.reduce((a, b) => a + b, 0) / 3;
+        let num = 0, den = 0;
+        for (let i = 0; i < 3; i++) {
+          num += (xs[i] - mx) * (ys[i] - my);
+          den += (xs[i] - mx) * (xs[i] - mx);
+        }
+        const fittedExp = num / den;
+        const pass1 = Math.abs(fittedExp - (-0.25)) < 0.005;
+
+        // Check 2: Breaker index scan H/h -> critical value must land at ~0.78
+        let critRatio = null;
+        for (let r = 0.50; r <= 1.00; r += 0.002) {
+          const st = computePhysicsState({ H: r * 2.0, h: 2.0, slope: 0.08, T: 8.0, voidFraction: 0.7 });
+          if (st.isBreaking) {
+            critRatio = r;
+            break;
+          }
+        }
+        const pass2 = critRatio !== null && Math.abs(critRatio - 0.78) < 0.01;
+
+        // Check 3: Minnaert 1/R scaling — halve mean bubble radius, spectral peak doubles
+        const f1 = minnaertFreq(0.002); // 2 mm
+        const f2 = minnaertFreq(0.001); // 1 mm
+        // Also verify via actual synthesized FFT peak of narrow bubble distribution
+        function synthPeakHz(R_target) {
+          const N = 4096;
+          const buf = new Float32Array(N);
+          const f = minnaertFreq(R_target);
+          const w = 2 * Math.PI * f;
+          for (let i = 0; i < N; i++) {
+            const t = i / SAMPLE_RATE;
+            buf[i] = Math.exp(-t / 0.03) * Math.sin(w * t);
+          }
+          const mags = computeMagnitudeSpectrum(buf, N);
+          let maxIdx = 1;
+          for (let i = 2; i < mags.length; i++) {
+            if (mags[i] > mags[maxIdx]) maxIdx = i;
+          }
+          return (maxIdx * SAMPLE_RATE) / N;
+        }
+        const peak2mm = synthPeakHz(0.002);
+        const peak1mm = synthPeakHz(0.001);
+        const ratioMinnaert = peak1mm / peak2mm;
+        const pass3 = Math.abs(ratioMinnaert - 2.0) < 0.08;
+
+        // Check 4: Two nulls — must be strictly silent (0.0000 max sample)
+        const stateNullA = computePhysicsState({ H: 1.2, h: 2.0, slope: 0.10, T: 8.0, voidFraction: 0.8 }); // H/h = 0.60
+        const audioNullA = synthesizeWaveAudioBuffers(stateNullA, 0.5, 99);
+        const maxA = audioNullA.mixBuf.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+        const stateNullB = computePhysicsState({ H: 2.2, h: 2.0, slope: 0.10, T: 8.0, voidFraction: 0.0 }); // H/h = 1.10, void = 0
+        const audioNullB = synthesizeWaveAudioBuffers(stateNullB, 0.5, 99);
+        const maxB = audioNullB.mixBuf.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+        const pass4 = maxA === 0 && maxB === 0 && !stateNullA.isBreaking && stateNullB.isBreaking;
+
+        return [
+          {
+            title: '1. Green\'s Law Shoaling (a ∝ h^(-1/4))',
+            pass: pass1,
+            detail: `Depths [4.0, 2.0, 1.0] m → Amps [${amps.map(a => a.toFixed(3)).join(', ')}] m | Fitted exponent: ${fittedExp.toFixed(4)} (target -0.2500)`
+          },
+          {
+            title: '2. Miche Breaker Index (H/h > 0.78)',
+            pass: pass2,
+            detail: `Scanned H/h ∈ [0.50, 1.00] → Measured critical (H/h)_crit = ${critRatio ? critRatio.toFixed(3) : 'N/A'} (target 0.780)`
+          },
+          {
+            title: '3. Minnaert 1/R Spectral Scaling',
+            pass: pass3,
+            detail: `R=2.0 mm peak: ${peak2mm.toFixed(0)} Hz (theory ${f1.toFixed(0)} Hz) | R=1.0 mm peak: ${peak1mm.toFixed(0)} Hz (theory ${f2.toFixed(0)} Hz) | Ratio: ${ratioMinnaert.toFixed(2)}×`
+          },
+          {
+            title: '4. Two Silent Nulls (Unbroken & Airless)',
+            pass: pass4,
+            detail: `Null A (H/h=0.60): max=${maxA.toFixed(6)} (-∞ dB) | Null B (H/h=1.10, α=0): max=${maxB.toFixed(6)} (-∞ dB)`
+          }
+        ];
+      }
+
+      function renderVerificationModal() {
+        const results = runFourChecks();
+        const containerEl = document.getElementById('verify-results');
+        containerEl.innerHTML = results.map((r) => `
+          <div class="p-3 rounded-xl border ${r.pass ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-rose-950/30 border-rose-500/40'}">
+            <div class="flex items-center justify-between mb-1">
+              <span class="font-semibold text-slate-100">${r.title}</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.pass ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${r.pass ? 'PASS' : 'FAIL'}</span>
+            </div>
+            <div class="text-slate-300 text-[11px]">${r.detail}</div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('btn-verify').addEventListener('click', () => {
+        renderVerificationModal();
+        document.getElementById('modal-verify').classList.remove('hidden');
+      });
+      document.getElementById('btn-close-verify').addEventListener('click', () => {
+        document.getElementById('modal-verify').classList.add('hidden');
+      });
+      document.getElementById('btn-rerun-verify').addEventListener('click', renderVerificationModal);
+
+      // =========================================================================
+      // 6. REAL-TIME SPECTRUM ANALYZER CANVAS
+      // =========================================================================
+      const specCanvas = document.getElementById('canvas-spectrum');
+      const specCtx = specCanvas.getContext('2d');
+      const freqBins = new Uint8Array(1024);
+
+      function drawSpectrum() {
+        const rect = specCanvas.getBoundingClientRect();
+        if (specCanvas.width !== Math.floor(rect.width) || specCanvas.height !== Math.floor(rect.height)) {
+          specCanvas.width = Math.max(100, Math.floor(rect.width));
+          specCanvas.height = Math.max(60, Math.floor(rect.height));
+        }
+        const W = specCanvas.width;
+        const H = specCanvas.height;
+        specCtx.clearRect(0, 0, W, H);
+
+        // Log-frequency grid (40 Hz to 12000 Hz)
+        const fMin = 40;
+        const fMax = 12000;
+        const logMin = Math.log10(fMin);
+        const logMax = Math.log10(fMax);
+        const freqToX = (f) => ((Math.log10(Math.max(fMin, Math.min(fMax, f))) - logMin) / (logMax - logMin)) * W;
+
+        const gridFreqs = [100, 300, 1000, 3300, 8000];
+        specCtx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
+        specCtx.lineWidth = 1;
+        specCtx.font = '9px "JetBrains Mono", monospace';
+        specCtx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        for (const gf of gridFreqs) {
+          const x = freqToX(gf);
+          specCtx.beginPath();
+          specCtx.moveTo(x, 0);
+          specCtx.lineTo(x, H - 14);
+          specCtx.stroke();
+          specCtx.fillText(gf >= 1000 ? `${(gf / 1000).toFixed(1)}k` : `${gf}`, x + 2, H - 3);
+        }
+
+        // Markers for f_M and f_cloud when active
+        if (currentPhysics.isBreaking && currentPhysics.voidFraction > 0) {
+          const xM = freqToX(currentPhysics.fM_mean);
+          specCtx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+          specCtx.setLineDash([3, 3]);
+          specCtx.beginPath();
+          specCtx.moveTo(xM, 0);
+          specCtx.lineTo(xM, H - 14);
+          specCtx.stroke();
+          specCtx.fillStyle = '#38bdf8';
+          specCtx.fillText('f_M', Math.min(W - 24, xM + 3), 10);
+
+          if (currentPhysics.fCloud > 0 && currentPhysics.plungingFactor > 0.15) {
+            const xC = freqToX(currentPhysics.fCloud);
+            specCtx.strokeStyle = 'rgba(251, 191, 36, 0.75)';
+            specCtx.beginPath();
+            specCtx.moveTo(xC, 0);
+            specCtx.lineTo(xC, H - 14);
+            specCtx.stroke();
+            specCtx.fillStyle = '#fbbf24';
+            specCtx.fillText('f_cloud', Math.min(W - 42, xC + 3), 20);
+          }
+          specCtx.setLineDash([]);
+        }
+
+        // Live FFT from Web Audio AnalyserNode
+        if (analyserNode && audioEnabled) {
+          analyserNode.getByteFrequencyData(freqBins);
+          const binHz = SAMPLE_RATE / analyserNode.fftSize;
+          let peakBin = 0;
+          let peakVal = 0;
+
+          specCtx.beginPath();
+          specCtx.moveTo(0, H - 14);
+          for (let px = 0; px < W; px++) {
+            const f = Math.pow(10, logMin + (px / W) * (logMax - logMin));
+            const bin = Math.min(freqBins.length - 1, Math.max(1, Math.round(f / binHz)));
+            const val = freqBins[bin] / 255;
+            if (freqBins[bin] > peakVal) {
+              peakVal = freqBins[bin];
+              peakBin = bin;
+            }
+            const y = (H - 14) * (1 - val * 0.92);
+            specCtx.lineTo(px, y);
+          }
+          specCtx.lineTo(W, H - 14);
+          specCtx.closePath();
+
+          const grad = specCtx.createLinearGradient(0, 0, 0, H);
+          grad.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
+          grad.addColorStop(1, 'rgba(14, 165, 233, 0.05)');
+          specCtx.fillStyle = grad;
+          specCtx.fill();
+
+          specCtx.strokeStyle = '#38bdf8';
+          specCtx.lineWidth = 1.5;
+          specCtx.stroke();
+
+          document.getElementById('hud-peak-freq').textContent = peakVal > 8
+            ? `Peak: ${Math.round(peakBin * binHz)} Hz`
+            : 'Peak: — Hz';
+        }
+      }
+
+      // =========================================================================
+      // 7. ANIMATION LOOP (TRUE 230° CURLING BARREL, VOID TUBE & MULTI-STAGE CRASH)
+      // =========================================================================
+      let lastTime = performance.now();
+      let breakFiredForCycle = false;
+      let elapsedSec = 0;
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        elapsedSec += dt;
+        waterUniforms.uTime.value = elapsedSec;
+
+        const s = currentPhysics;
+        const autoTrain = document.getElementById('chk-auto-train').checked;
+
+        if (autoTrain || manualTriggerQueued) {
+          // Cycle duration respects full 3.5-5.5s crash sound so consecutive waves don't clip
+          const cycleSec = Math.max(6.2, computeCrashDuration(s) * 0.92);
+          waveTrainPhase += dt / cycleSec;
+          if (waveTrainPhase >= 1.0) {
+            waveTrainPhase -= 1.0;
+            breakFiredForCycle = false;
+            manualTriggerQueued = false;
+          }
+        }
+
+        // Smooth camera interpolation + drag offset
+        const baseCam = camPresets[activeCamPreset] || camPresets.cross;
+        const radius = baseCam.pos.distanceTo(baseCam.look);
+        const baseYaw = Math.atan2(baseCam.pos.x - baseCam.look.x, baseCam.pos.z - baseCam.look.z);
+        const basePitch = Math.asin(Math.max(-0.9, Math.min(0.9, (baseCam.pos.y - baseCam.look.y) / radius)));
+        const yaw = baseYaw + camOrbitOffset.yaw;
+        const pitch = Math.max(-0.2, Math.min(0.85, basePitch + camOrbitOffset.pitch));
+        const desiredPos = new THREE.Vector3(
+          baseCam.look.x + radius * Math.cos(pitch) * Math.sin(yaw),
+          baseCam.look.y + radius * Math.sin(pitch),
+          baseCam.look.z + radius * Math.cos(pitch) * Math.cos(yaw)
+        );
+        camera.position.lerp(desiredPos, 0.09);
+        camera.lookAt(baseCam.look);
+
+        // Update seabed mesh & front highlight
+        const sbPos = seabedGeo.attributes.position.array;
+        const blPos = bedLineGeo.attributes.position.array;
+        for (let iz = 0; iz <= 10; iz++) {
+          for (let ix = 0; ix <= NX; ix++) {
+            const idx = iz * (NX + 1) + ix;
+            const x = sbPos[idx * 3];
+            const yBed = getBedY(x, s);
+            sbPos[idx * 3 + 1] = yBed;
+            if (iz === 10) {
+              blPos[ix * 3] = x;
+              blPos[ix * 3 + 1] = yBed + 0.018;
+              blPos[ix * 3 + 2] = TANK_WIDTH / 2 + 0.02;
+            }
+          }
+        }
+        seabedGeo.attributes.position.needsUpdate = true;
+        seabedGeo.computeVertexNormals();
+        bedLineGeo.attributes.position.needsUpdate = true;
+
+        // Wave crest position
+        const xCrest = -7.0 + waveTrainPhase * 14.0;
+        const xBreak = 2.5;
+
+        waterUniforms.uPlunging.value = s.plungingFactor;
+        waterUniforms.uBreaking.value = s.isBreaking ? 1.0 : 0.0;
+        waterUniforms.uVoidFrac.value = s.voidFraction;
+        waterUniforms.uCrestX.value = xCrest;
+        waterUniforms.uWaveH.value = s.H;
+
+        // Trigger breaking event at xBreak (lip impact)
+        if (!breakFiredForCycle && xCrest >= xBreak) {
+          breakFiredForCycle = true;
+          if (s.isBreaking && s.voidFraction > 0) {
+            spawnBubbleCloud(xBreak + 0.45 * s.plungingFactor, 0.95 + (s.H * WORLD_PER_METER) * 0.38, s);
+            playWaveBreakSound(s);
+          }
+        }
+
+        // TRUE DOWNWARD-HOOKING J-BARREL BREAKING WAVE + WATERTIGHT CROSS-SECTION
+        const wsPos = waterSurfGeo.attributes.position.array;
+        const wsFoam = waterSurfGeo.attributes.aFoam.array;
+        const cPos = curtainGeo.attributes.position.array;
+        const cFrac = curtainGeo.attributes.aSurfaceFrac.array;
+        const clPos = crestLineGeo.attributes.position.array;
+        const waterBaseY = 0.95;
+        const Hvis = s.H * WORLD_PER_METER;
+        const hVis = Math.max(0.35, s.h * WORLD_PER_METER);
+
+        waterUniforms.uWaveH.value = Hvis;
+        waterUniforms.uWaterBaseY.value = waterBaseY;
+
+        const curlWindow = s.isBreaking && xCrest > -0.4 && xCrest < 4.6;
+        const curlProg = curlWindow ? Math.max(0, Math.min(1, (xCrest + 0.2) / 2.6)) : 0;
+        const curlFadeOut = xCrest > xBreak ? Math.exp(-(xCrest - xBreak) * 1.35) : 1.0;
+        const curlIntensity = curlWindow ? s.plungingFactor * Math.sin(Math.min(1, curlProg) * Math.PI * 0.85) * curlFadeOut : 0;
+
+        let voidAnchorX = xCrest + 0.45;
+        let voidAnchorY = waterBaseY + Hvis * 0.32;
+        let lipTipX = xCrest + 0.5;
+        let lipTipY = waterBaseY + Hvis * 0.4;
+        const surfContour = [];
+        const bedContour = [];
+
+        for (let ix = 0; ix <= NX; ix++) {
+          const xBase = X_MIN + (ix / NX) * TANK_LEN;
+          const yBed = getBedY(xBase, s);
+          const localDepth = Math.max(0.28, waterBaseY - yBed);
+
+          const localAmp = greensShoalingAmplitude(Hvis * 0.58, hVis + 0.9, localDepth);
+          const localK = solveWavenumber(s.T, localDepth);
+          const sigma = Math.max(0.95, Math.min(2.6, 2.4 / Math.max(0.35, localK * 12.0 * WORLD_PER_METER)));
+
+          const dx = xBase - xCrest;
+          const asym = 0.5 * (1.0 + Math.tanh(dx / (sigma * 0.55)));
+          const shoalSteep = Math.min(1, Math.max(0, (xCrest + 4.5) / 7.5));
+          const sigLocal = sigma * (1.35 - 0.52 * asym * shoalSteep);
+
+          const arg = dx / sigLocal;
+          const sech = 1.0 / Math.cosh(arg * 1.12);
+          const cnoidal = sech * sech;
+          const trough = -0.15 * localAmp * Math.exp(-Math.pow(dx - sigLocal * 1.35, 2) / (2 * sigLocal * sigLocal * 0.8));
+
+          let eta = localAmp * cnoidal + trough;
+          let xCurl = 0;
+          let yCurl = 0;
+          let localFoam = 0;
+
+          if (curlWindow) {
+            const postDecay = xCrest > xBreak ? Math.exp(-(xCrest - xBreak) * 0.36) : 1.0;
+            eta *= postDecay;
+
+            // Downward-hooking plunging J-barrel:
+            // uFront in [0.0..0.38] = outer plunging lip arcing forward (+x) AND curving DOWNWARD (-y)
+            // uFront in [0.38..0.75] = inner concave barrel wall sweeping BACK (-x) and DOWN to the trough toe!
+            if (curlIntensity > 0.02) {
+              const uFront = dx / (sigLocal * 1.25);
+              if (uFront > -0.25 && uFront < 1.15) {
+                const barrelScale = curlIntensity * Math.min(1.6, 0.38 + 0.68 * Hvis);
+                const lipPush = Math.exp(-Math.pow((uFront - 0.16) / 0.22, 2));
+                const barrelScoop = Math.exp(-Math.pow((uFront - 0.54) / 0.20, 2));
+                xCurl = barrelScale * (1.12 * lipPush - 0.78 * barrelScoop);
+
+                // Curve the overhanging lip tip DOWNWARD into a real plunging hook!
+                // Peak downward hook occurs right at the lip tip (uFront ~ 0.22), then smoothly returns to trough
+                const hookDip = Math.exp(-Math.pow((uFront - 0.22) / 0.16, 2));
+                yCurl = -curlIntensity * hookDip * Math.min(0.85, localAmp * 0.42);
+
+                if (Math.abs(uFront - 0.20) < 0.04) {
+                  lipTipX = xBase + xCurl;
+                  lipTipY = Math.max(yBed + 0.12, waterBaseY + eta + yCurl);
+                }
+                if (Math.abs(uFront - 0.42) < 0.04) {
+                  voidAnchorX = xBase + barrelScale * 0.32;
+                  voidAnchorY = waterBaseY + eta * 0.58;
+                }
+              }
+            }
+
+            // Rich whitewater foam on curling lip, spilling crest, and post-impact bore
+            if (s.voidFraction > 0) {
+              const lipSpray = Math.exp(-Math.pow((dx - 0.25) / 0.55, 2)) * (0.75 + 0.25 * (1 - s.plungingFactor));
+              const postBore = (xCrest > xBreak - 0.2 && xBase > xBreak - 0.6 && xBase < xCrest + 1.2)
+                ? Math.exp(-Math.pow((xBase - xCrest) / 1.4, 2)) * 1.05
+                : 0.0;
+              localFoam = Math.min(1.0, (lipSpray + postBore) * s.voidFraction);
+            }
+          }
+
+          const bgRipple = 0.018 * Math.sin(xBase * 1.3 - elapsedSec * 1.9);
+          const xSurf = xBase + xCurl;
+          const ySurf = Math.max(yBed + 0.06, waterBaseY + eta + yCurl + bgRipple);
+
+          surfContour.push(new THREE.Vector2(xSurf, ySurf));
+          bedContour.push(new THREE.Vector2(xBase, yBed));
+
+          cPos[ix * 3] = xSurf;
+          cPos[ix * 3 + 1] = ySurf;
+          cPos[ix * 3 + 2] = TANK_WIDTH / 2;
+          cFrac[ix] = 1.0;
+
+          const bSlot = (NX + 1) + (NX - ix);
+          cPos[bSlot * 3] = xBase;
+          cPos[bSlot * 3 + 1] = yBed;
+          cPos[bSlot * 3 + 2] = TANK_WIDTH / 2;
+          cFrac[bSlot] = 0.0;
+
+          clPos[ix * 3] = xSurf;
+          clPos[ix * 3 + 1] = ySurf + 0.012;
+          clPos[ix * 3 + 2] = TANK_WIDTH / 2 + 0.02;
+
+          for (let iz = 0; iz <= NZ; iz++) {
+            const vIdx = iz * (NX + 1) + ix;
+            const zFrac = (iz / NZ) - 0.5;
+            const zMod = 1.0 + 0.045 * Math.sin(zFrac * 7.5 + elapsedSec * 1.4);
+            wsPos[vIdx * 3] = xBase + xCurl * (0.94 + 0.06 * Math.cos(zFrac * 5.5));
+            wsPos[vIdx * 3 + 1] = Math.max(yBed + 0.06, waterBaseY + (eta * zMod) + yCurl + bgRipple);
+            wsFoam[vIdx] = localFoam;
+          }
+        }
+
+        // Continuous lip-tip spray & crest mist while breaking (when voidFraction > 0)
+        if (curlWindow && s.voidFraction > 0 && xCrest < xBreak + 2.2) {
+          let spraySpawn = 0;
+          const sprayQuota = Math.floor(14 * s.voidFraction);
+          for (let i = 0; i < MAX_FOAM && spraySpawn < sprayQuota; i++) {
+            const f = foamParticles[i];
+            if (!f.active) {
+              f.active = true;
+              f.x = lipTipX + (Math.random() - 0.5) * 0.45;
+              f.y = lipTipY + (Math.random() - 0.2) * 0.25;
+              f.z = (Math.random() - 0.5) * (TANK_WIDTH * 0.92);
+              f.vx = 0.8 + Math.random() * 1.6;
+              f.vy = 0.4 + Math.random() * 1.3;
+              f.vz = (Math.random() - 0.5) * 0.45;
+              f.life = 0;
+              f.maxLife = 0.8 + Math.random() * 1.2;
+              spraySpawn++;
+            }
+          }
+        }
+
+        // Triangulate the exact closed 2D cross-section polygon
+        const closedPoly = surfContour.concat(bedContour.slice().reverse());
+        const tris = THREE.ShapeUtils.triangulateShape(closedPoly, []);
+        const idxArr = curtainGeo.index.array;
+        const triCount = Math.min(tris.length, NX * 2);
+        let ptr = 0;
+        for (let t = 0; t < triCount; t++) {
+          idxArr[ptr++] = tris[t][0];
+          idxArr[ptr++] = tris[t][1];
+          idxArr[ptr++] = tris[t][2];
+        }
+        curtainGeo.setDrawRange(0, ptr);
+        curtainGeo.index.needsUpdate = true;
+        curtainGeo.attributes.position.needsUpdate = true;
+        curtainGeo.attributes.aSurfaceFrac.needsUpdate = true;
+
+        waterSurfGeo.attributes.position.needsUpdate = true;
+        waterSurfGeo.attributes.aFoam.needsUpdate = true;
+        waterSurfGeo.computeVertexNormals();
+        crestLineGeo.attributes.position.needsUpdate = true;
+
+        // Update subsurface orbital velocity tracers
+        const oPos = orbitGeo.attributes.position.array;
+        for (let i = 0; i < ORBIT_COUNT; i++) {
+          const tr = orbitTracers[i];
+          const yBed = getBedY(tr.x0, s);
+          const depth = Math.max(0.3, waterBaseY - yBed);
+          const yMean = yBed + depth * (1.0 - tr.depthFrac);
+          const dx = tr.x0 - xCrest;
+          const kLocal = solveWavenumber(s.T, depth);
+          const decay = Math.exp(-tr.depthFrac * Math.min(3.5, kLocal * depth));
+          const amp = ((s.H * WORLD_PER_METER) * 0.28) * Math.exp(-(dx * dx) / 4.5) * decay;
+          const phase = dx * 1.4;
+          oPos[i * 3] = tr.x0 - amp * Math.sin(phase);
+          oPos[i * 3 + 1] = Math.max(yBed + 0.05, yMean + amp * 0.75 * Math.cos(phase));
+          oPos[i * 3 + 2] = tr.z;
+        }
+        orbitGeo.attributes.position.needsUpdate = true;
+
+        // Swirling volumetric air-mist & foam vortex inside the hollow C-barrel
+        const showMist = s.isBreaking && s.voidFraction > 0 && s.plungingFactor > 0.20 && xCrest > 0.7 && xCrest < 3.0;
+        const mistEnv = showMist ? Math.sin(((xCrest - 0.7) / 2.3) * Math.PI) * s.plungingFactor * s.voidFraction : 0;
+        const mistRx = 0.22 + 0.28 * Math.min(1.4, Hvis * 0.5);
+        const mistRy = 0.14 + 0.18 * Math.min(1.4, Hvis * 0.5);
+        for (let i = 0; i < MAX_VOID_MIST; i++) {
+          if (mistEnv > 0.05) {
+            const m = voidMistSeeds[i];
+            const th = m.ang + elapsedSec * m.spd;
+            voidMistPos[i * 3] = voidAnchorX + Math.cos(th) * mistRx * m.rad;
+            voidMistPos[i * 3 + 1] = voidAnchorY + Math.sin(th) * mistRy * m.rad;
+            voidMistPos[i * 3 + 2] = m.z;
+            voidMistCol[i * 3] = 0.85 * mistEnv;
+            voidMistCol[i * 3 + 1] = 0.96 * mistEnv;
+            voidMistCol[i * 3 + 2] = 1.0 * mistEnv;
+          } else {
+            voidMistPos[i * 3 + 1] = -50;
+          }
+        }
+        voidMistGeo.attributes.position.needsUpdate = true;
+        voidMistGeo.attributes.color.needsUpdate = true;
+
+        // Update Minnaert Bubble Vortex Cloud
+        for (let i = 0; i < MAX_BUBBLES; i++) {
+          const b = bubbles[i];
+          if (b.active) {
+            b.life += dt;
+            if (b.life >= b.maxLife) {
+              b.active = false;
+              bubblePositions[i * 3 + 1] = -50;
+              continue;
+            }
+            b.vx *= (1 - 0.45 * dt);
+            b.vy += (0.95 - b.swirl * 0.22) * dt;
+            b.x += b.vx * dt;
+            b.y += b.vy * dt;
+            b.z += b.vz * dt;
+
+            const yBedHere = getBedY(b.x, s);
+            if (b.y < yBedHere + 0.06) {
+              b.y = yBedHere + 0.06;
+              b.vy = Math.abs(b.vy) * 0.45;
+            }
+            if (b.y > waterBaseY + 0.08) {
+              b.y = waterBaseY + 0.08;
+              b.vy *= -0.15;
+            }
+
+            bubblePositions[i * 3] = b.x;
+            bubblePositions[i * 3 + 1] = b.y;
+            bubblePositions[i * 3 + 2] = b.z;
+
+            const fade = Math.pow(1 - b.life / b.maxLife, 0.72);
+            bubbleColors[i * 3] = 0.48 * fade;
+            bubbleColors[i * 3 + 1] = 0.90 * fade;
+            bubbleColors[i * 3 + 2] = 1.0 * fade;
+          } else {
+            bubblePositions[i * 3 + 1] = -50;
+          }
+        }
+        bubbleGeo.attributes.position.needsUpdate = true;
+        bubbleGeo.attributes.color.needsUpdate = true;
+
+        // Update Ballistic Foam & Spray Particles
+        for (let i = 0; i < MAX_FOAM; i++) {
+          const f = foamParticles[i];
+          if (f.active) {
+            f.life += dt;
+            if (f.life >= f.maxLife) {
+              f.active = false;
+              foamPositions[i * 3 + 1] = -50;
+              continue;
+            }
+            f.vy -= 4.2 * dt;
+            f.x += f.vx * dt;
+            f.y += f.vy * dt;
+            f.z += f.vz * dt;
+            if (f.y < waterBaseY + 0.02) {
+              f.y = waterBaseY + 0.02;
+              f.vy = 0;
+              f.vx *= 0.85;
+            }
+            foamPositions[i * 3] = f.x;
+            foamPositions[i * 3 + 1] = f.y;
+            foamPositions[i * 3 + 2] = f.z;
+
+            const fade = 1 - f.life / f.maxLife;
+            foamColors[i * 3] = 0.92 * fade;
+            foamColors[i * 3 + 1] = 0.97 * fade;
+            foamColors[i * 3 + 2] = 1.0 * fade;
+          } else {
+            foamPositions[i * 3 + 1] = -50;
+          }
+        }
+        foamGeo.attributes.position.needsUpdate = true;
+        foamGeo.attributes.color.needsUpdate = true;
+
+        renderer.render(scene, camera);
+        drawSpectrum();
+      }
+
+      // Resize handler
+      window.addEventListener('resize', () => {
+        const w = container.clientWidth;
+        const h = Math.max(1, container.clientHeight);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      // Initialize UI & Start Loop
+      updateUI();
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
