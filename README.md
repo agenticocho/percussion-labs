@@ -1,6 +1,6 @@
 # Percussion Labs
 
-Twenty-seven self-contained, browser-native percussion laboratories, plus two
+Twenty-eight self-contained, browser-native percussion laboratories, plus two
 specialty pendulum pieces. Each one builds an instrument out of a different
 piece of physics or mathematics, and generates its sound from the model rather
 than playing samples over it.
@@ -12,7 +12,7 @@ No build step, no backend, no account. Open `index.html` or any module directly.
 Listed in the order the modules were built, which tracks the order of ambition
 as well — technique first, then visible physics, then abstractions.
 
-## The twenty-seven
+## The twenty-eight
 
 | # | Module | Built on |
 |---|---|---|
@@ -43,6 +43,7 @@ as well — technique first, then visible physics, then abstractions.
 | 25 | **CROTALES-3D** | Chladni disk modes, chromatic antique cymbals, bowed edge |
 | 26 | **WATERPHONE-3D** | Hydro-acoustic friction idiophone, fluid slosh, modal portamento |
 | 27 | **METRONOME-SYNC 3D** | Huygens coupled pendulums, anti-phase locking, order-parameter phase transition |
+| 28 | **BEAT-FIELD 3D** | Interference and polyrhythm from integer ratios, rhythm-to-pitch crossover |
 
 ## Specialty
 
@@ -87,7 +88,7 @@ and rewrite the `<link>` / `<script>` tags.
 
 ```
 index.html      the suite landing page
-*.html          twenty-seven laboratory modules + two specialty pendulum pieces
+*.html          twenty-eight laboratory modules + two specialty pendulum pieces
 ```
 
 ## Licence

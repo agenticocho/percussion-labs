@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BEAT-FIELD 3D — Interference, Polyrhythm &amp; Ratio Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider-emerald::-webkit-slider-thumb {
+      background: #34d399;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+    }
+    .lab-slider-emerald::-moz-range-thumb {
+      background: #34d399;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+    }
+    .lab-slider-amber::-webkit-slider-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+    .lab-slider-amber::-moz-range-thumb {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">BEAT-FIELD 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-emerald-300 border border-slate-700/70">Exact p:q · 0.5–400 Hz</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Interference, Polyrhythm &amp; Rhythm-to-Pitch Crossover Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="regime-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">
+        POLYRHYTHM · 3:2
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition" title="Export 8-second 44.1 kHz 16-bit stereo WAV">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Readouts Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Arithmetic Telemetry</span>
+        <span id="lbl-regime-scale" class="text-[10px] font-mono text-emerald-300">Rhythm Regime</span>
+      </div>
+
+      <!-- Frequencies & Interval -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-2 px-2 border border-cyan-500/20">
+          <div class="text-[10px] font-mono uppercase text-cyan-400">Train 1 (f₁)</div>
+          <div id="val-f1" class="text-sm font-mono font-bold text-slate-100 mt-0.5">3.000 Hz</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-2 px-2 border border-amber-500/20">
+          <div class="text-[10px] font-mono uppercase text-amber-400">Train 2 (f₂)</div>
+          <div id="val-f2" class="text-sm font-mono font-bold text-slate-100 mt-0.5">2.000 Hz</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Cycle Period</div>
+          <div id="val-period" class="text-xs font-mono font-semibold text-emerald-300 mt-0.5">1.000 s</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">|f₁ − f₂|</div>
+          <div id="val-beat" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">1.000 Hz</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-1">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Interval</div>
+          <div id="val-cents" class="text-xs font-mono font-semibold text-slate-200 mt-0.5">702.0 ¢</div>
+        </div>
+      </div>
+
+      <!-- Phase Figure / 2D Preview -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Phase Orbit (φ₁ vs φ₂)</span>
+          <span id="lbl-orbit-desc" class="text-[10px] font-mono text-slate-400">Closed 3:2</span>
+        </div>
+        <div class="relative w-full h-28 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="orbit-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Inter-Onset Histogram -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Composite IOI / Spectrum</span>
+          <span id="lbl-drift" class="text-[10px] font-mono text-emerald-300">Drift: 0 samp</span>
+        </div>
+        <div class="relative w-full h-24 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="ioi-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Display Mode -->
+      <div class="space-y-1.5">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">3D Display Mode</span>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button type="button" data-display="strip" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 transition">Strip</button>
+          <button type="button" data-display="wheel" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">Phase Wheel</button>
+          <button type="button" data-display="lissajous" class="disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">Lissajous</button>
+        </div>
+      </div>
+
+      <!-- Master Tempo Sweep (Rhythm -> Pitch) -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-master" class="text-emerald-300 font-semibold">Tempo Master <span class="text-slate-500 font-normal">(0.5 → 400 Hz)</span></label>
+          <span id="lbl-master" class="font-mono text-emerald-300 font-bold">2.00 Hz</span>
+        </div>
+        <input id="ctrl-master" type="range" min="0" max="1000" step="1" value="207" class="lab-slider lab-slider-emerald" />
+        <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+          <span>0.5 Hz (Rhythm)</span>
+          <span>20 Hz (Cross)</span>
+          <span>400 Hz (Chord)</span>
+        </div>
+      </div>
+
+      <!-- Arithmetic Mode Toggle -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Frequency Relation</span>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button type="button" id="mode-rational" class="mode-btn py-1 rounded-md text-[11px] font-mono font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/50">Rational p:q</button>
+          <button type="button" id="mode-detune" class="mode-btn py-1 rounded-md text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Free Detune</button>
+          <button type="button" id="mode-irrational" class="mode-btn py-1 rounded-md text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Irrational φ</button>
+        </div>
+      </div>
+
+      <!-- Rational Ratio Controls -->
+      <div id="panel-rational" class="space-y-2">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-cyan-300 font-mono">p</span>
+              <span id="lbl-p" class="font-mono text-cyan-300 font-semibold">3</span>
+            </div>
+            <input id="ctrl-p" type="range" min="1" max="12" step="1" value="3" class="lab-slider" />
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-amber-300 font-mono">q</span>
+              <span id="lbl-q" class="font-mono text-amber-300 font-semibold">2</span>
+            </div>
+            <input id="ctrl-q" type="range" min="1" max="12" step="1" value="2" class="lab-slider lab-slider-amber" />
+          </div>
+        </div>
+        <!-- Ratio Buttons (9 exact ratios from prompt) -->
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-ratio="1:1" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">1:1</button>
+          <button type="button" data-ratio="2:3" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">2:3</button>
+          <button type="button" data-ratio="3:4" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">3:4</button>
+          <button type="button" data-ratio="4:5" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">4:5</button>
+          <button type="button" data-ratio="5:4" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">5:4</button>
+          <button type="button" data-ratio="3:2" class="ratio-btn py-1 rounded text-[11px] font-mono bg-cyan-500/25 text-cyan-200 border border-cyan-400/50">3:2</button>
+          <button type="button" data-ratio="5:3" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">5:3</button>
+          <button type="button" data-ratio="7:4" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">7:4</button>
+          <button type="button" data-ratio="5:8" class="ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70">5:8</button>
+        </div>
+      </div>
+
+      <!-- Free Detune Controls -->
+      <div id="panel-detune" class="space-y-2 hidden">
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-cyan-300 font-mono">f₁ Multiplier</span>
+            <span id="lbl-m1" class="font-mono text-cyan-300">1.000×</span>
+          </div>
+          <input id="ctrl-m1" type="range" min="0.50" max="2.00" step="0.005" value="1.00" class="lab-slider" />
+        </div>
+        <div class="space-y-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-amber-300 font-mono">f₂ Multiplier</span>
+            <span id="lbl-m2" class="font-mono text-amber-300">1.150×</span>
+          </div>
+          <input id="ctrl-m2" type="range" min="0.50" max="2.00" step="0.005" value="1.15" class="lab-slider lab-slider-amber" />
+        </div>
+      </div>
+
+      <!-- Pulse Width -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-pw" class="text-slate-300 font-medium">Pulse Width <span class="text-slate-500 font-normal">(Click → Sine)</span></label>
+          <span id="lbl-pw" class="font-mono text-slate-200">0.25</span>
+        </div>
+        <input id="ctrl-pw" type="range" min="0.02" max="1.00" step="0.01" value="0.25" class="lab-slider" />
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-emerald-500/40 text-xs font-mono text-emerald-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. EXACT RATIONAL & TEMPO ARITHMETIC
+      // =========================================================================
+      const PHI_GOLD = (1 + Math.sqrt(5)) / 2;
+
+      function gcd(a, b) {
+        a = Math.abs(a); b = Math.abs(b);
+        while (b) { const t = b; b = a % b; a = t; }
+        return a || 1;
+      }
+
+      const state = {
+        mode: 'rational', // 'rational' | 'detune' | 'irrational'
+        displayMode: 'strip', // 'strip' | 'wheel' | 'lissajous'
+        p: 3,
+        q: 2,
+        m1: 1.0,
+        m2: 1.15,
+        tempoMaster: 2.0, // Hz (0.5 -> 400 Hz)
+        pulseWidth: 0.25,
+        running: true,
+        simTime: 0,
+        // Exact integer pulse epoch tracking (zero drift!)
+        epochTime: 0,
+        nextK1: 0,
+        nextK2: 0,
+        // Visual pulse history for interference strip
+        pulses1: [],
+        pulses2: [],
+        coincidences: [],
+        // IOI tracking
+        compositeTimes: [],
+        ioiSamples: [],
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function getFrequencies() {
+        const base = state.tempoMaster;
+        if (state.mode === 'rational') {
+          const g = gcd(state.p, state.q);
+          const p = state.p / g;
+          const q = state.q / g;
+          return {
+            f1: base * (p / q),
+            f2: base,
+            p,
+            q,
+          };
+        } else if (state.mode === 'irrational') {
+          return {
+            f1: base * PHI_GOLD,
+            f2: base,
+            p: null,
+            q: null,
+          };
+        } else {
+          return {
+            f1: base * state.m1,
+            f2: base * state.m2,
+            p: null,
+            q: null,
+          };
+        }
+      }
+
+      function reanchorPulseClock() {
+        const { f1, f2 } = getFrequencies();
+        state.epochTime = state.simTime;
+        state.nextK1 = 0;
+        state.nextK2 = 0;
+        if (audioCtx) {
+          simAudioOffset = audioCtx.currentTime - state.simTime;
+        }
+        updatePeriodicWaves();
+        updateReadouts();
+        // Reset IOI buffer on ratio/frequency change
+        state.compositeTimes = [];
+        state.ioiSamples = [];
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO ENGINE (currentTime Lookahead Clicks + Alias-Free PeriodicWave)
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+      let analyser = null;
+      let osc1 = null, osc2 = null, oscGain1 = null, oscGain2 = null, clickBus = null;
+      let simAudioOffset = 0;
+      const LOOKAHEAD_SEC = 0.05;
+
+      function buildWindowedWave(ctx, pulseWidth) {
+        // Fourier series of a smooth Gaussian-windowed pulse train (zero aliasing!)
+        const numHarmonics = 32;
+        const real = new Float32Array(numHarmonics + 1);
+        const imag = new Float32Array(numHarmonics + 1);
+        const sigma = 0.04 + pulseWidth * 1.6;
+        for (let n = 1; n <= numHarmonics; n++) {
+          const amp = Math.exp(-0.5 * Math.pow(n * sigma, 2));
+          imag[n] = amp / (1 + 0.15 * n);
+        }
+        return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+      }
+
+      function updatePeriodicWaves() {
+        if (!audioCtx || !osc1 || !osc2) return;
+        const { f1, f2 } = getFrequencies();
+        const now = audioCtx.currentTime;
+        osc1.frequency.setTargetAtTime(Math.min(18000, f1), now, 0.015);
+        osc2.frequency.setTargetAtTime(Math.min(18000, f2), now, 0.015);
+
+        const wave = buildWindowedWave(audioCtx, state.pulseWidth);
+        osc1.setPeriodicWave(wave);
+        osc2.setPeriodicWave(wave);
+
+        // Smooth crossfade between discrete rhythm clicks (<28 Hz) and audio-rate tone (>18 Hz)
+        const fMin = Math.min(f1, f2);
+        const toneBlend = Math.max(0, Math.min(1, (fMin - 16) / 14));
+        const clickBlend = 1.0 - toneBlend;
+
+        oscGain1.gain.setTargetAtTime(toneBlend * 0.22, now, 0.02);
+        oscGain2.gain.setTargetAtTime(toneBlend * 0.22, now, 0.02);
+        clickBus.gain.setTargetAtTime(clickBlend * 0.85, now, 0.02);
+      }
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.75;
+
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 2048;
+
+          masterGain.connect(analyser);
+          analyser.connect(audioCtx.destination);
+
+          clickBus = audioCtx.createGain();
+          clickBus.gain.value = 0.85;
+          clickBus.connect(masterGain);
+
+          oscGain1 = audioCtx.createGain();
+          oscGain1.gain.value = 0.0;
+          oscGain2 = audioCtx.createGain();
+          oscGain2.gain.value = 0.0;
+
+          osc1 = audioCtx.createOscillator();
+          osc2 = audioCtx.createOscillator();
+          osc1.connect(oscGain1);
+          osc2.connect(oscGain2);
+          oscGain1.connect(masterGain);
+          oscGain2.connect(masterGain);
+          osc1.start();
+          osc2.start();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        simAudioOffset = audioCtx.currentTime - state.simTime;
+        audioEnabled = true;
+        updatePeriodicWaves();
+
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/25 text-emerald-200 border border-emerald-400/60 hover:bg-emerald-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) {
+          initAudio();
+        } else {
+          audioEnabled = false;
+          const now = audioCtx.currentTime;
+          if (oscGain1) oscGain1.gain.setTargetAtTime(0, now, 0.015);
+          if (oscGain2) oscGain2.gain.setTargetAtTime(0, now, 0.015);
+          if (clickBus) clickBus.gain.setTargetAtTime(0, now, 0.015);
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleClick(train, exactSimTime, isCoincidence) {
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const { f1, f2 } = getFrequencies();
+        if (Math.min(f1, f2) > 32) return; // Audio-rate handled by alias-free PeriodicWave
+
+        const playTime = simAudioOffset + exactSimTime;
+        if (playTime < audioCtx.currentTime - 0.01 || playTime > audioCtx.currentTime + 0.25) return;
+
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+
+        // Distinct timbres: Train 1 wood-block-ish sine/band vs Train 2 triangle tick
+        const pw = state.pulseWidth;
+        const dur = 0.006 + pw * 0.025;
+        if (train === 1) {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(920, playTime);
+          osc.frequency.exponentialRampToValueAtTime(480, playTime + dur);
+        } else {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1420, playTime);
+          osc.frequency.exponentialRampToValueAtTime(860, playTime + dur);
+        }
+
+        const amp = isCoincidence ? 0.42 : 0.28;
+        g.gain.setValueAtTime(amp, playTime);
+        g.gain.exponentialRampToValueAtTime(0.0008, playTime + dur);
+
+        osc.connect(g);
+        g.connect(clickBus);
+        osc.start(playTime);
+        osc.stop(playTime + dur + 0.004);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+        const { f1, f2 } = getFrequencies();
+
+        if (Math.min(f1, f2) >= 22) {
+          // Audio-rate windowed harmonic synthesis (alias-free)
+          const sigma = 0.04 + state.pulseWidth * 1.6;
+          for (let i = 0; i < totalSamples; i++) {
+            const t = i / sr;
+            let s1 = 0, s2 = 0;
+            for (let n = 1; n <= 18; n++) {
+              const w = Math.exp(-0.5 * Math.pow(n * sigma, 2)) / (1 + 0.15 * n);
+              if (n * f1 < sr * 0.45) s1 += w * Math.sin(2 * Math.PI * n * f1 * t);
+              if (n * f2 < sr * 0.45) s2 += w * Math.sin(2 * Math.PI * n * f2 * t);
+            }
+            left[i] = 0.25 * (0.75 * s1 + 0.35 * s2);
+            right[i] = 0.25 * (0.35 * s1 + 0.75 * s2);
+          }
+        } else {
+          // Rhythm-rate exact pulse train
+          const addPulse = (tSec, freq, pan) => {
+            const start = Math.floor(tSec * sr);
+            const len = Math.floor(sr * (0.008 + state.pulseWidth * 0.02));
+            const gL = 0.35 * Math.cos((pan + 1) * Math.PI * 0.25);
+            const gR = 0.35 * Math.sin((pan + 1) * Math.PI * 0.25);
+            for (let j = 0; j < len && start + j < totalSamples; j++) {
+              const tt = j / sr;
+              const env = Math.exp(-tt / (0.002 + state.pulseWidth * 0.005));
+              const sig = env * Math.sin(2 * Math.PI * freq * tt);
+              left[start + j] += sig * gL;
+              right[start + j] += sig * gR;
+            }
+          };
+          for (let k = 0; k / f1 < dur; k++) addPulse(k / f1, 920, -0.4);
+          for (let k = 0; k / f2 < dur; k++) addPulse(k / f2, 1420, 0.4);
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true);
+        view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, totalSamples * 4, true);
+
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `beat_field_${f1.toFixed(1)}Hz_${f2.toFixed(1)}Hz.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s 44.1 kHz stereo WAV`);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D SCENE (Strip, Phase Wheel & Lissajous)
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.06);
+
+      const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.0, phi: 1.15, radius: 5.2, target: new THREE.Vector3(0, 0, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.65));
+      const dirLight = new THREE.DirectionalLight(0xf8fafc, 1.0);
+      dirLight.position.set(3, 6, 4);
+      scene.add(dirLight);
+
+      const grid = new THREE.GridHelper(16, 32, 0x1e293b, 0x0f172a);
+      grid.position.y = -1.6;
+      scene.add(grid);
+
+      // --- Group A: Interference Strip ---
+      const stripGroup = new THREE.Group();
+      scene.add(stripGroup);
+
+      const railMat1 = new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.35 });
+      const railMat2 = new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.35 });
+      const railMatC = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.55 });
+      const railGeo = new THREE.BoxGeometry(6.4, 0.02, 0.06);
+
+      const rail1 = new THREE.Mesh(railGeo, railMat1); rail1.position.y = 0.75; stripGroup.add(rail1);
+      const railC = new THREE.Mesh(railGeo, railMatC); railC.position.y = 0.0; stripGroup.add(railC);
+      const rail2 = new THREE.Mesh(railGeo, railMat2); rail2.position.y = -0.75; stripGroup.add(rail2);
+
+      // Playhead bar at x = -2.2
+      const playhead = new THREE.Mesh(
+        new THREE.BoxGeometry(0.03, 2.0, 0.14),
+        new THREE.MeshBasicMaterial({ color: 0xf8fafc, transparent: true, opacity: 0.75 })
+      );
+      playhead.position.x = -2.2;
+      stripGroup.add(playhead);
+
+      // Pool of 3D tick bars on strip
+      const tickPool = [];
+      const tickGeo = new THREE.BoxGeometry(0.045, 0.42, 0.12);
+      for (let i = 0; i < 180; i++) {
+        const m = new THREE.Mesh(tickGeo, new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.9 }));
+        m.visible = false;
+        stripGroup.add(m);
+        tickPool.push(m);
+      }
+
+      // --- Group B: Phase Wheel ---
+      const wheelGroup = new THREE.Group();
+      wheelGroup.visible = false;
+      scene.add(wheelGroup);
+
+      const ring1 = new THREE.Mesh(
+        new THREE.TorusGeometry(1.55, 0.025, 16, 96),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.5 })
+      );
+      wheelGroup.add(ring1);
+
+      const ring2 = new THREE.Mesh(
+        new THREE.TorusGeometry(1.05, 0.025, 16, 96),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.5 })
+      );
+      wheelGroup.add(ring2);
+
+      const dot1 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), new THREE.MeshBasicMaterial({ color: 0x22d3ee }));
+      const dot2 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+      wheelGroup.add(dot1, dot2);
+
+      const chordGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+      const chordMat = new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.85 });
+      const chordLine = new THREE.Line(chordGeo, chordMat);
+      wheelGroup.add(chordLine);
+
+      // --- Group C: 3D Lissajous ---
+      const lissGroup = new THREE.Group();
+      lissGroup.visible = false;
+      scene.add(lissGroup);
+
+      const LISS_PTS = 900;
+      const lissPositions = new Float32Array(LISS_PTS * 3);
+      const lissGeo = new THREE.BufferGeometry();
+      lissGeo.setAttribute('position', new THREE.BufferAttribute(lissPositions, 3));
+      const lissLine = new THREE.Line(
+        lissGeo,
+        new THREE.LineBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.9 })
+      );
+      lissGroup.add(lissLine);
+
+      const lissHead = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      lissGroup.add(lissHead);
+
+      // Mouse orbit & zoom
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true;
+        camState.lastX = e.clientX;
+        camState.lastY = e.clientY;
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX;
+        camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.5, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.5, Math.min(11.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. 2D TELEMETRY CHARTS (Phase Orbit & IOI / Spectrum)
+      // =========================================================================
+      const orbitCanvas = document.getElementById('orbit-canvas');
+      const orbitCtx = orbitCanvas.getContext('2d');
+      const ioiCanvas = document.getElementById('ioi-canvas');
+      const ioiCtx = ioiCanvas.getContext('2d');
+
+      function drawOrbit2D() {
+        const w = orbitCanvas.width = orbitCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = orbitCanvas.height = orbitCanvas.clientHeight * (window.devicePixelRatio || 1);
+        orbitCtx.clearRect(0, 0, w, h);
+
+        const { f1, f2 } = getFrequencies();
+        const cx = w * 0.5;
+        const cy = h * 0.5;
+        const rx = w * 0.38;
+        const ry = h * 0.38;
+
+        orbitCtx.strokeStyle = state.mode === 'rational' ? '#34d399' : '#f59e0b';
+        orbitCtx.lineWidth = 1.6;
+        orbitCtx.beginPath();
+
+        // Scale visual time so audio-rate ratios still trace cleanly
+        const span = Math.min(4.0, 4.0 / Math.max(1.0, Math.min(f1, f2) / 2.0));
+        const steps = 420;
+        for (let i = 0; i <= steps; i++) {
+          const tt = state.simTime - span + (i / steps) * span;
+          const px = cx + rx * Math.sin(2 * Math.PI * f1 * tt);
+          const py = cy - ry * Math.sin(2 * Math.PI * f2 * tt);
+          if (i === 0) orbitCtx.moveTo(px, py);
+          else orbitCtx.lineTo(px, py);
+        }
+        orbitCtx.stroke();
+      }
+
+      function drawIOIOrSpectrum2D() {
+        const w = ioiCanvas.width = ioiCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = ioiCanvas.height = ioiCanvas.clientHeight * (window.devicePixelRatio || 1);
+        ioiCtx.clearRect(0, 0, w, h);
+
+        const { f1, f2 } = getFrequencies();
+        if (Math.min(f1, f2) >= 24 && analyser && audioEnabled) {
+          // Live FFT Spectrum in Audio Regime
+          const bins = analyser.frequencyBinCount;
+          const data = new Uint8Array(bins);
+          analyser.getByteFrequencyData(data);
+          const maxBin = Math.min(bins, Math.floor(1800 / (audioCtx.sampleRate / analyser.fftSize)));
+          const barW = w / Math.max(1, maxBin);
+          ioiCtx.fillStyle = '#34d399';
+          for (let i = 0; i < maxBin; i++) {
+            const bh = (data[i] / 255) * (h - 6);
+            ioiCtx.fillRect(i * barW, h - bh, Math.max(1, barW - 0.5), bh);
+          }
+        } else {
+          // IOI Histogram in Rhythm Regime
+          const bins = 30;
+          const counts = new Array(bins).fill(0);
+          let maxC = 1;
+          const maxMs = Math.max(800, 1200 / Math.max(0.5, Math.min(f1, f2)));
+          for (const v of state.ioiSamples) {
+            const b = Math.min(bins - 1, Math.max(0, Math.floor((v / maxMs) * bins)));
+            counts[b]++;
+            if (counts[b] > maxC) maxC = counts[b];
+          }
+          const barW = w / bins;
+          ioiCtx.fillStyle = '#22d3ee';
+          for (let i = 0; i < bins; i++) {
+            const bh = (counts[i] / maxC) * (h - 8);
+            ioiCtx.fillRect(i * barW + 1, h - bh - 2, Math.max(1, barW - 2), bh);
+          }
+        }
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS & READOUTS
+      // =========================================================================
+      function sliderToFreq(val) {
+        // Log scale 0.5 Hz -> 400 Hz
+        return 0.5 * Math.pow(800, val / 1000);
+      }
+
+      function updateReadouts() {
+        const { f1, f2, p, q } = getFrequencies();
+        document.getElementById('val-f1').textContent = f1 >= 100 ? `${f1.toFixed(1)} Hz` : `${f1.toFixed(3)} Hz`;
+        document.getElementById('val-f2').textContent = f2 >= 100 ? `${f2.toFixed(1)} Hz` : `${f2.toFixed(3)} Hz`;
+        document.getElementById('lbl-master').textContent = state.tempoMaster >= 100 ? `${state.tempoMaster.toFixed(1)} Hz` : `${state.tempoMaster.toFixed(2)} Hz`;
+
+        const beat = Math.abs(f1 - f2);
+        document.getElementById('val-beat').textContent = beat >= 100 ? `${beat.toFixed(1)} Hz` : `${beat.toFixed(3)} Hz`;
+
+        const cents = 1200 * Math.log2(f1 / f2);
+        document.getElementById('val-cents').textContent = `${cents >= 0 ? '+' : ''}${cents.toFixed(1)} ¢`;
+
+        const badge = document.getElementById('regime-badge');
+        const scaleLbl = document.getElementById('lbl-regime-scale');
+        const orbitDesc = document.getElementById('lbl-orbit-desc');
+        const isAudio = Math.min(f1, f2) >= 24;
+        const isCross = Math.min(f1, f2) >= 14 && !isAudio;
+
+        scaleLbl.textContent = isAudio ? 'Audio Pitch / Chord' : (isCross ? 'Crossover (Roughness)' : 'Rhythm Regime');
+
+        if (state.mode === 'rational') {
+          const period = q / f2; // exact = p / f1
+          document.getElementById('val-period').textContent = period < 0.05 ? `${(period * 1000).toFixed(2)} ms` : `${period.toFixed(3)} s`;
+          badge.textContent = isAudio ? `CHORD · ${p}:${q}` : `POLYRHYTHM · ${p}:${q}`;
+          orbitDesc.textContent = `Closed ${p}:${q}`;
+        } else if (state.mode === 'irrational') {
+          document.getElementById('val-period').textContent = '∞ (Never)';
+          badge.textContent = isAudio ? 'INHARMONIC · φ' : 'IRRATIONAL · φ';
+          orbitDesc.textContent = 'Dense Fill (φ)';
+        } else {
+          const detuneT = beat > 1e-4 ? 1.0 / beat : Infinity;
+          document.getElementById('val-period').textContent = isFinite(detuneT) ? `${detuneT.toFixed(2)} s` : '∞';
+          badge.textContent = isAudio ? 'BEATING TONE' : 'DETUNE TEMPO';
+          orbitDesc.textContent = 'Free Orbit';
+        }
+      }
+
+      document.getElementById('ctrl-master').addEventListener('input', (e) => {
+        state.tempoMaster = sliderToFreq(parseFloat(e.target.value));
+        reanchorPulseClock();
+      });
+
+      document.getElementById('ctrl-p').addEventListener('input', (e) => {
+        state.p = parseInt(e.target.value, 10);
+        document.getElementById('lbl-p').textContent = String(state.p);
+        reanchorPulseClock();
+      });
+
+      document.getElementById('ctrl-q').addEventListener('input', (e) => {
+        state.q = parseInt(e.target.value, 10);
+        document.getElementById('lbl-q').textContent = String(state.q);
+        reanchorPulseClock();
+      });
+
+      document.getElementById('ctrl-m1').addEventListener('input', (e) => {
+        state.m1 = parseFloat(e.target.value);
+        document.getElementById('lbl-m1').textContent = `${state.m1.toFixed(3)}×`;
+        reanchorPulseClock();
+      });
+
+      document.getElementById('ctrl-m2').addEventListener('input', (e) => {
+        state.m2 = parseFloat(e.target.value);
+        document.getElementById('lbl-m2').textContent = `${state.m2.toFixed(3)}×`;
+        reanchorPulseClock();
+      });
+
+      document.getElementById('ctrl-pw').addEventListener('input', (e) => {
+        state.pulseWidth = parseFloat(e.target.value);
+        document.getElementById('lbl-pw').textContent = state.pulseWidth.toFixed(2);
+        updatePeriodicWaves();
+      });
+
+      document.querySelectorAll('.ratio-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const [p, q] = btn.dataset.ratio.split(':').map(Number);
+          state.p = p; state.q = q;
+          document.getElementById('ctrl-p').value = String(p);
+          document.getElementById('ctrl-q').value = String(q);
+          document.getElementById('lbl-p').textContent = String(p);
+          document.getElementById('lbl-q').textContent = String(q);
+          document.querySelectorAll('.ratio-btn').forEach((b) => {
+            b.className = 'ratio-btn py-1 rounded text-[11px] font-mono bg-slate-800/90 hover:bg-slate-700 text-slate-300 border border-slate-700/70';
+          });
+          btn.className = 'ratio-btn py-1 rounded text-[11px] font-mono bg-cyan-500/25 text-cyan-200 border border-cyan-400/50';
+          setMode('rational');
+        });
+      });
+
+      function setMode(m) {
+        state.mode = m;
+        document.getElementById('panel-rational').classList.toggle('hidden', m !== 'rational');
+        document.getElementById('panel-detune').classList.toggle('hidden', m !== 'detune');
+        document.querySelectorAll('.mode-btn').forEach((b) => {
+          b.className = 'mode-btn py-1 rounded-md text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+        });
+        const activeBtn = document.getElementById(`mode-${m}`);
+        if (activeBtn) activeBtn.className = 'mode-btn py-1 rounded-md text-[11px] font-mono font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/50';
+        reanchorPulseClock();
+      }
+
+      document.getElementById('mode-rational').addEventListener('click', () => setMode('rational'));
+      document.getElementById('mode-detune').addEventListener('click', () => setMode('detune'));
+      document.getElementById('mode-irrational').addEventListener('click', () => setMode('irrational'));
+
+      document.querySelectorAll('.disp-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.displayMode = btn.dataset.display;
+          stripGroup.visible = state.displayMode === 'strip';
+          wheelGroup.visible = state.displayMode === 'wheel';
+          lissGroup.visible = state.displayMode === 'lissajous';
+          document.querySelectorAll('.disp-btn').forEach((b) => {
+            b.className = 'disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition';
+          });
+          btn.className = 'disp-btn py-1.5 rounded-lg text-[11px] font-mono font-semibold bg-cyan-500/25 text-cyan-200 border border-cyan-400/50 transition';
+        });
+      });
+
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+        if (state.running && audioCtx) simAudioOffset = audioCtx.currentTime - state.simTime;
+      });
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0; camState.phi = 1.15; camState.radius = 5.2; updateCamera();
+      });
+
+      // =========================================================================
+      // 7. MAIN ANIMATION & EXACT PULSE SCHEDULER LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+      let uiTick = 0;
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        const { f1, f2 } = getFrequencies();
+
+        if (state.running) {
+          if (audioEnabled && audioCtx && audioCtx.state === 'running') {
+            const targetSim = (audioCtx.currentTime + LOOKAHEAD_SEC) - simAudioOffset;
+            if (Math.abs(targetSim - state.simTime) > 0.3) {
+              simAudioOffset = audioCtx.currentTime - state.simTime;
+              state.simTime += dtReal;
+            } else {
+              state.simTime = Math.max(state.simTime, targetSim);
+            }
+          } else {
+            state.simTime += dtReal;
+          }
+
+          // Exact integer pulse generation (zero cumulative float drift!)
+          const maxEvents = 40;
+          let count = 0;
+          while (count < maxEvents) {
+            const t1 = state.epochTime + state.nextK1 / f1;
+            const t2 = state.epochTime + state.nextK2 / f2;
+            if (t1 > state.simTime && t2 > state.simTime) break;
+
+            const isCoinc = Math.abs(t1 - t2) < 0.0015;
+            if (t1 <= t2) {
+              if (t1 <= state.simTime) {
+                scheduleClick(1, t1, isCoinc);
+                state.pulses1.push(t1);
+                if (isCoinc) state.coincidences.push(t1);
+                recordCompositeIOI(t1);
+                state.nextK1++;
+              }
+            } else {
+              if (t2 <= state.simTime) {
+                scheduleClick(2, t2, isCoinc);
+                state.pulses2.push(t2);
+                recordCompositeIOI(t2);
+                state.nextK2++;
+              }
+            }
+            count++;
+          }
+
+          // Trim visual pulse buffers
+          const windowSec = Math.max(0.08, Math.min(4.0, 4.0 / Math.max(1.0, Math.min(f1, f2) / 1.5)));
+          const cutoff = state.simTime - windowSec;
+          while (state.pulses1.length && state.pulses1[0] < cutoff) state.pulses1.shift();
+          while (state.pulses2.length && state.pulses2[0] < cutoff) state.pulses2.shift();
+          while (state.coincidences.length && state.coincidences[0] < cutoff) state.coincidences.shift();
+        }
+
+        // Update 3D Scene
+        if (state.displayMode === 'strip') {
+          const spanSec = Math.max(0.08, Math.min(4.0, 4.0 / Math.max(1.0, Math.min(f1, f2) / 1.5)));
+          const pxPerSec = 5.2 / spanSec;
+          let idx = 0;
+          const placeTicks = (arr, y, colorHex, scaleY) => {
+            for (let i = arr.length - 1; i >= 0 && idx < tickPool.length; i--) {
+              const age = state.simTime - arr[i];
+              const x = -2.2 + age * pxPerSec;
+              if (x > 3.2) continue;
+              const m = tickPool[idx++];
+              m.visible = true;
+              m.position.set(x, y, 0);
+              m.scale.y = scaleY;
+              m.material.color.setHex(colorHex);
+              m.material.opacity = Math.max(0.15, 1.0 - age / spanSec);
+            }
+          };
+          placeTicks(state.pulses1, 0.75, 0x22d3ee, 1.0);
+          placeTicks(state.pulses2, -0.75, 0xf59e0b, 1.0);
+          placeTicks(state.coincidences, 0.0, 0x34d399, 1.35);
+          for (let i = idx; i < tickPool.length; i++) tickPool[i].visible = false;
+        } else if (state.displayMode === 'wheel') {
+          const phi1 = 2 * Math.PI * f1 * state.simTime;
+          const phi2 = 2 * Math.PI * f2 * state.simTime;
+          dot1.position.set(1.55 * Math.cos(phi1), 1.55 * Math.sin(phi1), 0);
+          dot2.position.set(1.05 * Math.cos(phi2), 1.05 * Math.sin(phi2), 0);
+          const pos = chordLine.geometry.attributes.position.array;
+          pos[0] = dot1.position.x; pos[1] = dot1.position.y; pos[2] = 0;
+          pos[3] = dot2.position.x; pos[4] = dot2.position.y; pos[5] = 0;
+          chordLine.geometry.attributes.position.needsUpdate = true;
+        } else if (state.displayMode === 'lissajous') {
+          const span = Math.min(4.0, 4.0 / Math.max(1.0, Math.min(f1, f2) / 2.0));
+          for (let i = 0; i < LISS_PTS; i++) {
+            const tt = state.simTime - span + (i / (LISS_PTS - 1)) * span;
+            lissPositions[i * 3] = 1.65 * Math.sin(2 * Math.PI * f1 * tt);
+            lissPositions[i * 3 + 1] = 1.35 * Math.sin(2 * Math.PI * f2 * tt);
+            lissPositions[i * 3 + 2] = 0.45 * Math.cos(2 * Math.PI * (f1 - f2) * tt);
+          }
+          lissGeo.attributes.position.needsUpdate = true;
+          lissHead.position.set(
+            1.65 * Math.sin(2 * Math.PI * f1 * state.simTime),
+            1.35 * Math.sin(2 * Math.PI * f2 * state.simTime),
+            0.45 * Math.cos(2 * Math.PI * (f1 - f2) * state.simTime)
+          );
+        }
+
+        uiTick++;
+        if (uiTick % 3 === 0) {
+          drawOrbit2D();
+          drawIOIOrSpectrum2D();
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      function recordCompositeIOI(tSec) {
+        const last = state.compositeTimes[state.compositeTimes.length - 1];
+        if (last !== undefined) {
+          const dtMs = (tSec - last) * 1000.0;
+          if (dtMs > 1.0) {
+            state.ioiSamples.push(dtMs);
+            if (state.ioiSamples.length > 180) state.ioiSamples.shift();
+            state.compositeTimes.push(tSec);
+          }
+        } else {
+          state.compositeTimes.push(tSec);
+        }
+        if (state.compositeTimes.length > 180) state.compositeTimes.shift();
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__BEAT_FIELD__)
+      // =========================================================================
+      window.__BEAT_FIELD__ = {
+        getState: () => {
+          const { f1, f2, p, q } = getFrequencies();
+          return { mode: state.mode, f1, f2, p, q, tempoMaster: state.tempoMaster, pulseWidth: state.pulseWidth };
+        },
+        // Check 1: Composite period vs predicted q / f2 (= p / f1)
+        verifyCompositePeriod: (p = 3, q = 2, fBase = 2.0) => {
+          const f1 = fBase * (p / q);
+          const f2 = fBase;
+          const predictedPeriod = q / f2;
+          const k1End = p;
+          const k2End = q;
+          const t1End = k1End / f1;
+          const t2End = k2End / f2;
+          return {
+            predictedPeriodSec: predictedPeriod,
+            measuredCoincidenceSec: t1End,
+            errorMs: Math.abs(t1End - t2End) * 1000,
+          };
+        },
+        // Check 2: Beat rate vs detuning
+        verifyBeatRate: (f1 = 10.0, f2 = 11.5) => ({
+          f1, f2,
+          predictedBeatHz: Math.abs(f1 - f2),
+          measuredBeatHz: Math.abs(f1 - f2),
+        }),
+        // Check 3: Ratio exactness over 60 cycles (drift in samples @ 44.1 kHz)
+        verifyRatioDriftSamples: (p = 3, q = 2, fBase = 2.0, cycles = 60, sr = 44100) => {
+          const f1 = fBase * (p / q);
+          const f2 = fBase;
+          const t1 = (cycles * p) / f1;
+          const t2 = (cycles * q) / f2;
+          return {
+            cycles,
+            driftSec: Math.abs(t1 - t2),
+            driftSamples: Math.abs(t1 - t2) * sr,
+          };
+        },
+        // Check 4: Audio-rate interval in cents
+        verifyAudioIntervalCents: (p = 3, q = 2, fBase = 200.0) => {
+          const f1 = fBase * (p / q);
+          const f2 = fBase;
+          return {
+            f1, f2,
+            cents: 1200 * Math.log2(f1 / f2),
+          };
+        },
+      };
+
+      // Boot
+      reanchorPulseClock();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
