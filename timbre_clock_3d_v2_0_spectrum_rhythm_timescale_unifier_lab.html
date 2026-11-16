@@ -972,9 +972,11 @@
         },
       };
 
-      rebuildPartials();
-      updateReadouts();
-      requestAnimationFrame(animate);
+      window.addEventListener('load', () => {
+        rebuildPartials();
+        updateReadouts();
+        requestAnimationFrame(animate);
+      });
     })();
   </script>
 </body>
