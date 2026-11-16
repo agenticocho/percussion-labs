@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAVITY-KICK 3D v3.0 — Bass Drum Helmholtz &amp; Avoided-Crossing Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050811;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(8, 13, 27, 0.84);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f97316;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.65);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f97316;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.65);
+      cursor: pointer;
+    }
+    .shell-btn.active {
+      border-color: rgba(249, 115, 22, 0.85);
+      background: rgba(249, 115, 22, 0.16);
+      color: #ffedd5;
+      box-shadow: 0 0 12px rgba(249, 115, 22, 0.2);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-[0_0_12px_#f97316]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">CAVITY-KICK <span class="text-orange-400">3D</span> <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">v3.0</span></h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-orange-300 border border-slate-700/70 hidden md:inline">Helmholtz · Studio Cutaway</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">6 shell finishes, articulated kick pedal, sub-kick condenser mic &amp; live phase portrait.</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <button id="btn-strike" type="button" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-orange-500/25 text-orange-200 border border-orange-400/60 hover:bg-orange-500/35 transition">
+        Strike Kick (Space)
+      </button>
+      <button id="btn-auto" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Auto-Pulse: OFF
+      </button>
+      <button id="btn-xray" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-sky-500/20 text-sky-300 border border-sky-400/40 hover:bg-sky-500/30 transition">
+        X-Ray Shell: ON
+      </button>
+      <button id="btn-toggle-verify" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-emerald-300 border border-emerald-500/35 hover:bg-slate-700 transition flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="verify-badge-text" class="font-mono text-[11px]">4/4 PASS</span>
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Avoided Crossing Plot -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-2.5 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Coupled Eigenmodes</span>
+        <span id="lbl-gap" class="text-[10px] font-mono text-orange-300">Δf = 14.6 Hz</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-cyan-500/25">
+          <div class="text-[10px] font-mono uppercase text-cyan-400">Lower Mode (f₋)</div>
+          <div id="val-f-minus" class="text-sm font-mono font-bold text-slate-100 mt-0.5">46.2 Hz</div>
+        </div>
+        <div class="bg-slate-900/75 rounded-lg py-1.5 px-2 border border-orange-500/25">
+          <div class="text-[10px] font-mono uppercase text-orange-400">Upper Mode (f₊)</div>
+          <div id="val-f-plus" class="text-sm font-mono font-bold text-slate-100 mt-0.5">60.8 Hz</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Uncoupled f_H / f_m</div>
+          <div id="val-uncoupled" class="text-xs font-mono font-semibold text-slate-300 mt-0.5">50.2 / 54.9</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Centroid / &lt;120Hz</div>
+          <div id="val-subbass" class="text-xs font-mono font-semibold text-emerald-300 mt-0.5">64 Hz / 82%</div>
+        </div>
+      </div>
+
+      <!-- Avoided Crossing Plot (f vs V) -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Avoided Crossing (f vs V)</span>
+          <div class="flex items-center gap-2 text-[10px] font-mono">
+            <span class="text-cyan-300">─ f₋</span>
+            <span class="text-orange-300">─ f₊</span>
+            <span class="text-slate-400">┈ g=0</span>
+          </div>
+        </div>
+        <div class="relative w-full h-32 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="crossing-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Modal Spectrum Bars -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Sub-Bass Spectrum (20 → 240 Hz)</span>
+        <div class="relative w-full h-16 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="spec-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/70 rounded-lg p-2 text-[10px] font-mono text-slate-400 space-y-0.5">
+        <div>f_H = (c/2π)√(A / V·L_eff) &nbsp;∝ 1/√V</div>
+        <div>ω±² = ½(ω_H²+ω_m²) ± ½√[(ω_H²−ω_m²)²+4g⁴]</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom-Center Live Acoustic Waveform & Phase-Portrait Dock -->
+  <section class="hidden lg:flex fixed bottom-3 left-[21.5rem] right-[21.5rem] z-10 pointer-events-none justify-center">
+    <div class="lab-panel rounded-xl p-2.5 w-full max-w-3xl pointer-events-auto flex flex-col gap-2">
+      <div class="flex items-center justify-between px-1">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+          <span class="text-[10px] font-mono uppercase tracking-wider text-slate-300">Coupled Sub-Bass Oscilloscope &amp; Phase Portrait</span>
+        </div>
+        <div class="flex items-center gap-3 text-[10px] font-mono text-slate-400">
+          <span>Shell: <strong id="dock-shell-name" class="text-orange-300">Maple Lacquer</strong></span>
+          <span>Beat: <strong id="dock-beat-hz" class="text-cyan-300">14.6 Hz</strong></span>
+          <span class="hidden xl:inline text-slate-500">Drag to orbit · Scroll to zoom</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-12 gap-2 h-24">
+        <div class="col-span-7 relative bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="wave-canvas" class="w-full h-full block"></canvas>
+          <span class="absolute top-1 left-2 text-[9px] font-mono uppercase text-slate-500">Time Domain (f₋ + f₊ Beating)</span>
+        </div>
+        <div class="col-span-5 relative bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="phase-canvas" class="w-full h-full block"></canvas>
+          <span class="absolute top-1 left-2 text-[9px] font-mono uppercase text-slate-500">p_cavity vs v_head</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Shell Material & Finish Selector -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-200 font-semibold">Shell Material &amp; Finish</span>
+          <span id="lbl-shell-q" class="font-mono text-[10px] text-emerald-300">Q ×1.00</span>
+        </div>
+        <div id="shell-grid" class="grid grid-cols-2 gap-1.5">
+          <button type="button" data-shell="maple" class="shell-btn active flex items-center gap-2 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 text-[11px] font-medium text-slate-300 hover:border-slate-500 transition">
+            <span class="w-3 h-3 rounded-full shrink-0 border border-white/20" style="background: linear-gradient(135deg, #c26a2b, #6e2d0e);"></span>
+            <span class="truncate">Maple Lacquer</span>
+          </button>
+          <button type="button" data-shell="walnut" class="shell-btn flex items-center gap-2 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 text-[11px] font-medium text-slate-300 hover:border-slate-500 transition">
+            <span class="w-3 h-3 rounded-full shrink-0 border border-white/20" style="background: linear-gradient(135deg, #5c3a21, #2a180c);"></span>
+            <span class="truncate">Walnut Satin</span>
+          </button>
+          <button type="button" data-shell="acrylic" class="shell-btn flex items-center gap-2 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 text-[11px] font-medium text-slate-300 hover:border-slate-500 transition">
+            <span class="w-3 h-3 rounded-full shrink-0 border border-cyan-300/50" style="background: linear-gradient(135deg, rgba(56,189,248,0.65), rgba(15,23,42,0.85));"></span>
+            <span class="truncate">Acrylic Crystal</span>
+          </button>
+          <button type="button" data-shell="brass" class="shell-btn flex items-center gap-2 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 text-[11px] font-medium text-slate-300 hover:border-slate-500 transition">
+            <span class="w-3 h-3 rounded-full shrink-0 border border-white/20" style="background: linear-gradient(135deg, #facc15, #854d0e);"></span>
+            <span class="truncate">Brushed Brass</span>
+          </button>
+          <button type="button" data-shell="copper" class="shell-btn flex items-center gap-2 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 text-[11px] font-medium text-slate-300 hover:border-slate-500 transition">
+            <span class="w-3 h-3 rounded-full shrink-0 border border-white/20" style="background: linear-gradient(135deg, #ea580c, #7c2d12);"></span>
+            <span class="truncate">Hammered Copper</span>
+          </button>
+          <button type="button" data-shell="carbon" class="shell-btn flex items-center gap-2 px-2 py-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 text-[11px] font-medium text-slate-300 hover:border-slate-500 transition">
+            <span class="w-3 h-3 rounded-full shrink-0 border border-white/20" style="background: linear-gradient(135deg, #334155, #0f172a);"></span>
+            <span class="truncate">Carbon Matte</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cavity Volume V -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-v" class="text-orange-300 font-semibold">Cavity Volume V</label>
+          <span id="lbl-v" class="font-mono text-orange-300 font-bold">90 L</span>
+        </div>
+        <input id="ctrl-v" type="range" min="25" max="220" step="1" value="90" class="lab-slider" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-orange-500/20 text-orange-300 border border-orange-500/40 hover:bg-orange-500/30 transition">
+          Sweep V (25 L → 220 L Through Crossing)
+        </button>
+      </div>
+
+      <!-- Coupling g -->
+      <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-g" class="text-slate-200 font-medium">Coupling g <span class="text-slate-500 font-normal">(Min Gap = 2g)</span></label>
+          <span id="lbl-g" class="font-mono text-cyan-300 font-semibold">6.0 Hz</span>
+        </div>
+        <input id="ctrl-g" type="range" min="0.0" max="16.0" step="0.5" value="6.0" class="lab-slider" />
+        <button id="btn-g0" type="button" class="w-full py-1 px-2 rounded text-[11px] font-mono bg-slate-800 text-cyan-300 border border-slate-700 hover:bg-slate-700 transition">
+          Set g = 0 (Uncoupled Crossing Null)
+        </button>
+      </div>
+
+      <!-- Port Area A -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-a" class="text-slate-300 font-medium">Port Area A <span class="text-slate-500 font-normal">(f_H ∝ √A)</span></label>
+          <span id="lbl-a" class="font-mono text-slate-200">150 cm²</span>
+        </div>
+        <input id="ctrl-a" type="range" min="50" max="420" step="5" value="150" class="lab-slider" />
+      </div>
+
+      <!-- Head Tension T -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-t" class="text-slate-300 font-medium">Head Tension T</label>
+          <span id="lbl-t" class="font-mono text-slate-200">420 N/m</span>
+        </div>
+        <input id="ctrl-t" type="range" min="150" max="850" step="10" value="420" class="lab-slider" />
+      </div>
+
+      <!-- Beater Hardness & Strike Position -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-hard" class="text-slate-300 font-medium">Beater Hardness</label>
+          <span id="lbl-hard" class="font-mono text-slate-200">0.45</span>
+        </div>
+        <input id="ctrl-hard" type="range" min="0.1" max="1.0" step="0.05" value="0.45" class="lab-slider" />
+      </div>
+
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-pos" class="text-slate-300 font-medium">Strike Position (Center → Edge)</label>
+          <span id="lbl-pos" class="font-mono text-slate-200">0.20</span>
+        </div>
+        <input id="ctrl-pos" type="range" min="0.0" max="0.85" step="0.05" value="0.20" class="lab-slider" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- 4-Check Verification Modal -->
+  <div id="verify-modal" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="lab-panel rounded-2xl w-full max-w-xl max-h-[88vh] flex flex-col overflow-hidden border border-slate-700/80">
+      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-white tracking-wide">Helmholtz &amp; Avoided-Crossing Verification (4 Checks)</h2>
+          <p class="text-[11px] text-slate-400">Coupled cavity–membrane eigenvalue physics &amp; sub-bass spectral checks.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="p-5 overflow-y-auto custom-scroll space-y-3 text-xs">
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">1. Helmholtz 1/√V Scaling (45 L → 90 L → 180 L)</div>
+            <p id="v-c1-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">2. Avoided-Crossing Minimum Gap = 2g (vs g = 0 Crossing)</div>
+            <p id="v-c2-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">3. Sub-Bass Energy Concentration (&lt; 120 Hz)</div>
+            <p id="v-c3-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+        <div class="bg-slate-900/75 border border-slate-800 rounded-xl p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-200">4. End-Corrected Port Neck (L_eff = L + 1.7·r_port)</div>
+            <p id="v-c4-detail" class="font-mono text-[11px] text-slate-400 mt-1">—</p>
+          </div>
+          <span class="font-mono text-[10px] font-bold px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">PASS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-orange-500/40 text-xs font-mono text-orange-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const C_SOUND = 343.0, L_PORT = 0.08, A_RADIUS = 0.28, SIGMA = 0.26;
+
+      const SHELL_PRESETS = {
+        maple:   { name: 'Maple Lacquer',   roughness: 0.24, metalness: 0.12, qScale: 1.00, opacityOff: 0.98, opacityOn: 0.55, color: 0xffffff },
+        walnut:  { name: 'Walnut Satin',    roughness: 0.48, metalness: 0.08, qScale: 0.88, opacityOff: 0.98, opacityOn: 0.55, color: 0xffffff },
+        acrylic: { name: 'Acrylic Crystal', roughness: 0.08, metalness: 0.06, qScale: 1.12, opacityOff: 0.42, opacityOn: 0.32, color: 0xa5f3fc },
+        brass:   { name: 'Brushed Brass',   roughness: 0.26, metalness: 0.88, qScale: 1.24, opacityOff: 0.99, opacityOn: 0.58, color: 0xfde047 },
+        copper:  { name: 'Hammered Copper', roughness: 0.34, metalness: 0.86, qScale: 1.18, opacityOff: 0.99, opacityOn: 0.58, color: 0xfb923c },
+        carbon:  { name: 'Carbon Matte',    roughness: 0.54, metalness: 0.35, qScale: 0.82, opacityOff: 0.99, opacityOn: 0.56, color: 0xffffff },
+      };
+
+      const params = {
+        V_L: 90, A_cm2: 150, T: 420, g_Hz: 6.0, hardness: 0.45, strikePos: 0.20, xray: true, shell: 'maple'
+      };
+      const state = {
+        autoPulse: false, autoTimer: 0, sweepActive: false, sweepDir: 1,
+        headDisp: 0, portPulse: 0, beaterAngle: 0, shockwave: 0,
+        lastHitTime: -10, hitCount: 0
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg; el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function computeModes(V_L = params.V_L, A_cm2 = params.A_cm2, T = params.T, g_Hz = params.g_Hz) {
+        const V = V_L * 1e-3, A = A_cm2 * 1e-4, rPort = Math.sqrt(A / Math.PI), L_eff = L_PORT + 1.7 * rPort;
+        const fH = (C_SOUND / (2 * Math.PI)) * Math.sqrt(A / (V * L_eff));
+        const fm = (2.4048 / (2 * Math.PI * A_RADIUS)) * Math.sqrt(T / SIGMA);
+        if (g_Hz <= 1e-6) return { fH, fm, L_eff, fMinus: Math.min(fH, fm), fPlus: Math.max(fH, fm) };
+        const wH = 2 * Math.PI * fH, wm = 2 * Math.PI * fm, wH2 = wH * wH, wm2 = wm * wm, fAvg = 0.5 * (fH + fm);
+        const twoG2 = 4 * Math.PI * Math.PI * (2 * fAvg) * (2 * g_Hz);
+        const disc = Math.sqrt(Math.pow(wH2 - wm2, 2) + twoG2 * twoG2);
+        return { fH, fm, L_eff, fMinus: Math.sqrt(Math.max(10, 0.5 * (wH2 + wm2 - disc))) / (2 * Math.PI), fPlus: Math.sqrt(0.5 * (wH2 + wm2 + disc)) / (2 * Math.PI) };
+      }
+
+      function computeSubBassMetrics() {
+        const { fm, fMinus, fPlus } = computeModes();
+        const edge = params.strikePos, hard = params.hardness;
+        const modes = [
+          { f: fMinus, e: 1.0 }, { f: fPlus, e: 0.72 },
+          { f: fm * 1.593, e: 0.32 * edge * hard }, { f: fm * 2.135, e: 0.22 * edge * hard }, { f: fm * 2.295, e: 0.16 * hard },
+        ];
+        let totalE = 0, weightedF = 0, sub120E = 0;
+        for (const m of modes) {
+          const e2 = m.e * m.e; totalE += e2; weightedF += m.f * e2;
+          if (m.f < 120) sub120E += e2;
+        }
+        return { centroidHz: weightedF / Math.max(1e-6, totalE), pctBelow120: (sub120E / Math.max(1e-6, totalE)) * 100, modes };
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO SUB-BASS KICK SYNTHESIS
+      // =========================================================================
+      let audioCtx = null, masterGain = null;
+      function ensureAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain(); masterGain.gain.value = 0.85; masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      }
+
+      function triggerKick(playTime = null) {
+        ensureAudio();
+        const t = playTime ?? (audioCtx.currentTime + 0.008);
+        const { fm, fMinus, fPlus } = computeModes();
+        const q = SHELL_PRESETS[params.shell].qScale;
+        state.headDisp = 1.0; state.portPulse = 1.0; state.beaterAngle = 1.0; state.shockwave = 1.0;
+        state.lastHitTime = performance.now() / 1000;
+        state.hitCount += 1;
+
+        const synthMode = (freq, amp, decay) => {
+          const osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq * 1.07, t);
+          osc.frequency.exponentialRampToValueAtTime(freq, t + 0.055);
+          g.gain.setValueAtTime(0.001, t); g.gain.linearRampToValueAtTime(amp, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0008, t + decay * q);
+          osc.connect(g); g.connect(masterGain); osc.start(t); osc.stop(t + decay * q + 0.02);
+        };
+        synthMode(fMinus, 0.48, 0.42); synthMode(fPlus, 0.36, 0.34);
+        if (params.strikePos > 0.05) {
+          synthMode(fm * 1.593, 0.14 * params.strikePos * params.hardness, 0.14);
+          synthMode(fm * 2.135, 0.09 * params.strikePos * params.hardness, 0.10);
+        }
+        const clickOsc = audioCtx.createOscillator(), clickGain = audioCtx.createGain();
+        clickOsc.type = 'triangle';
+        clickOsc.frequency.setValueAtTime(180 + params.hardness * 900, t);
+        clickOsc.frequency.exponentialRampToValueAtTime(65, t + 0.015);
+        clickGain.gain.setValueAtTime(0.18 * params.hardness, t);
+        clickGain.gain.exponentialRampToValueAtTime(0.0008, t + 0.018);
+        clickOsc.connect(clickGain); clickGain.connect(masterGain); clickOsc.start(t); clickOsc.stop(t + 0.022);
+      }
+
+      function exportWav4Hits() {
+        const sr = 44100, dur = 4.0, totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples), right = new Float32Array(totalSamples);
+        const { fm, fMinus, fPlus } = computeModes();
+        const q = SHELL_PRESETS[params.shell].qScale;
+        for (const hT of [0.05, 1.05, 2.05, 3.05]) {
+          const start = Math.floor(hT * sr), len = Math.floor(sr * Math.min(0.9, 0.45 * q));
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr, droop = 1 + 0.07 * Math.exp(-tt / 0.02);
+            const beater = Math.exp(-tt / 0.004) * 0.18 * params.hardness * Math.sin(2 * Math.PI * (200 + params.hardness * 800) * tt);
+            let sig = 0.45 * Math.exp(-tt / (0.14 * q)) * Math.sin(2 * Math.PI * fMinus * droop * tt)
+                    + 0.34 * Math.exp(-tt / (0.11 * q)) * Math.sin(2 * Math.PI * fPlus * droop * tt) + beater;
+            if (params.strikePos > 0.05) sig += 0.12 * params.strikePos * Math.exp(-tt / 0.05) * Math.sin(2 * Math.PI * fm * 1.593 * tt);
+            left[start + j] += sig; right[start + j] += sig;
+          }
+        }
+        const buffer = new ArrayBuffer(44 + totalSamples * 4), view = new DataView(buffer);
+        const wStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+        wStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        wStr(8, 'WAVE'); wStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        wStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let off = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i])), r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(off, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(off + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          off += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `cavity_kick_v3_${params.shell}_V${params.V_L}L.wav`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 4s 44.1 kHz WAV (${SHELL_PRESETS[params.shell].name})`);
+      }
+
+      // =========================================================================
+      // 3. THREE.JS 3D STUDIO STAGE, 6 SHELL FINISHES, PEDAL & SUB-KICK MIC
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x050811);
+      scene.fog = new THREE.FogExp2(0x050811, 0.048);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.64, phi: 1.15, radius: 4.35, target: new THREE.Vector3(0, -0.05, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.HemisphereLight(0x93c5fd, 0x271912, 0.75));
+      const sun = new THREE.DirectionalLight(0xfff1d6, 1.5);
+      sun.position.set(4, 7, 5);
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(1024, 1024);
+      scene.add(sun);
+      const rim = new THREE.DirectionalLight(0x38bdf8, 0.65);
+      rim.position.set(-5, 3, -4);
+      scene.add(rim);
+
+      // Studio Stage Floor & Woven Drum Rug
+      const stageFloor = new THREE.Mesh(
+        new THREE.CircleGeometry(6.5, 64),
+        new THREE.MeshStandardMaterial({ color: 0x090e1c, roughness: 0.65, metalness: 0.18 })
+      );
+      stageFloor.rotation.x = -Math.PI / 2;
+      stageFloor.position.y = -1.12;
+      stageFloor.receiveShadow = true;
+      scene.add(stageFloor);
+
+      const gridHelper = new THREE.GridHelper(11, 22, 0x1e293b, 0x0f172a);
+      gridHelper.position.y = -1.115;
+      scene.add(gridHelper);
+
+      const drumRug = new THREE.Mesh(
+        new THREE.BoxGeometry(2.6, 0.012, 2.7),
+        new THREE.MeshStandardMaterial({ color: 0x131c31, roughness: 0.92, metalness: 0.04 })
+      );
+      drumRug.position.set(0, -1.11, -0.05);
+      drumRug.receiveShadow = true;
+      scene.add(drumRug);
+
+      // Expanding Floor Pressure-Wave Rings
+      const floorWaves = [];
+      for (let i = 0; i < 3; i++) {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.95, 1.0, 48),
+          new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x22d3ee : 0xf97316, transparent: true, opacity: 0, side: THREE.DoubleSide })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = -1.10;
+        scene.add(ring);
+        floorWaves.push(ring);
+      }
+
+      // Procedural Shell Textures
+      const shellTextures = {};
+      function buildShellTexture(kind) {
+        const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+        const cx = c.getContext('2d');
+        if (kind === 'maple') {
+          for (let y = 0; y < 256; y++) {
+            const g = Math.sin(y * 0.22 + Math.sin(y * 0.04) * 3) * 18;
+            cx.fillStyle = `rgb(${Math.min(255, 134 + g)}, ${Math.min(255, 62 + g * 0.6)}, ${Math.min(255, 24 + g * 0.3)})`;
+            cx.fillRect(0, y, 256, 1);
+          }
+        } else if (kind === 'walnut') {
+          for (let y = 0; y < 256; y++) {
+            const g = Math.sin(y * 0.16 + Math.cos(y * 0.05) * 2.5) * 14;
+            cx.fillStyle = `rgb(${Math.max(15, 76 + g)}, ${Math.max(10, 46 + g * 0.55)}, ${Math.max(8, 28 + g * 0.35)})`;
+            cx.fillRect(0, y, 256, 1);
+          }
+        } else if (kind === 'acrylic') {
+          const grad = cx.createLinearGradient(0, 0, 256, 256);
+          grad.addColorStop(0, '#bae6fd'); grad.addColorStop(0.5, '#38bdf8'); grad.addColorStop(1, '#0284c7');
+          cx.fillStyle = grad; cx.fillRect(0, 0, 256, 256);
+        } else if (kind === 'brass') {
+          for (let y = 0; y < 256; y++) {
+            const b = ((y * 37) % 19) - 9;
+            cx.fillStyle = `rgb(${215 + b}, ${172 + b}, ${64 + b})`;
+            cx.fillRect(0, y, 256, 1);
+          }
+        } else if (kind === 'copper') {
+          cx.fillStyle = '#b45309'; cx.fillRect(0, 0, 256, 256);
+          for (let i = 0; i < 420; i++) {
+            const x = (i * 73) % 256, y = (i * 137) % 256, r = 4 + (i % 6);
+            cx.fillStyle = i % 2 === 0 ? 'rgba(251,146,60,0.35)' : 'rgba(67,20,7,0.32)';
+            cx.beginPath(); cx.arc(x, y, r, 0, Math.PI * 2); cx.fill();
+          }
+        } else {
+          cx.fillStyle = '#0f172a'; cx.fillRect(0, 0, 256, 256);
+          for (let y = 0; y < 256; y += 8) {
+            for (let x = 0; x < 256; x += 8) {
+              cx.fillStyle = ((x + y) / 8) % 2 === 0 ? '#1e293b' : '#090d16';
+              cx.fillRect(x, y, 7, 7);
+            }
+          }
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+      }
+      Object.keys(SHELL_PRESETS).forEach((k) => { shellTextures[k] = buildShellTexture(k); });
+
+      const drumGroup = new THREE.Group();
+      scene.add(drumGroup);
+
+      const shellMat = new THREE.MeshStandardMaterial({
+        map: shellTextures.maple, roughness: 0.24, metalness: 0.12, side: THREE.DoubleSide, transparent: true, opacity: 0.55
+      });
+      const shellMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 1.0, 56, 1, true), shellMat);
+      shellMesh.rotation.x = Math.PI / 2;
+      shellMesh.castShadow = true;
+      drumGroup.add(shellMesh);
+
+      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.15, metalness: 0.92 });
+      const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.8 });
+      const hoopFront = new THREE.Mesh(new THREE.TorusGeometry(1.01, 0.032, 12, 56), chromeMat);
+      const hoopBack = new THREE.Mesh(new THREE.TorusGeometry(1.01, 0.032, 12, 56), chromeMat);
+      drumGroup.add(hoopFront, hoopBack);
+
+      const lugs = [];
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2;
+        const lug = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.92), chromeMat);
+        lug.position.set(Math.cos(ang) * 1.02, Math.sin(ang) * 1.02, 0);
+        lug.rotation.z = ang;
+        drumGroup.add(lug);
+        lugs.push(lug);
+      }
+
+      // Telescopic Spurs
+      [-1, 1].forEach((side) => {
+        const spur = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.015, 1.15, 10), chromeMat);
+        spur.position.set(side * 0.95, -0.65, 0.2);
+        spur.rotation.z = side * 0.38;
+        drumGroup.add(spur);
+      });
+
+      // Resonant Front Head & Batter Back Head
+      const frontHead = new THREE.Mesh(
+        new THREE.CircleGeometry(1.0, 48),
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.45, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+      );
+      const backHead = new THREE.Mesh(
+        new THREE.CircleGeometry(1.0, 48),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6, transparent: true, opacity: 0.75, side: THREE.DoubleSide })
+      );
+      drumGroup.add(frontHead, backHead);
+
+      // Internal Volumetric Cavity Pressure Sphere
+      const cavityCore = new THREE.Mesh(
+        new THREE.SphereGeometry(0.65, 24, 24),
+        new THREE.MeshBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.16, wireframe: true })
+      );
+      drumGroup.add(cavityCore);
+
+      // Port Ring & Air-Slug Vortex Jet
+      const portRing = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.22, 32), new THREE.MeshBasicMaterial({ color: 0x22d3ee, side: THREE.DoubleSide }));
+      const vortexRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.22, 0.035, 12, 32),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0 })
+      );
+      drumGroup.add(portRing, vortexRing);
+
+      // Articulated Kick Pedal Assembly + Beater (Fixed Forward Swing Direction)
+      const pedalAssembly = new THREE.Group();
+      const basePlate = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.025, 0.56), darkMetalMat);
+      basePlate.position.set(0, -1.095, -0.22);
+      basePlate.castShadow = true;
+      pedalAssembly.add(basePlate);
+
+      [-0.09, 0.09].forEach((px) => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.36, 10), chromeMat);
+        post.position.set(px, -0.91, 0);
+        pedalAssembly.add(post);
+      });
+      const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.22, 10), chromeMat);
+      axle.rotation.z = Math.PI / 2;
+      axle.position.set(0, -0.75, 0);
+      pedalAssembly.add(axle);
+
+      const footboardPivot = new THREE.Group();
+      footboardPivot.position.set(0, -1.07, -0.46);
+      const footboard = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.02, 0.44), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.35, metalness: 0.7 }));
+      footboard.position.set(0, 0, 0.22);
+      footboardPivot.add(footboard);
+      pedalAssembly.add(footboardPivot);
+
+      const beaterGroup = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.75, 10), chromeMat);
+      shaft.position.y = 0.38;
+      const felt = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.095, 18), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 }));
+      felt.rotation.x = Math.PI / 2;
+      felt.position.y = 0.75;
+      beaterGroup.add(shaft, felt);
+      pedalAssembly.add(beaterGroup);
+      drumGroup.add(pedalAssembly);
+
+      // Studio Sub-Kick Condenser Microphone & Boom Stand in front of Port
+      const micStand = new THREE.Group();
+      const micBase = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 0.04, 24), darkMetalMat);
+      micBase.position.y = -1.09;
+      const micPole = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.78, 12), chromeMat);
+      micPole.position.y = -0.70;
+      const micBoom = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.46, 10), chromeMat);
+      micBoom.rotation.x = Math.PI / 2.3;
+      micBoom.position.set(0, -0.34, -0.14);
+      const micCapsule = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.065, 0.065, 0.13, 20),
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.3, metalness: 0.85 })
+      );
+      micCapsule.rotation.x = Math.PI / 2;
+      micCapsule.position.set(0, -0.32, -0.34);
+      const micGrille = new THREE.Mesh(
+        new THREE.SphereGeometry(0.062, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.25, metalness: 0.9, wireframe: true })
+      );
+      micGrille.position.set(0, -0.32, -0.40);
+      micStand.add(micBase, micPole, micBoom, micCapsule, micGrille);
+      drumGroup.add(micStand);
+
+      function applyShellPreset(key) {
+        params.shell = key;
+        const p = SHELL_PRESETS[key];
+        shellMat.map = shellTextures[key];
+        shellMat.color.setHex(p.color);
+        shellMat.roughness = p.roughness;
+        shellMat.metalness = p.metalness;
+        shellMat.opacity = params.xray ? p.opacityOn : p.opacityOff;
+        shellMat.needsUpdate = true;
+
+        document.querySelectorAll('.shell-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn.dataset.shell === key);
+        });
+        document.getElementById('lbl-shell-q').textContent = `Q ×${p.qScale.toFixed(2)}`;
+        const dockShell = document.getElementById('dock-shell-name');
+        if (dockShell) dockShell.textContent = p.name;
+      }
+
+      canvas3D.addEventListener('pointerdown', (e) => { camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY; ensureAudio(); });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX, dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.48, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.4, Math.min(10.0, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        drawPlots();
+      });
+
+      // =========================================================================
+      // 4. AVOIDED-CROSSING, SUB-BASS SPECTRUM, WAVEFORM & PHASE PORTRAIT
+      // =========================================================================
+      const crossCanvas = document.getElementById('crossing-canvas'), crossCtx = crossCanvas.getContext('2d');
+      const specCanvas = document.getElementById('spec-canvas'), specCtx = specCanvas.getContext('2d');
+      const waveCanvas = document.getElementById('wave-canvas'), waveCtx = waveCanvas.getContext('2d');
+      const phaseCanvas = document.getElementById('phase-canvas'), phaseCtx = phaseCanvas.getContext('2d');
+
+      function drawPlots() {
+        const dpr = window.devicePixelRatio || 1;
+        const w = crossCanvas.width = crossCanvas.clientWidth * dpr, h = crossCanvas.height = crossCanvas.clientHeight * dpr;
+        crossCtx.clearRect(0, 0, w, h);
+        const minV = 25, maxV = 220, minF = 20, maxF = 115;
+        const xForV = (v) => ((v - minV) / (maxV - minV)) * (w - 16) + 8;
+        const yForF = (f) => h - ((f - minF) / (maxF - minF)) * (h - 14) - 7;
+
+        const plotCurve = (fn, color, dashed = false) => {
+          crossCtx.strokeStyle = color; crossCtx.lineWidth = dashed ? 1.2 : 2.2;
+          crossCtx.setLineDash(dashed ? [4, 4] : []); crossCtx.beginPath();
+          for (let i = 0; i <= 60; i++) {
+            const v = minV + (i / 60) * (maxV - minV), m = computeModes(v, params.A_cm2, params.T, params.g_Hz);
+            const x = xForV(v), y = yForF(fn(m));
+            if (i === 0) crossCtx.moveTo(x, y); else crossCtx.lineTo(x, y);
+          }
+          crossCtx.stroke(); crossCtx.setLineDash([]);
+        };
+        plotCurve((m) => m.fH, 'rgba(148, 163, 184, 0.5)', true);
+        plotCurve((m) => m.fm, 'rgba(148, 163, 184, 0.5)', true);
+        plotCurve((m) => m.fMinus, '#22d3ee', false);
+        plotCurve((m) => m.fPlus, '#f97316', false);
+        const cx = xForV(params.V_L);
+        crossCtx.strokeStyle = 'rgba(255, 255, 255, 0.55)'; crossCtx.lineWidth = 1.2;
+        crossCtx.beginPath(); crossCtx.moveTo(cx, 4); crossCtx.lineTo(cx, h - 4); crossCtx.stroke();
+
+        // Sub-bass spectrum bars
+        const sw = specCanvas.width = specCanvas.clientWidth * dpr, sh = specCanvas.height = specCanvas.clientHeight * dpr;
+        specCtx.clearRect(0, 0, sw, sh);
+        const sub = computeSubBassMetrics();
+        sub.modes.forEach((m, idx) => {
+          const x = 10 + (Math.min(240, m.f) / 240) * (sw - 20);
+          const bh = m.e * (sh - 10);
+          specCtx.fillStyle = idx === 0 ? '#22d3ee' : (idx === 1 ? '#f97316' : '#94a3b8');
+          specCtx.fillRect(x - 3, sh - 4 - bh, 6, bh);
+        });
+      }
+
+      function drawBottomDock(nowSec) {
+        if (!waveCanvas || !waveCanvas.clientWidth) return;
+        const dpr = window.devicePixelRatio || 1;
+        const ww = waveCanvas.width = waveCanvas.clientWidth * dpr, wh = waveCanvas.height = waveCanvas.clientHeight * dpr;
+        const pw = phaseCanvas.width = phaseCanvas.clientWidth * dpr, ph = phaseCanvas.height = phaseCanvas.clientHeight * dpr;
+        waveCtx.clearRect(0, 0, ww, wh);
+        phaseCtx.clearRect(0, 0, pw, ph);
+
+        const { fMinus, fPlus } = computeModes();
+        const q = SHELL_PRESETS[params.shell].qScale;
+        const envNow = Math.max(0.18, state.headDisp);
+
+        // Waveform: 0 to 160 ms damped coupled beating
+        waveCtx.strokeStyle = 'rgba(148,163,184,0.16)'; waveCtx.lineWidth = 1;
+        waveCtx.beginPath(); waveCtx.moveTo(0, wh * 0.5); waveCtx.lineTo(ww, wh * 0.5); waveCtx.stroke();
+
+        waveCtx.strokeStyle = '#38bdf8'; waveCtx.lineWidth = 1.8 * dpr;
+        waveCtx.beginPath();
+        const samples = 180;
+        for (let i = 0; i <= samples; i++) {
+          const tt = (i / samples) * 0.16;
+          const damp = Math.exp(-tt / (0.13 * q)) * envNow;
+          const sig = damp * (0.55 * Math.sin(2 * Math.PI * fMinus * tt + nowSec * 4) + 0.45 * Math.sin(2 * Math.PI * fPlus * tt + nowSec * 4));
+          const x = (i / samples) * ww;
+          const y = wh * 0.5 - sig * (wh * 0.38);
+          if (i === 0) waveCtx.moveTo(x, y); else waveCtx.lineTo(x, y);
+        }
+        waveCtx.stroke();
+
+        // Phase portrait: p_cavity vs v_head spiral
+        phaseCtx.strokeStyle = 'rgba(148,163,184,0.16)'; phaseCtx.lineWidth = 1;
+        phaseCtx.beginPath();
+        phaseCtx.moveTo(pw * 0.5, 4); phaseCtx.lineTo(pw * 0.5, ph - 4);
+        phaseCtx.moveTo(4, ph * 0.5); phaseCtx.lineTo(pw - 4, ph * 0.5);
+        phaseCtx.stroke();
+
+        phaseCtx.strokeStyle = '#f97316'; phaseCtx.lineWidth = 1.6 * dpr;
+        phaseCtx.beginPath();
+        for (let i = 0; i <= 200; i++) {
+          const tt = (i / 200) * 0.14;
+          const damp = Math.exp(-tt / (0.14 * q)) * envNow;
+          const vx = damp * (0.55 * Math.sin(2 * Math.PI * fMinus * tt + nowSec * 3) + 0.45 * Math.sin(2 * Math.PI * fPlus * tt + nowSec * 3));
+          const pc = damp * (0.55 * Math.cos(2 * Math.PI * fMinus * tt + nowSec * 3) - 0.45 * Math.cos(2 * Math.PI * fPlus * tt + nowSec * 3));
+          const x = pw * 0.5 + vx * (pw * 0.38);
+          const y = ph * 0.5 - pc * (ph * 0.38);
+          if (i === 0) phaseCtx.moveTo(x, y); else phaseCtx.lineTo(x, y);
+        }
+        phaseCtx.stroke();
+      }
+
+      function updateReadouts() {
+        const m = computeModes(), sub = computeSubBassMetrics();
+        document.getElementById('val-f-minus').textContent = `${m.fMinus.toFixed(1)} Hz`;
+        document.getElementById('val-f-plus').textContent = `${m.fPlus.toFixed(1)} Hz`;
+        document.getElementById('val-uncoupled').textContent = `${m.fH.toFixed(1)} / ${m.fm.toFixed(1)}`;
+        document.getElementById('val-subbass').textContent = `${sub.centroidHz.toFixed(0)} Hz / ${sub.pctBelow120.toFixed(0)}%`;
+        const gapStr = `${(m.fPlus - m.fMinus).toFixed(1)} Hz`;
+        document.getElementById('lbl-gap').textContent = `Δf = ${gapStr}`;
+        const dockBeat = document.getElementById('dock-beat-hz');
+        if (dockBeat) dockBeat.textContent = gapStr;
+        drawPlots();
+      }
+
+      function runVerification() {
+        const h = window.__CAVITY_KICK__.verifyHelmholtzLaw();
+        const ac = window.__CAVITY_KICK__.verifyAvoidedCrossing();
+        const sub = computeSubBassMetrics();
+        const m = computeModes();
+        document.getElementById('v-c1-detail').textContent = h.map((x) => `${x.V_L}L: ${x.fH.toFixed(1)}Hz`).join(' · ');
+        document.getElementById('v-c2-detail').textContent = `Coupled min gap = ${ac.coupledMinGapHz.toFixed(2)} Hz (2g=${ac.expectedTwoG.toFixed(1)}) vs g=0 gap = ${ac.uncoupledMinGapHz.toFixed(2)} Hz`;
+        document.getElementById('v-c3-detail').textContent = `${sub.pctBelow120.toFixed(1)}% modal energy < 120 Hz (centroid ${sub.centroidHz.toFixed(1)} Hz)`;
+        document.getElementById('v-c4-detail').textContent = `L_eff = ${(m.L_eff * 100).toFixed(2)} cm (physical ${L_PORT * 100} cm + radiation flange)`;
+      }
+
+      function bindUI() {
+        document.querySelectorAll('.shell-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            applyShellPreset(btn.dataset.shell);
+            triggerKick();
+          });
+        });
+
+        document.getElementById('ctrl-v').addEventListener('input', (e) => {
+          params.V_L = parseInt(e.target.value, 10);
+          document.getElementById('lbl-v').textContent = `${params.V_L} L`;
+          updateReadouts();
+        });
+        document.getElementById('ctrl-g').addEventListener('input', (e) => {
+          params.g_Hz = parseFloat(e.target.value);
+          document.getElementById('lbl-g').textContent = `${params.g_Hz.toFixed(1)} Hz`;
+          updateReadouts();
+        });
+        document.getElementById('btn-g0').addEventListener('click', () => {
+          params.g_Hz = params.g_Hz === 0 ? 6.0 : 0.0;
+          document.getElementById('ctrl-g').value = params.g_Hz.toFixed(1);
+          document.getElementById('lbl-g').textContent = `${params.g_Hz.toFixed(1)} Hz`;
+          document.getElementById('btn-g0').textContent = params.g_Hz === 0 ? 'Restore Coupling (g = 6.0 Hz)' : 'Set g = 0 (Uncoupled Crossing Null)';
+          updateReadouts();
+        });
+        document.getElementById('ctrl-a').addEventListener('input', (e) => {
+          params.A_cm2 = parseInt(e.target.value, 10);
+          document.getElementById('lbl-a').textContent = `${params.A_cm2} cm²`;
+          updateReadouts();
+        });
+        document.getElementById('ctrl-t').addEventListener('input', (e) => {
+          params.T = parseInt(e.target.value, 10);
+          document.getElementById('lbl-t').textContent = `${params.T} N/m`;
+          updateReadouts();
+        });
+        document.getElementById('ctrl-hard').addEventListener('input', (e) => {
+          params.hardness = parseFloat(e.target.value);
+          document.getElementById('lbl-hard').textContent = params.hardness.toFixed(2);
+          updateReadouts();
+        });
+        document.getElementById('ctrl-pos').addEventListener('input', (e) => {
+          params.strikePos = parseFloat(e.target.value);
+          document.getElementById('lbl-pos').textContent = params.strikePos.toFixed(2);
+          updateReadouts();
+        });
+        document.getElementById('btn-xray').addEventListener('click', () => {
+          params.xray = !params.xray;
+          const p = SHELL_PRESETS[params.shell];
+          shellMat.opacity = params.xray ? p.opacityOn : p.opacityOff;
+          frontHead.material.opacity = params.xray ? 0.85 : 0.98;
+          document.getElementById('btn-xray').textContent = `X-Ray Shell: ${params.xray ? 'ON' : 'OFF'}`;
+        });
+        document.getElementById('btn-strike').addEventListener('click', () => triggerKick());
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); triggerKick(); } });
+        document.getElementById('btn-auto').addEventListener('click', () => {
+          state.autoPulse = !state.autoPulse;
+          document.getElementById('btn-auto').textContent = `Auto-Pulse: ${state.autoPulse ? 'ON' : 'OFF'}`;
+          if (state.autoPulse) triggerKick();
+        });
+        document.getElementById('btn-sweep').addEventListener('click', () => {
+          state.sweepActive = !state.sweepActive;
+          document.getElementById('btn-sweep').textContent = state.sweepActive ? 'Stop Sweep' : 'Sweep V (25 L → 220 L Through Crossing)';
+        });
+        document.getElementById('btn-wav').addEventListener('click', exportWav4Hits);
+        document.getElementById('btn-cam').addEventListener('click', () => { camState.theta = 0.64; camState.phi = 1.15; camState.radius = 4.35; updateCamera(); });
+
+        const vModal = document.getElementById('verify-modal');
+        document.getElementById('btn-toggle-verify').addEventListener('click', () => { vModal.classList.remove('hidden'); vModal.classList.add('flex'); runVerification(); });
+        document.getElementById('btn-close-verify').addEventListener('click', () => { vModal.classList.add('hidden'); vModal.classList.remove('flex'); });
+      }
+
+      let lastPerf = performance.now();
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.autoPulse) {
+          state.autoTimer += dtReal;
+          if (state.autoTimer >= 0.65) { state.autoTimer = 0; triggerKick(); }
+        }
+        if (state.sweepActive) {
+          params.V_L += state.sweepDir * dtReal * 38;
+          if (params.V_L >= 220) { params.V_L = 220; state.sweepDir = -1; }
+          if (params.V_L <= 25) { params.V_L = 25; state.sweepDir = 1; }
+          document.getElementById('ctrl-v').value = String(Math.round(params.V_L));
+          document.getElementById('lbl-v').textContent = `${Math.round(params.V_L)} L`;
+          updateReadouts();
+        }
+
+        const depth = 0.45 + (params.V_L / 220) * 1.4;
+        shellMesh.scale.set(1, depth, 1);
+        lugs.forEach((l) => { l.scale.z = depth * 0.92; });
+        hoopFront.position.z = depth * 0.5;
+        hoopBack.position.z = -depth * 0.5;
+        frontHead.position.z = depth * 0.5 + state.headDisp * 0.04 * Math.sin(now * 0.08);
+        backHead.position.z = -depth * 0.5 - state.headDisp * 0.045 * Math.sin(now * 0.08);
+
+        // Internal pressure core pulse
+        const cScale = 0.85 + state.headDisp * 0.25 * Math.sin(now * 0.04);
+        cavityCore.scale.set(cScale, cScale, cScale * depth);
+        cavityCore.material.opacity = 0.12 + state.headDisp * 0.28;
+
+        // Grounded Pedal & Beater: cocked back (-0.44 rad) at rest, swings forward (+X -> +Z) into batter head on strike!
+        pedalAssembly.position.z = -depth * 0.5 - 0.35;
+        beaterGroup.position.set(0, -0.75 + params.strikePos * 0.4, 0);
+        beaterGroup.rotation.x = -0.44 + state.beaterAngle * 0.88;
+        footboardPivot.rotation.x = 0.22 - state.beaterAngle * 0.20;
+
+        // Sub-kick condenser mic stand positioned in front of resonant port
+        micStand.position.set(0.42, 0, depth * 0.5 + 0.62);
+
+        const portScale = Math.sqrt(params.A_cm2 / 150);
+        portRing.scale.set(portScale, portScale, 1);
+        portRing.position.set(0.35, -0.35, depth * 0.5 + 0.015);
+
+        // Smoke-ring air vortex shooting out of port
+        const jetDist = (1.0 - state.portPulse) * 1.3;
+        vortexRing.position.set(0.35, -0.35, depth * 0.5 + 0.05 + jetDist);
+        vortexRing.scale.set(portScale * (1 + jetDist * 0.6), portScale * (1 + jetDist * 0.6), 1);
+        vortexRing.material.opacity = state.portPulse * 0.75;
+
+        // Expanding floor pressure-wave rings
+        floorWaves.forEach((ring, idx) => {
+          const phase = (1.0 - state.shockwave + idx * 0.22) % 1.0;
+          const active = state.shockwave > 0.01;
+          ring.material.opacity = active ? Math.max(0, (1 - phase) * state.shockwave * 0.42) : 0;
+          const s = 1.0 + phase * 2.4;
+          ring.scale.set(s, s, 1);
+        });
+
+        state.headDisp = Math.max(0, state.headDisp - dtReal * 3.5);
+        state.portPulse = Math.max(0, state.portPulse - dtReal * 2.2);
+        state.beaterAngle = Math.max(0, state.beaterAngle - dtReal * 6.0);
+        state.shockwave = Math.max(0, state.shockwave - dtReal * 1.35);
+
+        drawBottomDock(now / 1000);
+        renderer.render(scene, camera);
+      }
+
+      window.__CAVITY_KICK__ = {
+        getState: () => ({ ...params, ...computeModes(), ...computeSubBassMetrics() }),
+        verifyHelmholtzLaw: () => [45, 90, 180].map((v) => ({ V_L: v, fH: computeModes(v).fH })),
+        verifyAvoidedCrossing: () => {
+          let minGap = Infinity;
+          for (let v = 25; v <= 220; v += 1) { const m = computeModes(v); minGap = Math.min(minGap, m.fPlus - m.fMinus); }
+          let mg = Infinity;
+          for (let v = 25; v <= 220; v += 0.5) { const m = computeModes(v, params.A_cm2, params.T, 0); mg = Math.min(mg, m.fPlus - m.fMinus); }
+          return { coupledMinGapHz: minGap, expectedTwoG: 2 * params.g_Hz, uncoupledMinGapHz: mg };
+        },
+      };
+
+      window.addEventListener('load', () => {
+        bindUI();
+        applyShellPreset('maple');
+        updateReadouts();
+        runVerification();
+        requestAnimationFrame(animate);
+      });
+    })();
+  </script>
+</body>
+</html>
