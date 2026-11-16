@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SPIRAL-DRUM 3D — Excitable Medium &amp; Rotating Wave Rhythm Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090f;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+    #gl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+    .lab-panel {
+      background: rgba(9, 14, 24, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+    .lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: #1e293b;
+      outline: none;
+      cursor: pointer;
+    }
+    .lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #2dd4bf;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+      cursor: pointer;
+    }
+    .lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #2dd4bf;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 8px rgba(45, 212, 191, 0.6);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="gl-canvas"></canvas>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="lab-panel rounded-xl px-4 py-2.5 flex items-center gap-3 pointer-events-auto">
+      <div class="w-2.5 h-2.5 rounded-full bg-teal-400 shadow-[0_0_10px_#2dd4bf]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-slate-100">SPIRAL-DRUM 3D</h1>
+          <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800/90 text-teal-300 border border-slate-700/70">FHN PDE · 128²</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Excitable Medium, Spiral Tip Meander &amp; Rotating Wave Rhythm Lab</p>
+      </div>
+    </div>
+
+    <div class="lab-panel rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 pointer-events-auto">
+      <span id="regime-badge" class="text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-teal-500/20 text-teal-300 border border-teal-400/50">
+        RIGID ROTATION (CIRCLE)
+      </span>
+      <button id="btn-audio" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-500/20 text-teal-300 border border-teal-500/40 hover:bg-teal-500/30 transition">
+        Audio: Tap to Enable
+      </button>
+      <button id="btn-play" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Pause
+      </button>
+      <button id="btn-reset" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Re-Seed Wave
+      </button>
+      <button id="btn-wav" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-200 border border-slate-700 hover:bg-slate-700 transition">
+        Export WAV
+      </button>
+      <button id="btn-cam" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition hidden md:inline-flex">
+        Reset View
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Telemetry & Tip Trajectory Panel -->
+  <aside class="fixed left-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col gap-2.5 pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Spiral Physics &amp; Scaling</span>
+        <span id="lbl-cfl" class="text-[10px] font-mono text-teal-300">CFL: 0.040 ≤ 0.20</span>
+      </div>
+
+      <!-- Scaling Laws -->
+      <div class="bg-slate-900/80 rounded-lg p-2.5 border border-teal-500/25 text-[11px] font-mono space-y-1">
+        <div class="text-teal-300">T ≳ 1/ε &nbsp;|&nbsp; c<sub>front</sub> ∝ √(D / T)</div>
+        <div class="flex justify-between text-slate-300 pt-0.5">
+          <span>Period T: <strong id="val-period" class="text-teal-300">--- ms</strong></span>
+          <span>1/ε Floor: <strong id="val-floor" class="text-amber-300">2.22</strong></span>
+        </div>
+      </div>
+
+      <!-- Metrics Grid -->
+      <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Wavefront Speed</div>
+          <div id="val-speed" class="text-xs font-mono font-semibold text-slate-100 mt-0.5">√D = 1.00×</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg py-1.5 px-2">
+          <div class="text-[10px] font-mono uppercase text-slate-500">Beats Recorded</div>
+          <div id="val-beats" class="text-xs font-mono font-semibold text-slate-100 mt-0.5">0</div>
+        </div>
+      </div>
+
+      <!-- Persistent Tip Trajectory Plot -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Tip Trajectory Trail</span>
+          <button id="btn-clear-trail" type="button" class="text-[10px] font-mono text-slate-400 hover:text-teal-300">Clear</button>
+        </div>
+        <div class="relative w-full h-36 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="tip-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- Beat Period Sequence -->
+      <div class="space-y-1 pt-1 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Observer Beat Intervals (ms)</span>
+        <div class="relative w-full h-20 bg-slate-950/90 rounded-lg border border-slate-800/80 overflow-hidden">
+          <canvas id="beat-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Controls Panel -->
+  <aside class="fixed right-3 bottom-3 top-20 z-10 w-80 max-w-[calc(100vw-1.5rem)] flex flex-col justify-between pointer-events-none">
+    <div class="lab-panel rounded-xl p-3.5 pointer-events-auto flex flex-col gap-3 overflow-y-auto custom-scroll max-h-full">
+      <!-- Excitability epsilon (Primary Sweep) -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-eps" class="text-teal-300 font-semibold">Excitability ε</label>
+          <span id="lbl-eps" class="font-mono text-teal-300 font-bold">0.45</span>
+        </div>
+        <input id="ctrl-eps" type="range" min="0.22" max="0.85" step="0.01" value="0.45" class="lab-slider" />
+        <button id="btn-sweep" type="button" class="w-full py-1.5 px-3 rounded-lg text-xs font-mono font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition">
+          Sweep ε (Circle → Rosette → Chaos)
+        </button>
+      </div>
+
+      <!-- Diffusion D -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-d" class="text-slate-300 font-medium">Diffusion D</label>
+          <span id="lbl-d" class="font-mono text-slate-200">1.00</span>
+        </div>
+        <input id="ctrl-d" type="range" min="0.40" max="1.80" step="0.05" value="1.00" class="lab-slider" />
+      </div>
+
+      <!-- Refractory b -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <label for="ctrl-b" class="text-slate-300 font-medium">Refractory b</label>
+          <span id="lbl-b" class="font-mono text-slate-200">1.00</span>
+        </div>
+        <input id="ctrl-b" type="range" min="0.70" max="1.40" step="0.02" value="1.00" class="lab-slider" />
+      </div>
+
+      <!-- Lattice Size (128^2 min) -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Lattice Size (Min 128²)</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-n="128" class="size-btn py-1 rounded text-[11px] font-mono font-semibold bg-teal-500/25 text-teal-200 border border-teal-400/50">128²</button>
+          <button type="button" data-n="160" class="size-btn py-1 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">160²</button>
+          <button type="button" data-n="192" class="size-btn py-1 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">192²</button>
+        </div>
+      </div>
+
+      <!-- Initial Condition -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Initial Condition</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-ic="half" class="ic-btn py-1 rounded text-[10px] font-mono font-semibold bg-teal-500/25 text-teal-200 border border-teal-400/50">Half-Plane</button>
+          <button type="button" data-ic="collision" class="ic-btn py-1 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">2-Wave</button>
+          <button type="button" data-ic="point" class="ic-btn py-1 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">Point</button>
+        </div>
+      </div>
+
+      <!-- Observe Point -->
+      <div class="space-y-1 pt-2 border-t border-slate-800/80">
+        <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Observer Point (Period Check)</span>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-obs="nw" class="obs-btn py-1 rounded text-[10px] font-mono font-semibold bg-teal-500/25 text-teal-200 border border-teal-400/50">NW (N/4)</button>
+          <button type="button" data-obs="se" class="obs-btn py-1 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">SE (3N/4)</button>
+          <button type="button" data-obs="ne" class="obs-btn py-1 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">NE (3N/4,N/4)</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-slate-900/95 border border-teal-500/40 text-xs font-mono text-teal-200 shadow-lg opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. FITZHUGH-NAGUMO 2D EXCITABLE MEDIUM PDE (Stable Explicit Integrator)
+      // =========================================================================
+      const params = {
+        N: 128,
+        eps: 0.45,
+        D: 1.00,
+        b: 1.00,
+        ic: 'half',      // 'half' | 'collision' | 'point'
+        obsKey: 'nw',    // 'nw' | 'se' | 'ne'
+      };
+
+      let u = new Float32Array(params.N * params.N);
+      let v = new Float32Array(params.N * params.N);
+      let du = new Float32Array(params.N * params.N);
+
+      const state = {
+        running: true,
+        simTime: 0,
+        audioTime: 0,
+        prevObsU: 0,
+        lastBeatSim: null,
+        beats: 0,
+        beatIntervalsMs: [],
+        tipTrail: [], // { x, y } in [0, 1]
+        sweepActive: false,
+        sweepTimer: 0,
+      };
+
+      function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.style.opacity = '1';
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+      }
+
+      function getStableDt() {
+        // Enforce D * dt / dx^2 <= 0.16 (< 0.20 stability limit)
+        return Math.min(0.04, 0.16 / Math.max(0.2, params.D));
+      }
+
+      function getObsIndex() {
+        const N = params.N;
+        if (params.obsKey === 'nw') return Math.floor(N / 4) * N + Math.floor(N / 4);
+        if (params.obsKey === 'se') return Math.floor((3 * N) / 4) * N + Math.floor((3 * N) / 4);
+        return Math.floor(N / 4) * N + Math.floor((3 * N) / 4);
+      }
+
+      function seedMedium() {
+        const N = params.N;
+        u = new Float32Array(N * N);
+        v = new Float32Array(N * N);
+        du = new Float32Array(N * N);
+
+        if (params.ic === 'half') {
+          // Broken wavefront + refractory tail -> curls into a phase singularity spiral
+          for (let r = Math.floor(N / 2) - 4; r < Math.floor(N / 2) + 4; r++) {
+            for (let c = 0; c < Math.floor(N / 2); c++) u[r * N + c] = 0.95;
+          }
+          for (let r = Math.floor(N / 2) + 4; r < Math.floor(N / 2) + 12; r++) {
+            for (let c = 0; c < Math.floor(N / 2); c++) v[r * N + c] = 0.55;
+          }
+        } else if (params.ic === 'collision') {
+          // Asymmetric counter-rotating pair
+          for (let r = Math.floor(N / 3) - 3; r < Math.floor(N / 3) + 3; r++) {
+            for (let c = 10; c < Math.floor(N / 2); c++) u[r * N + c] = 0.95;
+          }
+          for (let r = Math.floor(N / 3) + 3; r < Math.floor(N / 3) + 10; r++) {
+            for (let c = 10; c < Math.floor(N / 2); c++) v[r * N + c] = 0.55;
+          }
+          for (let r = Math.floor(2 * N / 3) - 3; r < Math.floor(2 * N / 3) + 3; r++) {
+            for (let c = Math.floor(N / 2); c < N - 10; c++) u[r * N + c] = 0.95;
+          }
+          for (let r = Math.floor(2 * N / 3) - 10; r < Math.floor(2 * N / 3) - 3; r++) {
+            for (let c = Math.floor(N / 2); c < N - 10; c++) v[r * N + c] = 0.55;
+          }
+        } else {
+          // Target point stimulus
+          const cx = Math.floor(N / 2), cy = Math.floor(N / 2);
+          for (let r = cy - 4; r <= cy + 4; r++) {
+            for (let c = cx - 4; c <= cx + 4; c++) u[r * N + c] = 0.95;
+          }
+        }
+
+        state.simTime = 0;
+        state.prevObsU = 0;
+        state.lastBeatSim = null;
+        state.beats = 0;
+        state.beatIntervalsMs = [];
+        state.tipTrail = [];
+        rebuildTexture();
+      }
+
+      function stepPDE(dt) {
+        const N = params.N;
+        const D = params.D;
+        const eps = params.eps;
+        const b_v = params.b;
+        const a_k = 0.82;
+        const b_k = 0.03;
+
+        for (let r = 0; r < N; r++) {
+          const rm = r * N;
+          const rUp = r > 0 ? (r - 1) * N : 0;
+          const rDn = r < N - 1 ? (r + 1) * N : (N - 1) * N;
+          for (let c = 0; c < N; c++) {
+            const idx = rm + c;
+            const cL = c > 0 ? c - 1 : 0;
+            const cR = c < N - 1 ? c + 1 : N - 1;
+            const lap = u[rUp + c] + u[rDn + c] + u[rm + cL] + u[rm + cR] - 4.0 * u[idx];
+            const ui = u[idx];
+            const vi = v[idx];
+            du[idx] = D * lap + 14.0 * ui * (1.0 - ui) * (ui - (vi + b_k) / a_k);
+            v[idx] = vi + dt * eps * (ui - b_v * vi);
+          }
+        }
+        for (let i = 0; i < N * N; i++) u[i] += dt * du[i];
+        state.simTime += dt;
+
+        // Observer beat detection
+        const obsIdx = getObsIndex();
+        const obsU = u[obsIdx];
+        if (state.prevObsU < 0.5 && obsU >= 0.5) {
+          if (state.lastBeatSim !== null) {
+            // Map PDE time to audible rhythm time (1 PDE unit -> 65 ms)
+            const periodMs = (state.simTime - state.lastBeatSim) * 65.0;
+            state.beatIntervalsMs.push(periodMs);
+            if (state.beatIntervalsMs.length > 80) state.beatIntervalsMs.shift();
+          }
+          state.lastBeatSim = state.simTime;
+          state.beats++;
+          scheduleObserverClick(obsU - state.prevObsU);
+        }
+        state.prevObsU = obsU;
+      }
+
+      function trackSpiralTip() {
+        const N = params.N;
+        let bestScore = -1;
+        let bestR = N / 2, bestC = N / 2;
+        for (let r = 4; r < N - 4; r += 2) {
+          for (let c = 4; c < N - 4; c += 2) {
+            const idx = r * N + c;
+            const ui = u[idx];
+            if (ui > 0.2 && ui < 0.8) {
+              const ux = u[idx + 1] - u[idx - 1];
+              const uy = u[idx + N] - u[idx - N];
+              const vx = v[idx + 1] - v[idx - 1];
+              const vy = v[idx + N] - v[idx - N];
+              const jacobian = Math.abs(ux * vy - uy * vx);
+              if (jacobian > bestScore) {
+                bestScore = jacobian;
+                bestR = r;
+                bestC = c;
+              }
+            }
+          }
+        }
+        if (bestScore > 0.002) {
+          state.tipTrail.push({ x: bestC / N, y: bestR / N });
+          if (state.tipTrail.length > 500) state.tipTrail.shift();
+        }
+      }
+
+      // =========================================================================
+      // 2. WEB AUDIO CLOCK-SYNCHRONIZED DRY CLICK
+      // =========================================================================
+      let audioCtx = null;
+      let audioEnabled = false;
+      let masterGain = null;
+
+      function initAudio() {
+        if (!audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AC();
+          masterGain = audioCtx.createGain();
+          masterGain.gain.value = 0.8;
+          masterGain.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        audioEnabled = true;
+        const btn = document.getElementById('btn-audio');
+        btn.textContent = 'Audio: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-teal-500/25 text-teal-200 border border-teal-400/60 hover:bg-teal-500/35 transition';
+      }
+
+      function toggleAudio() {
+        if (!audioCtx || !audioEnabled) initAudio();
+        else {
+          audioEnabled = false;
+          const btn = document.getElementById('btn-audio');
+          btn.textContent = 'Audio: OFF';
+          btn.className = 'px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition';
+        }
+      }
+
+      function scheduleObserverClick(slope) {
+        if (!audioEnabled || !audioCtx || audioCtx.state !== 'running') return;
+        const t = audioCtx.currentTime + 0.015;
+        const freq = 620 + Math.min(800, Math.abs(slope) * 1400);
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.52, t + 0.014);
+        g.gain.setValueAtTime(0.32, t);
+        g.gain.exponentialRampToValueAtTime(0.0008, t + 0.016);
+        osc.connect(g);
+        g.connect(masterGain);
+        osc.start(t);
+        osc.stop(t + 0.02);
+      }
+
+      // =========================================================================
+      // 3. 44.1 kHz 16-BIT STEREO .WAV EXPORT
+      // =========================================================================
+      function exportWav8s() {
+        const sr = 44100;
+        const dur = 8.0;
+        const totalSamples = Math.floor(sr * dur);
+        const left = new Float32Array(totalSamples);
+        const right = new Float32Array(totalSamples);
+
+        const meanMs = state.beatIntervalsMs.length
+          ? state.beatIntervalsMs.reduce((a, b) => a + b, 0) / state.beatIntervalsMs.length
+          : 700;
+        const events = [];
+        let t = 0.05;
+        let idx = 0;
+        while (t < dur - 0.03) {
+          events.push(t);
+          const iv = state.beatIntervalsMs.length ? state.beatIntervalsMs[idx % state.beatIntervalsMs.length] : meanMs;
+          t += Math.max(0.05, iv / 1000.0);
+          idx++;
+        }
+
+        for (const evT of events) {
+          const start = Math.floor(evT * sr);
+          const len = Math.floor(sr * 0.016);
+          for (let j = 0; j < len && start + j < totalSamples; j++) {
+            const tt = j / sr;
+            const sig = 0.32 * Math.exp(-tt / 0.0035) * Math.sin(2 * Math.PI * 820 * tt);
+            left[start + j] += sig;
+            right[start + j] += sig;
+          }
+        }
+
+        const buffer = new ArrayBuffer(44 + totalSamples * 4);
+        const view = new DataView(buffer);
+        const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + totalSamples * 4, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true);
+        view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, totalSamples * 4, true);
+        let offset = 44;
+        for (let i = 0; i < totalSamples; i++) {
+          const l = Math.max(-1, Math.min(1, left[i]));
+          const r = Math.max(-1, Math.min(1, right[i]));
+          view.setInt16(offset, l < 0 ? l * 0x8000 : l * 0x7FFF, true);
+          view.setInt16(offset + 2, r < 0 ? r * 0x8000 : r * 0x7FFF, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `spiral_drum_eps${params.eps.toFixed(2)}.wav`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast(`Exported 8s 44.1 kHz stereo WAV (${events.length} beats)`);
+      }
+
+      // =========================================================================
+      // 4. THREE.JS 3D EXCITABLE MEDIUM TEXTURE + TIP TRAIL
+      // =========================================================================
+      const canvas3D = document.getElementById('gl-canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06090f);
+      scene.fog = new THREE.FogExp2(0x06090f, 0.06);
+
+      const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 60);
+      const camState = { theta: 0.25, phi: 0.72, radius: 5.2, target: new THREE.Vector3(0, 0, 0), dragging: false, lastX: 0, lastY: 0 };
+
+      function updateCamera() {
+        const s = Math.sin(camState.phi);
+        camera.position.set(
+          camState.target.x + camState.radius * s * Math.sin(camState.theta),
+          camState.target.y + camState.radius * Math.cos(camState.phi),
+          camState.target.z + camState.radius * s * Math.cos(camState.theta)
+        );
+        camera.lookAt(camState.target);
+      }
+      updateCamera();
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+
+      let texData = null;
+      let fieldTex = null;
+      const dishMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(4.0, 4.0),
+        new THREE.MeshBasicMaterial({ side: THREE.DoubleSide })
+      );
+      dishMesh.rotation.x = -Math.PI / 2;
+      scene.add(dishMesh);
+
+      const obsMarker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.065, 16, 16),
+        new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+      );
+      scene.add(obsMarker);
+
+      function rebuildTexture() {
+        const N = params.N;
+        texData = new Uint8Array(N * N * 4);
+        if (fieldTex) fieldTex.dispose();
+        fieldTex = new THREE.DataTexture(texData, N, N, THREE.RGBAFormat);
+        fieldTex.magFilter = THREE.LinearFilter;
+        fieldTex.minFilter = THREE.LinearFilter;
+        dishMesh.material.map = fieldTex;
+        dishMesh.material.needsUpdate = true;
+        updateObserverMarker();
+      }
+
+      function updateObserverMarker() {
+        const N = params.N;
+        const idx = getObsIndex();
+        const r = Math.floor(idx / N);
+        const c = idx - r * N;
+        obsMarker.position.set((c / N - 0.5) * 4.0, 0.06, (r / N - 0.5) * 4.0);
+      }
+
+      function updateTexturePixels() {
+        const N = params.N;
+        for (let i = 0; i < N * N; i++) {
+          const ui = Math.max(0, Math.min(1, u[i]));
+          const vi = Math.max(0, Math.min(1, v[i]));
+          texData[i * 4] = Math.min(255, Math.floor(15 + ui * 45 + vi * 220));
+          texData[i * 4 + 1] = Math.min(255, Math.floor(20 + ui * 220 + vi * 60));
+          texData[i * 4 + 2] = Math.min(255, Math.floor(35 + ui * 210));
+          texData[i * 4 + 3] = 255;
+        }
+        fieldTex.needsUpdate = true;
+      }
+
+      canvas3D.addEventListener('pointerdown', (e) => {
+        camState.dragging = true; camState.lastX = e.clientX; camState.lastY = e.clientY;
+        if (!audioCtx) initAudio();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!camState.dragging) return;
+        const dx = e.clientX - camState.lastX;
+        const dy = e.clientY - camState.lastY;
+        camState.lastX = e.clientX; camState.lastY = e.clientY;
+        camState.theta -= dx * 0.0065;
+        camState.phi = Math.max(0.2, Math.min(1.45, camState.phi - dy * 0.0065));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { camState.dragging = false; });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camState.radius = Math.max(2.5, Math.min(10.5, camState.radius + e.deltaY * 0.003));
+        updateCamera();
+      }, { passive: false });
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // =========================================================================
+      // 5. 2D TIP TRAJECTORY & BEAT INTERVAL CHARTS
+      // =========================================================================
+      const tipCanvas = document.getElementById('tip-canvas');
+      const tipCtx = tipCanvas.getContext('2d');
+      const beatCanvas = document.getElementById('beat-canvas');
+      const beatCtx = beatCanvas.getContext('2d');
+
+      function drawCharts() {
+        const w = tipCanvas.width = tipCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const h = tipCanvas.height = tipCanvas.clientHeight * (window.devicePixelRatio || 1);
+        tipCtx.clearRect(0, 0, w, h);
+
+        if (state.tipTrail.length > 1) {
+          tipCtx.strokeStyle = '#2dd4bf';
+          tipCtx.lineWidth = 1.6;
+          tipCtx.beginPath();
+          state.tipTrail.forEach((p, idx) => {
+            const x = p.x * w;
+            const y = p.y * h;
+            if (idx === 0) tipCtx.moveTo(x, y);
+            else tipCtx.lineTo(x, y);
+          });
+          tipCtx.stroke();
+          const last = state.tipTrail[state.tipTrail.length - 1];
+          tipCtx.fillStyle = '#fbbf24';
+          tipCtx.beginPath();
+          tipCtx.arc(last.x * w, last.y * h, 3, 0, Math.PI * 2);
+          tipCtx.fill();
+        }
+
+        const bw = beatCanvas.width = beatCanvas.clientWidth * (window.devicePixelRatio || 1);
+        const bh = beatCanvas.height = beatCanvas.clientHeight * (window.devicePixelRatio || 1);
+        beatCtx.clearRect(0, 0, bw, bh);
+        const ivs = state.beatIntervalsMs;
+        if (ivs.length > 1) {
+          const maxMs = Math.max(200, Math.max(...ivs) * 1.15);
+          beatCtx.strokeStyle = '#38bdf8';
+          beatCtx.lineWidth = 1.5;
+          beatCtx.beginPath();
+          ivs.forEach((v, idx) => {
+            const x = (idx / Math.max(1, ivs.length - 1)) * (bw - 8) + 4;
+            const y = bh - (v / maxMs) * (bh - 10) - 5;
+            if (idx === 0) beatCtx.moveTo(x, y);
+            else beatCtx.lineTo(x, y);
+          });
+          beatCtx.stroke();
+        }
+      }
+
+      // =========================================================================
+      // 6. UI CONTROLS
+      // =========================================================================
+      document.getElementById('ctrl-eps').addEventListener('input', (e) => {
+        params.eps = parseFloat(e.target.value);
+        document.getElementById('lbl-eps').textContent = params.eps.toFixed(2);
+      });
+
+      document.getElementById('ctrl-d').addEventListener('input', (e) => {
+        params.D = parseFloat(e.target.value);
+        document.getElementById('lbl-d').textContent = params.D.toFixed(2);
+        document.getElementById('val-speed').textContent = `√D = ${Math.sqrt(params.D).toFixed(2)}×`;
+      });
+
+      document.getElementById('ctrl-b').addEventListener('input', (e) => {
+        params.b = parseFloat(e.target.value);
+        document.getElementById('lbl-b').textContent = params.b.toFixed(2);
+      });
+
+      document.querySelectorAll('.size-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.N = parseInt(btn.dataset.n, 10);
+          document.querySelectorAll('.size-btn').forEach((b) => {
+            b.className = 'size-btn py-1 rounded text-[11px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'size-btn py-1 rounded text-[11px] font-mono font-semibold bg-teal-500/25 text-teal-200 border border-teal-400/50';
+          seedMedium();
+        });
+      });
+
+      document.querySelectorAll('.ic-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.ic = btn.dataset.ic;
+          document.querySelectorAll('.ic-btn').forEach((b) => {
+            b.className = 'ic-btn py-1 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'ic-btn py-1 rounded text-[10px] font-mono font-semibold bg-teal-500/25 text-teal-200 border border-teal-400/50';
+          seedMedium();
+        });
+      });
+
+      document.querySelectorAll('.obs-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          params.obsKey = btn.dataset.obs;
+          document.querySelectorAll('.obs-btn').forEach((b) => {
+            b.className = 'obs-btn py-1 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+          });
+          btn.className = 'obs-btn py-1 rounded text-[10px] font-mono font-semibold bg-teal-500/25 text-teal-200 border border-teal-400/50';
+          state.beatIntervalsMs = [];
+          state.lastBeatSim = null;
+          updateObserverMarker();
+        });
+      });
+
+      document.getElementById('btn-clear-trail').addEventListener('click', () => { state.tipTrail = []; });
+      document.getElementById('btn-audio').addEventListener('click', toggleAudio);
+      document.getElementById('btn-play').addEventListener('click', () => {
+        state.running = !state.running;
+        document.getElementById('btn-play').textContent = state.running ? 'Pause' : 'Play';
+      });
+      document.getElementById('btn-reset').addEventListener('click', seedMedium);
+      document.getElementById('btn-wav').addEventListener('click', exportWav8s);
+      document.getElementById('btn-cam').addEventListener('click', () => {
+        camState.theta = 0.25; camState.phi = 0.72; camState.radius = 5.2; updateCamera();
+      });
+      document.getElementById('btn-sweep').addEventListener('click', () => {
+        state.sweepActive = !state.sweepActive;
+        document.getElementById('btn-sweep').textContent = state.sweepActive
+          ? 'Stop Sweep'
+          : 'Sweep ε (Circle → Rosette → Chaos)';
+      });
+
+      // =========================================================================
+      // 7. MAIN LOOP
+      // =========================================================================
+      let lastPerf = performance.now();
+      let frameTick = 0;
+
+      function updateReadouts() {
+        const dt = getStableDt();
+        const cfl = params.D * dt;
+        document.getElementById('lbl-cfl').textContent = `CFL: ${cfl.toFixed(3)} ≤ 0.20`;
+        document.getElementById('val-floor').textContent = (1.0 / params.eps).toFixed(2);
+        document.getElementById('val-beats').textContent = String(state.beats);
+
+        const ivs = state.beatIntervalsMs;
+        if (ivs.length > 0) {
+          document.getElementById('val-period').textContent = `${ivs[ivs.length - 1].toFixed(0)} ms`;
+        } else {
+          document.getElementById('val-period').textContent = '--- ms';
+        }
+
+        const badge = document.getElementById('regime-badge');
+        if (params.eps < 0.52) {
+          badge.textContent = 'RIGID ROTATION (CIRCLE)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-teal-500/20 text-teal-300 border border-teal-400/50';
+        } else if (params.eps < 0.70) {
+          badge.textContent = 'MEANDERING (ROSETTE)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-400/50';
+        } else {
+          badge.textContent = 'TIP CHAOS (APERIODIC)';
+          badge.className = 'text-[11px] font-mono font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-400/50';
+        }
+        drawCharts();
+      }
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        const dtReal = Math.min(0.05, Math.max(0, (now - lastPerf) / 1000));
+        lastPerf = now;
+
+        if (state.running) {
+          const dt = getStableDt();
+          for (let s = 0; s < 6; s++) stepPDE(dt);
+          trackSpiralTip();
+
+          if (state.sweepActive) {
+            state.sweepTimer += dtReal;
+            if (state.sweepTimer >= 0.12) {
+              state.sweepTimer = 0;
+              params.eps = Math.min(0.85, params.eps + 0.005);
+              document.getElementById('ctrl-eps').value = params.eps.toFixed(2);
+              document.getElementById('lbl-eps').textContent = params.eps.toFixed(2);
+              if (params.eps >= 0.85) {
+                state.sweepActive = false;
+                document.getElementById('btn-sweep').textContent = 'Sweep ε (Circle → Rosette → Chaos)';
+              }
+            }
+          }
+        }
+
+        updateTexturePixels();
+        frameTick++;
+        if (frameTick % 3 === 0) updateReadouts();
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // 8. VERIFICATION HARNESS API (window.__SPIRAL_DRUM__)
+      // =========================================================================
+      window.__SPIRAL_DRUM__ = {
+        getState: () => ({ ...params, simTime: state.simTime, beats: state.beats, beatIntervalsMs: [...state.beatIntervalsMs], tipTrailLen: state.tipTrail.length }),
+        verifyStableCFL: () => ({ D: params.D, dt: getStableDt(), cfl: params.D * getStableDt() }),
+      };
+
+      seedMedium();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
