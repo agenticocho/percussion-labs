@@ -619,6 +619,18 @@
         "pitch perception",
         "psychoacoustics"
        ]
+      },
+      {
+       "href": "audible_edge_3d_threshold_curve_infrasound_ultrasound_lab.html",
+       "glyph": "audible",
+       "name": "AUDIBLE-EDGE 3D",
+       "desc": "The ear is not a flat detector. 20 Hz needs 78 dB to be heard where 3.5 kHz needs nothing, and below about 14 Hz the chest answers before the ears do. Human, dog and cat curves side by side - the cat's reaches 64 kHz, which is why it hears a mouse at five times the range we do. Every out-of-band tone is labelled with its transposition.",
+       "tags": [
+        "ISO 226 threshold",
+        "infrasound &amp; body response",
+        "dog &amp; cat audiograms",
+        "acoustic levitation"
+       ]
       }
      ]
     },

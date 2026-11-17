@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AUDIBLE-EDGE 3D v2 — Human, Dog &amp; Cat Audiograms, Infrasound Crossover &amp; Ultrasonic Levitation Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#07090e',
+              900: '#0c1018',
+              800: '#131926',
+              700: '#1c2536',
+              600: '#28354d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background-color: #07090e;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0c1018; }
+    ::-webkit-scrollbar-thumb { background: #28354d; border-radius: 9999px; }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      background: transparent; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px; border-radius: 999px;
+      background: #1c2536; border: 1px solid #28354d;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 15px; height: 15px; border-radius: 50%;
+      background: #f59e0b; border: 2px solid #07090e;
+      margin-top: -6px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.55);
+    }
+    .slider-cyan::-webkit-slider-thumb { background: #38bdf8 !important; box-shadow: 0 0 8px rgba(56, 189, 248, 0.55) !important; }
+    .slider-emerald::-webkit-slider-thumb { background: #10b981 !important; box-shadow: 0 0 8px rgba(16, 185, 129, 0.55) !important; }
+
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(16, 22, 34, 0.92) 0%, rgba(10, 14, 22, 0.96) 100%);
+      border: 1px solid rgba(56, 73, 107, 0.45);
+      backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP HEADER & HONESTY BANNER -->
+  <header class="sticky top-0 z-30 bg-obsidian-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 via-sky-500/20 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center shadow-inner">
+          <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M2 12h3l3-8 4 16 3-8h7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">AUDIBLE-EDGE 3D <span class="text-emerald-400">v2</span></h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Human • Dog • Cat Audiograms</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">ISO 226 (20 Hz–20 kHz) • Canine (67 Hz–45/60 kHz) • Feline (45 Hz–64/85 kHz) • 5–7 Hz Thorax • Ultrasonic Trap</p>
+        </div>
+      </div>
+
+      <!-- Species Selector, Mode & Audio Toggles -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Species Profile Bar -->
+        <div class="flex items-center bg-obsidian-900 border border-slate-800 rounded-xl p-1 gap-1" id="speciesSelectorBar">
+          <button type="button" data-sp="HUMAN" class="sp-btn px-2 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-500 text-slate-950 transition" title="Human Baseline: 20 Hz – 20 kHz">HUMAN</button>
+          <button type="button" data-sp="DOG" class="sp-btn px-2 py-1 rounded-lg text-[11px] font-mono font-semibold text-amber-300 hover:bg-obsidian-800 transition" title="Dog (Canine): 67 Hz – 45 kHz (up to 60 kHz)">DOG</button>
+          <button type="button" data-sp="CAT" class="sp-btn px-2 py-1 rounded-lg text-[11px] font-mono font-semibold text-emerald-300 hover:bg-obsidian-800 transition" title="Cat (Feline): 45 Hz – 64 kHz (up to 85 kHz)">CAT</button>
+        </div>
+
+        <div class="flex items-center bg-obsidian-900 border border-slate-800 rounded-xl p-1 gap-1">
+          <button id="btnModeTranspose" type="button" class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500 text-slate-950 transition">TRANSPOSE</button>
+          <button id="btnModeVisualise" type="button" class="px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-300 hover:bg-obsidian-800 transition">VISUALISE</button>
+        </div>
+
+        <button id="btnFlatEarToggle" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs font-mono text-slate-200 transition" title="Toggle Flat-Ear Null Mode (0 dB constant threshold)">
+          Ear: <span id="lblEarModel" class="text-sky-400 font-bold">ISO 226 (HUMAN)</span>
+        </button>
+
+        <button id="btnAudioToggle" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          Audio: OFF
+        </button>
+
+        <button id="btnExportWav" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition">
+          Export WAV
+        </button>
+      </div>
+    </div>
+
+    <!-- MANDATORY ACOUSTIC HONESTY BANNER -->
+    <div id="honestyBanner" class="max-w-[1600px] mx-auto mt-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/40 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2 text-xs font-mono">
+        <span id="honestyDot" class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+        <span id="honestyMainText" class="font-bold text-amber-200">DIRECT AUDIBLE SIGNAL — You are hearing 1000.0 Hz at 60.0 dB SPL (56.0 dB above Human ISO 226 threshold).</span>
+      </div>
+      <span id="honestySubText" class="text-[11px] font-mono text-slate-300">Speaker/DAC passband: 40 Hz – 20 kHz</span>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN: INTERACTIVE MULTI-SPECIES AUDIOGRAM & 3D WEBGL STAGE (7 COLS) -->
+    <section class="lg:col-span-7 flex flex-col gap-3">
+
+      <!-- INTERACTIVE DRAGGABLE ISO 226 + CANINE + FELINE + SOMATIC CROSSOVER PLOT -->
+      <div class="glass-panel rounded-2xl p-3.5 flex flex-col gap-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-disp="threshold" class="disp-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-400/50 transition">Threshold Curve + Current Point</button>
+            <button type="button" data-disp="body" class="disp-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition">Body-Response Crossover</button>
+            <button type="button" data-disp="levitation" class="disp-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition">Levitation Trap Profile</button>
+          </div>
+          <div class="flex items-center gap-3 text-[10px] font-mono">
+            <span class="flex items-center gap-1 text-sky-400"><span class="w-2 h-2 rounded-full bg-sky-400"></span>Human (20–20k)</span>
+            <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span>Dog (67–45/60k)</span>
+            <span class="flex items-center gap-1 text-emerald-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>Cat (45–64/85k)</span>
+            <span class="flex items-center gap-1 text-rose-400"><span class="w-2 h-2 rounded-full bg-rose-400"></span>Thorax</span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-64 sm:h-72 bg-obsidian-950 rounded-xl border border-slate-800/90 overflow-hidden">
+          <canvas id="curveCanvas" class="w-full h-full block cursor-crosshair touch-none"></canvas>
+        </div>
+      </div>
+
+      <!-- 3D WEBGL MULTI-REGIME ACOUSTIC STAGE (v2 GRAPHICS UPGRADE) -->
+      <div id="stageWrap" class="relative w-full h-72 sm:h-[380px] rounded-2xl border border-slate-800/90 bg-obsidian-950 overflow-hidden shadow-2xl">
+        <canvas id="threeCanvas" class="w-full h-full block touch-none"></canvas>
+
+        <!-- Camera Presets (Top Left) -->
+        <div class="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+          <button type="button" data-cam="overview" class="cam-btn px-2.5 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-mono font-semibold backdrop-blur-sm">Full Lab Stage</button>
+          <button type="button" data-cam="thorax" class="cam-btn px-2.5 py-1 rounded-lg bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm">5–7 Hz Thorax</button>
+          <button type="button" data-cam="cochlea" class="cam-btn px-2.5 py-1 rounded-lg bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm">3D Audiogram &amp; Pinna</button>
+          <button type="button" data-cam="trap" class="cam-btn px-2.5 py-1 rounded-lg bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm">Ultrasonic Trap</button>
+        </div>
+
+        <!-- Regime Pill (Top Right) -->
+        <div class="absolute top-3 right-3 z-10 flex flex-col items-end gap-1 pointer-events-none">
+          <div id="bandRegimeBadge" class="px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-sky-500/40 text-[11px] font-mono font-bold text-sky-300 backdrop-blur-sm">
+            AUDIBLE BAND (20 Hz – 20 kHz)
+          </div>
+          <div id="sensationBadge" class="px-2.5 py-0.5 rounded-md bg-obsidian-950/80 border border-slate-800 text-[10px] font-mono text-emerald-300 backdrop-blur-sm">
+            Human: +56 dB • Dog: +66 dB • Cat: +70 dB
+          </div>
+        </div>
+
+        <!-- Bottom Live Telemetry Strip -->
+        <div class="absolute bottom-3 left-3 right-3 z-10 grid grid-cols-2 sm:grid-cols-5 gap-2 pointer-events-none">
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Active Species Threshold</div>
+            <div id="telEarThresh" class="text-xs font-mono font-bold text-sky-400">Human: 4.0 dB SPL</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Body Threshold T_body(f)</div>
+            <div id="telBodyThresh" class="text-xs font-mono font-bold text-rose-400">112.5 dB SPL</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Acoustic Pressure P_rms</div>
+            <div id="telPressurePa" class="text-xs font-mono font-bold text-amber-400">0.020 Pa</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Cat vs Human Range Mult</div>
+            <div id="telRangeMult" class="text-xs font-mono font-bold text-emerald-400">1.9× Distance</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Radiation Force / Weight</div>
+            <div id="telLevForce" class="text-xs font-mono font-bold text-purple-400">0.00 × mg</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: CONTROLS, SPECIES BREAKDOWN & 4-CHECK VERIFICATION SUITE (5 COLS) -->
+    <aside class="lg:col-span-5 flex flex-col gap-3">
+
+      <!-- PRIMARY ACOUSTIC & SPECIES CONTROLS -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Signal, Species &amp; Boundary Controls</h2>
+            <p class="text-[11px] text-slate-400">Sweep 1 Hz → 100 kHz across Infrasound, Human, Dog &amp; Cat bands</p>
+          </div>
+          <button id="btnSnapToThreshold" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-sky-300 text-[11px] font-mono font-semibold transition">
+            Set Level = T_ear(f) + 5 dB
+          </button>
+        </div>
+
+        <!-- 1. Frequency (1 Hz -> 100 kHz Log Scale) -->
+        <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-semibold text-slate-200">Frequency (1 Hz → 100 kHz log)</span>
+            <span id="valFreq" class="font-mono font-bold text-amber-400">1000.0 Hz</span>
+          </div>
+          <input id="sliderFreqLog" type="range" min="0" max="1000" step="1" value="600" class="w-full" />
+          <div class="flex flex-wrap justify-between gap-1 text-[9px] font-mono text-slate-400 mt-1.5">
+            <button type="button" data-jump-f="5.8" class="hover:text-rose-400 underline">5.8 Hz Thorax</button>
+            <button type="button" data-jump-f="14.2" class="hover:text-rose-300 underline">14.2 Hz Crossover</button>
+            <button type="button" data-jump-f="20" class="hover:text-amber-300 underline">20 Hz (78 dB)</button>
+            <button type="button" data-jump-f="3500" class="hover:text-sky-300 underline">3.5 kHz (0 dB)</button>
+            <button type="button" data-jump-f="24000" class="hover:text-amber-300 underline">28 kHz Trap</button><button type="button" data-jump-f="24000" class="hover:text-amber-300 underline">24 kHz Dog</button>
+            <button type="button" data-jump-f="45000" class="hover:text-emerald-300 underline">45 kHz Rodent/Cat</button>
+            <button type="button" data-jump-f="64000" class="hover:text-emerald-400 underline">64 kHz Cat Upper</button>
+          </div>
+        </div>
+
+        <!-- 2. Level (0 -> 130 dB SPL) -->
+        <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-semibold text-slate-200">Sound Pressure Level (dB SPL)</span>
+            <span id="valDb" class="font-mono font-bold text-sky-400">60.0 dB SPL</span>
+          </div>
+          <input id="sliderDb" type="range" min="-15" max="130" step="0.5" value="60.0" class="w-full slider-cyan" />
+          <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-1">
+            <span>-15 dB (Cat/Dog Hyper-Acuity)</span>
+            <span>0 dB (Human 3.5k)</span>
+            <span>78 dB (20 Hz)</span>
+            <span>122 dB (Levitation)</span>
+          </div>
+        </div>
+
+        <!-- 3. Source Type -->
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Source Exciter</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-src="drum" class="src-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Drum Impulse</div>
+              <div class="text-[10px] text-slate-400">Repeating Strike</div>
+            </button>
+            <button type="button" data-src="sine" class="src-btn p-2 rounded-xl border text-left transition bg-amber-500/15 border-amber-500/60 text-white">
+              <div class="text-xs font-bold">Pure Sine</div>
+              <div class="text-[10px] text-slate-400">ISO 226 Reference</div>
+            </button>
+            <button type="button" data-src="ultrasonic" class="src-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Ultrasonic Emitter</div>
+              <div class="text-[10px] text-slate-400">Standing-Wave Trap</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-Species Auditory Comparison Matrix (Human vs Dog vs Cat) -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-mono text-[10px] uppercase tracking-wider text-slate-400">Species Hearing Comparison @ Current Signal</span>
+            <span id="diagDominantSensor" class="font-mono text-[10px] font-bold text-sky-400">AUDIBLE BAND</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 text-center font-mono">
+            <div class="bg-obsidian-900/90 border border-sky-500/30 rounded-lg p-1.5">
+              <div class="text-[10px] text-sky-300 font-bold">HUMAN (20–20k)</div>
+              <div id="spHumanStatus" class="text-xs font-extrabold text-white mt-0.5">+56.0 dB SL</div>
+              <div id="spHumanSub" class="text-[9px] text-slate-400">Thr: 4.0 dB</div>
+            </div>
+            <div class="bg-obsidian-900/90 border border-amber-500/30 rounded-lg p-1.5">
+              <div class="text-[10px] text-amber-300 font-bold">DOG (67–45/60k)</div>
+              <div id="spDogStatus" class="text-xs font-extrabold text-white mt-0.5">+65.5 dB SL</div>
+              <div id="spDogSub" class="text-[9px] text-slate-400">Thr: -5.5 dB</div>
+            </div>
+            <div class="bg-obsidian-900/90 border border-emerald-500/30 rounded-lg p-1.5">
+              <div class="text-[10px] text-emerald-300 font-bold">CAT (45–64/85k)</div>
+              <div id="spCatStatus" class="text-xs font-extrabold text-white mt-0.5">+68.0 dB SL</div>
+              <div id="spCatSub" class="text-[9px] text-slate-400">Thr: -8.0 dB (5× dist)</div>
+            </div>
+          </div>
+          <p id="diagExplanation" class="text-[11px] text-slate-300 leading-relaxed">
+            Cats hear 45 Hz – 64 kHz (up to 85 kHz at high SPL) to detect ultrasonic rodent calls from up to 5× farther away than humans; dogs hear 67 Hz – 45 kHz (up to 60 kHz) with longer ear canals aiding faint mid-frequency detection.
+          </p>
+        </div>
+      </div>
+
+      <!-- FOUR-CHECK VERIFICATION SUITE -->
+      <div class="glass-panel rounded-2xl p-4 space-y-2 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Four-Check Verification Suite</h2>
+            <p class="text-[11px] text-slate-400">Quantitative audit of ISO 226, 20 Hz gap, crossover &amp; Flat-Ear null</p>
+          </div>
+          <button id="btnRunVerification" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold transition">
+            Run All 4 Checks
+          </button>
+        </div>
+
+        <div class="space-y-1.5 text-xs">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">1. ISO 226 &amp; Species Curve Shape</div>
+              <div id="chk1Desc" class="text-[10px] font-mono text-slate-400">Verifies 3–4 kHz human min, dog 45/60 kHz &amp; cat 64/85 kHz limits.</div>
+            </div>
+            <span id="chk1Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">2. The 20 Hz Value (≈ 78 dB SPL)</div>
+              <div id="chk2Desc" class="text-[10px] font-mono text-slate-400">Confirms 20 Hz requires ~78 dB SPL (78 dB above 3.5 kHz).</div>
+            </div>
+            <span id="chk2Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">3. Infrasound Body/Ear Crossover (&lt; 20 Hz)</div>
+              <div id="chk3Desc" class="text-[10px] font-mono text-slate-400">Finds exact frequency where body sensitivity exceeds ear.</div>
+            </div>
+            <span id="chk3Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">4. Flat-Ear Null Comparison</div>
+              <div id="chk4Desc" class="text-[10px] font-mono text-slate-400">Verifies 20 Hz &amp; 3 kHz equal audibility when flat-ear is active.</div>
+            </div>
+            <span id="chk4Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. MULTI-SPECIES AUDIOGRAMS (HUMAN ISO 226, DOG, CAT) + THORACIC & TRAP
+    // =========================================================================
+    const MAX_FREQ_HZ = 100000.0; // 100 kHz ceiling to show full Cat (64-85 kHz) & Dog (45-60 kHz) ranges
+
+    const state = {
+      freqHz: 1000.0,       // 1 Hz .. 100,000 Hz
+      levelDb: 60.0,        // -15 .. 130 dB SPL
+      species: 'HUMAN',     // 'HUMAN' | 'DOG' | 'CAT'
+      source: 'sine',       // 'drum' | 'sine' | 'ultrasonic'
+      mode: 'TRANSPOSE',    // 'TRANSPOSE' | 'VISUALISE'
+      flatEar: false,       // false = Species Curve, true = Flat 0 dB Null
+      displayView: 'threshold', // 'threshold' | 'body' | 'levitation'
+      audioOn: false,
+      simTime: 0,
+      beadY: 0.0,
+      beadVy: 0.0,
+      isTrapped: false,
+      forceRatioMg: 0.0
+    };
+
+    // Human ISO 226 (20 Hz – 20 kHz, min ~0 dB at 3.5 kHz, 78 dB at 20 Hz, 90 dB at 20 kHz)
+    const HUMAN_ANCHORS = [
+      { f: 1.0,    db: 126.0 },
+      { f: 2.5,    db: 117.0 },
+      { f: 5.0,    db: 109.0 },
+      { f: 10.0,   db: 97.5 },
+      { f: 15.0,   db: 86.5 },
+      { f: 20.0,   db: 78.0 },
+      { f: 31.5,   db: 59.5 },
+      { f: 50.0,   db: 44.0 },
+      { f: 100.0,  db: 27.0 },
+      { f: 200.0,  db: 14.5 },
+      { f: 500.0,  db: 6.0 },
+      { f: 1000.0, db: 4.0 },
+      { f: 2000.0, db: 1.0 },
+      { f: 3200.0, db: -0.5 },
+      { f: 3500.0, db: 0.0 },
+      { f: 4000.0, db: 0.2 },
+      { f: 6300.0, db: 4.5 },
+      { f: 10000.0,db: 10.0 },
+      { f: 12500.0,db: 17.0 },
+      { f: 16000.0,db: 40.0 },
+      { f: 20000.0,db: 90.0 },
+      { f: 24000.0,db: 132.0 },
+      { f: 100000.0,db: 165.0 }
+    ];
+
+    // Canine Audiogram (67 Hz – 45,000 Hz standard; up to 60,000 Hz at high SPL)
+    // Dogs have longer ear canals -> keen sensitivity at ordinary mid pitches (1–8 kHz down to -11 dB SPL),
+    // and slightly better sensitivity than cats at low frequencies (67–150 Hz).
+    const DOG_ANCHORS = [
+      { f: 1.0,    db: 132.0 },
+      { f: 20.0,   db: 94.0 },
+      { f: 45.0,   db: 70.0 },
+      { f: 67.0,   db: 55.0 },
+      { f: 100.0,  db: 36.0 },
+      { f: 250.0,  db: 14.0 },
+      { f: 500.0,  db: 3.0 },
+      { f: 1000.0, db: -5.5 },
+      { f: 2000.0, db: -9.0 },
+      { f: 4000.0, db: -11.5 },
+      { f: 8000.0, db: -12.0 },
+      { f: 16000.0,db: -6.0 },
+      { f: 32000.0,db: 18.0 },
+      { f: 45000.0,db: 60.0 },
+      { f: 60000.0,db: 96.0 },
+      { f: 85000.0,db: 142.0 },
+      { f: 100000.0,db: 160.0 }
+    ];
+
+    // Feline Audiogram (45 Hz – 64,000 Hz standard; up to 85,000 Hz at higher volumes)
+    // Cats have one of the widest ranges of any land mammal, dipping to -15 dB SPL in the 4–32 kHz
+    // ultrasonic rodent-prey band (allowing detection up to 5x farther away than humans: -14 dB vs human 0 dB = 5x distance).
+    const CAT_ANCHORS = [
+      { f: 1.0,    db: 134.0 },
+      { f: 20.0,   db: 92.0 },
+      { f: 45.0,   db: 60.0 },
+      { f: 67.0,   db: 57.0 },
+      { f: 100.0,  db: 40.0 },
+      { f: 250.0,  db: 18.0 },
+      { f: 500.0,  db: 4.0 },
+      { f: 1000.0, db: -8.0 },
+      { f: 2000.0, db: -12.0 },
+      { f: 4000.0, db: -14.5 },
+      { f: 8000.0, db: -15.5 },
+      { f: 16000.0,db: -15.0 },
+      { f: 32000.0,db: -8.0 },
+      { f: 45000.0,db: 12.0 },
+      { f: 64000.0,db: 60.0 },
+      { f: 85000.0,db: 98.0 },
+      { f: 100000.0,db: 135.0 }
+    ];
+
+    function evalAnchorSpline(fHz, anchors) {
+      const lf = Math.log10(Math.max(1.0, Math.min(MAX_FREQ_HZ, fHz)));
+      for (let i = 0; i < anchors.length - 1; i++) {
+        const a = anchors[i], b = anchors[i + 1];
+        const la = Math.log10(a.f), lb = Math.log10(b.f);
+        if (lf >= la && lf <= lb) {
+          const t = (lf - la) / (lb - la);
+          const s = (1 - Math.cos(t * Math.PI)) * 0.5;
+          return a.db + s * (b.db - a.db);
+        }
+      }
+      return anchors[anchors.length - 1].db;
+    }
+
+    function getSpeciesThresholdDb(fHz, sp = state.species, useFlat = state.flatEar) {
+      if (useFlat) return 0.0;
+      if (sp === 'DOG') return evalAnchorSpline(fHz, DOG_ANCHORS);
+      if (sp === 'CAT') return evalAnchorSpline(fHz, CAT_ANCHORS);
+      return evalAnchorSpline(fHz, HUMAN_ANCHORS);
+    }
+
+    function getEarThresholdDb(fHz, useFlat = state.flatEar) {
+      return getSpeciesThresholdDb(fHz, 'HUMAN', useFlat);
+    }
+
+    // Thoracic cavity visceral resonance curve (5.8 Hz peak)
+    function getBodyThresholdDb(fHz) {
+      const fRes = 5.8;
+      const logDist = Math.log10(Math.max(0.5, fHz) / fRes);
+      const resDip = 81.5 + 34.0 * (logDist * logDist) / (0.18 + Math.abs(logDist));
+      const highRoll = fHz > 18 ? Math.pow((fHz - 18) / 25, 1.35) * 8.5 : 0;
+      return Math.min(145.0, resDip + highRoll);
+    }
+
+    function findBodyEarCrossoverHz() {
+      for (let f = 25.0; f >= 1.0; f -= 0.05) {
+        if (getBodyThresholdDb(f) <= getSpeciesThresholdDb(f, 'HUMAN', false)) {
+          return f;
+        }
+      }
+      return 14.2;
+    }
+
+    function computeLevitationPhysics(fHz, levelDb, beadY_norm, dt) {
+      const pRef = 20e-6;
+      const pRms = pRef * Math.pow(10, levelDb / 20);
+      const p0 = pRms * Math.SQRT2;
+      const rho0 = 1.2, c0 = 343.0;
+      const Eac = (p0 * p0) / (4 * rho0 * c0 * c0);
+      const forceRatioMax = (fHz >= 18000)
+        ? (Eac * (fHz / 28000.0)) / 3.2
+        : (Eac * (fHz / 28000.0)) / 12.0;
+
+      state.forceRatioMg = forceRatioMax;
+
+      if (forceRatioMax >= 1.0 && fHz >= 18000) {
+        state.isTrapped = true;
+        const eqSag = -0.14 / forceRatioMax;
+        const accel = -65.0 * forceRatioMax * (state.beadY - eqSag) - 9.5 * state.beadVy;
+        state.beadVy += accel * dt;
+        state.beadY += state.beadVy * dt;
+      } else {
+        state.isTrapped = false;
+        const accel = -9.8 + 2.5 * forceRatioMax * Math.sin(-4 * state.beadY) - 4.0 * state.beadVy;
+        state.beadVy += accel * dt;
+        state.beadY += state.beadVy * dt;
+        if (state.beadY < -0.68) {
+          state.beadY = -0.68;
+          state.beadVy = Math.abs(state.beadVy) * 0.35;
+        }
+      }
+    }
+
+    function getHonestyState(fHz, levelDb, mode, useFlat) {
+      const tActive = getSpeciesThresholdDb(fHz, state.species, useFlat);
+      const sensationDb = levelDb - tActive;
+      const audibleGain = sensationDb <= -6 ? 0 : Math.min(0.85, 0.008 * Math.pow(10, Math.min(42, Math.max(0, sensationDb)) / 22));
+
+      if (mode === 'VISUALISE') {
+        return {
+          playAudio: false,
+          playedHz: 0,
+          octaves: 0,
+          gain: 0,
+          sensationDb,
+          headline: `VISUALISE MODE (SILENT) — Inspecting ${formatFreq(fHz)} at ${levelDb.toFixed(1)} dB SPL (${state.species} profile).`,
+          subline: `${state.species} Threshold: ${tActive.toFixed(1)} dB SPL • Sensation Level: ${sensationDb >= 0 ? '+' : ''}${sensationDb.toFixed(1)} dB SL`
+        };
+      }
+
+      // Ultrasonic Emitter source is strictly for mechanical radiation force ("No transposition here; nothing is meant to be audible")
+      if (state.source === 'ultrasonic' && fHz > 20000) {
+        return {
+          playAudio: false,
+          playedHz: 0,
+          octaves: 0,
+          gain: 0,
+          sensationDb,
+          headline: `ULTRASONIC EMITTER (${formatFreq(fHz)}) — SILENT IN BROWSER (No transposition; mechanical radiation force active).`,
+          subline: `Gor'kov radiation force F_rad / mg = ${state.forceRatioMg.toFixed(2)}× • Cat SL: ${(levelDb - getSpeciesThresholdDb(fHz, 'CAT', false)).toFixed(1)} dB`
+        };
+      }
+
+      if (fHz < 40) {
+        const octaves = Math.ceil(Math.log2(40.0 / fHz));
+        const playedHz = fHz * Math.pow(2, octaves);
+        return {
+          playAudio: true,
+          playedHz,
+          octaves,
+          gain: audibleGain,
+          sensationDb,
+          headline: `YOU ARE HEARING ${playedHz.toFixed(1)} Hz — THIS IS ${fHz.toFixed(1)} Hz, TRANSPOSED UP ${octaves} OCTAVE${octaves > 1 ? 'S' : ''}.`,
+          subline: `Speakers roll off below 40 Hz • Weighted by ${useFlat ? 'Flat-Ear (0 dB)' : `${state.species} (${tActive.toFixed(1)} dB threshold)`}`
+        };
+      }
+
+      if (fHz > 18000) {
+        // When auditioning Dog (up to 45/60 kHz) or Cat (up to 64/85 kHz) ultrasonic hearing in TRANSPOSE mode with Sine/Drum:
+        // Shift down into the human passband (~3–6 kHz) and explicitly label the downward octave shift!
+        const octavesDown = Math.ceil(Math.log2(fHz / 6000.0));
+        const playedHz = fHz / Math.pow(2, octavesDown);
+        return {
+          playAudio: true,
+          playedHz,
+          octaves: -octavesDown,
+          gain: audibleGain,
+          sensationDb,
+          headline: `YOU ARE HEARING ${playedHz.toFixed(0)} Hz — THIS IS ${formatFreq(fHz)} (${state.species} ULTRASONIC BAND), TRANSPOSED DOWN ${octavesDown} OCTAVES.`,
+          subline: `Browser DACs cap at ~20 kHz • ${state.species} Threshold at ${formatFreq(fHz)} is ${tActive.toFixed(1)} dB SPL`
+        };
+      }
+
+      return {
+        playAudio: true,
+        playedHz: fHz,
+        octaves: 0,
+        gain: audibleGain,
+        sensationDb,
+        headline: `DIRECT AUDIBLE SIGNAL — You are hearing ${formatFreq(fHz)} (${sensationDb >= 0 ? `+${sensationDb.toFixed(1)} dB above` : `${Math.abs(sensationDb).toFixed(1)} dB below`} ${state.species} threshold).`,
+        subline: `${state.species} Threshold: ${tActive.toFixed(1)} dB SPL • No transposition required (40 Hz – 18 kHz passband)`
+      };
+    }
+
+    function formatFreq(f) {
+      if (f >= 1000) return `${(f / 1000).toFixed(2)} kHz`;
+      if (f >= 100) return `${f.toFixed(0)} Hz`;
+      return `${f.toFixed(1)} Hz`;
+    }
+
+    // =========================================================================
+    // 2. WEB AUDIO ENGINE & 44.1 kHz WAV EXPORTER
+    // =========================================================================
+    let audioCtx = null;
+    let contOsc = null;
+    let contGain = null;
+    let lastDrumPulseTime = 0;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new Ctx();
+        contOsc = audioCtx.createOscillator();
+        contGain = audioCtx.createGain();
+        contOsc.type = 'sine';
+        contGain.gain.value = 0;
+        contOsc.connect(contGain);
+        contGain.connect(audioCtx.destination);
+        contOsc.start();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function updateLiveAudio(nowSec) {
+      if (!audioCtx || !contGain || !contOsc) return;
+      const hState = getHonestyState(state.freqHz, state.levelDb, state.mode, state.flatEar);
+
+      if (!state.audioOn || !hState.playAudio || hState.gain <= 0.0001) {
+        contGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+        return;
+      }
+
+      if (state.source === 'sine' || state.source === 'ultrasonic') {
+        contOsc.frequency.setTargetAtTime(hState.playedHz, audioCtx.currentTime, 0.02);
+        contGain.gain.setTargetAtTime(hState.gain * 0.45, audioCtx.currentTime, 0.03);
+      } else if (state.source === 'drum') {
+        contGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.015);
+        if (nowSec - lastDrumPulseTime > 0.45) {
+          lastDrumPulseTime = nowSec;
+          triggerDrumImpulse(audioCtx, audioCtx.destination, audioCtx.currentTime + 0.01, hState.playedHz, hState.gain);
+        }
+      }
+    }
+
+    function triggerDrumImpulse(ctx, dest, when, fPlayed, gainVal) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(fPlayed * 1.45, when);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(25, fPlayed), when + 0.035);
+      g.gain.setValueAtTime(0.0001, when);
+      g.gain.linearRampToValueAtTime(Math.min(0.9, gainVal * 0.85), when + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, when + 0.24);
+      osc.connect(g); g.connect(dest);
+      osc.start(when); osc.stop(when + 0.26);
+    }
+
+    async function exportWavSample() {
+      const sr = 44100, dur = 3.0;
+      const OffCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const off = new OffCtx(2, sr * dur, sr);
+      const hState = getHonestyState(state.freqHz, state.levelDb, 'TRANSPOSE', state.flatEar);
+
+      if (hState.playAudio && hState.gain > 0) {
+        if (state.source === 'drum') {
+          for (let t = 0.05; t < dur - 0.3; t += 0.45) {
+            triggerDrumImpulse(off, off.destination, t, hState.playedHz, hState.gain);
+          }
+        } else {
+          const osc = off.createOscillator();
+          const g = off.createGain();
+          osc.frequency.setValueAtTime(hState.playedHz, 0);
+          g.gain.setValueAtTime(0.001, 0);
+          g.gain.linearRampToValueAtTime(hState.gain * 0.45, 0.05);
+          g.gain.setValueAtTime(hState.gain * 0.45, dur - 0.1);
+          g.gain.linearRampToValueAtTime(0.0001, dur);
+          osc.connect(g); g.connect(off.destination);
+          osc.start(0); osc.stop(dur);
+        }
+      }
+
+      const rendered = await off.startRendering();
+      const ch0 = rendered.getChannelData(0), ch1 = rendered.getChannelData(1);
+      const dataSize = ch0.length * 4, buf = new ArrayBuffer(44 + dataSize), view = new DataView(buf);
+      const ws = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+      ws(0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+      view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true); view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+      ws(36, 'data'); view.setUint32(40, dataSize, true);
+      let offB = 44;
+      for (let i = 0; i < ch0.length; i++) {
+        view.setInt16(offB, Math.max(-1, Math.min(1, ch0[i])) * 0x7FFF, true);
+        view.setInt16(offB + 2, Math.max(-1, Math.min(1, ch1[i])) * 0x7FFF, true);
+        offB += 4;
+      }
+      const blob = new Blob([buf], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      const tag = hState.octaves !== 0 ? `_transposed_${hState.octaves}oct_${Math.round(hState.playedHz)}hz` : '';
+      a.download = `audible_edge_v2_${state.species.toLowerCase()}_${Math.round(state.freqHz)}hz_${Math.round(state.levelDb)}db${tag}.wav`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    // =========================================================================
+    // 3. INTERACTIVE 2D MULTI-SPECIES AUDIOGRAM & LEVITATION CANVAS
+    // =========================================================================
+    const curveCanvas = document.getElementById('curveCanvas');
+
+    function freqToX(f, w, padL = 52, padR = 24) {
+      const lf = Math.log10(Math.max(1, Math.min(MAX_FREQ_HZ, f)));
+      const maxLf = Math.log10(MAX_FREQ_HZ);
+      return padL + (lf / maxLf) * (w - padL - padR);
+    }
+
+    function xToFreq(x, w, padL = 52, padR = 24) {
+      const maxLf = Math.log10(MAX_FREQ_HZ);
+      const norm = Math.max(0, Math.min(1, (x - padL) / (w - padL - padR)));
+      return Math.pow(10, norm * maxLf);
+    }
+
+    function dbToY(db, h, padT = 22, padB = 30) {
+      const norm = (db - (-20)) / (135 - (-20));
+      return h - padB - norm * (h - padT - padB);
+    }
+
+    function yToDb(y, h, padT = 22, padB = 30) {
+      const norm = (h - padB - y) / (h - padT - padB);
+      return Math.max(-15, Math.min(130, -20 + norm * 155));
+    }
+
+    function renderCurveCanvas() {
+      if (!curveCanvas) return;
+      const ctx = curveCanvas.getContext('2d');
+      const w = curveCanvas.width = curveCanvas.clientWidth;
+      const h = curveCanvas.height = curveCanvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 52, padR = 24, padT = 22, padB = 30;
+
+      if (state.displayView === 'levitation') {
+        ctx.strokeStyle = 'rgba(30, 41, 59, 0.6)'; ctx.lineWidth = 1;
+        for (let y = padT; y <= h - padB; y += 36) { ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); }
+
+        ctx.beginPath(); ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2.4;
+        for (let i = 0; i <= 200; i++) {
+          const u = i / 200;
+          const x = padL + u * (w - padL - padR);
+          const fRad = Math.sin(u * Math.PI * 4) * Math.min(2.5, state.forceRatioMg);
+          const y = h * 0.5 - (fRad / 2.6) * (h * 0.38);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        const gy = h * 0.5 - (1.0 / 2.6) * (h * 0.38);
+        ctx.strokeStyle = '#f43f5e'; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#fda4af'; ctx.font = '10px JetBrains Mono';
+        ctx.fillText('Gravity Threshold (F_rad = m·g)', padL + 8, gy - 6);
+
+        ctx.fillStyle = '#e2e8f0'; ctx.font = 'bold 11px JetBrains Mono';
+        ctx.fillText(`Ultrasonic Standing-Wave Radiation Force Profile • Peak F_rad / mg = ${state.forceRatioMg.toFixed(2)}× (${state.isTrapped ? 'BEAD TRAPPED AT NODE' : 'BELOW TRAP THRESHOLD'})`, padL + 8, 16);
+        return;
+      }
+
+      // Shade Infrasound (< 20 Hz), Human (20–20k), Dog/Cat Ultrasonic (20k–85k)
+      const x20 = freqToX(20, w, padL, padR);
+      const x20k = freqToX(20000, w, padL, padR);
+      const x64k = freqToX(64000, w, padL, padR);
+      ctx.fillStyle = 'rgba(244, 63, 94, 0.06)';
+      ctx.fillRect(padL, padT, x20 - padL, h - padT - padB);
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.05)';
+      ctx.fillRect(x20k, padT, x64k - x20k, h - padT - padB);
+      ctx.fillStyle = 'rgba(168, 85, 247, 0.06)';
+      ctx.fillRect(x64k, padT, w - padR - x64k, h - padT - padB);
+
+      const freqTicks = [1, 5, 10, 20, 45, 100, 500, 1000, 3500, 10000, 20000, 45000, 64000, 100000];
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.65)'; ctx.lineWidth = 1;
+      ctx.fillStyle = '#64748b'; ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'center';
+      freqTicks.forEach(ft => {
+        const x = freqToX(ft, w, padL, padR);
+        ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, h - padB); ctx.stroke();
+        const lbl = ft >= 1000 ? `${ft / 1000}k` : `${ft}`;
+        ctx.fillText(lbl, x, h - 10);
+      });
+
+      const dbTicks = [-15, 0, 20, 40, 60, 78, 100, 120];
+      ctx.textAlign = 'right';
+      dbTicks.forEach(dt => {
+        const y = dbToY(dt, h, padT, padB);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillText(`${dt}dB`, padL - 5, y + 3);
+      });
+
+      // 1. Somatic Body-Response Curve (Rose)
+      ctx.beginPath();
+      ctx.strokeStyle = state.displayView === 'body' ? '#f43f5e' : 'rgba(244, 63, 94, 0.65)';
+      ctx.lineWidth = state.displayView === 'body' ? 3.0 : 1.8;
+      for (let i = 0; i <= 240; i++) {
+        const f = Math.pow(10, (i / 240) * Math.log10(MAX_FREQ_HZ));
+        const bDb = getBodyThresholdDb(f);
+        const x = freqToX(f, w, padL, padR), y = dbToY(bDb, h, padT, padB);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Helper to draw a species threshold curve
+      const drawSpeciesCurve = (spKey, color, isPrimary) => {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = isPrimary ? 3.0 : 1.7;
+        ctx.globalAlpha = isPrimary ? 1.0 : 0.62;
+        for (let i = 0; i <= 260; i++) {
+          const f = Math.pow(10, (i / 260) * Math.log10(MAX_FREQ_HZ));
+          const eDb = getSpeciesThresholdDb(f, spKey, state.flatEar);
+          const x = freqToX(f, w, padL, padR), y = dbToY(eDb, h, padT, padB);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+      };
+
+      drawSpeciesCurve('CAT', '#10b981', state.species === 'CAT');
+      drawSpeciesCurve('DOG', '#f59e0b', state.species === 'DOG');
+      drawSpeciesCurve('HUMAN', '#38bdf8', state.species === 'HUMAN');
+
+      // Landmark annotations
+      const fCross = findBodyEarCrossoverHz();
+      const xCross = freqToX(fCross, w, padL, padR), yCross = dbToY(getEarThresholdDb(fCross, false), h, padT, padB);
+      ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(xCross, yCross, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.textAlign = 'left'; ctx.font = 'bold 9px JetBrains Mono';
+      ctx.fillText(`Crossover ${fCross.toFixed(1)} Hz`, xCross + 5, yCross - 5);
+
+      if (!state.flatEar) {
+        const xCat = freqToX(64000, w, padL, padR), yCat = dbToY(60, h, padT, padB);
+        ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(xCat, yCat, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText('Cat 64k (85k max)', xCat - 78, yCat - 8);
+
+        const xDog = freqToX(45000, w, padL, padR), yDog = dbToY(60, h, padT, padB);
+        ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(xDog, yDog, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText('Dog 45k', xDog - 44, yDog + 13);
+      }
+
+      // Active Draggable Visitor Marker
+      const mx = freqToX(state.freqHz, w, padL, padR);
+      const my = dbToY(state.levelDb, h, padT, padB);
+      const tHere = getSpeciesThresholdDb(state.freqHz, state.species, state.flatEar);
+      const ty = dbToY(tHere, h, padT, padB);
+
+      ctx.strokeStyle = state.levelDb >= tHere ? 'rgba(16, 185, 129, 0.75)' : 'rgba(244, 63, 94, 0.65)';
+      ctx.lineWidth = 1.8; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(mx, ty); ctx.lineTo(mx, my); ctx.stroke(); ctx.setLineDash([]);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath(); ctx.arc(mx, my, 6.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#07090e'; ctx.lineWidth = 2; ctx.stroke();
+
+      ctx.fillStyle = '#fef3c7'; ctx.font = 'bold 10px JetBrains Mono';
+      ctx.textAlign = mx > w - 165 ? 'right' : 'left';
+      ctx.fillText(`${formatFreq(state.freqHz)} @ ${state.levelDb.toFixed(1)} dB`, mx + (mx > w - 165 ? -10 : 10), my - 8);
+    }
+
+    // =========================================================================
+    // 4. THREE.JS 3D MULTI-REGIME ACOUSTIC STAGE (v2 VISUAL OVERHAUL)
+    // =========================================================================
+    let scene, camera, renderer, controls;
+    let thoraxGroup, ribMeshes = [], lungMeshes = [], diaphragmMesh, thoraxAura;
+    let pinnaSwivelGroup, cochleaNodes = [];
+    let markerSphere3D, markerBeam3D, trapBeadMesh, standingWavePlanes = [], streamingParticles;
+    let streamPos = null;
+    let camLerp = null;
+
+    const CAM_PRESETS = {
+      overview: { pos: [0, 2.05, 5.55], target: [0, 0.12, 0] },
+      thorax:   { pos: [-2.15, 1.05, 2.45], target: [-2.10, 0.15, 0] },
+      cochlea:  { pos: [0, 1.35, 2.65], target: [0, 0.15, 0] },
+      trap:     { pos: [2.15, 1.05, 2.45], target: [2.10, 0.15, 0] }
+    };
+
+    function buildStudioEnvMap(rendererInstance) {
+      const pmrem = new THREE.PMREMGenerator(rendererInstance);
+      pmrem.compileEquirectangularShader();
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0x0a0f1d);
+      const b1 = new THREE.Mesh(new THREE.PlaneGeometry(10, 6), new THREE.MeshBasicMaterial({ color: 0xfff3dc, side: THREE.DoubleSide }));
+      b1.position.set(4, 7, 4); b1.lookAt(0, 0, 0); envScene.add(b1);
+      const b2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
+      b2.position.set(-7, 3, -3); b2.lookAt(0, 0, 0); envScene.add(b2);
+      const b3 = new THREE.Mesh(new THREE.PlaneGeometry(7, 4), new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide }));
+      b3.position.set(6, 2, -5); b3.lookAt(0, 0, 0); envScene.add(b3);
+      const rt = pmrem.fromScene(envScene, 0.04);
+      pmrem.dispose();
+      return rt.texture;
+    }
+
+    function initThreeStage() {
+      const canvas = document.getElementById('threeCanvas');
+      const wrap = document.getElementById('stageWrap');
+      if (!canvas || !wrap || typeof THREE === 'undefined') return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x05070e);
+      scene.fog = new THREE.FogExp2(0x05070e, 0.058);
+
+      const w = wrap.clientWidth || 720, h = wrap.clientHeight || 380;
+      camera = new THREE.PerspectiveCamera(39, w / h, 0.1, 45);
+      camera.position.set(...CAM_PRESETS.overview.pos);
+
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h, false);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.22;
+      scene.environment = buildStudioEnvMap(renderer);
+
+      if (typeof THREE.OrbitControls !== 'undefined') {
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.08;
+        controls.maxPolarAngle = Math.PI * 0.49;
+        controls.target.set(...CAM_PRESETS.overview.target);
+      }
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.55));
+      const keyLight = new THREE.DirectionalLight(0xfff4e0, 2.0);
+      keyLight.position.set(3, 6, 4); scene.add(keyLight);
+      const cyanPoint = new THREE.PointLight(0x38bdf8, 1.5, 14);
+      cyanPoint.position.set(0, 2.8, 2.2); scene.add(cyanPoint);
+
+      // Studio reflective deck + polar grids under each station
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(16, 10),
+        new THREE.MeshStandardMaterial({ color: 0x050811, roughness: 0.28, metalness: 0.55 })
+      );
+      floor.rotation.x = -Math.PI / 2; floor.position.y = -1.05; scene.add(floor);
+
+      [-2.1, 0, 2.1].forEach((gx, idx) => {
+        const cols = [0xf43f5e, 0x38bdf8, 0xa855f7];
+        const pg = new THREE.PolarGridHelper(0.95, 8, 4, 48, cols[idx], 0x1e293b);
+        pg.position.set(gx, -1.04, 0);
+        scene.add(pg);
+      });
+
+      // =====================================================================
+      // STATION 1 (LEFT, x = -2.1): 3D ANATOMICAL THORACIC CAGE & LUNGS (5-7 Hz)
+      // =====================================================================
+      thoraxGroup = new THREE.Group();
+      thoraxGroup.position.set(-2.1, 0.12, 0);
+      scene.add(thoraxGroup);
+
+      const boneMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, emissive: 0x9f1239, emissiveIntensity: 0.18, roughness: 0.32, metalness: 0.35 });
+      const lungMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.32, transparent: true, opacity: 0.45, roughness: 0.25 });
+
+      // Spine vertebral column & Sternum
+      for (let v = 0; v < 9; v++) {
+        const vert = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.11, 12), boneMat);
+        vert.position.set(0, 0.62 - v * 0.15, -0.38);
+        thoraxGroup.add(vert);
+      }
+      const sternum = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.78, 0.03), boneMat);
+      sternum.position.set(0, 0.12, 0.42);
+      thoraxGroup.add(sternum);
+
+      // 7 anatomical paired ribs
+      for (let i = 0; i < 7; i++) {
+        const y = 0.56 - i * 0.17;
+        const r = 0.38 + Math.sin((i / 6) * Math.PI) * 0.16;
+        const rib = new THREE.Mesh(new THREE.TorusGeometry(r, 0.020, 12, 40, Math.PI * 1.76), boneMat);
+        rib.rotation.x = Math.PI / 2 + 0.12;
+        rib.rotation.z = -Math.PI * 0.38;
+        rib.position.y = y;
+        thoraxGroup.add(rib);
+        ribMeshes.push({ mesh: rib, baseR: r });
+      }
+
+      // Dual-lobe translucent lungs inside ribcage
+      [-0.17, 0.17].forEach(lx => {
+        const lung = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 20), lungMat);
+        lung.scale.set(0.85, 1.85, 1.15);
+        lung.position.set(lx, 0.08, 0.02);
+        thoraxGroup.add(lung);
+        lungMeshes.push(lung);
+      });
+
+      // Visceral Diaphragm Dome
+      diaphragmMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.46, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.46),
+        new THREE.MeshStandardMaterial({ color: 0xfb7185, emissive: 0xe11d48, emissiveIntensity: 0.42, transparent: true, opacity: 0.72, side: THREE.DoubleSide })
+      );
+      diaphragmMesh.position.y = -0.56;
+      thoraxGroup.add(diaphragmMesh);
+
+      thoraxAura = new THREE.Mesh(
+        new THREE.RingGeometry(0.55, 0.62, 40),
+        new THREE.MeshBasicMaterial({ color: 0xf43f5e, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+      );
+      thoraxAura.rotation.x = Math.PI / 2; thoraxAura.position.y = -0.55;
+      thoraxGroup.add(thoraxAura);
+
+      // =====================================================================
+      // STATION 2 (CENTER, x = 0): 3D MULTI-SPECIES AUDIOGRAM RIBBONS & PINNA
+      // =====================================================================
+      const buildRibbon = (spKey, hexCol, zOff) => {
+        const pts = [];
+        for (let i = 0; i <= 90; i++) {
+          const f = Math.pow(10, (i / 90) * Math.log10(MAX_FREQ_HZ));
+          const db = Math.min(135, getSpeciesThresholdDb(f, spKey, false));
+          const x = ((i / 90) - 0.5) * 2.25;
+          const y = -0.78 + ((db + 15) / 150) * 1.62;
+          pts.push(new THREE.Vector3(x, y, zOff));
+        }
+        const geom = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 90, 0.024, 12, false);
+        const mat = new THREE.MeshStandardMaterial({ color: hexCol, emissive: hexCol, emissiveIntensity: 0.45, roughness: 0.2 });
+        const mesh = new THREE.Mesh(geom, mat);
+        scene.add(mesh);
+        return mesh;
+      };
+      buildRibbon('HUMAN', 0x38bdf8, 0.14);
+      buildRibbon('DOG',   0xf59e0b, 0.00);
+      buildRibbon('CAT',   0x10b981, -0.14);
+
+      // 3D Swiveling Feline/Canine Pinna Funnel + Spiral Cochlea above Center Deck
+      pinnaSwivelGroup = new THREE.Group();
+      pinnaSwivelGroup.position.set(0, 0.72, -0.35);
+      scene.add(pinnaSwivelGroup);
+
+      const pinnaCone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.22, 0.42, 24, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.3, roughness: 0.35, side: THREE.DoubleSide })
+      );
+      pinnaCone.rotation.x = Math.PI * 0.35;
+      pinnaSwivelGroup.add(pinnaCone);
+
+      // Spiral Cochlea nodes around center
+      for (let c = 0; c < 24; c++) {
+        const t = c / 23;
+        const ang = t * Math.PI * 4.5;
+        const rad = 0.06 + (1 - t) * 0.22;
+        const node = new THREE.Mesh(
+          new THREE.SphereGeometry(0.022, 10, 10),
+          new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.2 })
+        );
+        node.position.set(Math.cos(ang) * rad, -0.92 + t * 0.12, Math.sin(ang) * rad);
+        scene.add(node);
+        cochleaNodes.push({ mesh: node, normF: t });
+      }
+
+      markerSphere3D = new THREE.Mesh(
+        new THREE.SphereGeometry(0.075, 24, 24),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 0.85 })
+      );
+      scene.add(markerSphere3D);
+
+      markerBeam3D = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.012, 0.012, 1.6, 12),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.45 })
+      );
+      scene.add(markerBeam3D);
+
+      // =====================================================================
+      // STATION 3 (RIGHT, x = +2.1): 3D ULTRASONIC PHASED-ARRAY LEVITATION RIG
+      // =====================================================================
+      const trapGroup = new THREE.Group();
+      trapGroup.position.set(2.1, 0.12, 0);
+      scene.add(trapGroup);
+
+      const metalMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.94, roughness: 0.14 });
+      const darkAnodized = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.82, roughness: 0.25 });
+
+      // Twin optical support pillars
+      [-0.52, 0.52].forEach(px => {
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 1.85, 16), metalMat);
+        pillar.position.set(px, -0.05, 0);
+        trapGroup.add(pillar);
+      });
+
+      // Top Phased Ultrasonic Transducer Array Housing + Piezo Emitter Elements
+      const topHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.46, 0.22, 36), darkAnodized);
+      topHousing.position.y = 0.82; trapGroup.add(topHousing);
+
+      const piezoMat = new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0x9333ea, emissiveIntensity: 0.5, metalness: 0.5, roughness: 0.2 });
+      for (let r = 0; r < 2; r++) {
+        const count = r === 0 ? 6 : 12;
+        const rad = r === 0 ? 0.14 : 0.30;
+        for (let k = 0; k < count; k++) {
+          const a = (k / count) * Math.PI * 2;
+          const pz = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.04, 12), piezoMat);
+          pz.position.set(Math.cos(a) * rad, 0.70, Math.sin(a) * rad);
+          trapGroup.add(pz);
+        }
+      }
+
+      // Bottom Parabolic Acoustic Reflector Dish + Base
+      const botBase = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.58, 0.18, 36), darkAnodized);
+      botBase.position.y = -0.82; trapGroup.add(botBase);
+      const botDish = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.32, 0.08, 36), metalMat);
+      botDish.position.y = -0.71; trapGroup.add(botDish);
+
+      // Standing-wave nodal pressure shells
+      for (let n = 0; n < 5; n++) {
+        const disc = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.38, 0.38, 0.022, 32),
+          new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
+        );
+        disc.position.y = -0.48 + n * 0.24;
+        trapGroup.add(disc);
+        standingWavePlanes.push(disc);
+      }
+
+      // Levitating EPS Bead + Equatorial Halo
+      trapBeadMesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.088, 28, 28),
+        new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 0.55, roughness: 0.25 })
+      );
+      trapGroup.add(trapBeadMesh);
+
+      // Acoustic streaming micro-particles inside the trap
+      const pCount = 60;
+      streamPos = new Float32Array(pCount * 3);
+      for (let i = 0; i < pCount; i++) {
+        const a = Math.random() * Math.PI * 2, r = 0.08 + Math.random() * 0.28;
+        streamPos[i * 3] = Math.cos(a) * r;
+        streamPos[i * 3 + 1] = (Math.random() - 0.5) * 1.25;
+        streamPos[i * 3 + 2] = Math.sin(a) * r;
+      }
+      const pGeom = new THREE.BufferGeometry();
+      pGeom.setAttribute('position', new THREE.BufferAttribute(streamPos, 3));
+      streamingParticles = new THREE.Points(pGeom, new THREE.PointsMaterial({ color: 0xc084fc, size: 0.032, transparent: true, opacity: 0.65 }));
+      trapGroup.add(streamingParticles);
+
+      const handleResize = () => {
+        const nw = wrap.clientWidth || 720, nh = wrap.clientHeight || 380;
+        camera.aspect = nw / nh; camera.updateProjectionMatrix();
+        renderer.setSize(nw, nh, false);
+      };
+      window.addEventListener('resize', handleResize);
+      if (typeof ResizeObserver !== 'undefined') new ResizeObserver(handleResize).observe(wrap);
+      requestAnimationFrame(handleResize);
+    }
+
+    // =========================================================================
+    // 5. FOUR-CHECK VERIFICATION SUITE
+    // =========================================================================
+    function runVerificationChecks() {
+      const t20 = getSpeciesThresholdDb(20, 'HUMAN', false);
+      const t3k = getSpeciesThresholdDb(3500, 'HUMAN', false);
+      const t20k = getSpeciesThresholdDb(20000, 'HUMAN', false);
+      const tDog45k = getSpeciesThresholdDb(45000, 'DOG', false);
+      const tCat64k = getSpeciesThresholdDb(64000, 'CAT', false);
+      const pass1 = t3k <= 1.0 && t20 > 70 && t20k > 80 && tCat64k <= 62 && tDog45k <= 62;
+      document.getElementById('chk1Desc').textContent = `Human: 20Hz=${t20.toFixed(0)}dB, 3.5k=${t3k.toFixed(1)}dB, 20k=${t20k.toFixed(0)}dB • Dog 45k=${tDog45k.toFixed(0)}dB • Cat 64k=${tCat64k.toFixed(0)}dB.`;
+      document.getElementById('chk1Badge').textContent = pass1 ? 'PASS' : 'FAIL';
+      document.getElementById('chk1Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass1 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+
+      const pass2 = Math.abs(t20 - 78.0) <= 1.5;
+      document.getElementById('chk2Desc').textContent = `Measured Human T(20 Hz) = ${t20.toFixed(1)} dB SPL (78.0 dB gap above 3.5 kHz).`;
+      document.getElementById('chk2Badge').textContent = pass2 ? 'PASS' : 'FAIL';
+      document.getElementById('chk2Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass2 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+
+      const fCross = findBodyEarCrossoverHz();
+      const pass3 = fCross < 20.0 && fCross > 5.0;
+      document.getElementById('chk3Desc').textContent = `Body sensitivity exceeds ear below ${fCross.toFixed(1)} Hz (< 20 Hz; 5.8 Hz thoracic dip = ${getBodyThresholdDb(5.8).toFixed(1)} dB).`;
+      document.getElementById('chk3Badge').textContent = pass3 ? 'PASS' : 'FAIL';
+      document.getElementById('chk3Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass3 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+
+      const sl20Flat = 40 - getEarThresholdDb(20, true);
+      const sl3kFlat = 40 - getEarThresholdDb(3000, true);
+      const pass4 = Math.abs(sl20Flat - sl3kFlat) < 0.01;
+      document.getElementById('chk4Desc').textContent = `Flat-Ear SL at 40 dB: 20 Hz = +${sl20Flat.toFixed(1)} dB, 3 kHz = +${sl3kFlat.toFixed(1)} dB (0 dB gap).`;
+      document.getElementById('chk4Badge').textContent = pass4 ? 'PASS' : 'FAIL';
+      document.getElementById('chk4Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass4 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+    }
+
+    // =========================================================================
+    // 6. MAIN LOOP & UI SYNCHRONIZATION
+    // =========================================================================
+    let lastTime = performance.now();
+
+    function syncUIReadouts() {
+      const f = state.freqHz, db = state.levelDb;
+      document.getElementById('valFreq').textContent = formatFreq(f);
+      document.getElementById('valDb').textContent = `${db.toFixed(1)} dB SPL`;
+
+      const tHuman = getSpeciesThresholdDb(f, 'HUMAN', state.flatEar);
+      const tDog   = getSpeciesThresholdDb(f, 'DOG', state.flatEar);
+      const tCat   = getSpeciesThresholdDb(f, 'CAT', state.flatEar);
+      const tActive = getSpeciesThresholdDb(f, state.species, state.flatEar);
+      const tBody  = getBodyThresholdDb(f);
+
+      const slHuman = db - tHuman, slDog = db - tDog, slCat = db - tCat;
+
+      // Inverse-square distance advantage of Cat vs Human: d_cat / d_human = 10^((T_human - T_cat)/20)
+      const distMultCat = Math.min(25.0, Math.max(0.1, Math.pow(10, Math.min(28, tHuman - tCat) / 20)));
+
+      document.getElementById('telEarThresh').textContent = `${state.species}: ${tActive.toFixed(1)} dB SPL`;
+      const pRms = 20e-6 * Math.pow(10, db / 20);
+      document.getElementById('telPressurePa').textContent = pRms >= 1 ? `${pRms.toFixed(2)} Pa` : `${(pRms * 1000).toFixed(2)} mPa`;
+      document.getElementById('telBodyThresh').textContent = `${tBody.toFixed(1)} dB SPL`;
+      document.getElementById('telRangeMult').textContent = `${distMultCat.toFixed(1)}× Distance`;
+      document.getElementById('telLevForce').textContent = `${state.forceRatioMg.toFixed(2)} × mg`;
+
+      // Update Species Matrix Cards
+      const fmtSl = (sl) => sl >= 0 ? `+${sl.toFixed(1)} dB SL` : `Inaudible (${sl.toFixed(0)}dB)`;
+      document.getElementById('spHumanStatus').textContent = fmtSl(slHuman);
+      document.getElementById('spHumanStatus').className = `text-xs font-extrabold mt-0.5 ${slHuman >= 0 ? 'text-sky-300' : 'text-slate-500'}`;
+      document.getElementById('spHumanSub').textContent = `Thr: ${tHuman.toFixed(1)} dB`;
+
+      document.getElementById('spDogStatus').textContent = fmtSl(slDog);
+      document.getElementById('spDogStatus').className = `text-xs font-extrabold mt-0.5 ${slDog >= 0 ? 'text-amber-300' : 'text-slate-500'}`;
+      document.getElementById('spDogSub').textContent = `Thr: ${tDog.toFixed(1)} dB`;
+
+      document.getElementById('spCatStatus').textContent = fmtSl(slCat);
+      document.getElementById('spCatStatus').className = `text-xs font-extrabold mt-0.5 ${slCat >= 0 ? 'text-emerald-300' : 'text-slate-500'}`;
+      document.getElementById('spCatSub').textContent = `Thr: ${tCat.toFixed(1)} dB (${distMultCat.toFixed(1)}× dist)`;
+
+      const hState = getHonestyState(f, db, state.mode, state.flatEar);
+      document.getElementById('honestyMainText').textContent = hState.headline;
+      document.getElementById('honestySubText').textContent = hState.subline;
+
+      const bandEl = document.getElementById('bandRegimeBadge');
+      if (f < 20) {
+        bandEl.textContent = 'INFRASOUND (< 20 Hz • FELT IN THORAX)';
+        bandEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-rose-500/50 text-[11px] font-mono font-bold text-rose-300 backdrop-blur-sm';
+      } else if (f <= 20000) {
+        bandEl.textContent = 'HUMAN + DOG + CAT AUDIBLE BAND';
+        bandEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-sky-500/40 text-[11px] font-mono font-bold text-sky-300 backdrop-blur-sm';
+      } else if (f <= 45000) {
+        bandEl.textContent = 'ULTRASONIC: DOG (≤45k) & CAT (≤64k) BAND';
+        bandEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-amber-500/50 text-[11px] font-mono font-bold text-amber-300 backdrop-blur-sm';
+      } else if (f <= 85000) {
+        bandEl.textContent = 'FELINE ULTRASONIC PREY BAND (45k – 64/85k)';
+        bandEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-emerald-500/50 text-[11px] font-mono font-bold text-emerald-300 backdrop-blur-sm';
+      } else {
+        bandEl.textContent = 'EXTREME ULTRASOUND (> 85 kHz)';
+        bandEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-purple-500/50 text-[11px] font-mono font-bold text-purple-300 backdrop-blur-sm';
+      }
+
+      document.getElementById('sensationBadge').textContent = `Human: ${slHuman >= 0 ? '+' : ''}${slHuman.toFixed(0)}dB • Dog: ${slDog >= 0 ? '+' : ''}${slDog.toFixed(0)}dB • Cat: ${slCat >= 0 ? '+' : ''}${slCat.toFixed(0)}dB`;
+    }
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = Math.min(0.033, (now - lastTime) / 1000);
+      lastTime = now;
+      state.simTime += dt;
+
+      computeLevitationPhysics(state.freqHz, state.levelDb, state.beadY, dt);
+      updateLiveAudio(state.simTime);
+      syncUIReadouts();
+      renderCurveCanvas();
+
+      // 1. Update 3D Thoracic Cage & Lungs (5-7 Hz visceral motion)
+      if (thoraxGroup && diaphragmMesh) {
+        const bodyAmp = Math.max(0.03, Math.min(1.0, Math.pow(10, (state.levelDb - getBodyThresholdDb(state.freqHz)) / 28)));
+        const visFreq = Math.min(10.0, state.freqHz);
+        const breath = Math.sin(state.simTime * Math.PI * 2 * visFreq) * 0.14 * bodyAmp;
+        ribMeshes.forEach((rm, idx) => {
+          const s = 1 + breath * (0.45 + idx * 0.10);
+          rm.mesh.scale.set(s, s, 1);
+        });
+        lungMeshes.forEach(lm => {
+          lm.scale.set(0.85 + breath * 0.35, 1.85 + breath * 0.25, 1.15 + breath * 0.35);
+        });
+        diaphragmMesh.position.y = -0.56 + breath * 0.65;
+        if (thoraxAura) {
+          const as = 1 + Math.abs(breath) * 2.2;
+          thoraxAura.scale.set(as, as, 1);
+          thoraxAura.material.opacity = 0.15 + bodyAmp * 0.55;
+        }
+      }
+
+      // 2. Update 3D Center Marker, Pinna Swivel & Tonotopic Cochlea Nodes
+      const normF = Math.log10(Math.max(1, state.freqHz)) / Math.log10(MAX_FREQ_HZ);
+      if (markerSphere3D && markerBeam3D) {
+        const mx = (normF - 0.5) * 2.25;
+        const my = -0.78 + ((state.levelDb + 15) / 150) * 1.62;
+        const mz = state.species === 'HUMAN' ? 0.14 : (state.species === 'DOG' ? 0.0 : -0.14);
+        markerSphere3D.position.set(mx, my, mz);
+        markerBeam3D.position.set(mx, -0.15, mz);
+      }
+      if (pinnaSwivelGroup) {
+        pinnaSwivelGroup.rotation.y = (normF - 0.5) * 1.2 + Math.sin(state.simTime * 3) * 0.08;
+      }
+      cochleaNodes.forEach(cn => {
+        const dist = Math.abs(cn.normF - normF);
+        cn.mesh.material.emissiveIntensity = dist < 0.08 ? 1.4 : 0.15;
+        const sc = dist < 0.08 ? 1.55 : 1.0;
+        cn.mesh.scale.set(sc, sc, sc);
+      });
+
+      // 3. Update 3D Ultrasonic Levitation Rig
+      if (trapBeadMesh) {
+        const microVib = state.isTrapped ? Math.sin(state.simTime * 38) * 0.008 : 0;
+        trapBeadMesh.position.y = state.beadY + microVib;
+        standingWavePlanes.forEach((pl, idx) => {
+          pl.material.opacity = state.freqHz >= 18000 ? Math.min(0.68, 0.08 + state.forceRatioMg * 0.22 + Math.sin(state.simTime * 12 + idx) * 0.06) : 0.08;
+        });
+      }
+      if (streamingParticles && streamPos) {
+        const speed = state.freqHz >= 18000 ? 0.015 * Math.min(2.5, state.forceRatioMg) : 0.002;
+        for (let i = 0; i < streamPos.length / 3; i++) {
+          streamPos[i * 3 + 1] += speed;
+          if (streamPos[i * 3 + 1] > 0.62) streamPos[i * 3 + 1] = -0.62;
+        }
+        streamingParticles.geometry.attributes.position.needsUpdate = true;
+      }
+
+      if (camLerp && controls) {
+        camera.position.lerp(camLerp.pos, 0.1);
+        controls.target.lerp(camLerp.target, 0.1);
+        if (camera.position.distanceTo(camLerp.pos) < 0.03) camLerp = null;
+      }
+      if (controls) controls.update();
+      if (renderer && scene && camera) renderer.render(scene, camera);
+    }
+
+    function bindEvents() {
+      const freqSlider = document.getElementById('sliderFreqLog');
+      freqSlider.addEventListener('input', () => {
+        const norm = parseFloat(freqSlider.value) / 1000;
+        state.freqHz = Math.pow(10, norm * Math.log10(MAX_FREQ_HZ));
+      });
+
+      document.getElementById('sliderDb').addEventListener('input', (e) => {
+        state.levelDb = parseFloat(e.target.value);
+      });
+
+      // Species selector buttons
+      const setSpecies = (sp) => {
+        state.species = sp;
+        document.querySelectorAll('.sp-btn').forEach(b => {
+          const act = b.getAttribute('data-sp') === sp;
+          const colMap = {
+            HUMAN: act ? 'bg-sky-500 text-slate-950 font-bold' : 'text-sky-300 hover:bg-obsidian-800 font-semibold',
+            DOG:   act ? 'bg-amber-500 text-slate-950 font-bold' : 'text-amber-300 hover:bg-obsidian-800 font-semibold',
+            CAT:   act ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-emerald-300 hover:bg-obsidian-800 font-semibold'
+          };
+          b.className = `sp-btn px-2 py-1 rounded-lg text-[11px] font-mono transition ${colMap[b.getAttribute('data-sp')]}`;
+        });
+      };
+      document.querySelectorAll('.sp-btn').forEach(btn => {
+        btn.addEventListener('click', () => setSpecies(btn.getAttribute('data-sp')));
+      });
+
+      // Quick landmark frequency buttons
+      document.querySelectorAll('button[data-jump-f]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.freqHz = parseFloat(btn.getAttribute('data-jump-f'));
+          freqSlider.value = Math.round((Math.log10(state.freqHz) / Math.log10(MAX_FREQ_HZ)) * 1000);
+          if (state.freqHz === 24000) setSpecies('DOG');
+          else if (state.freqHz >= 45000) setSpecies('CAT');
+        });
+      });
+
+      document.getElementById('btnSnapToThreshold').addEventListener('click', () => {
+        const target = Math.min(130, Math.max(-15, Math.round((getSpeciesThresholdDb(state.freqHz, state.species, state.flatEar) + 5.0) * 2) / 2));
+        state.levelDb = target;
+        document.getElementById('sliderDb').value = target;
+      });
+
+      // Drag marker directly on 2D Threshold Curve Canvas
+      let draggingCurve = false;
+      const updateFromCanvasPointer = (e) => {
+        const rect = curveCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        state.freqHz = Math.max(1.0, Math.min(MAX_FREQ_HZ, xToFreq(x, rect.width)));
+        state.levelDb = Math.round(yToDb(y, rect.height) * 2) / 2;
+        freqSlider.value = Math.round((Math.log10(state.freqHz) / Math.log10(MAX_FREQ_HZ)) * 1000);
+        document.getElementById('sliderDb').value = state.levelDb;
+      };
+      curveCanvas.addEventListener('pointerdown', (e) => { draggingCurve = true; updateFromCanvasPointer(e); });
+      window.addEventListener('pointermove', (e) => { if (draggingCurve) updateFromCanvasPointer(e); });
+      window.addEventListener('pointerup', () => { draggingCurve = false; });
+
+      // Mode Toggles (TRANSPOSE / VISUALISE)
+      const setMode = (m) => {
+        state.mode = m;
+        document.getElementById('btnModeTranspose').className = m === 'TRANSPOSE'
+          ? 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500 text-slate-950 transition'
+          : 'px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-300 hover:bg-obsidian-800 transition';
+        document.getElementById('btnModeVisualise').className = m === 'VISUALISE'
+          ? 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-sky-500 text-slate-950 transition'
+          : 'px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-300 hover:bg-obsidian-800 transition';
+      };
+      document.getElementById('btnModeTranspose').addEventListener('click', () => setMode('TRANSPOSE'));
+      document.getElementById('btnModeVisualise').addEventListener('click', () => setMode('VISUALISE'));
+
+      // Flat-Ear Null Toggle
+      document.getElementById('btnFlatEarToggle').addEventListener('click', () => {
+        state.flatEar = !state.flatEar;
+        const lbl = document.getElementById('lblEarModel');
+        lbl.textContent = state.flatEar ? 'FLAT EAR (0 dB NULL)' : 'SPECIES CURVE';
+        lbl.className = state.flatEar ? 'text-emerald-400 font-bold' : 'text-sky-400 font-bold';
+      });
+
+      // Audio Toggle
+      document.getElementById('btnAudioToggle').addEventListener('click', () => {
+        ensureAudio();
+        state.audioOn = !state.audioOn;
+        const b = document.getElementById('btnAudioToggle');
+        b.textContent = `Audio: ${state.audioOn ? 'ON' : 'OFF'}`;
+        b.className = state.audioOn
+          ? 'px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold transition'
+          : 'px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition';
+      });
+
+      // Source Buttons
+      document.querySelectorAll('.src-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.source = btn.getAttribute('data-src');
+          if (state.source === 'ultrasonic' && state.freqHz < 20000) {
+            state.freqHz = 28000;
+            state.levelDb = 122.0;
+            freqSlider.value = Math.round((Math.log10(state.freqHz) / Math.log10(MAX_FREQ_HZ)) * 1000);
+            document.getElementById('sliderDb').value = 122.0;
+          }
+          document.querySelectorAll('.src-btn').forEach(b => {
+            const act = b.getAttribute('data-src') === state.source;
+            b.className = act
+              ? 'src-btn p-2 rounded-xl border text-left transition bg-amber-500/15 border-amber-500/60 text-white'
+              : 'src-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700';
+          });
+        });
+      });
+
+      // Display Tabs
+      document.querySelectorAll('.disp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          state.displayView = tab.getAttribute('data-disp');
+          document.querySelectorAll('.disp-tab').forEach(t => {
+            const act = t.getAttribute('data-disp') === state.displayView;
+            t.className = act
+              ? 'disp-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-400/50 transition'
+              : 'disp-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition';
+          });
+        });
+      });
+
+      // Camera Presets
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = CAM_PRESETS[btn.getAttribute('data-cam')];
+          if (p) camLerp = { pos: new THREE.Vector3(...p.pos), target: new THREE.Vector3(...p.target) };
+        });
+      });
+
+      document.getElementById('btnExportWav').addEventListener('click', exportWavSample);
+      document.getElementById('btnRunVerification').addEventListener('click', runVerificationChecks);
+    }
+
+    window.addEventListener('load', () => {
+      initThreeStage();
+      bindEvents();
+      runVerificationChecks();
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>
