@@ -1,0 +1,2469 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PAS-40 Studio v4 — 3D WebGL Drum Rudiments Simulator & Sample Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#07090e',
+              900: '#0c1018',
+              800: '#131926',
+              700: '#1c2536',
+              600: '#28354d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #07090e;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0c1018; }
+    ::-webkit-scrollbar-thumb { background: #28354d; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4d6e; }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 999px;
+      background: #1c2536;
+      border: 1px solid #28354d;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #07090e;
+      margin-top: -6px;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+      transition: transform 0.12s ease, background-color 0.12s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #fbbf24;
+    }
+    .slider-cyan::-webkit-slider-thumb {
+      background: #38bdf8 !important;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.5) !important;
+    }
+    .slider-emerald::-webkit-slider-thumb {
+      background: #10b981 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5) !important;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 16px 3px rgba(16, 185, 129, 0.25); }
+    }
+    .playing-glow {
+      animation: pulseGlow 1.6s infinite;
+    }
+    .step-active {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 0 18px rgba(245, 158, 11, 0.45);
+    }
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(19, 25, 38, 0.92) 0%, rgba(12, 16, 24, 0.96) 100%);
+      border: 1px solid rgba(56, 73, 107, 0.45);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP STUDIO TRANSPORT & GLOBAL HEADER -->
+  <header class="sticky top-0 z-30 bg-obsidian-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 via-sky-500/20 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center shadow-inner">
+          <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <ellipse cx="12" cy="8" rx="9" ry="4"></ellipse>
+            <path d="M3 8v8c0 2.21 4.03 4 9 4s9-1.79 9-4V8"></path>
+            <path d="M7 12v7M17 12v7M12 12v8"></path>
+            <path d="M4 3l7 5M20 3l-7 5" stroke="#38bdf8" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white">PAS-40 RUDIMENT STUDIO <span class="text-amber-400">v4</span></h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">3D Studio Stage + WAV Lab</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Percussive Arts Society 40 International Drum Rudiments • Studio PBR Drum &amp; Stick Physics</p>
+        </div>
+      </div>
+
+      <!-- Center Transport & Tempo Controls -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 bg-obsidian-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <button id="btnPlayToggle" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-500/20">
+          <svg id="iconPlay" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+          <svg id="iconStop" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+          <span id="labelPlayToggle">PLAY</span>
+        </button>
+
+        <button id="btnStepOnce" type="button" title="Step Forward 1 Note" class="px-2.5 py-2 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-200 border border-slate-700/70 text-xs font-mono transition">
+          STEP &rarr;
+        </button>
+
+        <div class="flex items-center gap-2.5 px-2 border-l border-r border-slate-800">
+          <div class="text-right min-w-[64px]">
+            <div class="flex items-baseline justify-end gap-1">
+              <span id="bpmReadout" class="font-mono text-lg font-bold text-amber-400">110</span>
+              <span class="text-[10px] font-mono text-slate-400">BPM</span>
+            </div>
+            <div id="tempoMarkingLabel" class="text-[10px] text-slate-400 font-medium leading-none">Moderato March</div>
+          </div>
+          <div class="flex flex-col gap-1 w-28 sm:w-36">
+            <input id="sliderBpm" type="range" min="40" max="240" value="110" class="w-full" />
+            <div class="flex justify-between text-[9px] font-mono text-slate-500">
+              <span>40 Open</span>
+              <span>120 March</span>
+              <span>240 Close</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btnTapTempo" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 text-slate-300 border border-slate-700/70 text-xs font-mono transition">
+          TAP
+        </button>
+
+        <button id="btnMetronome" type="button" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/40 text-xs font-medium transition">
+          <span id="metroDot" class="w-2 h-2 rounded-full bg-sky-400 transition-transform"></span>
+          <span id="metroLabel">Click: ON</span>
+        </button>
+      </div>
+
+      <!-- Right Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btnRandomRudiment" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-semibold transition" title="Pick a random rudiment matching current filter (Shortcut: R)">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+            <circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"></circle>
+            <circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"></circle>
+            <circle cx="12" cy="12" r="1.2" fill="currentColor"></circle>
+            <circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"></circle>
+            <circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"></circle>
+          </svg>
+          <span>Randomize</span>
+        </button>
+
+        <button id="btnSurpriseAll" type="button" class="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/40 text-xs font-semibold transition" title="Randomize Rudiment + Drum Shell + Drum Head + Tempo">
+          <span>Wildcard Setup</span>
+        </button>
+
+        <button id="btnQuickExportWav" type="button" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition shadow-md shadow-sky-500/20">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Export WAV</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE GRID -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT COLUMN: PAS 40 RUDIMENT BROWSER & RANDOMIZER FILTERS (3 COLS) -->
+    <aside class="lg:col-span-3 flex flex-col gap-3 glass-panel rounded-2xl p-3.5 max-h-[88vh]">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">PAS 40 Rudiments</h2>
+          <p class="text-[11px] text-slate-400">Official International Chart</p>
+        </div>
+        <span id="rudimentCountBadge" class="px-2 py-0.5 text-[11px] font-mono rounded-md bg-obsidian-800 text-amber-300 border border-slate-700">40 / 40</span>
+      </div>
+
+      <div class="relative">
+        <input id="inputSearchRudiments" type="text" placeholder="Search #1-40, Paradiddle, Ratamacue..." class="w-full bg-obsidian-950 border border-slate-700/80 focus:border-amber-400 rounded-xl pl-8 pr-7 py-2 text-xs text-slate-100 placeholder-slate-500 outline-none transition" />
+        <svg class="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <button id="btnClearSearch" type="button" class="hidden absolute right-2 top-2 text-xs text-slate-400 hover:text-white px-1">&times;</button>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5" id="categoryFilterBar">
+        <button type="button" data-cat="ALL" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500 text-slate-950 transition">All (40)</button>
+        <button type="button" data-cat="Roll" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">I. Rolls (15)</button>
+        <button type="button" data-cat="Diddle" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">II. Diddles (4)</button>
+        <button type="button" data-cat="Flam" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">III. Flams (11)</button>
+        <button type="button" data-cat="Drag" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition">IV. Drags (10)</button>
+        <button type="button" data-cat="STD26" class="cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-amber-300/90 hover:bg-obsidian-700 border border-amber-500/30 transition">★ Standard 26</button>
+      </div>
+
+      <div id="rudimentListContainer" class="flex-1 overflow-y-auto space-y-1.5 pr-1 min-h-[280px]"></div>
+
+      <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+            Rudiment Roulette
+          </span>
+          <label class="flex items-center gap-1.5 text-[11px] text-slate-400 cursor-pointer">
+            <input id="chkAutoRotateRudiment" type="checkbox" class="rounded bg-obsidian-800 border-slate-600 text-amber-500 focus:ring-0" />
+            <span>Auto-switch every 4 bars</span>
+          </label>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="btnRandomInCategory" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-medium text-amber-300 transition">
+            Random in Filter
+          </button>
+          <button id="btnRandomizeChain" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-medium text-sky-300 transition">
+            Random 4-Bar Chain
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER COLUMN: 3D WEBGL DRUM STAGE, NOTATION & STEP SEQUENCER (5 COLS) -->
+    <section class="lg:col-span-5 flex flex-col gap-4">
+
+      <!-- INTERACTIVE 3D WEBGL DRUM & DRUMSTICK STAGE -->
+      <div class="glass-panel rounded-2xl p-4 flex flex-col gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <span>3D Acoustic Drum &amp; Stick Stage</span>
+              <span id="activeDrumBadge" class="px-2 py-0.5 text-[10px] font-mono rounded bg-sky-500/15 text-sky-300 border border-sky-500/30">Marching Corps Snare • Kevlar Head</span>
+            </h3>
+            <p class="text-[11px] text-slate-400">Drag to orbit • Scroll to zoom • Click head or press <kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-sky-300">D</kbd>/<kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-sky-300">F</kbd> (L) &amp; <kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-amber-300">J</kbd>/<kbd class="px-1.5 py-0.5 rounded bg-obsidian-800 border border-slate-700 font-mono text-[10px] text-amber-300">K</kbd> (R)</p>
+          </div>
+
+          <div class="flex items-center gap-2 bg-obsidian-950 border border-slate-800 px-3 py-1.5 rounded-xl">
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-mono text-slate-400">Tap Accuracy</div>
+              <div id="accuracyReadout" class="text-xs font-mono font-bold text-emerald-400">Ready — Tap F/J</div>
+            </div>
+            <div class="h-6 w-[1px] bg-slate-800"></div>
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-mono text-slate-400">Hit Streak</div>
+              <div id="streakReadout" class="text-xs font-mono font-bold text-amber-400">0 hits</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D WebGL Viewport -->
+        <div id="drumViewportWrap" class="relative w-full h-80 sm:h-[420px] bg-obsidian-950 rounded-xl border border-slate-800/90 overflow-hidden shadow-inner">
+          <canvas id="drumCanvas" class="w-full h-full cursor-pointer touch-none block"></canvas>
+          <canvas id="spectrumOverlayCanvas" class="absolute bottom-0 left-0 w-full h-14 pointer-events-none opacity-80"></canvas>
+
+          <!-- Camera Angle Presets (Top Left) -->
+          <div class="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1 z-10">
+            <button type="button" data-cam="pov" class="cam-btn px-2 py-1 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-mono font-semibold backdrop-blur-sm transition">Player POV</button>
+            <button type="button" data-cam="rim" class="cam-btn px-2 py-1 rounded-md bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm transition">Low Rim</button>
+            <button type="button" data-cam="overhead" class="cam-btn px-2 py-1 rounded-md bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm transition">Overhead</button>
+            <button type="button" data-cam="side" class="cam-btn px-2 py-1 rounded-md bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm transition">Side Shell</button>
+          </div>
+
+          <!-- Stick Legend (Top Right) -->
+          <div class="absolute top-2.5 right-2.5 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-obsidian-950/75 border border-slate-800/80 backdrop-blur-sm pointer-events-none">
+            <span class="flex items-center gap-1 text-[10px] font-mono text-sky-300"><span class="w-2 h-2 rounded-full bg-sky-400"></span>L Hickory</span>
+            <span class="flex items-center gap-1 text-[10px] font-mono text-amber-300"><span class="w-2 h-2 rounded-full bg-amber-400"></span>R Hickory</span>
+          </div>
+
+          <!-- Floating Zone Trigger Buttons & Telemetry -->
+          <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-1.5 pointer-events-none z-10">
+            <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+              <button id="btnTrigLeft" type="button" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/50 text-sky-200 text-xs font-mono font-semibold backdrop-blur-sm transition">
+                L Stick [F]
+              </button>
+              <button id="btnTrigFlam" type="button" class="px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/50 text-purple-200 text-xs font-mono font-semibold backdrop-blur-sm transition">
+                Flam [G]
+              </button>
+              <button id="btnTrigDrag" type="button" class="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/50 text-indigo-200 text-xs font-mono font-semibold backdrop-blur-sm transition">
+                Drag [H]
+              </button>
+              <button id="btnTrigRimshot" type="button" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-rose-200 text-xs font-mono font-semibold backdrop-blur-sm transition">
+                Rimshot
+              </button>
+              <button id="btnTrigRight" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/50 text-amber-200 text-xs font-mono font-semibold backdrop-blur-sm transition">
+                R Stick [J]
+              </button>
+            </div>
+            <div id="lastStrikeTelemetry" class="px-2.5 py-1 rounded-lg bg-obsidian-900/90 border border-slate-800 text-[10px] font-mono text-slate-300 backdrop-blur-sm">
+              Zone: Center • Vel: 0.92
+            </div>
+          </div>
+        </div>
+
+        <!-- PAS "OPEN -> CLOSE -> OPEN" PRACTICE CURVE TRAINER -->
+        <div class="bg-obsidian-950/90 border border-slate-800 rounded-xl p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">PAS Open–Close–Open Tempo Trainer</span>
+                <span id="rampStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400">Standby</span>
+              </div>
+              <p class="text-[11px] text-slate-400">Automatically accelerates from Open (Slow) &rarr; Close (Peak Speed) &rarr; Open (Slow) per PAS guidelines.</p>
+            </div>
+            <button id="btnToggleRamp" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition">
+              Start Open–Close–Open Ramp
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-1">
+            <div class="bg-obsidian-900 border border-slate-800/80 rounded-lg p-2">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>OPEN (SLOW)</span>
+                <span id="lblRampStart" class="text-sky-300 font-bold">65 BPM</span>
+              </div>
+              <input id="sliderRampStart" type="range" min="40" max="130" value="65" class="w-full slider-cyan mt-1" />
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800/80 rounded-lg p-2">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>CLOSE (PEAK)</span>
+                <span id="lblRampPeak" class="text-amber-300 font-bold">180 BPM</span>
+              </div>
+              <input id="sliderRampPeak" type="range" min="110" max="240" value="180" class="w-full mt-1" />
+            </div>
+            <div class="bg-obsidian-900 border border-slate-800/80 rounded-lg p-2">
+              <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                <span>CYCLE DURATION</span>
+                <span id="lblRampDuration" class="text-emerald-300 font-bold">45 sec</span>
+              </div>
+              <input id="sliderRampDuration" type="range" min="15" max="120" step="5" value="45" class="w-full slider-emerald mt-1" />
+            </div>
+          </div>
+
+          <div class="w-full bg-obsidian-900 h-2.5 rounded-full overflow-hidden border border-slate-800 relative">
+            <div id="rampProgressBar" class="h-full bg-gradient-to-r from-sky-500 via-amber-500 to-emerald-500 w-0 transition-all duration-150"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Rudiment Header, Notation & Step Sequencer -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="activeRudimentNumber" class="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 font-mono text-xs font-bold text-amber-300">PAS #16</span>
+              <span id="activeRudimentCategory" class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] font-medium">II. Diddle Rudiments</span>
+              <span id="activeRudimentStdBadge" class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono">★ Standard 26</span>
+            </div>
+            <h2 id="activeRudimentTitle" class="text-xl sm:text-2xl font-extrabold text-white mt-1">Single Paradiddle</h2>
+            <p id="activeRudimentDesc" class="text-xs text-slate-400 mt-0.5">Alternating single strokes followed by a double stroke (diddle): R L R R L R L L.</p>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnInvertHands" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs font-mono text-slate-200 transition" title="Flip Right and Left hand sticking">
+              Lead: <span id="leadHandLabel" class="text-amber-400 font-bold">R-Hand</span>
+            </button>
+            <button id="btnResetPattern" type="button" class="px-2.5 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs text-slate-300 transition" title="Restore canonical PAS sticking & accents">
+              Reset
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-obsidian-950/90 border border-slate-800/90 rounded-xl p-2.5">
+          <div class="flex items-center justify-between mb-1 px-1">
+            <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400">PAS Notation &amp; Sticking View (Click any note to audition)</span>
+            <div class="flex items-center gap-3 text-[10px] font-mono">
+              <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-400"></span>R = Right</span>
+              <span class="flex items-center gap-1 text-sky-400"><span class="w-2 h-2 rounded-full bg-sky-400"></span>L = Left</span>
+              <span class="flex items-center gap-1 text-purple-400"><span class="w-2 h-2 rounded-full bg-purple-400"></span>Grace / Diddle</span>
+            </div>
+          </div>
+          <div class="w-full overflow-x-auto">
+            <svg id="notationSvg" viewBox="0 0 760 135" class="w-full h-32 min-w-[520px] select-none"></svg>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold text-slate-300">Interactive Step Sequencer &amp; Ornament Editor</span>
+            <span class="text-[10px] font-mono text-slate-400">Click note to audition • Use buttons to customize step</span>
+          </div>
+          <div id="stepGridContainer" class="grid grid-cols-4 sm:grid-cols-8 gap-1.5"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: VARIABLE DRUM / DRUM HEAD LAB, 4-BAR CHAINER & WAV EXPORTER (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <div class="glass-panel rounded-2xl p-4 space-y-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Variable Drum &amp; Head Lab</h2>
+            <p class="text-[11px] text-slate-400">Real-Time 3D Shell, Membrane &amp; Acoustic Modeler</p>
+          </div>
+          <button id="btnRandomDrumTone" type="button" class="px-2.5 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-mono text-amber-300 transition">
+            Random Drum
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">1. Drum Shell / Instrument Type</label>
+          <div id="drumShellGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            <button type="button" data-shell="marching" class="shell-btn p-2 rounded-xl border text-left transition bg-amber-500/15 border-amber-500/60 text-white">
+              <div class="text-xs font-bold">Marching Snare</div>
+              <div class="text-[10px] text-slate-400">High-Tension Corps</div>
+            </button>
+            <button type="button" data-shell="maple" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Studio Maple</div>
+              <div class="text-[10px] text-slate-400">14&times;5.5" Warm Crack</div>
+            </button>
+            <button type="button" data-shell="brass" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Brass Piccolo</div>
+              <div class="text-[10px] text-slate-400">14&times;3.5" Bright Ring</div>
+            </button>
+            <button type="button" data-shell="tenors" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Tenor Quads</div>
+              <div class="text-[10px] text-slate-400">4-Drum Split Routing</div>
+            </button>
+            <button type="button" data-shell="pad" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">Practice Pad</div>
+              <div class="text-[10px] text-slate-400">Dry Gum/Neoprene</div>
+            </button>
+            <button type="button" data-shell="hybrid808" class="shell-btn p-2 rounded-xl border text-left transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-xs font-bold">808 / Hybrid</div>
+              <div class="text-[10px] text-slate-400">Sub Punch + Crisp</div>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">2. Drum Head Membrane Material</label>
+          <div id="drumHeadGrid" class="grid grid-cols-5 gap-1">
+            <button type="button" data-head="kevlar" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-sky-500/15 border-sky-400/60 text-white">
+              <div class="text-[11px] font-bold">Kevlar</div>
+              <div class="text-[9px] text-slate-400">Aramid</div>
+            </button>
+            <button type="button" data-head="coated" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Coated</div>
+              <div class="text-[9px] text-slate-400">Warm</div>
+            </button>
+            <button type="button" data-head="clear" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Clear</div>
+              <div class="text-[9px] text-slate-400">Mylar</div>
+            </button>
+            <button type="button" data-head="hydraulic" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Hydraulic</div>
+              <div class="text-[9px] text-slate-400">Fat Oil</div>
+            </button>
+            <button type="button" data-head="calfskin" class="head-btn px-1.5 py-2 rounded-lg border text-center transition bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700">
+              <div class="text-[11px] font-bold">Calfskin</div>
+              <div class="text-[9px] text-slate-400">Vintage</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Head Tension / Pitch</span>
+              <span id="valPitch" class="font-mono text-amber-400">245 Hz</span>
+            </div>
+            <input id="sliderPitch" type="range" min="90" max="360" value="245" class="w-full" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Snare Wire Snap</span>
+              <span id="valSnareBuzz" class="font-mono text-sky-400">78%</span>
+            </div>
+            <input id="sliderSnareBuzz" type="range" min="0" max="100" value="78" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Shell Ring / Decay</span>
+              <span id="valDecay" class="font-mono text-emerald-400">42%</span>
+            </div>
+            <input id="sliderDecay" type="range" min="10" max="100" value="42" class="w-full slider-emerald" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Strike Position</span>
+              <span id="valStrikeZone" class="font-mono text-amber-300">Center (15%)</span>
+            </div>
+            <input id="sliderStrikeZone" type="range" min="0" max="100" value="15" class="w-full" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Grace Note Openness</span>
+              <span id="valFlamSpace" class="font-mono text-purple-300">24 ms</span>
+            </div>
+            <input id="sliderFlamSpace" type="range" min="10" max="45" value="24" class="w-full slider-cyan" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Accent Bite (&gt;)</span>
+              <span id="valAccentContrast" class="font-mono text-emerald-300">80%</span>
+            </div>
+            <input id="sliderAccentContrast" type="range" min="20" max="100" value="80" class="w-full slider-emerald" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-BAR RUDIMENT WORKOUT CHAINER -->
+      <div class="glass-panel rounded-2xl p-4 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">4-Bar Rudiment Phrase Chainer</h2>
+            <p class="text-[11px] text-slate-400">Sequence 4 PAS rudiments for hybrid workouts &amp; multi-bar WAV export</p>
+          </div>
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-amber-300 cursor-pointer bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg">
+            <input id="chkChainMode" type="checkbox" class="rounded bg-obsidian-800 border-slate-600 text-amber-500 focus:ring-0" />
+            <span>Play Chain</span>
+          </label>
+        </div>
+
+        <div id="chainSlotsContainer" class="grid grid-cols-2 gap-2"></div>
+      </div>
+
+      <!-- EXPORTABLE SAMPLES & WAV RENDER VAULT -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Sample &amp; Loop WAV Exporter</h2>
+            <p class="text-[11px] text-slate-400">44.1 kHz 16-Bit Stereo OfflineAudioContext Renderer</p>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Lossless WAV</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnExportLoopWav" type="button" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition shadow-md shadow-sky-500/15">
+            <span>Export Rudiment Loop (.WAV)</span>
+          </button>
+          <button id="btnExportChainWav" type="button" class="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/15">
+            <span>Export 4-Bar Chain (.WAV)</span>
+          </button>
+        </div>
+
+        <div>
+          <div class="text-[11px] font-semibold text-slate-300 mb-1.5">Export Custom Drum One-Shot Samples (.WAV)</div>
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" data-oneshot="center" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-slate-200 transition">Center.wav</button>
+            <button type="button" data-oneshot="rimshot" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-rose-300 transition">Rimshot.wav</button>
+            <button type="button" data-oneshot="flam" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-purple-300 transition">Flam.wav</button>
+            <button type="button" data-oneshot="buzz" class="oneshot-btn px-2 py-1.5 rounded-lg bg-obsidian-900 hover:bg-obsidian-800 border border-slate-700/80 text-[11px] font-mono text-sky-300 transition">BuzzRoll.wav</button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+          <span class="text-[11px] text-slate-400">Save Studio Patch &amp; Sticking JSON</span>
+          <button id="btnExportJsonPreset" type="button" class="px-2.5 py-1 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-[11px] font-mono text-slate-200 transition">Download Preset (.JSON)</button>
+        </div>
+
+        <div class="space-y-1.5 pt-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400">Rendered Sample Vault</span>
+            <span id="vaultCountLabel" class="text-[10px] font-mono text-slate-500">0 files rendered</span>
+          </div>
+          <div id="sampleVaultList" class="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+            <div class="text-xs text-slate-500 bg-obsidian-950/60 border border-slate-800/70 rounded-xl p-2.5 text-center">
+              Click any Export WAV button above to synthesize a studio-grade 44.1 kHz WAV file for instant download and preview.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <div id="toastBanner" class="fixed bottom-4 right-4 z-50 hidden px-4 py-2.5 rounded-xl bg-obsidian-800/95 border border-amber-500/50 text-xs font-medium text-white shadow-2xl flex items-center gap-2">
+    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+    <span id="toastText">Sample exported!</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. COMPLETE PAS 40 INTERNATIONAL DRUM RUDIMENTS
+    // =========================================================================
+    const PAS_RUDIMENTS = [
+      { id: 1, name: "Single Stroke Roll", category: "Roll", sub: "A. Single Stroke Roll", std26: true,
+        desc: "Evenly spaced alternating single strokes (R L R L R L R L) practiced open to close.", tuplets: "16th Notes",
+        steps: [{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 2, name: "Single Stroke Four", category: "Roll", sub: "A. Single Stroke Roll", std26: false,
+        desc: "Four rapid single strokes (triplet 16ths into an 8th release): R L R L — L R L R.", tuplets: "Triplet 4-Note Grouping",
+        steps: [{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.68},{h:'L',a:1,o:'none',dur:2.0},{h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.68},{h:'R',a:1,o:'none',dur:2.0}] },
+      { id: 3, name: "Single Stroke Seven", category: "Roll", sub: "A. Single Stroke Roll", std26: false,
+        desc: "Seven rapid alternating strokes (sextuplet 16ths ending on the beat): R L R L R L R.", tuplets: "Sextuplet + Release",
+        steps: [{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.66},{h:'R',a:0,o:'none',dur:0.66},{h:'L',a:0,o:'none',dur:0.70},{h:'R',a:1,o:'none',dur:2.5},{h:'L',a:1,o:'none',dur:1.5}] },
+      { id: 4, name: "Multiple Bounce Roll", category: "Roll", sub: "B. Multiple Bounce Roll", std26: false,
+        desc: "Closed orchestral buzz/press roll where each stick bounces multiple times into a seamless sustain.", tuplets: "Buzz / Press Roll (Z)",
+        steps: [{h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1},{h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1},{h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1},{h:'R',a:0,o:'buzz',dur:1},{h:'L',a:0,o:'buzz',dur:1}] },
+      { id: 5, name: "Triple Stroke Roll", category: "Roll", sub: "B. Multiple Bounce Roll", std26: false,
+        desc: "Three controlled strokes per hand in triplet subdivision: R R R L L L R R R L L L.", tuplets: "Triplet Triple Strokes",
+        steps: [{h:'R',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 6, name: "Double Stroke Open Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Foundational open double-stroke roll (mamadada): R R L L R R L L.", tuplets: "16th Double Strokes",
+        steps: [{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 7, name: "Five Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Two diddles followed by an accented single stroke: R R L L R> | L L R R L>.", tuplets: "5-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:1,o:'none',dur:2},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:2}] },
+      { id: 8, name: "Six Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: false,
+        desc: "Accented single, two interior diddles, and an accented release: R> l l r r L>.", tuplets: "6-Stroke Roll",
+        steps: [{h:'R',a:1,o:'none',dur:1.5},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:1.5},{h:'R',a:1,o:'none',dur:1.5},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:1.5}] },
+      { id: 9, name: "Seven Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Three rapid diddles culminating in an accented release: R R L L R R L>.", tuplets: "7-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:1,o:'none',dur:2.0},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:1,o:'none',dur:2.0}] },
+      { id: 10, name: "Nine Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Four 16th-note diddles resolving to an accented quarter/eighth release: R R L L R R L L R>.", tuplets: "9-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:1,o:'none',dur:2},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:1,o:'none',dur:2}] },
+      { id: 11, name: "Ten Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Four diddles followed by two consecutive accented single strokes: R R L L R R L L R> L>.", tuplets: "10-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:0,o:'diddle',dur:1},{h:'L',a:0,o:'diddle',dur:1},{h:'R',a:1,o:'none',dur:1.5},{h:'L',a:1,o:'none',dur:2.5}] },
+      { id: 12, name: "Eleven Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Five diddles resolving into a crisp accented release: R R L L R R L L R R L>.", tuplets: "11-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:1,o:'none',dur:2.5}] },
+      { id: 13, name: "Thirteen Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Six diddles followed by an accented release: R R L L R R L L R R L L R>.", tuplets: "13-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:0,o:'diddle',dur:0.9},{h:'L',a:0,o:'diddle',dur:0.9},{h:'R',a:1,o:'none',dur:2.2}] },
+      { id: 14, name: "Fifteen Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: true,
+        desc: "Seven diddles ending with a strong accented single stroke: R R L L R R L L R R L L R R L>.", tuplets: "15-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:1,o:'none',dur:2.0}] },
+      { id: 15, name: "Seventeen Stroke Roll", category: "Roll", sub: "C. Double Stroke Open Roll", std26: false,
+        desc: "Eight full diddles resolving to an accented release on count 3: R R L L x4 + R>.", tuplets: "17-Stroke Roll",
+        steps: [{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:0,o:'diddle',dur:0.85},{h:'L',a:0,o:'diddle',dur:0.85},{h:'R',a:1,o:'none',dur:2.2}] },
+      { id: 16, name: "Single Paradiddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: true,
+        desc: "Two alternating single strokes followed by a double stroke: R> L R R L> R L L.", tuplets: "16th Paradiddle",
+        steps: [{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 17, name: "Double Paradiddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: true,
+        desc: "Four alternating single strokes followed by a diddle in 6-note sextuplet phrasing: R> L R L R R L> R L R L L.", tuplets: "Sextuplet Double Paradiddle",
+        steps: [{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 18, name: "Triple Paradiddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: false,
+        desc: "Six alternating single strokes followed by a double stroke: R> L R L R L R R | L> R L R L R L L.", tuplets: "8-Note Triple Paradiddle",
+        steps: [{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 19, name: "Single Paradiddle-diddle", category: "Diddle", sub: "II. Diddle Rudiments", std26: false,
+        desc: "Two alternating single strokes followed by two consecutive diddles: R> L R R L L R> L R R L L.", tuplets: "Sextuplet Paradiddle-diddle",
+        steps: [{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 20, name: "Flam", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "A soft grace note immediately preceding a primary stroke on the opposite hand: lR> rL> lR> rL>.", tuplets: "Alternating Flams",
+        steps: [{h:'R',a:1,o:'flam',dur:1.5},{h:'L',a:1,o:'flam',dur:1.5},{h:'R',a:1,o:'flam',dur:1.5},{h:'L',a:1,o:'flam',dur:1.5}] },
+      { id: 21, name: "Flam Accent", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Triplet feel with a flam on the downbeat of each 3-note group: lR> L R | rL> R L.", tuplets: "Triplet Flam Accent",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 22, name: "Flam Tap", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Alternating diddles where the first note of each pair is ornamented with a flam: lR> R rL> L.", tuplets: "16th Flam Taps",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 23, name: "Flamacue", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Syncopated flam figure with a sharp second-note accent: lR L> R L lR> | rL R> L R rL>.", tuplets: "Syncopated Flamacue",
+        steps: [{h:'R',a:0,o:'flam',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:2},{h:'L',a:0,o:'flam',dur:1},{h:'R',a:1,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:2}] },
+      { id: 24, name: "Flam Paradiddle", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Single paradiddle with a flam on the accented lead note (flamadiddle): lR> L R R rL> R L L.", tuplets: "16th Flam Paradiddle",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 25, name: "Single Flammed Mill", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Inverted paradiddle sticking (R R L R) with a flam on the first stroke: lR> R L R rL> L R L.", tuplets: "16th Flammed Mill",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 26, name: "Flam Paradiddle-diddle", category: "Flam", sub: "III. Flam Rudiments", std26: true,
+        desc: "Paradiddle-diddle ornamented with a lead flam: lR> L R R L L | rL> R L L R R.", tuplets: "Sextuplet Flam Paradiddle-diddle",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1}] },
+      { id: 27, name: "Pataflafla", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Four-note figure bookended by alternating flams: lR> L R lR> rL> R L rL>.", tuplets: "16th Pataflafla",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1}] },
+      { id: 28, name: "Swiss Army Triplet", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Driving triplet with a flam on the first of two same-hand strokes: lR> R L lR> R L.", tuplets: "Swiss Triplet",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 29, name: "Inverted Flam Tap", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Alternating diddles where the flam falls on the second stroke of each double: lR> L rL> R lR> L rL> R.", tuplets: "16th Inverted Flam Tap",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:1,o:'flam',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'R',a:0,o:'none',dur:1}] },
+      { id: 30, name: "Flam Drag", category: "Flam", sub: "III. Flam Rudiments", std26: false,
+        desc: "Hybrid triplet combining a lead flam, an interior drag/diddle, and a tap release: lR> llR L | rL> rrL R.", tuplets: "Triplet Flam Drag",
+        steps: [{h:'R',a:1,o:'flam',dur:1},{h:'R',a:0,o:'drag',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:1,o:'flam',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:0,o:'none',dur:1}] },
+      { id: 31, name: "Drag", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two rapid grace notes (diddle) preceding an accented opposite-hand stroke (half-ruff): llR> rrL>.", tuplets: "Alternating Drags (Ruffs)",
+        steps: [{h:'R',a:1,o:'drag',dur:1.5},{h:'L',a:1,o:'drag',dur:1.5},{h:'R',a:1,o:'drag',dur:1.5},{h:'L',a:1,o:'drag',dur:1.5}] },
+      { id: 32, name: "Single Drag Tap", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "A drag into an unaccented tap followed by an accented opposite-hand stroke: llR L> rrL R>.", tuplets: "Duple Single Drag Tap",
+        steps: [{h:'R',a:0,o:'drag',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:1,o:'none',dur:1},{h:'R',a:0,o:'drag',dur:1},{h:'L',a:1,o:'none',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:1,o:'none',dur:1}] },
+      { id: 33, name: "Double Drag Tap", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two consecutive drags followed by an accented single stroke: llR llR L> | rrL rrL R>.", tuplets: "3/8 Double Drag Tap",
+        steps: [{h:'R',a:0,o:'drag',dur:1},{h:'R',a:0,o:'drag',dur:1},{h:'L',a:1,o:'none',dur:1.5},{h:'L',a:0,o:'drag',dur:1},{h:'L',a:0,o:'drag',dur:1},{h:'R',a:1,o:'none',dur:1.5}] },
+      { id: 34, name: "Lesson 25", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Classic martial rhythm: a drag into two alternating 16ths and an accented release: llR L R>.", tuplets: "Lesson 25 Rhythm",
+        steps: [{h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:1,o:'none',dur:1.6},{h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:1,o:'none',dur:1.6}] },
+      { id: 35, name: "Single Dragadiddle", category: "Drag", sub: "IV. Drag Rudiments", std26: false,
+        desc: "A paradiddle where the first single stroke is replaced by a double/drag: R> R L R R | L> L R L L.", tuplets: "16th Dragadiddle",
+        steps: [{h:'R',a:1,o:'drag',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:1,o:'drag',dur:1},{h:'R',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1},{h:'L',a:0,o:'none',dur:1}] },
+      { id: 36, name: "Drag Paradiddle #1", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Accented stroke followed by a drag paradiddle: R> llR L R R | L> rrL R L L.", tuplets: "Drag Paradiddle #1",
+        steps: [{h:'R',a:1,o:'none',dur:1.3},{h:'R',a:0,o:'drag',dur:0.9},{h:'L',a:0,o:'none',dur:0.9},{h:'R',a:0,o:'none',dur:0.9},{h:'R',a:0,o:'none',dur:0.9},{h:'L',a:1,o:'none',dur:1.3},{h:'L',a:0,o:'drag',dur:0.9},{h:'R',a:0,o:'none',dur:0.9},{h:'L',a:0,o:'none',dur:0.9},{h:'L',a:0,o:'none',dur:0.9}] },
+      { id: 37, name: "Drag Paradiddle #2", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two accented drag figures leading into a paradiddle finish: R> llR llR L R R | L> rrL rrL R L L.", tuplets: "Drag Paradiddle #2",
+        steps: [{h:'R',a:1,o:'none',dur:1.2},{h:'R',a:1,o:'drag',dur:1.2},{h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:1,o:'none',dur:1.2},{h:'L',a:1,o:'drag',dur:1.2},{h:'L',a:0,o:'drag',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'L',a:0,o:'none',dur:0.8}] },
+      { id: 38, name: "Single Ratamacue", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "A drag leading into a triplet and an accented release: llR L R L> | rrL R L R>.", tuplets: "Triplet Single Ratamacue",
+        steps: [{h:'R',a:0,o:'drag',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:1,o:'none',dur:1.8},{h:'L',a:0,o:'drag',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:1,o:'none',dur:1.8}] },
+      { id: 39, name: "Double Ratamacue", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "A drag followed by a Single Ratamacue: llR llR L R L> | rrL rrL R L R>.", tuplets: "Triplet Double Ratamacue",
+        steps: [{h:'R',a:0,o:'drag',dur:1.2},{h:'R',a:0,o:'drag',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:1,o:'none',dur:1.8},{h:'L',a:0,o:'drag',dur:1.2},{h:'L',a:0,o:'drag',dur:0.85},{h:'R',a:0,o:'none',dur:0.85},{h:'L',a:0,o:'none',dur:0.85},{h:'R',a:1,o:'none',dur:1.8}] },
+      { id: 40, name: "Triple Ratamacue", category: "Drag", sub: "IV. Drag Rudiments", std26: true,
+        desc: "Two drags followed by a Single Ratamacue: llR llR llR L R L> | rrL rrL rrL R L R>.", tuplets: "Triplet Triple Ratamacue",
+        steps: [{h:'R',a:0,o:'drag',dur:1.1},{h:'R',a:0,o:'drag',dur:1.1},{h:'R',a:0,o:'drag',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:1,o:'none',dur:1.7},{h:'L',a:0,o:'drag',dur:1.1},{h:'L',a:0,o:'drag',dur:1.1},{h:'L',a:0,o:'drag',dur:0.8},{h:'R',a:0,o:'none',dur:0.8},{h:'L',a:0,o:'none',dur:0.8},{h:'R',a:1,o:'none',dur:1.7}] }
+    ];
+
+    // =========================================================================
+    // 2. DRUM SHELL & DRUM HEAD PRESET PROFILES
+    // =========================================================================
+    const DRUM_SHELLS = {
+      marching: { name: "Marching Corps Snare", basePitch: 245, snareMix: 0.78, decay: 0.42, overtoneRatio: 1.68, rimClickGain: 0.9, shellColor: "#f59e0b" },
+      maple: { name: "Studio Maple 14×5.5\"", basePitch: 175, snareMix: 0.65, decay: 0.58, overtoneRatio: 1.48, rimClickGain: 0.65, shellColor: "#fb923c" },
+      brass: { name: "Vintage Brass Piccolo", basePitch: 215, snareMix: 0.72, decay: 0.74, overtoneRatio: 1.89, rimClickGain: 0.85, shellColor: "#facc15" },
+      tenors: { name: "Marching Tenor Quads", basePitch: 210, snareMix: 0.05, decay: 0.64, overtoneRatio: 1.42, rimClickGain: 0.55, shellColor: "#38bdf8" },
+      pad: { name: "Neoprene Practice Pad", basePitch: 140, snareMix: 0.04, decay: 0.14, overtoneRatio: 1.25, rimClickGain: 0.95, shellColor: "#94a3b8" },
+      hybrid808: { name: "808 / Hybrid Trap Snare", basePitch: 155, snareMix: 0.86, decay: 0.68, overtoneRatio: 2.1, rimClickGain: 0.75, shellColor: "#a855f7" }
+    };
+
+    const DRUM_HEADS = {
+      kevlar: { name: "Kevlar Head", pitchMult: 1.15, brightFilter: 5200, decayMult: 0.82 },
+      coated: { name: "Coated Ambassador", pitchMult: 0.96, brightFilter: 3400, decayMult: 1.0 },
+      clear: { name: "Clear Emperor", pitchMult: 1.02, brightFilter: 4600, decayMult: 1.18 },
+      hydraulic: { name: "Hydraulic Oil Head", pitchMult: 0.86, brightFilter: 2300, decayMult: 0.68 },
+      calfskin: { name: "Vintage Calfskin", pitchMult: 0.90, brightFilter: 2700, decayMult: 0.92 }
+    };
+
+    // =========================================================================
+    // 3. CENTRAL APPLICATION STATE
+    // =========================================================================
+    const state = {
+      selectedRudimentId: 16,
+      categoryFilter: "ALL",
+      searchQuery: "",
+      leadHandInverted: false,
+      customSteps: [],
+      isPlaying: false,
+      bpm: 110,
+      metronomeOn: true,
+      currentStepIndex: -1,
+      barCounter: 0,
+      autoRotateRudiment: false,
+      rampActive: false,
+      rampStartBpm: 65,
+      rampPeakBpm: 180,
+      rampDurationSec: 45,
+      rampElapsedSec: 0,
+      chainMode: false,
+      chainIds: [16, 21, 8, 38],
+      activeChainSlot: 0,
+      shellKey: "marching",
+      headKey: "kevlar",
+      pitchHz: 245,
+      snareBuzz: 78,
+      decayPct: 42,
+      strikeZone: 15,
+      flamSpaceMs: 24,
+      accentContrast: 80,
+      ripples3D: [],
+      leftStickAnim: { targetX: -0.24, targetZ: 0.08, hitTime: 0, vel: 0.85, isRimshot: false },
+      rightStickAnim: { targetX: 0.24, targetZ: 0.08, hitTime: 0, vel: 0.85, isRimshot: false },
+      lastExpectedStepTime: 0,
+      lastExpectedHand: 'R',
+      hitStreak: 0,
+      renderedVault: []
+    };
+
+    // =========================================================================
+    // 4. WEB AUDIO API PHYSICAL DRUM SYNTHESIS ENGINE
+    // =========================================================================
+    let audioCtx = null;
+    let analyserNode = null;
+    let noiseBufferCache = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserNode.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function createNoiseBuffer(ctx) {
+      const sampleRate = ctx.sampleRate;
+      const length = sampleRate * 1.5;
+      const buffer = ctx.createBuffer(1, length, sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1;
+      return buffer;
+    }
+
+    function synthesizeSingleStrike(ctx, destNode, when, options = {}) {
+      const { hand = 'R', velocity = 0.85, zoneOverride = null, tenorDrumIdx = 0, noiseBuf = null } = options;
+      const shell = DRUM_SHELLS[state.shellKey] || DRUM_SHELLS.marching;
+      const head = DRUM_HEADS[state.headKey] || DRUM_HEADS.kevlar;
+      const zoneNorm = (zoneOverride !== null ? zoneOverride : state.strikeZone) / 100;
+      const buzzNorm = state.snareBuzz / 100;
+      const decaySec = (0.06 + (state.decayPct / 100) * 0.42) * head.decayMult * (shell.decay / 0.5);
+
+      let baseFreq = state.pitchHz * head.pitchMult;
+      if (state.shellKey === 'tenors') {
+        const tenorRatios = [1.22, 1.06, 0.92, 0.78];
+        baseFreq *= tenorRatios[tenorDrumIdx % 4];
+      }
+      const f0 = baseFreq * (hand === 'R' ? 1.0 : 0.988);
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.05, Math.min(1.2, velocity)), when);
+
+      if (ctx.createStereoPanner) {
+        const panner = ctx.createStereoPanner();
+        let panVal = hand === 'R' ? 0.16 : -0.16;
+        if (state.shellKey === 'tenors') panVal = [-0.45, -0.15, 0.15, 0.45][tenorDrumIdx % 4];
+        panner.pan.setValueAtTime(panVal, when);
+        hitGain.connect(panner);
+        panner.connect(destNode);
+      } else {
+        hitGain.connect(destNode);
+      }
+
+      const oscFund = ctx.createOscillator();
+      const gainFund = ctx.createGain();
+      oscFund.type = state.shellKey === 'hybrid808' ? 'sine' : 'triangle';
+      oscFund.frequency.setValueAtTime(f0 * (1.45 + zoneNorm * 0.25), when);
+      oscFund.frequency.exponentialRampToValueAtTime(Math.max(35, f0), when + 0.028);
+      oscFund.frequency.exponentialRampToValueAtTime(Math.max(30, f0 * 0.92), when + decaySec);
+      gainFund.gain.setValueAtTime(0.001, when);
+      gainFund.gain.linearRampToValueAtTime((1.0 - zoneNorm * 0.35) * 0.65, when + 0.002);
+      gainFund.gain.exponentialRampToValueAtTime(0.0008, when + decaySec);
+      oscFund.connect(gainFund); gainFund.connect(hitGain);
+      oscFund.start(when); oscFund.stop(when + decaySec + 0.02);
+
+      const oscOver = ctx.createOscillator();
+      const gainOver = ctx.createGain();
+      oscOver.type = 'sine';
+      const overFreq = f0 * shell.overtoneRatio * (1 + zoneNorm * 0.18);
+      oscOver.frequency.setValueAtTime(overFreq * 1.15, when);
+      oscOver.frequency.exponentialRampToValueAtTime(overFreq, when + 0.015);
+      const overDecay = decaySec * (0.65 + zoneNorm * 0.5);
+      gainOver.gain.setValueAtTime((0.14 + zoneNorm * 0.55) * 0.45, when);
+      gainOver.gain.exponentialRampToValueAtTime(0.0008, when + overDecay);
+      oscOver.connect(gainOver); gainOver.connect(hitGain);
+      oscOver.start(when); oscOver.stop(when + overDecay + 0.02);
+
+      const activeNoiseBuf = noiseBuf || noiseBufferCache || (noiseBufferCache = createNoiseBuffer(ctx));
+      if (buzzNorm > 0.01 && state.shellKey !== 'pad' && state.shellKey !== 'tenors') {
+        const noiseSrc = ctx.createBufferSource();
+        noiseSrc.buffer = activeNoiseBuf;
+        const snareFilter = ctx.createBiquadFilter();
+        snareFilter.type = 'bandpass';
+        snareFilter.frequency.setValueAtTime(head.brightFilter * (0.85 + zoneNorm * 0.3), when);
+        snareFilter.Q.setValueAtTime(1.1, when);
+        const highShelf = ctx.createBiquadFilter();
+        highShelf.type = 'highpass'; highShelf.frequency.setValueAtTime(950, when);
+        const gainSnare = ctx.createGain();
+        const snareDecay = decaySec * 0.95;
+        gainSnare.gain.setValueAtTime(0.001, when);
+        gainSnare.gain.linearRampToValueAtTime(buzzNorm * shell.snareMix * 0.75, when + 0.003);
+        gainSnare.gain.exponentialRampToValueAtTime(0.0008, when + snareDecay);
+        noiseSrc.connect(snareFilter); snareFilter.connect(highShelf); highShelf.connect(gainSnare); gainSnare.connect(hitGain);
+        noiseSrc.start(when); noiseSrc.stop(when + snareDecay + 0.02);
+      }
+
+      const clickSrc = ctx.createBufferSource();
+      clickSrc.buffer = activeNoiseBuf;
+      const clickFilter = ctx.createBiquadFilter();
+      clickFilter.type = 'bandpass';
+      clickFilter.frequency.setValueAtTime(zoneNorm > 0.65 ? 3600 : 2800, when);
+      clickFilter.Q.setValueAtTime(zoneNorm > 0.65 ? 3.2 : 1.8, when);
+      const clickGain = ctx.createGain();
+      clickGain.gain.setValueAtTime((0.35 + zoneNorm * 0.55) * shell.rimClickGain, when);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, when + (zoneNorm > 0.65 ? 0.028 : 0.014));
+      clickSrc.connect(clickFilter); clickFilter.connect(clickGain); clickGain.connect(hitGain);
+      clickSrc.start(when); clickSrc.stop(when + 0.035);
+    }
+
+    function scheduleRudimentStepAudio(ctx, destNode, step, stepTime, stepDurationSec, stepIdx = 0, noiseBuf = null) {
+      const primaryHand = state.leadHandInverted ? (step.h === 'R' ? 'L' : 'R') : step.h;
+      const graceHand = primaryHand === 'R' ? 'L' : 'R';
+      const accentBoost = state.accentContrast / 100;
+      const mainVelocity = step.a ? (0.72 + accentBoost * 0.28) : (0.58 - accentBoost * 0.20);
+      const graceGapSec = state.flamSpaceMs / 1000;
+      const tenorIdx = stepIdx % 4;
+
+      if (step.o === 'flam') {
+        const graceTime = Math.max(0, stepTime - graceGapSec);
+        synthesizeSingleStrike(ctx, destNode, graceTime, { hand: graceHand, velocity: mainVelocity * 0.42, tenorDrumIdx: (tenorIdx + 1) % 4, noiseBuf });
+        synthesizeSingleStrike(ctx, destNode, stepTime, { hand: primaryHand, velocity: mainVelocity, zoneOverride: step.a ? Math.max(state.strikeZone, 55) : null, tenorDrumIdx: tenorIdx, noiseBuf });
+      } else if (step.o === 'drag') {
+        synthesizeSingleStrike(ctx, destNode, Math.max(0, stepTime - graceGapSec * 1.9), { hand: graceHand, velocity: mainVelocity * 0.36, tenorDrumIdx: (tenorIdx + 1) % 4, noiseBuf });
+        synthesizeSingleStrike(ctx, destNode, Math.max(0, stepTime - graceGapSec * 0.95), { hand: graceHand, velocity: mainVelocity * 0.44, tenorDrumIdx: (tenorIdx + 1) % 4, noiseBuf });
+        synthesizeSingleStrike(ctx, destNode, stepTime, { hand: primaryHand, velocity: mainVelocity, tenorDrumIdx: tenorIdx, noiseBuf });
+      } else if (step.o === 'diddle') {
+        synthesizeSingleStrike(ctx, destNode, stepTime, { hand: primaryHand, velocity: mainVelocity, tenorDrumIdx: tenorIdx, noiseBuf });
+        synthesizeSingleStrike(ctx, destNode, stepTime + stepDurationSec * 0.5, { hand: primaryHand, velocity: mainVelocity * 0.90, tenorDrumIdx: tenorIdx, noiseBuf });
+      } else if (step.o === 'buzz') {
+        const bounces = [0, 0.22, 0.43, 0.64, 0.82];
+        const vels = [1.0, 0.76, 0.60, 0.46, 0.34];
+        for (let b = 0; b < bounces.length; b++) {
+          synthesizeSingleStrike(ctx, destNode, stepTime + stepDurationSec * bounces[b], { hand: primaryHand, velocity: mainVelocity * vels[b], tenorDrumIdx: tenorIdx, noiseBuf });
+        }
+      } else {
+        synthesizeSingleStrike(ctx, destNode, stepTime, { hand: primaryHand, velocity: mainVelocity, zoneOverride: step.a ? Math.max(state.strikeZone, 45) : null, tenorDrumIdx: tenorIdx, noiseBuf });
+      }
+    }
+
+    function triggerMetronomeClick(ctx, destNode, when, isDownbeat = false) {
+      if (!state.metronomeOn) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isDownbeat ? 1320 : 880, when);
+      gain.gain.setValueAtTime(isDownbeat ? 0.16 : 0.09, when);
+      gain.gain.exponentialRampToValueAtTime(0.001, when + 0.025);
+      osc.connect(gain); gain.connect(destNode);
+      osc.start(when); osc.stop(when + 0.03);
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D WEBGL STUDIO STAGE (v4 — FIXED INITIAL LAUNCH VISIBILITY,
+    //    DRUM RUG RISER, DIE-CAST HOOP EARS, SCULPTED LUGS & CONTACT FLASH)
+    // =========================================================================
+    let scene, camera, renderer, controls, raycaster;
+    let drumRootGroup = null;
+    let headMeshes = [];
+    let shellVisualGroup = null;
+    let topHoopMaterials = [];
+    let hoopFlashTimer = 0;
+    let snareGlowLight = null;
+    let snareGlowTimer = 0;
+    let contactFlashes = [];
+    let shockwaveRings = [];
+    let sparkSystem = null;
+    let sparkPositions = null;
+    let sparkVelocities = [];
+    let sparkLife = [];
+    let leftStickObj = null;
+    let rightStickObj = null;
+    let leftTrailLine = null;
+    let rightTrailLine = null;
+    const leftTrailPts = [];
+    const rightTrailPts = [];
+    const TRAIL_MAX = 22;
+    let threeReady = false;
+
+    const STICK_REACH = 2.24;
+    const BEAD_RADIUS = 0.034;
+
+    const CAMERA_PRESETS = {
+      pov: { pos: [0, 3.05, 3.75], target: [0, 0.15, 0] },
+      rim: { pos: [2.35, 0.72, 2.65], target: [0, 0.04, 0] },
+      overhead: { pos: [0, 4.65, 0.55], target: [0, 0.08, 0] },
+      side: { pos: [3.75, 0.65, 1.25], target: [0, -0.25, 0] }
+    };
+    let camLerpTarget = null;
+
+    function buildStudioEnvMap(rendererInstance) {
+      const pmrem = new THREE.PMREMGenerator(rendererInstance);
+      pmrem.compileEquirectangularShader();
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0x0b101d);
+
+      const box1 = new THREE.Mesh(new THREE.PlaneGeometry(10, 6), new THREE.MeshBasicMaterial({ color: 0xfff3dc, side: THREE.DoubleSide }));
+      box1.position.set(4, 7, 4); box1.lookAt(0, 0, 0); envScene.add(box1);
+
+      const box2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
+      box2.position.set(-7, 3, -3); box2.lookAt(0, 0, 0); envScene.add(box2);
+
+      const box3 = new THREE.Mesh(new THREE.PlaneGeometry(7, 4), new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide }));
+      box3.position.set(6, 2, -5); box3.lookAt(0, 0, 0); envScene.add(box3);
+
+      const rt = pmrem.fromScene(envScene, 0.04);
+      pmrem.dispose();
+      return rt.texture;
+    }
+
+    function createHeadTextures(headKey) {
+      const size = 512;
+      const c = document.createElement('canvas'); c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      const cx = size / 2, cy = size / 2;
+
+      const bc = document.createElement('canvas'); bc.width = size; bc.height = size;
+      const bCtx = bc.getContext('2d');
+      bCtx.fillStyle = '#808080'; bCtx.fillRect(0, 0, size, size);
+
+      if (headKey === 'kevlar') {
+        ctx.fillStyle = '#181f2c'; ctx.fillRect(0, 0, size, size);
+        for (let y = 0; y < size; y += 6) {
+          for (let x = 0; x < size; x += 6) {
+            const odd = ((x + y) / 6) % 2 === 0;
+            ctx.fillStyle = odd ? 'rgba(245, 190, 90, 0.12)' : 'rgba(56, 189, 248, 0.05)';
+            ctx.fillRect(x, y, 4, 4);
+            bCtx.fillStyle = odd ? '#b0b0b0' : '#505050';
+            bCtx.fillRect(x, y, 4, 4);
+          }
+        }
+        const g = ctx.createRadialGradient(cx, cy, 10, cx, cy, size * 0.48);
+        g.addColorStop(0, 'rgba(12, 18, 32, 0.42)');
+        g.addColorStop(0.32, 'rgba(25, 35, 52, 0.12)');
+        g.addColorStop(0.92, 'rgba(6, 9, 16, 0.6)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+
+        ctx.beginPath(); ctx.arc(cx, cy, size * 0.15, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(9, 13, 22, 0.72)'; ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)'; ctx.stroke();
+      } else if (headKey === 'coated') {
+        ctx.fillStyle = '#dde2ea'; ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 20000; i++) {
+          const rx = Math.random() * size, ry = Math.random() * size;
+          const v = 198 + Math.floor(Math.random() * 48);
+          ctx.fillStyle = `rgb(${v},${v},${v + 3})`; ctx.fillRect(rx, ry, 2, 2);
+          const bv = 85 + Math.floor(Math.random() * 90);
+          bCtx.fillStyle = `rgb(${bv},${bv},${bv})`; bCtx.fillRect(rx, ry, 2, 2);
+        }
+        const wear = ctx.createRadialGradient(cx, cy, 8, cx, cy, size * 0.23);
+        wear.addColorStop(0, 'rgba(100, 116, 139, 0.25)');
+        wear.addColorStop(1, 'rgba(100, 116, 139, 0)');
+        ctx.fillStyle = wear; ctx.fillRect(0, 0, size, size);
+      } else if (headKey === 'clear') {
+        const g = ctx.createRadialGradient(cx, cy, 20, cx, cy, size * 0.5);
+        g.addColorStop(0, 'rgba(18, 28, 46, 0.50)');
+        g.addColorStop(0.85, 'rgba(30, 58, 95, 0.42)');
+        g.addColorStop(1, 'rgba(56, 189, 248, 0.35)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+        ctx.strokeStyle = 'rgba(186, 230, 253, 0.28)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, size * 0.44, 0, Math.PI * 2); ctx.stroke();
+      } else if (headKey === 'hydraulic') {
+        const g = ctx.createRadialGradient(cx, cy, 15, cx, cy, size * 0.5);
+        g.addColorStop(0, '#071324'); g.addColorStop(0.55, '#0e294b');
+        g.addColorStop(0.82, '#155e75'); g.addColorStop(1, '#060e1a');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+        for (let r = 55; r < 235; r += 34) {
+          ctx.beginPath(); ctx.arc(cx + 10, cy - 10, r, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.13)'; ctx.lineWidth = 8; ctx.stroke();
+        }
+      } else {
+        ctx.fillStyle = '#ccb38a'; ctx.fillRect(0, 0, size, size);
+        for (let i = 0; i < 650; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * size, Math.random() * size, 4 + Math.random() * 18, 0, Math.PI * 2);
+          ctx.fillStyle = Math.random() > 0.5 ? 'rgba(139, 98, 52, 0.055)' : 'rgba(245, 228, 195, 0.065)';
+          ctx.fill();
+        }
+        const g = ctx.createRadialGradient(cx, cy, 30, cx, cy, size * 0.5);
+        g.addColorStop(0, 'rgba(255,248,230,0.08)'); g.addColorStop(1, 'rgba(92, 60, 24, 0.45)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+      }
+
+      const darkText = headKey === 'coated' || headKey === 'calfskin';
+      ctx.strokeStyle = darkText ? 'rgba(15,23,42,0.16)' : 'rgba(245, 158, 11, 0.18)';
+      ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.arc(cx, cy, size * 0.17, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, size * 0.35, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = darkText ? 'rgba(15,23,42,0.45)' : 'rgba(241,245,249,0.4)';
+      ctx.font = 'bold 14px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`PAS-40 • ${headKey.toUpperCase()}`, cx, size * 0.14);
+
+      const map = new THREE.CanvasTexture(c);
+      map.anisotropy = 8;
+      const bumpMap = new THREE.CanvasTexture(bc);
+      return { map, bumpMap };
+    }
+
+    function createWoodTexture(baseColor, grainColor) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = baseColor; ctx.fillRect(0, 0, 512, 256);
+      for (let y = 0; y < 256; y += 2) {
+        const wave = Math.sin(y * 0.12) * 14;
+        ctx.strokeStyle = grainColor; ctx.globalAlpha = 0.13 + Math.random() * 0.18;
+        ctx.lineWidth = 1 + Math.random() * 1.5;
+        ctx.beginPath(); ctx.moveTo(0, y);
+        ctx.bezierCurveTo(170, y + wave, 340, y - wave, 512, y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createBrushedMetalTexture(baseHex) {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = baseHex; ctx.fillRect(0, 0, 256, 256);
+      for (let y = 0; y < 256; y++) {
+        const alpha = Math.random() * 0.14;
+        ctx.fillStyle = Math.random() > 0.5 ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha})`;
+        ctx.fillRect(0, y, 256, 1);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function createDeformableHeadGeometry(radius, radialSegs = 26, angularSegs = 64) {
+      const geom = new THREE.BufferGeometry();
+      const positions = [0, 0, 0], uvs = [0.5, 0.5], indices = [];
+      for (let r = 1; r <= radialSegs; r++) {
+        const rad = (r / radialSegs) * radius;
+        for (let a = 0; a < angularSegs; a++) {
+          const theta = (a / angularSegs) * Math.PI * 2;
+          const x = Math.cos(theta) * rad, z = Math.sin(theta) * rad;
+          positions.push(x, 0, z);
+          uvs.push(0.5 + (x / (radius * 2)), 0.5 + (z / (radius * 2)));
+        }
+      }
+      for (let a = 0; a < angularSegs; a++) indices.push(0, 1 + ((a + 1) % angularSegs), 1 + a);
+      for (let r = 1; r < radialSegs; r++) {
+        const rs = 1 + (r - 1) * angularSegs, nrs = 1 + r * angularSegs;
+        for (let a = 0; a < angularSegs; a++) {
+          const na = (a + 1) % angularSegs;
+          indices.push(rs + a, rs + na, nrs + na, rs + a, nrs + na, nrs + a);
+        }
+      }
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    function makeHeadMaterial(headKey) {
+      const { map, bumpMap } = createHeadTextures(headKey);
+      const isClear = headKey === 'clear';
+      const isCoated = headKey === 'coated' || headKey === 'calfskin';
+      return new THREE.MeshStandardMaterial({
+        map, bumpMap, bumpScale: isCoated ? 0.015 : 0.008,
+        roughness: isClear ? 0.12 : (headKey === 'hydraulic' ? 0.18 : (isCoated ? 0.72 : 0.42)),
+        metalness: headKey === 'hydraulic' ? 0.28 : 0.08,
+        envMapIntensity: isClear ? 1.4 : 0.75,
+        transparent: isClear, opacity: isClear ? 0.68 : 1.0, side: THREE.DoubleSide
+      });
+    }
+
+    function buildSingleSnareAssembly(radius, depth, lugCount, shellKey, headKey) {
+      const group = new THREE.Group();
+      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.96, roughness: 0.12, envMapIntensity: 1.45 });
+      const darkSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.28 });
+      const rubberMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9, metalness: 0.05 });
+      const brassMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.9, roughness: 0.22 });
+
+      let shellMat;
+      let hoopMat = chromeMat.clone();
+      topHoopMaterials.push(hoopMat);
+
+      if (shellKey === 'marching') {
+        shellMat = new THREE.MeshStandardMaterial({
+          map: createBrushedMetalTexture('#1f2937'), color: 0xf59e0b, metalness: 0.68, roughness: 0.20, envMapIntensity: 1.2, side: THREE.DoubleSide
+        });
+      } else if (shellKey === 'maple') {
+        shellMat = new THREE.MeshStandardMaterial({
+          map: createWoodTexture('#9a4e1c', '#3e1a06'), metalness: 0.10, roughness: 0.22, envMapIntensity: 0.9, side: THREE.DoubleSide
+        });
+      } else if (shellKey === 'brass') {
+        shellMat = new THREE.MeshStandardMaterial({
+          map: createBrushedMetalTexture('#d4a12a'), color: 0xfacc15, metalness: 0.94, roughness: 0.16, envMapIntensity: 1.5, side: THREE.DoubleSide
+        });
+      } else if (shellKey === 'hybrid808') {
+        shellMat = new THREE.MeshStandardMaterial({ color: 0x151024, metalness: 0.75, roughness: 0.26, envMapIntensity: 1.2, side: THREE.DoubleSide });
+        hoopMat.color.setHex(0x4c3575);
+      } else {
+        shellMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.25, roughness: 0.65 });
+      }
+
+      if (shellKey === 'pad') {
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.08, radius + 0.11, 0.18, 48), darkSteelMat);
+        base.position.y = -0.10; base.castShadow = true; base.receiveShadow = true; group.add(base);
+
+        const rubberRim = new THREE.Mesh(new THREE.TorusGeometry(radius + 0.02, 0.045, 16, 64), rubberMat);
+        rubberRim.rotation.x = Math.PI / 2; rubberRim.position.y = 0.01; group.add(rubberRim);
+
+        const headGeom = createDeformableHeadGeometry(radius, 24, 64);
+        const headMesh = new THREE.Mesh(headGeom, makeHeadMaterial(headKey));
+        headMesh.position.y = 0.015; headMesh.receiveShadow = true; group.add(headMesh);
+        headMeshes.push({ mesh: headMesh, basePos: Float32Array.from(headGeom.attributes.position.array), radius, worldCenter: new THREE.Vector3(0, 0.015, 0), drumIdx: 0 });
+      } else {
+        const shellMesh = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, depth, 64, 1, true), shellMat);
+        shellMesh.position.y = -depth / 2; shellMesh.castShadow = true; shellMesh.receiveShadow = true; group.add(shellMesh);
+
+        const innerMat = new THREE.MeshStandardMaterial({ map: createWoodTexture('#cfa372', '#8a5a2b'), roughness: 0.55, side: THREE.BackSide });
+        const innerShell = new THREE.Mesh(new THREE.CylinderGeometry(radius - 0.025, radius - 0.025, depth - 0.02, 48, 1, true), innerMat);
+        innerShell.position.y = -depth / 2; group.add(innerShell);
+
+        [-0.01, -depth + 0.01].forEach((hy, idx) => {
+          const mat = idx === 0 ? hoopMat : chromeMat;
+          const hoopRing = new THREE.Mesh(new THREE.TorusGeometry(radius + 0.032, 0.038, 16, 64), mat);
+          hoopRing.rotation.x = Math.PI / 2;
+          hoopRing.position.y = hy + (idx === 0 ? 0.035 : -0.025);
+          hoopRing.castShadow = true; group.add(hoopRing);
+
+          const hoopCollar = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.048, radius + 0.048, 0.085, 64, 1, true), mat);
+          hoopCollar.position.y = hy + (idx === 0 ? 0.01 : -0.01); group.add(hoopCollar);
+        });
+
+        if (shellKey === 'hybrid808') {
+          const ledRing = new THREE.Mesh(new THREE.TorusGeometry(radius + 0.02, 0.014, 12, 64), new THREE.MeshBasicMaterial({ color: 0xa855f7 }));
+          ledRing.rotation.x = Math.PI / 2; ledRing.position.y = -depth * 0.5; group.add(ledRing);
+        }
+
+        // Sculpted Lugs, Die-cast Rim Ears, Rubber Gaskets, Tension Rods & Washers
+        for (let i = 0; i < lugCount; i++) {
+          const ang = (i / lugCount) * Math.PI * 2;
+          const lx = Math.cos(ang) * (radius + 0.056), lz = Math.sin(ang) * (radius + 0.056);
+
+          // Die-cast hoop ear tab
+          const ear = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.045, 0.052), hoopMat);
+          ear.position.set(lx, 0.02, lz); ear.rotation.y = -ang; group.add(ear);
+
+          const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.013, depth + 0.09, 8), chromeMat);
+          rod.position.set(lx, -depth / 2, lz); group.add(rod);
+
+          const washer = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.008, 12), rubberMat);
+          washer.position.set(lx, 0.046, lz); group.add(washer);
+
+          const nut = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.038, 6), chromeMat);
+          nut.position.set(lx, 0.066, lz); group.add(nut);
+
+          const lugLen = shellKey === 'marching' ? depth * 0.72 : Math.min(0.24, depth * 0.45);
+          const gasket = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, lugLen + 0.02, 12), rubberMat);
+          gasket.position.set(Math.cos(ang) * (radius + 0.014), -depth / 2, Math.sin(ang) * (radius + 0.014)); group.add(gasket);
+
+          const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, lugLen, 12), chromeMat);
+          lug.position.set(Math.cos(ang) * (radius + 0.024), -depth / 2, Math.sin(ang) * (radius + 0.024)); group.add(lug);
+
+          // Lug stepped end caps
+          [-lugLen / 2, lugLen / 2].forEach(capOff => {
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.025, 12), chromeMat);
+            cap.position.set(Math.cos(ang) * (radius + 0.024), -depth / 2 + capOff, Math.sin(ang) * (radius + 0.024));
+            group.add(cap);
+          });
+        }
+
+        // Snare Strainer Throw-Off + Tension Knob + Butt Plate
+        const strainer = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.22, 0.11), chromeMat);
+        strainer.position.set(radius + 0.05, -depth * 0.45, 0); group.add(strainer);
+        const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.05, 12), darkSteelMat);
+        knob.position.set(radius + 0.06, -depth * 0.28, 0); group.add(knob);
+        const lever = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.18, 8), chromeMat);
+        lever.rotation.z = -0.45; lever.position.set(radius + 0.11, -depth * 0.38, 0); group.add(lever);
+
+        const buttPlate = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.09), chromeMat);
+        buttPlate.position.set(-radius - 0.03, -depth * 0.55, 0); group.add(buttPlate);
+
+        const vent = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.008, 8, 16), chromeMat);
+        vent.position.set(Math.sin(0.4) * (radius + 0.004), -depth * 0.32, Math.cos(0.4) * (radius + 0.004));
+        vent.rotation.y = 0.4; group.add(vent);
+
+        const badge = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.09, 0.015), brassMat);
+        badge.position.set(0, -depth * 0.35, radius + 0.006); group.add(badge);
+
+        // Bottom Resonant Head + Brass End Plates + 20-Strand Coiled Snare Wires
+        const resoHead = new THREE.Mesh(new THREE.CircleGeometry(radius - 0.01, 48), new THREE.MeshStandardMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.32, roughness: 0.2, side: THREE.DoubleSide }));
+        resoHead.rotation.x = Math.PI / 2; resoHead.position.y = -depth + 0.01; group.add(resoHead);
+
+        [-radius * 0.85, radius * 0.85].forEach(ex => {
+          const endPlate = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.01, 0.44), brassMat);
+          endPlate.position.set(ex, -depth - 0.004, 0);
+          group.add(endPlate);
+        });
+
+        for (let s = -9; s <= 9; s++) {
+          const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, radius * 1.7, 6), chromeMat);
+          wire.rotation.z = Math.PI / 2; wire.position.set(0, -depth - 0.005, s * 0.022); group.add(wire);
+        }
+
+        // Deformable Top Batter Head
+        const headGeom = createDeformableHeadGeometry(radius, 26, 64);
+        const headMesh = new THREE.Mesh(headGeom, makeHeadMaterial(headKey));
+        headMesh.position.y = 0; headMesh.receiveShadow = true; group.add(headMesh);
+        headMeshes.push({ mesh: headMesh, basePos: Float32Array.from(headGeom.attributes.position.array), radius, worldCenter: new THREE.Vector3(0, 0, 0), drumIdx: 0 });
+      }
+
+      // Snare Stand Basket, Tilter & Tripod Base on Studio Floor (y = -1.45)
+      const standGroup = new THREE.Group();
+      const postTopY = shellKey === 'pad' ? -0.20 : -depth - 0.05;
+      const floorY = -1.45;
+      const postLen = Math.max(0.3, postTopY - floorY);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, postLen, 16), darkSteelMat);
+      post.position.y = floorY + postLen / 2; standGroup.add(post);
+
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.10, 16), chromeMat);
+      collar.position.y = floorY + postLen * 0.45; standGroup.add(collar);
+
+      for (let t = 0; t < 3; t++) {
+        const ang = (t / 3) * Math.PI * 2 + 0.5;
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 1.15, 10), chromeMat);
+        leg.rotation.z = Math.PI / 2.6; leg.rotation.y = ang;
+        leg.position.set(Math.cos(ang) * 0.48, floorY + 0.16, Math.sin(ang) * 0.48);
+        standGroup.add(leg);
+
+        const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.06, 12), rubberMat);
+        foot.position.set(Math.cos(ang) * 0.96, floorY + 0.03, Math.sin(ang) * 0.96);
+        standGroup.add(foot);
+      }
+
+      for (let b = 0; b < 3; b++) {
+        const ang = (b / 3) * Math.PI * 2 + 0.3;
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, radius * 1.15, 8), chromeMat);
+        arm.rotation.z = Math.PI / 2.35; arm.rotation.y = ang;
+        arm.position.set(Math.cos(ang) * (radius * 0.45), postTopY + 0.08, Math.sin(ang) * (radius * 0.45));
+        standGroup.add(arm);
+      }
+      group.add(standGroup);
+
+      return group;
+    }
+
+    function buildTenorQuadsAssembly(headKey) {
+      const group = new THREE.Group();
+      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.94, roughness: 0.14, envMapIntensity: 1.4 });
+      const shellMat = new THREE.MeshStandardMaterial({
+        map: createBrushedMetalTexture('#0ea5e9'), color: 0x38bdf8, metalness: 0.68, roughness: 0.20, envMapIntensity: 1.2, side: THREE.DoubleSide
+      });
+
+      const specs = [
+        { x: -1.32, z: 0.26, r: 0.56, d: 0.62, lugs: 6 },
+        { x: -0.48, z: -0.22, r: 0.64, d: 0.68, lugs: 6 },
+        { x: 0.48, z: -0.22, r: 0.70, d: 0.74, lugs: 8 },
+        { x: 1.32, z: 0.26, r: 0.78, d: 0.80, lugs: 8 }
+      ];
+
+      const rail = new THREE.Mesh(new THREE.TorusGeometry(1.55, 0.045, 12, 48, Math.PI * 0.75), chromeMat);
+      rail.rotation.x = Math.PI / 2; rail.rotation.z = Math.PI * 0.125; rail.position.set(0, -0.35, 0.65);
+      group.add(rail);
+
+      specs.forEach((sp, idx) => {
+        const sub = new THREE.Group(); sub.position.set(sp.x, 0, sp.z);
+        const shell = new THREE.Mesh(new THREE.CylinderGeometry(sp.r, sp.r, sp.d, 48, 1, true), shellMat);
+        shell.position.y = -sp.d / 2; shell.castShadow = true; sub.add(shell);
+
+        const hoopMat = chromeMat.clone();
+        topHoopMaterials.push(hoopMat);
+        const hoop = new THREE.Mesh(new THREE.TorusGeometry(sp.r + 0.025, 0.028, 12, 48), hoopMat);
+        hoop.rotation.x = Math.PI / 2; hoop.position.y = 0.02; sub.add(hoop);
+
+        for (let l = 0; l < sp.lugs; l++) {
+          const ang = (l / sp.lugs) * Math.PI * 2;
+          const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, sp.d, 8), chromeMat);
+          rod.position.set(Math.cos(ang) * (sp.r + 0.03), -sp.d / 2, Math.sin(ang) * (sp.r + 0.03)); sub.add(rod);
+        }
+
+        const headGeom = createDeformableHeadGeometry(sp.r, 18, 48);
+        const headMesh = new THREE.Mesh(headGeom, makeHeadMaterial(headKey));
+        headMesh.receiveShadow = true; sub.add(headMesh);
+        headMeshes.push({ mesh: headMesh, basePos: Float32Array.from(headGeom.attributes.position.array), radius: sp.r, worldCenter: new THREE.Vector3(sp.x, 0, sp.z), drumIdx: idx });
+        group.add(sub);
+      });
+
+      return group;
+    }
+
+    function rebuildDrumAssembly() {
+      if (!drumRootGroup) return;
+      if (shellVisualGroup) drumRootGroup.remove(shellVisualGroup);
+      headMeshes = [];
+      topHoopMaterials = [];
+
+      const k = state.shellKey;
+      if (k === 'tenors') {
+        shellVisualGroup = buildTenorQuadsAssembly(state.headKey);
+      } else {
+        const depthMap = { marching: 1.15, maple: 0.62, brass: 0.40, pad: 0.20, hybrid808: 0.68 };
+        const lugMap = { marching: 12, maple: 10, brass: 10, pad: 0, hybrid808: 10 };
+        shellVisualGroup = buildSingleSnareAssembly(1.28, depthMap[k] || 0.7, lugMap[k] || 10, k, state.headKey);
+      }
+      drumRootGroup.add(shellVisualGroup);
+    }
+
+    function createDrumstick3D(hand) {
+      const stickGroup = new THREE.Group();
+      const pivot = new THREE.Group();
+      stickGroup.add(pivot);
+
+      const pts = [
+        new THREE.Vector2(0.001, 0.00),
+        new THREE.Vector2(0.040, 0.02),
+        new THREE.Vector2(0.044, 0.12),
+        new THREE.Vector2(0.044, 1.72),
+        new THREE.Vector2(0.032, 2.24),
+        new THREE.Vector2(0.019, 2.62),
+        new THREE.Vector2(0.034, 2.71),
+        new THREE.Vector2(0.025, 2.78),
+        new THREE.Vector2(0.001, 2.80)
+      ];
+      const latheGeom = new THREE.LatheGeometry(pts, 28);
+      latheGeom.rotateX(Math.PI / 2);
+
+      const hickoryMat = new THREE.MeshStandardMaterial({
+        map: createWoodTexture('#e0ba87', '#9b6734'),
+        roughness: 0.28, metalness: 0.04, envMapIntensity: 0.85
+      });
+      const stickMesh = new THREE.Mesh(latheGeom, hickoryMat);
+      stickMesh.castShadow = true;
+      stickMesh.position.z = -0.56;
+      pivot.add(stickMesh);
+
+      const bandColor = hand === 'R' ? 0xf59e0b : 0x38bdf8;
+      const bandMat = new THREE.MeshStandardMaterial({
+        color: bandColor, emissive: bandColor, emissiveIntensity: 0.42, roughness: 0.22, metalness: 0.35
+      });
+      [0.24, 0.42].forEach(bz => {
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.046, 0.09, 24), bandMat);
+        band.rotation.x = Math.PI / 2; band.position.z = bz; pivot.add(band);
+      });
+
+      const tipMat = new THREE.MeshStandardMaterial({
+        color: 0xfef3c7, emissive: bandColor, emissiveIntensity: 0.26, roughness: 0.20
+      });
+      const tipCap = new THREE.Mesh(new THREE.SphereGeometry(BEAD_RADIUS, 16, 16), tipMat);
+      tipCap.position.z = STICK_REACH - BEAD_RADIUS;
+      pivot.add(tipCap);
+
+      return { root: stickGroup, pivot, tipLocalZ: STICK_REACH, bandMat };
+    }
+
+    function initThreeStage() {
+      const canvas = document.getElementById('drumCanvas');
+      const wrap = document.getElementById('drumViewportWrap');
+      if (!canvas || !wrap || typeof THREE === 'undefined') return;
+
+      try {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x05070d);
+        scene.fog = new THREE.FogExp2(0x05070d, 0.072);
+
+        const w = wrap.clientWidth || 640, h = wrap.clientHeight || 420;
+        camera = new THREE.PerspectiveCamera(39, w / h, 0.1, 40);
+        camera.position.set(...CAMERA_PRESETS.pov.pos);
+
+        renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(w, h, false);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.22;
+
+        scene.environment = buildStudioEnvMap(renderer);
+
+        if (typeof THREE.OrbitControls !== 'undefined') {
+          controls = new THREE.OrbitControls(camera, renderer.domElement);
+          controls.enableDamping = true; controls.dampingFactor = 0.08;
+          controls.maxPolarAngle = Math.PI * 0.48;
+          controls.minDistance = 2.0; controls.maxDistance = 7.5;
+          controls.target.set(...CAMERA_PRESETS.pov.target);
+        }
+
+        scene.add(new THREE.AmbientLight(0x94a3b8, 0.45));
+
+        const keySpot = new THREE.SpotLight(0xfff4e0, 2.7, 18, Math.PI * 0.28, 0.45, 1.1);
+        keySpot.position.set(2.4, 5.2, 2.8);
+        keySpot.castShadow = true;
+        keySpot.shadow.mapSize.width = 1024; keySpot.shadow.mapSize.height = 1024;
+        keySpot.shadow.bias = -0.0005;
+        scene.add(keySpot);
+
+        const coneGeom = new THREE.ConeGeometry(2.8, 5.6, 32, 1, true);
+        const coneMat = new THREE.MeshBasicMaterial({ color: 0xfef3c7, transparent: true, opacity: 0.025, side: THREE.DoubleSide, depthWrite: false });
+        const lightCone = new THREE.Mesh(coneGeom, coneMat);
+        lightCone.position.set(0.8, 2.3, 0.9);
+        lightCone.rotation.z = 0.35; lightCone.rotation.x = -0.35;
+        scene.add(lightCone);
+
+        const cyanRim = new THREE.PointLight(0x38bdf8, 1.5, 12);
+        cyanRim.position.set(-3.4, 2.2, -2.5); scene.add(cyanRim);
+
+        const amberRim = new THREE.PointLight(0xf59e0b, 1.3, 12);
+        amberRim.position.set(3.4, 1.8, -2.2); scene.add(amberRim);
+
+        // Under-drum snare bounce light
+        snareGlowLight = new THREE.PointLight(0x38bdf8, 0, 5);
+        snareGlowLight.position.set(0, -1.1, 0);
+        scene.add(snareGlowLight);
+
+        // Dark Reflective Studio Floor + Circular Drum Rug Riser + Recessed LED Ring
+        const floor = new THREE.Mesh(
+          new THREE.CircleGeometry(10, 64),
+          new THREE.MeshStandardMaterial({ color: 0x05070e, roughness: 0.32, metalness: 0.50, envMapIntensity: 0.75 })
+        );
+        floor.rotation.x = -Math.PI / 2; floor.position.y = -1.48; floor.receiveShadow = true;
+        scene.add(floor);
+
+        const drumRug = new THREE.Mesh(
+          new THREE.CylinderGeometry(2.35, 2.40, 0.03, 64),
+          new THREE.MeshStandardMaterial({ color: 0x0d1322, roughness: 0.92, metalness: 0.05 })
+        );
+        drumRug.position.y = -1.465; drumRug.receiveShadow = true;
+        scene.add(drumRug);
+
+        const rugLedRing = new THREE.Mesh(
+          new THREE.TorusGeometry(2.38, 0.012, 10, 64),
+          new THREE.MeshBasicMaterial({ color: 0x1e3a5f })
+        );
+        rugLedRing.rotation.x = Math.PI / 2; rugLedRing.position.y = -1.45;
+        scene.add(rugLedRing);
+
+        const gridHelper = new THREE.PolarGridHelper(6, 12, 6, 64, 0x1e293b, 0x0f172a);
+        gridHelper.position.y = -1.47; scene.add(gridHelper);
+
+        // FIXED IN v4: Set threeReady = true BEFORE calling rebuildDrumAssembly() so the drum renders immediately on initial launch!
+        drumRootGroup = new THREE.Group();
+        scene.add(drumRootGroup);
+        threeReady = true;
+        rebuildDrumAssembly();
+
+        leftStickObj = createDrumstick3D('L');
+        rightStickObj = createDrumstick3D('R');
+        scene.add(leftStickObj.root);
+        scene.add(rightStickObj.root);
+
+        const makeTrail = (color) => {
+          const g = new THREE.BufferGeometry();
+          g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 3), 3));
+          return new THREE.Line(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.65 }));
+        };
+        leftTrailLine = makeTrail(0x38bdf8);
+        rightTrailLine = makeTrail(0xf59e0b);
+        scene.add(leftTrailLine); scene.add(rightTrailLine);
+
+        const maxSparks = 140;
+        sparkPositions = new Float32Array(maxSparks * 3);
+        for (let i = 0; i < maxSparks; i++) {
+          sparkPositions[i * 3 + 1] = -99;
+          sparkVelocities.push(new THREE.Vector3());
+          sparkLife.push(0);
+        }
+        const sparkGeom = new THREE.BufferGeometry();
+        sparkGeom.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+        sparkSystem = new THREE.Points(sparkGeom, new THREE.PointsMaterial({ color: 0xfbbf24, size: 0.048, transparent: true, opacity: 0.9 }));
+        scene.add(sparkSystem);
+
+        raycaster = new THREE.Raycaster();
+
+        let downX = 0, downY = 0;
+        canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
+        canvas.addEventListener('pointerup', (e) => {
+          if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
+          const rect = canvas.getBoundingClientRect();
+          const ndc = new THREE.Vector2(
+            ((e.clientX - rect.left) / rect.width) * 2 - 1,
+            -((e.clientY - rect.top) / rect.height) * 2 + 1
+          );
+          raycaster.setFromCamera(ndc, camera);
+          const hits = raycaster.intersectObjects(headMeshes.map(h => h.mesh), false);
+          if (hits.length > 0) {
+            const hit = hits[0];
+            const entry = headMeshes.find(h => h.mesh === hit.object);
+            const localPt = hit.point.clone().sub(entry.worldCenter);
+            const dist = Math.hypot(localPt.x, localPt.z);
+            const zone = Math.min(100, Math.round((dist / entry.radius) * 100));
+            const hand = hit.point.x < 0 ? 'L' : 'R';
+            recordManualUserHit(hand, zone, entry.drumIdx, hit.point.x, hit.point.z);
+          }
+        });
+
+        const handleResize = () => {
+          if (!renderer || !camera || !wrap) return;
+          const nw = wrap.clientWidth || 640, nh = wrap.clientHeight || 420;
+          camera.aspect = nw / nh; camera.updateProjectionMatrix();
+          renderer.setSize(nw, nh, false);
+        };
+        window.addEventListener('resize', handleResize);
+        if (typeof ResizeObserver !== 'undefined') new ResizeObserver(handleResize).observe(wrap);
+        requestAnimationFrame(handleResize);
+
+        requestAnimationFrame(animateThreeStage);
+      } catch (err) {
+        console.error('Three.js init error:', err);
+      }
+    }
+
+    function spawnSparks(x, y, z, count = 16, colorHex = 0xfbbf24) {
+      if (!sparkSystem) return;
+      sparkSystem.material.color.setHex(colorHex);
+      let spawned = 0;
+      for (let i = 0; i < sparkLife.length && spawned < count; i++) {
+        if (sparkLife[i] <= 0) {
+          sparkPositions[i * 3] = x; sparkPositions[i * 3 + 1] = y + 0.03; sparkPositions[i * 3 + 2] = z;
+          sparkVelocities[i].set((Math.random() - 0.5) * 0.065, 0.035 + Math.random() * 0.065, (Math.random() - 0.5) * 0.065);
+          sparkLife[i] = 1.0; spawned++;
+        }
+      }
+    }
+
+    function spawnContactFlash(x, z, colorHex) {
+      if (!scene) return;
+      const mesh = new THREE.Mesh(
+        new THREE.CircleGeometry(0.11, 24),
+        new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+      );
+      mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, 0.018, z);
+      scene.add(mesh);
+      contactFlashes.push({ mesh, alpha: 0.85 });
+    }
+
+    function spawnShockwaveRing(x, z, colorHex, maxR) {
+      if (!scene) return;
+      const mesh = new THREE.Mesh(
+        new THREE.RingGeometry(0.05, 0.085, 40),
+        new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
+      );
+      mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, 0.016, z);
+      scene.add(mesh);
+      shockwaveRings.push({ mesh, scale: 1, maxScale: maxR * 8, alpha: 0.9 });
+    }
+
+    function triggerVisualStrike(hand, velocity = 0.85, zoneOverride = null, stepIdx = 0, exactX = null, exactZ = null) {
+      const zoneNorm = (zoneOverride !== null ? zoneOverride : state.strikeZone) / 100;
+      const isRimshot = zoneNorm > 0.65;
+      let hitX = exactX !== null ? exactX : (hand === 'R' ? 0.22 : -0.22) + (Math.random() - 0.5) * 0.07;
+      let hitZ = exactZ !== null ? exactZ : -zoneNorm * 0.88 + (Math.random() - 0.5) * 0.06;
+      let drumIdx = 0;
+
+      if (state.shellKey === 'tenors' && headMeshes.length === 4) {
+        drumIdx = stepIdx % 4;
+        const wc = headMeshes[drumIdx].worldCenter;
+        hitX = wc.x + (hand === 'R' ? 0.08 : -0.08);
+        hitZ = wc.z + (Math.random() - 0.5) * 0.04;
+      }
+
+      const now = performance.now();
+      if (hand === 'R') state.rightStickAnim = { targetX: hitX, targetZ: hitZ, hitTime: now, vel: velocity, isRimshot };
+      else state.leftStickAnim = { targetX: hitX, targetZ: hitZ, hitTime: now, vel: velocity, isRimshot };
+
+      state.ripples3D.push({ x: hitX, z: hitZ, birth: now, amp: 0.04 + velocity * 0.048, drumIdx });
+      if (state.ripples3D.length > 10) state.ripples3D.shift();
+
+      const colorHex = isRimshot ? 0xf43f5e : (hand === 'R' ? 0xf59e0b : 0x38bdf8);
+      spawnContactFlash(hitX, hitZ, colorHex);
+      spawnShockwaveRing(hitX, hitZ, colorHex, 0.6 + velocity * 0.6);
+      if (isRimshot || velocity > 0.80) spawnSparks(hitX, 0.02, hitZ, isRimshot ? 22 : 10, colorHex);
+      if (isRimshot) hoopFlashTimer = 1.0;
+      snareGlowTimer = Math.max(snareGlowTimer, velocity);
+
+      const zoneLabel = isRimshot ? 'Rimshot' : (zoneNorm > 0.35 ? 'Edge' : 'Center');
+      const tele = document.getElementById('lastStrikeTelemetry');
+      if (tele) tele.textContent = `${hand}-Stick • ${zoneLabel} • Vel ${velocity.toFixed(2)}`;
+    }
+
+    function updateStickKinematics(stickObj, anim, hand, now, trailLine, trailPts) {
+      if (!stickObj) return;
+      const elapsed = now - anim.hitTime;
+      const hoverY = 0.32 + Math.sin(now * 0.003 + (hand === 'R' ? 0 : 1.5)) * 0.025;
+      let tipY = hoverY;
+
+      if (elapsed >= 0 && elapsed < 220) {
+        if (elapsed < 26) {
+          const t = elapsed / 26;
+          tipY = hoverY * (1 - t) + BEAD_RADIUS * t;
+        } else if (elapsed < 44) {
+          tipY = BEAD_RADIUS * 0.85;
+        } else {
+          const t = (elapsed - 44) / 176;
+          const arc = Math.sin(t * Math.PI * 0.7);
+          tipY = BEAD_RADIUS + arc * (0.36 + anim.vel * 0.22);
+        }
+      }
+
+      const tipPos = new THREE.Vector3(anim.targetX, tipY, anim.targetZ);
+      const handSign = hand === 'R' ? 1 : -1;
+      const wristY = anim.isRimshot ? 0.26 : 0.62;
+      const wristAnchor = new THREE.Vector3(handSign * 1.15, wristY, 2.05);
+      const dirToWrist = wristAnchor.sub(tipPos).normalize();
+      const fulcrumPos = tipPos.clone().addScaledVector(dirToWrist, STICK_REACH);
+
+      stickObj.root.position.copy(fulcrumPos);
+      stickObj.pivot.lookAt(tipPos);
+      stickObj.root.updateMatrixWorld(true);
+
+      const tipWorld = new THREE.Vector3(0, 0, stickObj.tipLocalZ).applyMatrix4(stickObj.pivot.matrixWorld);
+      trailPts.unshift(tipWorld.clone());
+      if (trailPts.length > TRAIL_MAX) trailPts.pop();
+
+      if (trailLine && trailPts.length > 1) {
+        const attr = trailLine.geometry.attributes.position;
+        for (let i = 0; i < TRAIL_MAX; i++) {
+          const p = trailPts[Math.min(i, trailPts.length - 1)];
+          attr.setXYZ(i, p.x, p.y, p.z);
+        }
+        attr.needsUpdate = true;
+      }
+    }
+
+    function animateThreeStage() {
+      requestAnimationFrame(animateThreeStage);
+      if (!threeReady) return;
+      const now = performance.now();
+
+      if (camLerpTarget && controls) {
+        camera.position.lerp(camLerpTarget.pos, 0.09);
+        controls.target.lerp(camLerpTarget.target, 0.09);
+        if (camera.position.distanceTo(camLerpTarget.pos) < 0.03) camLerpTarget = null;
+      }
+      if (controls) controls.update();
+
+      if (hoopFlashTimer > 0) {
+        hoopFlashTimer = Math.max(0, hoopFlashTimer - 0.08);
+        topHoopMaterials.forEach(m => {
+          m.emissive.setHex(0xf43f5e);
+          m.emissiveIntensity = hoopFlashTimer * 0.9;
+        });
+      }
+
+      if (snareGlowLight && snareGlowTimer > 0) {
+        snareGlowTimer = Math.max(0, snareGlowTimer - 0.06);
+        snareGlowLight.intensity = snareGlowTimer * (state.snareBuzz / 100) * 1.8;
+      }
+
+      headMeshes.forEach(entry => {
+        const pos = entry.mesh.geometry.attributes.position;
+        const base = entry.basePos;
+        const activeRipples = state.ripples3D.filter(r => r.drumIdx === entry.drumIdx && (now - r.birth) < 550);
+        for (let i = 0; i < pos.count; i++) {
+          const lx = base[i * 3], lz = base[i * 3 + 2];
+          let dy = 0;
+          if (activeRipples.length > 0) {
+            const wx = lx + entry.worldCenter.x, wz = lz + entry.worldCenter.z;
+            const edgeAtten = Math.max(0, 1 - Math.hypot(lx, lz) / entry.radius);
+            for (let k = 0; k < activeRipples.length; k++) {
+              const rp = activeRipples[k];
+              const ageSec = (now - rp.birth) / 1000;
+              const d = Math.hypot(wx - rp.x, wz - rp.z);
+              dy += Math.sin(d * 18 - ageSec * 42) * Math.exp(-ageSec * 7.5) * Math.exp(-d * 1.4) * rp.amp * edgeAtten;
+            }
+          }
+          pos.setY(i, dy);
+        }
+        pos.needsUpdate = true;
+        if (activeRipples.length > 0) entry.mesh.geometry.computeVertexNormals();
+      });
+      state.ripples3D = state.ripples3D.filter(r => (now - r.birth) < 550);
+
+      for (let i = contactFlashes.length - 1; i >= 0; i--) {
+        const cf = contactFlashes[i];
+        cf.alpha -= 0.09;
+        cf.mesh.material.opacity = Math.max(0, cf.alpha);
+        cf.mesh.scale.multiplyScalar(1.08);
+        if (cf.alpha <= 0) {
+          scene.remove(cf.mesh); cf.mesh.geometry.dispose(); cf.mesh.material.dispose();
+          contactFlashes.splice(i, 1);
+        }
+      }
+
+      for (let i = shockwaveRings.length - 1; i >= 0; i--) {
+        const sw = shockwaveRings[i];
+        sw.scale += 0.38; sw.alpha -= 0.042;
+        sw.mesh.scale.set(sw.scale, sw.scale, 1);
+        sw.mesh.material.opacity = Math.max(0, sw.alpha);
+        if (sw.alpha <= 0 || sw.scale > sw.maxScale) {
+          scene.remove(sw.mesh); sw.mesh.geometry.dispose(); sw.mesh.material.dispose();
+          shockwaveRings.splice(i, 1);
+        }
+      }
+
+      if (sparkSystem) {
+        let dirty = false;
+        for (let i = 0; i < sparkLife.length; i++) {
+          if (sparkLife[i] > 0) {
+            sparkPositions[i * 3] += sparkVelocities[i].x;
+            sparkPositions[i * 3 + 1] += sparkVelocities[i].y;
+            sparkPositions[i * 3 + 2] += sparkVelocities[i].z;
+            sparkVelocities[i].y -= 0.0028;
+            sparkLife[i] -= 0.045;
+            if (sparkLife[i] <= 0) sparkPositions[i * 3 + 1] = -99;
+            dirty = true;
+          }
+        }
+        if (dirty) sparkSystem.geometry.attributes.position.needsUpdate = true;
+      }
+
+      updateStickKinematics(leftStickObj, state.leftStickAnim, 'L', now, leftTrailLine, leftTrailPts);
+      updateStickKinematics(rightStickObj, state.rightStickAnim, 'R', now, rightTrailLine, rightTrailPts);
+
+      const specCanvas = document.getElementById('spectrumOverlayCanvas');
+      if (specCanvas) {
+        const sCtx = specCanvas.getContext('2d');
+        const sw = specCanvas.width = specCanvas.clientWidth;
+        const sh = specCanvas.height = specCanvas.clientHeight;
+        sCtx.clearRect(0, 0, sw, sh);
+        if (analyserNode && state.isPlaying) {
+          const arr = new Uint8Array(40);
+          analyserNode.getByteFrequencyData(arr);
+          const barW = sw / 40;
+          for (let i = 0; i < 40; i++) {
+            const bh = (arr[i] / 255) * sh * 0.9;
+            sCtx.fillStyle = i % 2 === 0 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.25)';
+            sCtx.fillRect(i * barW, sh - bh, barW - 2, bh);
+          }
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // =========================================================================
+    // 6. SVG MUSICAL NOTATION & INTERACTIVE STEP SEQUENCER RENDERER
+    // =========================================================================
+    function renderNotationAndStepGrid() {
+      const steps = state.customSteps;
+      const svg = document.getElementById('notationSvg');
+      const grid = document.getElementById('stepGridContainer');
+      if (!svg || !grid) return;
+
+      const W = 760, padX = 48, usableW = W - padX * 2, n = steps.length;
+      let svgHtml = `
+        <line x1="20" y1="45" x2="${W - 20}" y2="45" stroke="#1e293b" stroke-width="1" />
+        <line x1="20" y1="62" x2="${W - 20}" y2="62" stroke="#334155" stroke-width="1.5" />
+        <line x1="20" y1="79" x2="${W - 20}" y2="79" stroke="#1e293b" stroke-width="1" />
+        <rect x="24" y="48" width="4" height="28" fill="#94a3b8" />
+        <rect x="31" y="48" width="4" height="28" fill="#94a3b8" />
+      `;
+      if (n > 1) svgHtml += `<line x1="${padX}" y1="30" x2="${padX + usableW}" y2="30" stroke="#64748b" stroke-width="3" />`;
+
+      steps.forEach((st, idx) => {
+        const x = n === 1 ? W / 2 : padX + (idx / (n - 1)) * usableW;
+        const y = 62;
+        const effectiveHand = state.leadHandInverted ? (st.h === 'R' ? 'L' : 'R') : st.h;
+        const isCurrent = state.currentStepIndex === idx;
+        const noteColor = isCurrent ? '#10b981' : (effectiveHand === 'R' ? '#f59e0b' : '#38bdf8');
+
+        if (isCurrent) svgHtml += `<rect x="${x - 16}" y="8" width="32" height="118" rx="6" fill="rgba(16, 185, 129, 0.16)" stroke="#10b981" stroke-width="1" />`;
+        if (st.a) svgHtml += `<path d="M ${x - 6} 12 L ${x + 6} 16 L ${x - 6} 20" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" />`;
+        if (st.o === 'flam') {
+          svgHtml += `<line x1="${x - 12}" y1="44" x2="${x - 12}" y2="60" stroke="#c084fc" stroke-width="1.3" /><line x1="${x - 15}" y1="50" x2="${x - 8}" y2="44" stroke="#c084fc" stroke-width="1.3" /><circle cx="${x - 14}" cy="61" r="3.5" fill="#c084fc" /><path d="M ${x - 13} 66 Q ${x - 7} 71 ${x - 2} 65" fill="none" stroke="#c084fc" stroke-width="1.2" />`;
+        } else if (st.o === 'drag') {
+          svgHtml += `<line x1="${x - 18}" y1="44" x2="${x - 10}" y2="44" stroke="#c084fc" stroke-width="2" /><circle cx="${x - 19}" cy="61" r="3" fill="#c084fc" /><circle cx="${x - 11}" cy="61" r="3" fill="#c084fc" /><path d="M ${x - 15} 66 Q ${x - 8} 71 ${x - 2} 65" fill="none" stroke="#c084fc" stroke-width="1.2" />`;
+        }
+
+        svgHtml += `<line x1="${x + 5}" y1="30" x2="${x + 5}" y2="${y}" stroke="${noteColor}" stroke-width="2" />`;
+        if (st.o === 'diddle') {
+          svgHtml += `<line x1="${x - 1}" y1="43" x2="${x + 11}" y2="37" stroke="#c084fc" stroke-width="2.2" /><line x1="${x - 1}" y1="49" x2="${x + 11}" y2="43" stroke="#c084fc" stroke-width="2.2" />`;
+        } else if (st.o === 'buzz') {
+          svgHtml += `<text x="${x + 5}" y="47" text-anchor="middle" fill="#38bdf8" font-size="11" font-family="JetBrains Mono" font-weight="bold">Z</text>`;
+        }
+
+        svgHtml += `
+          <g class="cursor-pointer note-hit-group" data-step="${idx}">
+            <ellipse cx="${x}" cy="${y}" rx="6.5" ry="5" transform="rotate(-20 ${x} ${y})" fill="${noteColor}" />
+            <text x="${x}" y="102" text-anchor="middle" fill="${noteColor}" font-size="13" font-family="JetBrains Mono" font-weight="bold">${effectiveHand}</text>
+            <text x="${x}" y="118" text-anchor="middle" fill="#64748b" font-size="9" font-family="JetBrains Mono">${st.o !== 'none' ? st.o.toUpperCase() : (st.a ? 'ACC' : 'TAP')}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = svgHtml;
+      svg.querySelectorAll('.note-hit-group').forEach(el => {
+        el.addEventListener('click', () => auditionSingleStep(parseInt(el.getAttribute('data-step'), 10)));
+      });
+
+      grid.innerHTML = '';
+      steps.forEach((st, idx) => {
+        const effectiveHand = state.leadHandInverted ? (st.h === 'R' ? 'L' : 'R') : st.h;
+        const isCurrent = state.currentStepIndex === idx;
+        const handBg = effectiveHand === 'R' ? 'border-amber-500/40 bg-amber-500/10 text-amber-300' : 'border-sky-500/40 bg-sky-500/10 text-sky-300';
+        const card = document.createElement('div');
+        card.className = `rounded-xl border p-2 transition flex flex-col justify-between gap-1.5 ${handBg} ${isCurrent ? 'step-active ring-2 ring-emerald-400' : ''}`;
+        const ornamentLabel = st.o === 'none' ? 'Clean' : st.o.toUpperCase();
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono text-slate-400">#${idx + 1}</span>
+            <button type="button" data-action="accent" data-idx="${idx}" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${st.a ? 'bg-amber-400 text-slate-950' : 'bg-obsidian-900 text-slate-500 hover:text-slate-300'}">&gt;</button>
+          </div>
+          <button type="button" data-action="audition" data-idx="${idx}" class="py-1 text-center font-mono text-lg font-extrabold tracking-tight hover:scale-105 transition">
+            ${st.o === 'flam' ? `<span class="text-xs text-purple-300">${effectiveHand === 'R' ? 'l' : 'r'}</span>` : ''}${st.o === 'drag' ? `<span class="text-xs text-purple-300">${effectiveHand === 'R' ? 'll' : 'rr'}</span>` : ''}${effectiveHand}${st.o === 'diddle' ? `<span class="text-xs text-purple-300">${effectiveHand}</span>` : ''}
+          </button>
+          <div class="flex items-center justify-between gap-1">
+            <button type="button" data-action="hand" data-idx="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-900/90 hover:bg-obsidian-800 text-[9px] font-mono text-slate-300 border border-slate-700/60">R/L</button>
+            <button type="button" data-action="ornament" data-idx="${idx}" class="flex-1 py-0.5 rounded bg-obsidian-900/90 hover:bg-obsidian-800 text-[9px] font-mono text-purple-300 border border-slate-700/60">${ornamentLabel}</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const action = btn.getAttribute('data-action');
+          const idx = parseInt(btn.getAttribute('data-idx'), 10);
+          const step = state.customSteps[idx];
+          if (!step) return;
+          if (action === 'audition') auditionSingleStep(idx);
+          else if (action === 'accent') { step.a = step.a ? 0 : 1; auditionSingleStep(idx); renderNotationAndStepGrid(); }
+          else if (action === 'hand') { step.h = step.h === 'R' ? 'L' : 'R'; auditionSingleStep(idx); renderNotationAndStepGrid(); }
+          else if (action === 'ornament') {
+            const order = ['none', 'flam', 'drag', 'diddle', 'buzz'];
+            step.o = order[(order.indexOf(step.o) + 1) % order.length];
+            auditionSingleStep(idx); renderNotationAndStepGrid();
+          }
+        });
+      });
+    }
+
+    function auditionSingleStep(idx) {
+      const ctx = ensureAudioContext();
+      const step = state.customSteps[idx];
+      if (!step) return;
+      state.currentStepIndex = idx;
+      const stepDur = (60 / state.bpm) * 0.5;
+      scheduleRudimentStepAudio(ctx, analyserNode, step, ctx.currentTime + 0.03, stepDur, idx);
+      const effectiveHand = state.leadHandInverted ? (step.h === 'R' ? 'L' : 'R') : step.h;
+      triggerVisualStrike(effectiveHand, step.a ? 0.95 : 0.65, null, idx);
+      renderNotationAndStepGrid();
+    }
+
+    // =========================================================================
+    // 7. REAL-TIME TRANSPORT ENGINE & OPEN-CLOSE-OPEN RAMP TRAINER
+    // =========================================================================
+    let transportTimerId = null;
+
+    function getTempoMarking(bpm) {
+      if (bpm < 65) return "Open (Largo / Slow)";
+      if (bpm < 95) return "Andante Practice";
+      if (bpm < 128) return "Moderato March Tempo";
+      if (bpm < 165) return "Allegro Corps Tempo";
+      return "Close (Presto Peak)";
+    }
+
+    function updateBpmUI(newBpm) {
+      state.bpm = Math.max(40, Math.min(240, Math.round(newBpm)));
+      document.getElementById('bpmReadout').textContent = state.bpm;
+      document.getElementById('sliderBpm').value = state.bpm;
+      document.getElementById('tempoMarkingLabel').textContent = getTempoMarking(state.bpm);
+    }
+
+    function startTransport() {
+      ensureAudioContext();
+      if (state.isPlaying) return;
+      state.isPlaying = true;
+      state.currentStepIndex = -1;
+      document.getElementById('btnPlayToggle').classList.add('playing-glow');
+      document.getElementById('iconPlay').classList.add('hidden');
+      document.getElementById('iconStop').classList.remove('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'STOP';
+      scheduleNextTransportStep();
+    }
+
+    function stopTransport() {
+      state.isPlaying = false;
+      if (transportTimerId) { clearTimeout(transportTimerId); transportTimerId = null; }
+      state.currentStepIndex = -1;
+      document.getElementById('btnPlayToggle').classList.remove('playing-glow');
+      document.getElementById('iconPlay').classList.remove('hidden');
+      document.getElementById('iconStop').classList.add('hidden');
+      document.getElementById('labelPlayToggle').textContent = 'PLAY';
+      renderNotationAndStepGrid();
+    }
+
+    function scheduleNextTransportStep() {
+      if (!state.isPlaying) return;
+      const ctx = ensureAudioContext();
+      state.currentStepIndex++;
+      if (state.currentStepIndex >= state.customSteps.length) {
+        state.currentStepIndex = 0;
+        state.barCounter++;
+        if (state.chainMode) {
+          state.activeChainSlot = (state.activeChainSlot + 1) % 4;
+          selectRudimentById(state.chainIds[state.activeChainSlot], false);
+          renderChainSlotsUI();
+        } else if (state.autoRotateRudiment && state.barCounter % 4 === 0) {
+          pickRandomRudimentInFilter(false);
+        }
+      }
+
+      const step = state.customSteps[state.currentStepIndex];
+      const stepDurSec = (60 / state.bpm) * 0.5 * (step.dur || 1);
+
+      if (state.rampActive) {
+        state.rampElapsedSec += stepDurSec;
+        if (state.rampElapsedSec >= state.rampDurationSec) state.rampElapsedSec = 0;
+        const progress = state.rampElapsedSec / state.rampDurationSec;
+        const triangle = progress <= 0.5 ? (progress * 2) : ((1 - progress) * 2);
+        updateBpmUI(state.rampStartBpm + triangle * (state.rampPeakBpm - state.rampStartBpm));
+        document.getElementById('rampProgressBar').style.width = `${(progress * 100).toFixed(1)}%`;
+        const phaseText = progress < 0.45 ? 'Accelerating (Open → Close)' : (progress < 0.55 ? 'PEAK SPEED (Closed)' : 'Decelerating (Close → Open)');
+        document.getElementById('rampStatusBadge').textContent = `${phaseText} • ${Math.round(progress * 100)}%`;
+      }
+
+      const playWhen = ctx.currentTime + 0.035;
+      if (state.currentStepIndex === 0 || state.currentStepIndex === Math.floor(state.customSteps.length / 2)) {
+        triggerMetronomeClick(ctx, analyserNode, playWhen, state.currentStepIndex === 0);
+        const dot = document.getElementById('metroDot');
+        if (dot) { dot.classList.add('scale-150'); setTimeout(() => dot.classList.remove('scale-150'), 90); }
+      }
+
+      scheduleRudimentStepAudio(ctx, analyserNode, step, playWhen, stepDurSec, state.currentStepIndex);
+      const effectiveHand = state.leadHandInverted ? (step.h === 'R' ? 'L' : 'R') : step.h;
+      state.lastExpectedStepTime = performance.now();
+      state.lastExpectedHand = effectiveHand;
+      triggerVisualStrike(effectiveHand, step.a ? 0.95 : 0.65, null, state.currentStepIndex);
+      renderNotationAndStepGrid();
+
+      transportTimerId = setTimeout(scheduleNextTransportStep, stepDurSec * 1000);
+    }
+
+    // =========================================================================
+    // 8. RUDIMENT SELECTION, SEARCH, FILTERING & CHAINER UI
+    // =========================================================================
+    function selectRudimentById(id, resetChainHighlight = true) {
+      const rud = PAS_RUDIMENTS.find(r => r.id === id) || PAS_RUDIMENTS[0];
+      state.selectedRudimentId = rud.id;
+      state.customSteps = rud.steps.map(s => ({ ...s }));
+      if (resetChainHighlight) state.currentStepIndex = -1;
+
+      document.getElementById('activeRudimentNumber').textContent = `PAS #${rud.id}`;
+      document.getElementById('activeRudimentCategory').textContent = `${rud.sub} • ${rud.tuplets}`;
+      document.getElementById('activeRudimentTitle').textContent = rud.name;
+      document.getElementById('activeRudimentDesc').textContent = rud.desc;
+      document.getElementById('activeRudimentStdBadge').classList.toggle('hidden', !rud.std26);
+      renderRudimentList();
+      renderNotationAndStepGrid();
+    }
+
+    function getFilteredRudiments() {
+      return PAS_RUDIMENTS.filter(r => {
+        const matchesCat = state.categoryFilter === 'ALL' ? true : (state.categoryFilter === 'STD26' ? r.std26 : r.category === state.categoryFilter);
+        const q = state.searchQuery.trim().toLowerCase();
+        const matchesSearch = !q || r.name.toLowerCase().includes(q) || String(r.id) === q || `#${r.id}` === q || r.sub.toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
+      });
+    }
+
+    function renderRudimentList() {
+      const container = document.getElementById('rudimentListContainer');
+      const filtered = getFilteredRudiments();
+      document.getElementById('rudimentCountBadge').textContent = `${filtered.length} / 40`;
+      container.innerHTML = '';
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="p-4 text-center text-xs text-slate-500">No rudiments match your filter.</div>`;
+        return;
+      }
+      filtered.forEach(rud => {
+        const active = rud.id === state.selectedRudimentId;
+        const stickingPreview = rud.steps.slice(0, 8).map(s => {
+          const h = state.leadHandInverted ? (s.h === 'R' ? 'L' : 'R') : s.h;
+          return (s.o === 'flam' ? (h === 'R' ? 'l' : 'r') : '') + h + (s.a ? '>' : '');
+        }).join(' ');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between gap-2 ${active ? 'bg-amber-500/15 border-amber-500/60 text-white shadow-sm' : 'bg-obsidian-900/70 hover:bg-obsidian-800 border-slate-800/80 text-slate-300'}`;
+        btn.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[11px] font-bold ${active ? 'text-amber-400' : 'text-slate-400'}">#${rud.id}</span>
+              <span class="text-xs font-bold truncate">${rud.name}</span>
+              ${rud.std26 ? `<span class="text-[10px] text-amber-400">★</span>` : ''}
+            </div>
+            <div class="font-mono text-[10px] text-slate-400 truncate mt-0.5">${stickingPreview}</div>
+          </div>
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-obsidian-950 text-slate-400 border border-slate-800 shrink-0">${rud.category}</span>
+        `;
+        btn.addEventListener('click', () => { selectRudimentById(rud.id); auditionSingleStep(0); });
+        container.appendChild(btn);
+      });
+    }
+
+    function pickRandomRudimentInFilter(audition = true) {
+      const pool = getFilteredRudiments();
+      const list = pool.length > 0 ? pool : PAS_RUDIMENTS;
+      const picked = list[Math.floor(Math.random() * list.length)];
+      selectRudimentById(picked.id);
+      if (audition) { auditionSingleStep(0); showToast(`Random Rudiment: #${picked.id} ${picked.name}`); }
+    }
+
+    function renderChainSlotsUI() {
+      const container = document.getElementById('chainSlotsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      state.chainIds.forEach((rId, slotIdx) => {
+        const isCurrentSlot = state.chainMode && state.activeChainSlot === slotIdx;
+        const wrap = document.createElement('div');
+        wrap.className = `p-2 rounded-xl border transition ${isCurrentSlot ? 'bg-amber-500/15 border-amber-500/60' : 'bg-obsidian-950/80 border-slate-800'}`;
+        const optionsHtml = PAS_RUDIMENTS.map(r => `<option value="${r.id}" ${r.id === rId ? 'selected' : ''}>#${r.id} ${r.name}</option>`).join('');
+        wrap.innerHTML = `
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+            <span>BAR ${slotIdx + 1}</span>
+            <button type="button" data-load-slot="${slotIdx}" class="text-sky-400 hover:underline">Load</button>
+          </div>
+          <select data-chain-select="${slotIdx}" class="w-full bg-obsidian-900 border border-slate-700/80 rounded-lg px-2 py-1 text-xs text-slate-200 outline-none">${optionsHtml}</select>
+        `;
+        container.appendChild(wrap);
+      });
+      container.querySelectorAll('select[data-chain-select]').forEach(sel => {
+        sel.addEventListener('change', () => { state.chainIds[parseInt(sel.getAttribute('data-chain-select'), 10)] = parseInt(sel.value, 10); });
+      });
+      container.querySelectorAll('button[data-load-slot]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sIdx = parseInt(btn.getAttribute('data-load-slot'), 10);
+          state.activeChainSlot = sIdx; selectRudimentById(state.chainIds[sIdx]); renderChainSlotsUI();
+        });
+      });
+    }
+
+    // =========================================================================
+    // 9. OFFLINE AUDIO CONTEXT -> 16-BIT 44.1kHz STEREO WAV SAMPLE EXPORTER
+    // =========================================================================
+    function encodeAudioBufferToWavBlob(audioBuffer) {
+      const numChannels = audioBuffer.numberOfChannels, sampleRate = audioBuffer.sampleRate, numFrames = audioBuffer.length;
+      const blockAlign = numChannels * 2, dataSize = numFrames * blockAlign;
+      const buffer = new ArrayBuffer(44 + dataSize), view = new DataView(buffer);
+      const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+      writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * blockAlign, true);
+      view.setUint16(32, blockAlign, true); view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, dataSize, true);
+      const channels = Array.from({ length: numChannels }, (_, c) => audioBuffer.getChannelData(c));
+      let offset = 44;
+      for (let i = 0; i < numFrames; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function renderAndDownloadWav({ title, stepsList, bars = 2, isOneShot = false, oneShotType = 'center' }) {
+      const sampleRate = 44100, baseStepSec = (60 / state.bpm) * 0.5;
+      let totalDurationSec = 1.2;
+      if (!isOneShot) {
+        let singleBarSec = 0;
+        stepsList.forEach(s => { singleBarSec += baseStepSec * (s.dur || 1); });
+        totalDurationSec = Math.max(1.0, singleBarSec * bars + 0.65);
+      }
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const offlineCtx = new OfflineCtx(2, Math.ceil(totalDurationSec * sampleRate), sampleRate);
+      const offlineNoise = createNoiseBuffer(offlineCtx);
+      if (isOneShot) {
+        const t0 = 0.04;
+        if (oneShotType === 'center') synthesizeSingleStrike(offlineCtx, offlineCtx.destination, t0, { hand: 'R', velocity: 0.95, zoneOverride: 10, noiseBuf: offlineNoise });
+        else if (oneShotType === 'rimshot') synthesizeSingleStrike(offlineCtx, offlineCtx.destination, t0, { hand: 'R', velocity: 1.0, zoneOverride: 92, noiseBuf: offlineNoise });
+        else if (oneShotType === 'flam') scheduleRudimentStepAudio(offlineCtx, offlineCtx.destination, { h: 'R', a: 1, o: 'flam', dur: 1 }, t0 + 0.04, 0.25, 0, offlineNoise);
+        else if (oneShotType === 'buzz') scheduleRudimentStepAudio(offlineCtx, offlineCtx.destination, { h: 'R', a: 1, o: 'buzz', dur: 1 }, t0, 0.45, 0, offlineNoise);
+      } else {
+        let cursorSec = 0.05;
+        for (let b = 0; b < bars; b++) {
+          stepsList.forEach((st, idx) => {
+            const dur = baseStepSec * (st.dur || 1);
+            scheduleRudimentStepAudio(offlineCtx, offlineCtx.destination, st, cursorSec, dur, idx, offlineNoise);
+            cursorSec += dur;
+          });
+        }
+      }
+      const renderedBuffer = await offlineCtx.startRendering();
+      const wavBlob = encodeAudioBufferToWavBlob(renderedBuffer);
+      const url = URL.createObjectURL(wavBlob);
+      const safeFilename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${state.bpm}bpm.wav`;
+      const a = document.createElement('a'); a.href = url; a.download = safeFilename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      state.renderedVault.unshift({ name: safeFilename, url });
+      renderSampleVaultUI();
+      showToast(`Exported WAV: ${safeFilename}`);
+    }
+
+    function renderSampleVaultUI() {
+      const container = document.getElementById('sampleVaultList');
+      document.getElementById('vaultCountLabel').textContent = `${state.renderedVault.length} file${state.renderedVault.length === 1 ? '' : 's'} rendered`;
+      if (state.renderedVault.length === 0) return;
+      container.innerHTML = '';
+      state.renderedVault.slice(0, 6).forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'bg-obsidian-950 border border-slate-800 rounded-xl p-2 flex flex-col gap-1.5';
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[11px] font-semibold text-amber-300 truncate">${item.name}</span>
+            <a href="${item.url}" download="${item.name}" class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-[10px] font-mono shrink-0">Download</a>
+          </div>
+          <audio controls src="${item.url}" class="h-6 w-full"></audio>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner'), text = document.getElementById('toastText');
+      if (!banner || !text) return;
+      text.textContent = msg; banner.classList.remove('hidden');
+      clearTimeout(banner._hideTimer);
+      banner._hideTimer = setTimeout(() => banner.classList.add('hidden'), 2800);
+    }
+
+    // =========================================================================
+    // 10. EVENT LISTENERS, CAMERA PRESETS & INITIALIZATION
+    // =========================================================================
+    function applyDrumPresetShell(shellKey) {
+      state.shellKey = shellKey;
+      const shell = DRUM_SHELLS[shellKey];
+      state.pitchHz = shell.basePitch;
+      state.snareBuzz = Math.round(shell.snareMix * 100);
+      state.decayPct = Math.round(shell.decay * 100);
+      document.getElementById('sliderPitch').value = state.pitchHz;
+      document.getElementById('valPitch').textContent = `${state.pitchHz} Hz`;
+      document.getElementById('sliderSnareBuzz').value = state.snareBuzz;
+      document.getElementById('valSnareBuzz').textContent = `${state.snareBuzz}%`;
+      document.getElementById('sliderDecay').value = state.decayPct;
+      document.getElementById('valDecay').textContent = `${state.decayPct}%`;
+      document.querySelectorAll('.shell-btn').forEach(btn => {
+        const active = btn.getAttribute('data-shell') === shellKey;
+        btn.className = `shell-btn p-2 rounded-xl border text-left transition ${active ? 'bg-amber-500/15 border-amber-500/60 text-white' : 'bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700'}`;
+      });
+      updateActiveDrumBadge();
+      rebuildDrumAssembly();
+    }
+
+    function applyDrumPresetHead(headKey) {
+      state.headKey = headKey;
+      document.querySelectorAll('.head-btn').forEach(btn => {
+        const active = btn.getAttribute('data-head') === headKey;
+        btn.className = `head-btn px-1.5 py-2 rounded-lg border text-center transition ${active ? 'bg-sky-500/15 border-sky-400/60 text-white' : 'bg-obsidian-900 border-slate-800 text-slate-300 hover:border-slate-700'}`;
+      });
+      updateActiveDrumBadge();
+      rebuildDrumAssembly();
+    }
+
+    function updateActiveDrumBadge() {
+      document.getElementById('activeDrumBadge').textContent = `${DRUM_SHELLS[state.shellKey].name} • ${DRUM_HEADS[state.headKey].name}`;
+    }
+
+    function recordManualUserHit(hand, zoneOverride = null, drumIdx = 0, exactX = null, exactZ = null) {
+      const ctx = ensureAudioContext();
+      synthesizeSingleStrike(ctx, analyserNode, ctx.currentTime, { hand, velocity: 0.92, zoneOverride, tenorDrumIdx: drumIdx });
+      triggerVisualStrike(hand, 0.92, zoneOverride, drumIdx, exactX, exactZ);
+
+      const accEl = document.getElementById('accuracyReadout'), streakEl = document.getElementById('streakReadout');
+      if (state.isPlaying && state.lastExpectedStepTime > 0) {
+        const deltaMs = Math.round(performance.now() - state.lastExpectedStepTime);
+        const absDelta = Math.abs(deltaMs);
+        if (absDelta <= 45 && hand === state.lastExpectedHand) {
+          state.hitStreak++; accEl.textContent = `LOCKED IN (${deltaMs >= 0 ? '+' : ''}${deltaMs} ms)`; accEl.className = 'text-xs font-mono font-bold text-emerald-400';
+        } else if (absDelta <= 95) {
+          state.hitStreak++; accEl.textContent = `Good (${deltaMs >= 0 ? '+' : ''}${deltaMs} ms)`; accEl.className = 'text-xs font-mono font-bold text-amber-400';
+        } else {
+          state.hitStreak = 0; accEl.textContent = `Rush/Drag (${deltaMs >= 0 ? '+' : ''}${deltaMs} ms)`; accEl.className = 'text-xs font-mono font-bold text-rose-400';
+        }
+      } else {
+        state.hitStreak++; accEl.textContent = `Manual ${hand}-Stick Hit`; accEl.className = 'text-xs font-mono font-bold text-sky-400';
+      }
+      streakEl.textContent = `${state.hitStreak} hits`;
+    }
+
+    function initAppListeners() {
+      document.getElementById('btnPlayToggle').addEventListener('click', () => { if (state.isPlaying) stopTransport(); else startTransport(); });
+      document.getElementById('btnStepOnce').addEventListener('click', () => { if (state.isPlaying) stopTransport(); auditionSingleStep((state.currentStepIndex + 1) % state.customSteps.length); });
+      document.getElementById('sliderBpm').addEventListener('input', (e) => updateBpmUI(parseInt(e.target.value, 10)));
+
+      let tapTimes = [];
+      document.getElementById('btnTapTempo').addEventListener('click', () => {
+        const now = performance.now();
+        tapTimes = tapTimes.filter(t => now - t < 2500);
+        tapTimes.push(now);
+        if (tapTimes.length >= 2) {
+          let sum = 0;
+          for (let i = 1; i < tapTimes.length; i++) sum += (tapTimes[i] - tapTimes[i - 1]);
+          updateBpmUI(Math.round(60000 / (sum / (tapTimes.length - 1))));
+        }
+        recordManualUserHit('R');
+      });
+
+      document.getElementById('btnMetronome').addEventListener('click', () => {
+        state.metronomeOn = !state.metronomeOn;
+        document.getElementById('metroLabel').textContent = `Click: ${state.metronomeOn ? 'ON' : 'OFF'}`;
+        document.getElementById('metroDot').className = `w-2 h-2 rounded-full transition-transform ${state.metronomeOn ? 'bg-sky-400' : 'bg-slate-600'}`;
+      });
+
+      const searchInput = document.getElementById('inputSearchRudiments'), clearBtn = document.getElementById('btnClearSearch');
+      searchInput.addEventListener('input', () => { state.searchQuery = searchInput.value; clearBtn.classList.toggle('hidden', !state.searchQuery); renderRudimentList(); });
+      clearBtn.addEventListener('click', () => { searchInput.value = ''; state.searchQuery = ''; clearBtn.classList.add('hidden'); renderRudimentList(); });
+
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.categoryFilter = btn.getAttribute('data-cat');
+          document.querySelectorAll('.cat-pill').forEach(p => {
+            const active = p.getAttribute('data-cat') === state.categoryFilter;
+            p.className = active ? 'cat-pill px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-amber-500 text-slate-950 transition' : 'cat-pill px-2.5 py-1 rounded-lg text-[11px] font-medium bg-obsidian-800 text-slate-300 hover:bg-obsidian-700 border border-slate-700/70 transition';
+          });
+          renderRudimentList();
+        });
+      });
+
+      document.getElementById('btnInvertHands').addEventListener('click', () => {
+        state.leadHandInverted = !state.leadHandInverted;
+        const lbl = document.getElementById('leadHandLabel');
+        lbl.textContent = state.leadHandInverted ? 'L-Hand' : 'R-Hand';
+        lbl.className = state.leadHandInverted ? 'text-sky-400 font-bold' : 'text-amber-400 font-bold';
+        renderRudimentList(); renderNotationAndStepGrid();
+      });
+
+      document.getElementById('btnResetPattern').addEventListener('click', () => { selectRudimentById(state.selectedRudimentId); showToast('Restored canonical PAS pattern'); });
+      document.getElementById('btnRandomRudiment').addEventListener('click', () => pickRandomRudimentInFilter(true));
+      document.getElementById('btnRandomInCategory').addEventListener('click', () => pickRandomRudimentInFilter(true));
+      document.getElementById('chkAutoRotateRudiment').addEventListener('change', (e) => { state.autoRotateRudiment = e.target.checked; });
+
+      document.getElementById('btnRandomizeChain').addEventListener('click', () => {
+        state.chainIds = Array.from({ length: 4 }, () => PAS_RUDIMENTS[Math.floor(Math.random() * PAS_RUDIMENTS.length)].id);
+        state.chainMode = true; document.getElementById('chkChainMode').checked = true;
+        selectRudimentById(state.chainIds[0]); renderChainSlotsUI(); showToast('Generated random 4-Bar PAS Rudiment Chain!');
+      });
+      document.getElementById('chkChainMode').addEventListener('change', (e) => {
+        state.chainMode = e.target.checked;
+        if (state.chainMode) { state.activeChainSlot = 0; selectRudimentById(state.chainIds[0]); }
+        renderChainSlotsUI();
+      });
+
+      document.getElementById('btnSurpriseAll').addEventListener('click', () => {
+        const shells = Object.keys(DRUM_SHELLS), heads = Object.keys(DRUM_HEADS);
+        applyDrumPresetShell(shells[Math.floor(Math.random() * shells.length)]);
+        applyDrumPresetHead(heads[Math.floor(Math.random() * heads.length)]);
+        updateBpmUI(80 + Math.floor(Math.random() * 105));
+        pickRandomRudimentInFilter(true);
+      });
+      document.getElementById('btnRandomDrumTone').addEventListener('click', () => {
+        const shells = Object.keys(DRUM_SHELLS), heads = Object.keys(DRUM_HEADS);
+        applyDrumPresetShell(shells[Math.floor(Math.random() * shells.length)]);
+        applyDrumPresetHead(heads[Math.floor(Math.random() * heads.length)]);
+        recordManualUserHit('R');
+        showToast(`Loaded ${DRUM_SHELLS[state.shellKey].name} + ${DRUM_HEADS[state.headKey].name}`);
+      });
+
+      document.querySelectorAll('.shell-btn').forEach(btn => btn.addEventListener('click', () => { applyDrumPresetShell(btn.getAttribute('data-shell')); recordManualUserHit('R'); }));
+      document.querySelectorAll('.head-btn').forEach(btn => btn.addEventListener('click', () => { applyDrumPresetHead(btn.getAttribute('data-head')); recordManualUserHit('L'); }));
+
+      document.getElementById('sliderPitch').addEventListener('input', (e) => { state.pitchHz = parseInt(e.target.value, 10); document.getElementById('valPitch').textContent = `${state.pitchHz} Hz`; });
+      document.getElementById('sliderSnareBuzz').addEventListener('input', (e) => { state.snareBuzz = parseInt(e.target.value, 10); document.getElementById('valSnareBuzz').textContent = `${state.snareBuzz}%`; });
+      document.getElementById('sliderDecay').addEventListener('input', (e) => { state.decayPct = parseInt(e.target.value, 10); document.getElementById('valDecay').textContent = `${state.decayPct}%`; });
+      document.getElementById('sliderStrikeZone').addEventListener('input', (e) => {
+        state.strikeZone = parseInt(e.target.value, 10);
+        const zoneName = state.strikeZone > 65 ? 'Rimshot' : (state.strikeZone > 35 ? 'Edge' : 'Center');
+        document.getElementById('valStrikeZone').textContent = `${zoneName} (${state.strikeZone}%)`;
+      });
+      document.getElementById('sliderFlamSpace').addEventListener('input', (e) => { state.flamSpaceMs = parseInt(e.target.value, 10); document.getElementById('valFlamSpace').textContent = `${state.flamSpaceMs} ms`; });
+      document.getElementById('sliderAccentContrast').addEventListener('input', (e) => { state.accentContrast = parseInt(e.target.value, 10); document.getElementById('valAccentContrast').textContent = `${state.accentContrast}%`; });
+
+      document.getElementById('sliderRampStart').addEventListener('input', (e) => { state.rampStartBpm = parseInt(e.target.value, 10); document.getElementById('lblRampStart').textContent = `${state.rampStartBpm} BPM`; });
+      document.getElementById('sliderRampPeak').addEventListener('input', (e) => { state.rampPeakBpm = parseInt(e.target.value, 10); document.getElementById('lblRampPeak').textContent = `${state.rampPeakBpm} BPM`; });
+      document.getElementById('sliderRampDuration').addEventListener('input', (e) => { state.rampDurationSec = parseInt(e.target.value, 10); document.getElementById('lblRampDuration').textContent = `${state.rampDurationSec} sec`; });
+      document.getElementById('btnToggleRamp').addEventListener('click', () => {
+        state.rampActive = !state.rampActive; state.rampElapsedSec = 0;
+        const btn = document.getElementById('btnToggleRamp');
+        if (state.rampActive) {
+          btn.textContent = 'Stop Open–Close–Open Ramp'; btn.className = 'px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold transition';
+          updateBpmUI(state.rampStartBpm); if (!state.isPlaying) startTransport();
+        } else {
+          btn.textContent = 'Start Open–Close–Open Ramp'; btn.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition';
+          document.getElementById('rampStatusBadge').textContent = 'Standby'; document.getElementById('rampProgressBar').style.width = '0%';
+        }
+      });
+
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-cam');
+          const p = CAMERA_PRESETS[key];
+          if (p) camLerpTarget = { pos: new THREE.Vector3(...p.pos), target: new THREE.Vector3(...p.target) };
+          document.querySelectorAll('.cam-btn').forEach(b => {
+            const active = b.getAttribute('data-cam') === key;
+            b.className = active
+              ? 'cam-btn px-2 py-1 rounded-md bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-mono font-semibold backdrop-blur-sm transition'
+              : 'cam-btn px-2 py-1 rounded-md bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm transition';
+          });
+        });
+      });
+
+      document.getElementById('btnTrigLeft').addEventListener('click', () => recordManualUserHit('L'));
+      document.getElementById('btnTrigRight').addEventListener('click', () => recordManualUserHit('R'));
+      document.getElementById('btnTrigRimshot').addEventListener('click', () => recordManualUserHit('R', 92));
+      document.getElementById('btnTrigFlam').addEventListener('click', () => {
+        const ctx = ensureAudioContext();
+        scheduleRudimentStepAudio(ctx, analyserNode, { h: 'R', a: 1, o: 'flam', dur: 1 }, ctx.currentTime + 0.04, 0.25, 0);
+        triggerVisualStrike('L', 0.5, 20);
+        setTimeout(() => triggerVisualStrike('R', 0.95, 20), state.flamSpaceMs);
+      });
+      document.getElementById('btnTrigDrag').addEventListener('click', () => {
+        const ctx = ensureAudioContext();
+        scheduleRudimentStepAudio(ctx, analyserNode, { h: 'R', a: 1, o: 'drag', dur: 1 }, ctx.currentTime + 0.05, 0.25, 0);
+        triggerVisualStrike('L', 0.45, 20);
+        setTimeout(() => triggerVisualStrike('R', 0.95, 20), state.flamSpaceMs * 1.8);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        const key = e.key.toLowerCase();
+        if (key === ' ') { e.preventDefault(); if (state.isPlaying) stopTransport(); else startTransport(); }
+        else if (key === 'f' || key === 'd') recordManualUserHit('L');
+        else if (key === 'j' || key === 'k') recordManualUserHit('R');
+        else if (key === 'g') document.getElementById('btnTrigFlam').click();
+        else if (key === 'h') document.getElementById('btnTrigDrag').click();
+        else if (key === 'r') pickRandomRudimentInFilter(true);
+      });
+
+      const triggerLoopExport = () => {
+        const rud = PAS_RUDIMENTS.find(r => r.id === state.selectedRudimentId);
+        renderAndDownloadWav({ title: `pas${rud.id}_${rud.name}`, stepsList: state.customSteps, bars: 2, isOneShot: false });
+      };
+      document.getElementById('btnQuickExportWav').addEventListener('click', triggerLoopExport);
+      document.getElementById('btnExportLoopWav').addEventListener('click', triggerLoopExport);
+      document.getElementById('btnExportChainWav').addEventListener('click', () => {
+        const combinedSteps = [];
+        state.chainIds.forEach(id => {
+          const r = PAS_RUDIMENTS.find(item => item.id === id) || PAS_RUDIMENTS[0];
+          r.steps.forEach(s => combinedSteps.push({ ...s }));
+        });
+        renderAndDownloadWav({ title: `pas_4bar_chain_${state.chainIds.join('_')}`, stepsList: combinedSteps, bars: 1, isOneShot: false });
+      });
+      document.querySelectorAll('.oneshot-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          renderAndDownloadWav({ title: `${state.shellKey}_${state.headKey}_${btn.getAttribute('data-oneshot')}`, stepsList: [], bars: 1, isOneShot: true, oneShotType: btn.getAttribute('data-oneshot') });
+        });
+      });
+
+      document.getElementById('btnExportJsonPreset').addEventListener('click', () => {
+        const payload = {
+          exportedAt: new Date().toISOString(),
+          rudimentId: state.selectedRudimentId,
+          rudimentName: PAS_RUDIMENTS.find(r => r.id === state.selectedRudimentId)?.name,
+          bpm: state.bpm, drumShell: state.shellKey, drumHead: state.headKey,
+          acousticParams: { pitchHz: state.pitchHz, snareBuzz: state.snareBuzz, decayPct: state.decayPct, strikeZone: state.strikeZone, flamSpaceMs: state.flamSpaceMs, accentContrast: state.accentContrast },
+          chainIds: state.chainIds, customSteps: state.customSteps
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `pas40_studio_preset_${state.shellKey}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        showToast('Downloaded JSON Studio Preset');
+      });
+    }
+
+    window.addEventListener('load', () => {
+      initThreeStage();
+      selectRudimentById(16);
+      renderChainSlotsUI();
+      initAppListeners();
+    });
+  </script>
+</body>
+</html>

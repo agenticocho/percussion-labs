@@ -264,10 +264,10 @@
      "family": "technique",
      "cards": [
       {
-       "href": "pas_40_studio_interactive_drum_rudiments_simulator_sample_lab.html",
+       "href": "pas_40_studio_v4_3d_webgl_drum_rudiments_simulator_sample_lab.html",
        "glyph": "pas40",
        "name": "PAS-40 STUDIO",
-       "desc": "The forty Percussive Arts Society rudiments as an interactive simulator and sample lab. Pure technique, no physics \u2014 where the series started, and the ground everything else stands on.",
+       "desc": "V4.0: The forty Percussive Arts Society rudiments as an interactive simulator and sample lab. Pure technique, no physics \u2014 where the series started, and the ground everything else stands on.",
        "tags": [
         "rudiments",
         "PAS-40",
