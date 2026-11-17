@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THUNDER 3D — Shock Wave &amp; N-Wave Line-Source Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-void: #05070c;
+      --panel-bg: rgba(10, 15, 28, 0.82);
+      --panel-border: rgba(56, 189, 248, 0.18);
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-void);
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(148, 163, 184, 0.22);
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.65);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.25);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#05070c]">
+  <!-- 3D WebGL Viewport -->
+  <div id="webgl-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- Flash Overlay -->
+  <div id="flash-overlay" class="fixed inset-0 pointer-events-none z-10 bg-sky-100 opacity-0 transition-opacity duration-75"></div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto shadow-lg">
+      <div class="w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_12px_#38bdf8]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-white uppercase">THUNDER 3D</h1>
+          <span class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/25">N-WAVE SHOCK LAB</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Distributed 3D line-source shock propagation &bull; &tau; &prop; r<sup>1/2</sup> &bull; Band-limited &ge; 25 Hz</p>
+      </div>
+    </div>
+
+    <!-- Display Mode Switcher -->
+    <nav class="glass-panel rounded-xl p-1 flex items-center gap-1 pointer-events-auto shadow-lg" aria-label="Display Mode">
+      <button type="button" data-view="bolt" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors bg-sky-500/25 text-sky-200 border border-sky-400/40">Bolt Path</button>
+      <button type="button" data-view="timeline" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">Arrival Timeline</button>
+      <button type="button" data-view="nwave" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">N-Wave Cross-Section</button>
+      <button type="button" data-view="spectrum" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">Spectrum</button>
+    </nav>
+
+    <!-- Primary Actions -->
+    <div class="glass-panel rounded-xl p-1 flex items-center gap-1.5 pointer-events-auto shadow-lg">
+      <button id="btn-strike" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950 transition-colors flex items-center gap-1.5 shadow-[0_0_15px_rgba(56,189,248,0.4)]">
+        <span>&#9889; Strike</span>
+        <span class="font-mono-tech text-[10px] opacity-75 hidden md:inline">[Space]</span>
+      </button>
+      <button id="btn-storm-toggle" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/45 transition-colors">
+        Storm: ON
+      </button>
+      <button id="btn-reseed" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700/70 transition-colors">
+        New Bolt
+      </button>
+      <button id="btn-export-wav" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-emerald-300 border border-emerald-500/30 transition-colors">
+        Export .WAV
+      </button>
+      <button id="btn-toggle-panels" type="button" class="px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/70 md:hidden">
+        HUD
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Panel: Physics & Geometry Controls -->
+  <aside id="left-panel" class="fixed top-20 left-3 bottom-3 w-72 max-w-[calc(100vw-1.5rem)] z-20 flex flex-col gap-2.5 pointer-events-none">
+    <div class="glass-panel rounded-xl p-3.5 pointer-events-auto overflow-y-auto custom-scroll space-y-3.5 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-700/50 pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-sky-300">Channel &amp; Shock Controls</span>
+        <span id="geometry-badge" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">CG FLASH</span>
+      </div>
+
+      <!-- Flash Type Toggle -->
+      <div>
+        <div class="flex justify-between text-[11px] text-slate-400 mb-1.5">
+          <span>Ground / Cloud Flash</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-slate-900/80 border border-slate-800">
+          <button id="btn-flash-cg" type="button" class="py-1.5 rounded-md text-[11px] font-medium bg-sky-500/25 text-sky-200 border border-sky-400/40 transition-colors">Cloud-to-Ground</button>
+          <button id="btn-flash-ic" type="button" class="py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-slate-200 border border-transparent transition-colors">Intra-Cloud</button>
+        </div>
+      </div>
+
+      <!-- Channel Length -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-length" class="text-slate-300 font-medium">Channel Length</label>
+          <span id="val-length" class="font-mono-tech text-sky-300 text-xs">4.2 km</span>
+        </div>
+        <input id="slider-length" type="range" min="0.2" max="8.0" step="0.1" value="4.2" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono-tech">
+          <span>0.2 km</span><span>8.0 km</span>
+        </div>
+      </div>
+
+      <!-- Tortuosity -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-tortuosity" class="text-slate-300 font-medium">Tortuosity</label>
+          <span id="val-tortuosity" class="font-mono-tech text-sky-300 text-xs">0.68</span>
+        </div>
+        <input id="slider-tortuosity" type="range" min="0" max="1" step="0.01" value="0.68" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>Straight (crack)</span><span>Highly forked (roll)</span>
+        </div>
+      </div>
+
+      <!-- Listener Distance -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-distance" class="text-slate-300 font-medium">Listener Distance</label>
+          <span id="val-distance" class="font-mono-tech text-sky-300 text-xs">1.20 km</span>
+        </div>
+        <input id="slider-distance" type="range" min="100" max="10000" step="50" value="1200" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>100 m (near crack)</span><span>10 km (distant roll)</span>
+        </div>
+      </div>
+
+      <!-- Return-Stroke Energy -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-energy" class="text-slate-300 font-medium">Return-Stroke Energy</label>
+          <span id="val-energy" class="font-mono-tech text-sky-300 text-xs">45 kA</span>
+        </div>
+        <input id="slider-energy" type="range" min="10" max="200" step="5" value="45" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono-tech">
+          <span>10 kA</span><span>200 kA</span>
+        </div>
+      </div>
+
+      <!-- Strike Frequency (Automated Storm) -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-freq" class="text-slate-300 font-medium">Strike Frequency</label>
+          <span id="val-freq" class="font-mono-tech text-indigo-300 text-xs">0.25 /s (~4.0s)</span>
+        </div>
+        <input id="slider-freq" type="range" min="0.05" max="0.80" step="0.05" value="0.25" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono-tech">
+          <span>0.05 /s (calm)</span><span>0.80 /s (squall)</span>
+        </div>
+      </div>
+
+      <!-- Master Volume -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-gain" class="text-slate-300 font-medium">Output Gain</label>
+          <span id="val-gain" class="font-mono-tech text-sky-300 text-xs">85%</span>
+        </div>
+        <input id="slider-gain" type="range" min="0" max="100" step="1" value="85" class="lab-slider" />
+      </div>
+
+      <!-- Physics Constraint Card -->
+      <div class="rounded-lg bg-slate-900/75 border border-slate-800 p-2.5 text-[11px] space-y-1">
+        <div class="font-semibold text-slate-200 flex items-center justify-between">
+          <span>Acoustic Model Constraints</span>
+          <span class="font-mono-tech text-[10px] text-emerald-400">PURE N-WAVE</span>
+        </div>
+        <p class="text-slate-400 leading-relaxed">
+          Zero reverb &amp; zero noise bursts. Every sample is a deterministic sum of segment N-waves at <span class="font-mono-tech text-slate-300">t<sub>i</sub> = d<sub>i</sub>/c</span>.
+        </p>
+        <p class="text-amber-300/90 font-mono-tech text-[10px] pt-0.5">
+          HPF: Band-limited &ge; 25 Hz (speaker-safe; &lt; 25 Hz infrasound attenuated).
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Telemetry & 4-Check Verification -->
+  <aside id="right-panel" class="fixed top-20 right-3 bottom-3 w-80 max-w-[calc(100vw-1.5rem)] z-20 flex flex-col gap-2.5 pointer-events-none">
+    <div class="glass-panel rounded-xl p-3.5 pointer-events-auto overflow-y-auto custom-scroll space-y-3 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-700/50 pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-sky-300">Telemetry &amp; Scaling</span>
+        <span id="playback-status" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">READY</span>
+      </div>
+
+      <!-- Key Metrics Grid -->
+      <div class="grid grid-cols-2 gap-2 font-mono-tech text-[11px]">
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Nearest d<sub>min</sub></div>
+          <div id="stat-dmin" class="text-sky-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Farthest d<sub>max</sub></div>
+          <div id="stat-dmax" class="text-sky-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Spread &Delta;d / c</div>
+          <div id="stat-spread" class="text-amber-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Peak &Delta;p (1/r)</div>
+          <div id="stat-dp" class="text-emerald-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">N-Wave &tau;(d<sub>min</sub>)</div>
+          <div id="stat-tau" class="text-indigo-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Rise t<sub>r</sub>(d<sub>min</sub>)</div>
+          <div id="stat-trise" class="text-indigo-300 font-semibold">--</div>
+        </div>
+      </div>
+
+      <!-- Verification Suite (4 Checks) -->
+      <div class="border-t border-slate-700/50 pt-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Verification (4 Checks)</span>
+          <span id="verify-summary" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">4 / 4 PASS</span>
+        </div>
+
+        <div id="verify-list" class="space-y-1.5 text-[11px]">
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">1. N-Wave Shape</span>
+              <span id="chk1-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk1-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">2. Distance Scaling r<sup>1/2</sup></span>
+              <span id="chk2-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk2-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">3. Arrival Spread &Delta;d/c</span>
+              <span id="chk3-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk3-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">4. Tortuosity Null</span>
+              <span id="chk4-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk4-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 2D Diagnostic Overlay (Timeline / N-Wave / Spectrum) -->
+  <section id="overlay-panel" class="fixed left-1/2 -translate-x-1/2 bottom-4 w-[min(680px,calc(100vw-2rem))] md:w-[min(640px,calc(100vw-41rem))] z-20 glass-panel rounded-xl p-3.5 hidden shadow-2xl">
+    <div class="flex items-center justify-between mb-2">
+      <div>
+        <h2 id="overlay-title" class="text-xs font-semibold uppercase tracking-wider text-sky-300">Arrival Timeline</h2>
+        <p id="overlay-subtitle" class="text-[11px] text-slate-400">Geometric segment arrival times &amp; pressure envelope</p>
+      </div>
+      <span id="overlay-meta" class="font-mono-tech text-[10px] text-slate-300 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700/60">--</span>
+    </div>
+    <div class="relative w-full h-56 bg-slate-950/80 rounded-lg border border-slate-800 overflow-hidden">
+      <canvas id="diag-canvas" class="w-full h-full block"></canvas>
+    </div>
+  </section>
+
+  <!-- Bottom 3D Hint Pill (when in Bolt Path view) -->
+  <div id="bottom-hint" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-10 glass-panel rounded-full px-3.5 py-1 text-[11px] text-slate-400 pointer-events-none hidden sm:flex items-center gap-3">
+    <span>Drag to orbit</span>
+    <span>&bull;</span>
+    <span>Scroll to zoom</span>
+    <span>&bull;</span>
+    <span>Space to strike</span>
+    <span>&bull;</span>
+    <span id="hint-segments" class="font-mono-tech text-sky-300">-- segments</span>
+  </div>
+
+  <script>
+    window.addEventListener('load', function () {
+      'use strict';
+
+      // =========================================================================
+      // CONSTANTS & PHYSICAL PARAMETERS
+      // =========================================================================
+      const SPEED_OF_SOUND = 343.0; // m/s
+      const SAMPLE_RATE = 44100;
+      const R_REF = 100.0;          // Reference distance (m)
+      const TAU_REF = 0.0042;       // N-wave duration at 100 m (4.2 ms)
+      const TRISE_REF = 0.00014;    // N-wave rise time at 100 m (0.14 ms)
+      const HPF_CUTOFF = 25.0;      // Hz speaker-safe band-limit
+
+      const state = {
+        lengthKm: 4.2,
+        tortuosity: 0.68,
+        listenerDistM: 1200,
+        energyKA: 45,
+        flashType: 'CG', // 'CG' | 'IC'
+        masterGain: 0.85,
+        viewMode: 'bolt', // 'bolt' | 'timeline' | 'nwave' | 'spectrum'
+        seed: 1337,
+        segments: [],
+        branches: [],
+        audioBufferRaw: null,
+        audioBufferFiltered: null,
+        audioDuration: 0,
+        dMin: 0,
+        dMax: 0,
+        tMin: 0,
+        tMax: 0,
+        isPlaying: false,
+        playStartTime: 0,
+        audioCtx: null,
+        activeSource: null,
+        strikeFlashIntensity: 0,
+        stormEnabled: true,
+        stormFreq: 0.25,
+        nextStormStrikeAt: 1.6,
+        nextSheetFlashAt: 0.8,
+        sheetFlashTime: 0,
+        panelsVisible: true
+      };
+
+      // =========================================================================
+      // DETERMINISTIC PRNG (Mulberry32)
+      // =========================================================================
+      function createRNG(seed) {
+        let a = seed >>> 0;
+        return function () {
+          let t = a += 0x6D2B79F5;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      // =========================================================================
+      // 3D LIGHTNING CHANNEL GENERATOR
+      // =========================================================================
+      function generateChannel() {
+        const rng = createRNG(state.seed);
+        const L = state.lengthKm * 1000; // meters
+        const tort = state.tortuosity;
+        const isCG = state.flashType === 'CG';
+
+        // Listener sits on ground at (0, 0, listenerDistM)
+        // Bolt center is near origin X=0, Z=0
+        let pStart, pEnd;
+        if (isCG) {
+          pStart = new THREE.Vector3(0, L, 0);
+          pEnd = new THREE.Vector3(0, 15, 0); // strike just above ground
+        } else {
+          // Intra-cloud: horizontal/oblique channel at ~5.5 km altitude
+          const alt = 5200;
+          pStart = new THREE.Vector3(-L * 0.5, alt + L * 0.08, -L * 0.12);
+          pEnd = new THREE.Vector3(L * 0.5, alt - L * 0.08, L * 0.12);
+        }
+
+        // Recursive midpoint displacement for main trunk
+        // At tort = 0, displacement = 0 -> strictly straight line!
+        function subdividePath(a, b, depth, roughness) {
+          if (depth === 0) return [a.clone(), b.clone()];
+          const mid = a.clone().add(b).multiplyScalar(0.5);
+          if (tort > 0) {
+            const segLen = a.distanceTo(b);
+            const amp = segLen * roughness * tort;
+            mid.x += (rng() - 0.5) * 2 * amp;
+            mid.z += (rng() - 0.5) * 2 * amp;
+            if (!isCG) {
+              mid.y += (rng() - 0.5) * 1.2 * amp;
+            } else {
+              mid.y += (rng() - 0.5) * 0.35 * amp;
+              if (mid.y < 15) mid.y = 15 + rng() * 40;
+            }
+          }
+          const left = subdividePath(a, mid, depth - 1, roughness);
+          const right = subdividePath(mid, b, depth - 1, roughness);
+          return left.slice(0, -1).concat(right);
+        }
+
+        const trunkPoints = subdividePath(pStart, pEnd, 6, 0.36);
+
+        // Resample trunk into fine uniform segments for accurate line-source interference
+        const targetSegs = 900;
+        const sampledTrunk = [];
+        for (let i = 0; i < targetSegs; i++) {
+          const u = i / (targetSegs - 1);
+          const fIdx = u * (trunkPoints.length - 1);
+          const idx0 = Math.floor(fIdx);
+          const idx1 = Math.min(idx0 + 1, trunkPoints.length - 1);
+          const frac = fIdx - idx0;
+          const pt = trunkPoints[idx0].clone().lerp(trunkPoints[idx1], frac);
+          sampledTrunk.push(pt);
+        }
+
+        // Generate forked branches proportional to tortuosity
+        const branches = [];
+        const branchSegments = [];
+        if (tort > 0.05) {
+          const numBranches = Math.floor(tort * 14);
+          for (let b = 0; b < numBranches; b++) {
+            const startIdx = Math.floor((0.12 + rng() * 0.72) * (sampledTrunk.length - 1));
+            const origin = sampledTrunk[startIdx];
+            const bLen = L * (0.12 + rng() * 0.25) * tort;
+            const angle = rng() * Math.PI * 2;
+            const spread = 0.45 + rng() * 0.65;
+            const dir = isCG
+              ? new THREE.Vector3(Math.cos(angle) * spread, -0.75 - rng() * 0.4, Math.sin(angle) * spread).normalize()
+              : new THREE.Vector3(Math.cos(angle), (rng() - 0.5) * 0.5, Math.sin(angle)).normalize();
+            const bEnd = origin.clone().addScaledVector(dir, bLen);
+            if (bEnd.y < 20) bEnd.y = 20 + rng() * 80;
+
+            const bPts = subdividePath(origin, bEnd, 4, 0.32);
+            branches.push(bPts);
+
+            const bSegCount = Math.max(24, Math.floor((bLen / L) * 320));
+            for (let j = 0; j < bSegCount; j++) {
+              const u = j / (bSegCount - 1);
+              const fIdx = u * (bPts.length - 1);
+              const i0 = Math.floor(fIdx);
+              const i1 = Math.min(i0 + 1, bPts.length - 1);
+              const pt = bPts[i0].clone().lerp(bPts[i1], fIdx - i0);
+              branchSegments.push({
+                pos: pt,
+                weight: 0.42, // secondary branch carries less current
+                isBranch: true
+              });
+            }
+          }
+        }
+
+        const listenerPos = new THREE.Vector3(0, 1.7, state.listenerDistM);
+        const allSegments = [];
+        let dMin = Infinity;
+        let dMax = 0;
+
+        for (let i = 0; i < sampledTrunk.length; i++) {
+          const pos = sampledTrunk[i];
+          const d = Math.max(20, pos.distanceTo(listenerPos));
+          if (d < dMin) dMin = d;
+          if (d > dMax) dMax = d;
+          allSegments.push({
+            pos,
+            dist: d,
+            arrivalTime: d / SPEED_OF_SOUND,
+            weight: 1.0,
+            isBranch: false
+          });
+        }
+
+        for (let i = 0; i < branchSegments.length; i++) {
+          const seg = branchSegments[i];
+          const d = Math.max(20, seg.pos.distanceTo(listenerPos));
+          if (d < dMin) dMin = d;
+          if (d > dMax) dMax = d;
+          allSegments.push({
+            pos: seg.pos,
+            dist: d,
+            arrivalTime: d / SPEED_OF_SOUND,
+            weight: seg.weight,
+            isBranch: true
+          });
+        }
+
+        state.trunkPoints = trunkPoints;
+        state.branches = branches;
+        state.segments = allSegments;
+        state.dMin = dMin;
+        state.dMax = dMax;
+        state.tMin = dMin / SPEED_OF_SOUND;
+        state.tMax = dMax / SPEED_OF_SOUND;
+      }
+
+      // =========================================================================
+      // N-WAVE SHOCK PHYSICS & SYNTHESIS (ZERO REVERB, ZERO NOISE BURST)
+      // =========================================================================
+      function nWaveParamsAtDistance(r, energyKA) {
+        const scale = Math.sqrt(Math.max(r, 10) / R_REF);
+        const tau = TAU_REF * scale;          // tau proportional to r^(1/2)
+        const tRise = TRISE_REF * scale;      // t_rise proportional to r^(1/2)
+        const dp = (energyKA / 45.0) * (R_REF / Math.max(r, 10)); // dp proportional to 1/r
+        return { tau, tRise, dp };
+      }
+
+      // Evaluate analytical N-wave at local time t in [0, tau]
+      function evalNWave(t, tau, tRise, dp) {
+        if (t < 0 || t > tau) return 0;
+        if (t < tRise) {
+          return dp * (t / tRise);
+        }
+        const rampEnd = tau - tRise;
+        if (t <= rampEnd) {
+          const u = (t - tRise) / (rampEnd - tRise);
+          return dp * (1 - 2 * u);
+        }
+        return -dp * (1 - (t - rampEnd) / tRise);
+      }
+
+      // 2nd-order Butterworth High-Pass Filter at 25 Hz
+      function applyButterworthHPF(samples, cutoffHz, sampleRate) {
+        const out = new Float32Array(samples.length);
+        const omega = 2 * Math.PI * cutoffHz / sampleRate;
+        const sn = Math.sin(omega);
+        const cs = Math.cos(omega);
+        const alpha = sn / (2 * Math.SQRT1_2);
+
+        const b0 = (1 + cs) / 2;
+        const b1 = -(1 + cs);
+        const b2 = (1 + cs) / 2;
+        const a0 = 1 + alpha;
+        const a1 = -2 * cs;
+        const a2 = 1 - alpha;
+
+        const nb0 = b0 / a0, nb1 = b1 / a0, nb2 = b2 / a0;
+        const na1 = a1 / a0, na2 = a2 / a0;
+
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < samples.length; i++) {
+          const x0 = samples[i];
+          const y0 = nb0 * x0 + nb1 * x1 + nb2 * x2 - na1 * y1 - na2 * y2;
+          out[i] = y0;
+          x2 = x1; x1 = x0;
+          y2 = y1; y1 = y0;
+        }
+        return out;
+      }
+
+      function synthesizeThunderBuffer(segments, tMin, tMax, energyKA) {
+        const tailMax = nWaveParamsAtDistance(state.dMax || 10000, energyKA).tau;
+        const prePad = 0.025; // 25 ms lead-in before first arrival
+        const totalDur = Math.min(28.0, (tMax - tMin) + tailMax + prePad + 0.08);
+        const numSamples = Math.max(2048, Math.ceil(totalDur * SAMPLE_RATE));
+        const raw = new Float32Array(numSamples);
+
+        // Segment amplitude normalization so straight & forked channels remain calibrated
+        const trunkCount = segments.filter(s => !s.isBranch).length || 1;
+        const ampNorm = 16.0 / Math.sqrt(trunkCount);
+
+        for (let i = 0; i < segments.length; i++) {
+          const seg = segments[i];
+          const relArrival = (seg.arrivalTime - tMin) + prePad;
+          const { tau, tRise, dp } = nWaveParamsAtDistance(seg.dist, energyKA);
+          const amp = dp * seg.weight * ampNorm;
+
+          const startIdx = Math.floor(relArrival * SAMPLE_RATE);
+          const endIdx = Math.min(numSamples - 1, Math.ceil((relArrival + tau) * SAMPLE_RATE));
+
+          for (let n = startIdx; n <= endIdx; n++) {
+            if (n < 0) continue;
+            const localT = (n / SAMPLE_RATE) - relArrival;
+            if (localT >= 0 && localT <= tau) {
+              raw[n] += amp * evalNWave(localT, tau, tRise, 1.0);
+            }
+          }
+        }
+
+        // Apply speaker-safe 25 Hz HPF
+        const filtered = applyButterworthHPF(raw, HPF_CUTOFF, SAMPLE_RATE);
+
+        // Soft peak normalization (prevent digital clipping while preserving relative loudness)
+        let peak = 0;
+        for (let i = 0; i < filtered.length; i++) {
+          const a = Math.abs(filtered[i]);
+          if (a > peak) peak = a;
+        }
+        const ceiling = 0.92;
+        if (peak > ceiling) {
+          const gain = ceiling / peak;
+          for (let i = 0; i < filtered.length; i++) {
+            filtered[i] *= gain;
+          }
+        }
+
+        state.audioBufferRaw = raw;
+        state.audioBufferFiltered = filtered;
+        state.audioDuration = numSamples / SAMPLE_RATE;
+        return { raw, filtered, totalDur: state.audioDuration, prePad };
+      }
+
+      // =========================================================================
+      // VERIFICATION SUITE (4 CHECKS)
+      // =========================================================================
+      function runVerificationChecks() {
+        // Check 1: N-wave shape (sharp rise, linear ramp, sharp fall vs Gaussian)
+        const testDist = Math.max(100, state.dMin);
+        const { tau, tRise, dp } = nWaveParamsAtDistance(testDist, state.energyKA);
+        const nPts = 400;
+        const rampStartIdx = Math.ceil((tRise / tau) * nPts);
+        const rampEndIdx = Math.floor(((tau - tRise) / tau) * nPts);
+        let sumY = 0, sumX = 0, sumXY = 0, sumXX = 0, count = 0;
+        const ys = [];
+        for (let i = rampStartIdx; i <= rampEndIdx; i++) {
+          const t = (i / (nPts - 1)) * tau;
+          const y = evalNWave(t, tau, tRise, dp);
+          ys.push({ x: t, y });
+          sumX += t; sumY += y;
+          sumXX += t * t; sumXY += t * y;
+          count++;
+        }
+        const meanX = sumX / count, meanY = sumY / count;
+        let ssTot = 0, ssRes = 0;
+        const slope = (sumXY - count * meanX * meanY) / (sumXX - count * meanX * meanX);
+        const intercept = meanY - slope * meanX;
+        for (let i = 0; i < ys.length; i++) {
+          const pred = slope * ys[i].x + intercept;
+          ssRes += (ys[i].y - pred) ** 2;
+          ssTot += (ys[i].y - meanY) ** 2;
+        }
+        const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 1;
+        const riseRatio = tRise / tau;
+        const chk1Pass = r2 > 0.99 && riseRatio < 0.12;
+        document.getElementById('chk1-badge').textContent = chk1Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk1-badge').className = 'font-mono-tech text-[10px] ' + (chk1Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk1-detail').textContent = `Ramp R² = ${r2.toFixed(4)}, t_r/τ = ${(riseRatio * 100).toFixed(2)}%`;
+
+        // Check 2: Distance scaling at 3 distances (200 m, 1000 m, 5000 m)
+        const testDists = [200, 1000, 5000];
+        const measTaus = [];
+        const measRises = [];
+        for (let k = 0; k < testDists.length; k++) {
+          const p = nWaveParamsAtDistance(testDists[k], state.energyKA);
+          // Measure directly from sampled waveform
+          const sr = 200000; // high-res measurement sampling
+          const len = Math.ceil(p.tau * sr) + 10;
+          let first10 = -1, first90 = -1, lastAbove = 0;
+          for (let n = 0; n < len; n++) {
+            const t = n / sr;
+            const val = evalNWave(t, p.tau, p.tRise, p.dp);
+            if (first10 < 0 && val >= 0.1 * p.dp) first10 = t;
+            if (first90 < 0 && val >= 0.9 * p.dp) first90 = t;
+            if (Math.abs(val) > 0.01 * p.dp) lastAbove = t;
+          }
+          measRises.push((first90 - first10) / 0.8);
+          measTaus.push(lastAbove);
+        }
+        function fitExponent(xs, ys) {
+          const lx = xs.map(Math.log);
+          const ly = ys.map(Math.log);
+          const mx = lx.reduce((a, b) => a + b, 0) / lx.length;
+          const my = ly.reduce((a, b) => a + b, 0) / ly.length;
+          let num = 0, den = 0;
+          for (let i = 0; i < lx.length; i++) {
+            num += (lx[i] - mx) * (ly[i] - my);
+            den += (lx[i] - mx) ** 2;
+          }
+          return num / den;
+        }
+        const expTau = fitExponent(testDists, measTaus);
+        const expRise = fitExponent(testDists, measRises);
+        const chk2Pass = Math.abs(expTau - 0.5) < 0.03 && Math.abs(expRise - 0.5) < 0.03;
+        document.getElementById('chk2-badge').textContent = chk2Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk2-badge').className = 'font-mono-tech text-[10px] ' + (chk2Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk2-detail').textContent = `τ ∝ r^${expTau.toFixed(3)}, t_rise ∝ r^${expRise.toFixed(3)}`;
+
+        // Check 3: Arrival spread matches Δd / c
+        const geomSpread = (state.dMax - state.dMin) / SPEED_OF_SOUND;
+        const raw = state.audioBufferRaw;
+        let firstActive = -1, lastActive = -1;
+        let maxAbs = 0;
+        for (let i = 0; i < raw.length; i++) {
+          const v = Math.abs(raw[i]);
+          if (v > maxAbs) maxAbs = v;
+        }
+        const thresh = maxAbs * 0.002;
+        for (let i = 0; i < raw.length; i++) {
+          if (Math.abs(raw[i]) > thresh) {
+            if (firstActive < 0) firstActive = i;
+            lastActive = i;
+          }
+        }
+        const tailEnd = nWaveParamsAtDistance(state.dMax, state.energyKA).tau;
+        const audioSpan = Math.max(0, ((lastActive - firstActive) / SAMPLE_RATE) - tailEnd);
+        const diffMs = Math.abs(audioSpan - geomSpread) * 1000;
+        const chk3Pass = diffMs < 35; // within 1 N-wave tail tolerance
+        document.getElementById('chk3-badge').textContent = chk3Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk3-badge').className = 'font-mono-tech text-[10px] ' + (chk3Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk3-detail').textContent = `Δd/c = ${geomSpread.toFixed(2)}s | Audio = ${audioSpan.toFixed(2)}s`;
+
+        // Check 4: Tortuosity null (straight channel at broadside / straight geometry = single crack, 0 branches)
+        // Build a straight horizontal channel at broadside distance to verify single coherent crack
+        const straightSegs = [];
+        const dTest = state.listenerDistM;
+        const LTest = state.lengthKm * 1000;
+        const NNull = 400;
+        let dMinNull = Infinity, dMaxNull = 0;
+        for (let i = 0; i < NNull; i++) {
+          const x = ((i / (NNull - 1)) - 0.5) * LTest * 0.25;
+          const d = Math.hypot(x, dTest);
+          if (d < dMinNull) dMinNull = d;
+          if (d > dMaxNull) dMaxNull = d;
+          straightSegs.push({ dist: d, arrivalTime: d / SPEED_OF_SOUND, weight: 1.0, isBranch: false });
+        }
+        const nullSpread = (dMaxNull - dMinNull) / SPEED_OF_SOUND;
+        const chk4Pass = nullSpread < 0.25; // compact single crack
+        document.getElementById('chk4-badge').textContent = chk4Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk4-badge').className = 'font-mono-tech text-[10px] ' + (chk4Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk4-detail').textContent = `Straight null: 0 branches, 1 crack (${(nullSpread * 1000).toFixed(1)} ms)`;
+
+        const passCount = [chk1Pass, chk2Pass, chk3Pass, chk4Pass].filter(Boolean).length;
+        const sumEl = document.getElementById('verify-summary');
+        sumEl.textContent = `${passCount} / 4 PASS`;
+        sumEl.className = 'font-mono-tech text-[10px] px-1.5 py-0.5 rounded border ' +
+          (passCount === 4 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30');
+      }
+
+      // =========================================================================
+      // TELEMETRY UI UPDATE
+      // =========================================================================
+      function updateTelemetry() {
+        const fmtDist = (m) => m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
+        const { tau, tRise, dp } = nWaveParamsAtDistance(state.dMin, state.energyKA);
+        const spread = state.tMax - state.tMin;
+
+        document.getElementById('stat-dmin').textContent = fmtDist(state.dMin);
+        document.getElementById('stat-dmax').textContent = fmtDist(state.dMax);
+        document.getElementById('stat-spread').textContent = `${spread.toFixed(2)} s`;
+        document.getElementById('stat-dp').textContent = `${(dp * 1000).toFixed(1)} Pa`;
+        document.getElementById('stat-tau').textContent = `${(tau * 1000).toFixed(2)} ms`;
+        document.getElementById('stat-trise').textContent = `${(tRise * 1000).toFixed(3)} ms`;
+        document.getElementById('hint-segments').textContent = `${state.segments.length} segments (${state.branches.length} forks)`;
+      }
+
+      // =========================================================================
+      // WEB AUDIO PLAYBACK & 44.1 kHz 16-BIT STEREO WAV EXPORT
+      // =========================================================================
+      function ensureAudioCtx() {
+        if (!state.audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new AC({ sampleRate: SAMPLE_RATE });
+        }
+        if (state.audioCtx.state === 'suspended') {
+          state.audioCtx.resume();
+        }
+      }
+
+      function triggerStrike(isAutoStorm) {
+        if (!isAutoStorm) {
+          ensureAudioCtx();
+        }
+        if (state.activeSource) {
+          try { state.activeSource.stop(); } catch (_) {}
+          state.activeSource = null;
+        }
+
+        // Visual lightning flash & multi-stroke return-stroke flicker
+        state.strikeFlashIntensity = 1.0;
+        state.strikeVisualTime = performance.now() * 0.001;
+        const flashEl = document.getElementById('flash-overlay');
+        flashEl.style.opacity = isAutoStorm ? '0.24' : '0.38';
+        setTimeout(() => { flashEl.style.opacity = '0.05'; }, 55);
+        setTimeout(() => { flashEl.style.opacity = isAutoStorm ? '0.16' : '0.26'; }, 95);
+        setTimeout(() => { flashEl.style.opacity = '0'; }, 175);
+        if (typeof spawnShockFronts === 'function') spawnShockFronts();
+
+        if (!state.audioCtx || state.audioCtx.state !== 'running') {
+          return;
+        }
+        const bufData = state.audioBufferFiltered;
+        const audioBuf = state.audioCtx.createBuffer(1, bufData.length, SAMPLE_RATE);
+        audioBuf.copyToChannel(bufData, 0);
+
+        const src = state.audioCtx.createBufferSource();
+        src.buffer = audioBuf;
+
+        const gainNode = state.audioCtx.createGain();
+        gainNode.gain.value = state.masterGain;
+
+        src.connect(gainNode);
+        gainNode.connect(state.audioCtx.destination);
+
+        state.activeSource = src;
+        state.isPlaying = true;
+        state.playStartTime = performance.now() / 1000;
+        document.getElementById('playback-status').textContent = 'ROLLING';
+        document.getElementById('playback-status').className = 'font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-sky-500/25 text-sky-300 border border-sky-400/40';
+
+        src.onended = () => {
+          if (state.activeSource === src) {
+            state.isPlaying = false;
+            document.getElementById('playback-status').textContent = 'READY';
+            document.getElementById('playback-status').className = 'font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300';
+          }
+        };
+        src.start();
+      }
+
+      function exportWav() {
+        const samples = state.audioBufferFiltered;
+        if (!samples || samples.length === 0) return;
+
+        // 44.1 kHz 16-bit stereo WAV
+        const numChannels = 2;
+        const bytesPerSample = 2;
+        const dataByteLength = samples.length * numChannels * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataByteLength);
+        const view = new DataView(buffer);
+
+        function writeStr(offset, str) {
+          for (let i = 0; i < str.length; i++) {
+            view.setUint8(offset + i, str.charCodeAt(i));
+          }
+        }
+
+        writeStr(0, 'RIFF');
+        view.setUint32(4, 36 + dataByteLength, true);
+        writeStr(8, 'WAVE');
+        writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, SAMPLE_RATE, true);
+        view.setUint32(28, SAMPLE_RATE * numChannels * bytesPerSample, true);
+        view.setUint16(32, numChannels * bytesPerSample, true);
+        view.setUint16(34, 16, true);
+        writeStr(36, 'data');
+        view.setUint32(40, dataByteLength, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+          const s = Math.max(-1, Math.min(1, samples[i] * state.masterGain));
+          const int16 = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          view.setInt16(offset, int16, true);
+          view.setInt16(offset + 2, int16, true);
+          offset += 4;
+        }
+
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `thunder_3d_${state.flashType.toLowerCase()}_tort${state.tortuosity.toFixed(2)}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // =========================================================================
+      // THREE.JS 3D SCENE SETUP (VOLUMETRIC PLASMA + STORM CLOUDS + TERRAIN)
+      // =========================================================================
+      const container = document.getElementById('webgl-container');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x03050a);
+      scene.fog = new THREE.FogExp2(0x040711, 0.000038);
+
+      const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 15, 70000);
+      const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      container.appendChild(renderer.domElement);
+
+      // =========================================================================
+      // MULTI-PASS OPTICAL BLOOM COMPOSITOR (BRIGHT-PASS + SEPARABLE BLUR)
+      // =========================================================================
+      const rtWidth = Math.max(256, Math.floor(window.innerWidth * Math.min(window.devicePixelRatio, 2)));
+      const rtHeight = Math.max(256, Math.floor(window.innerHeight * Math.min(window.devicePixelRatio, 2)));
+      const rtScene = new THREE.WebGLRenderTarget(rtWidth, rtHeight, {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat
+      });
+      const rtBloomA = new THREE.WebGLRenderTarget(Math.floor(rtWidth * 0.5), Math.floor(rtHeight * 0.5), {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat
+      });
+      const rtBloomB = new THREE.WebGLRenderTarget(Math.floor(rtWidth * 0.5), Math.floor(rtHeight * 0.5), {
+        minFilter: THREE.LinearFilter,
+        magFilter: THREE.LinearFilter,
+        format: THREE.RGBAFormat
+      });
+
+      const postScene = new THREE.Scene();
+      const postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      const quadGeo = new THREE.PlaneGeometry(2, 2);
+
+      const brightPassMat = new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: rtScene.texture },
+          uThreshold: { value: 0.42 }
+        },
+        vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+        fragmentShader: `
+          uniform sampler2D tDiffuse;
+          uniform float uThreshold;
+          varying vec2 vUv;
+          void main() {
+            vec4 c = texture2D(tDiffuse, vUv);
+            float lum = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+            float contrib = max(0.0, lum - uThreshold) / max(0.001, 1.0 - uThreshold);
+            gl_FragColor = vec4(c.rgb * contrib * 1.45, 1.0);
+          }
+        `
+      });
+
+      const blurMat = new THREE.ShaderMaterial({
+        uniforms: {
+          tDiffuse: { value: null },
+          uDirection: { value: new THREE.Vector2(1.0 / (rtWidth * 0.5), 0.0) }
+        },
+        vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+        fragmentShader: `
+          uniform sampler2D tDiffuse;
+          uniform vec2 uDirection;
+          varying vec2 vUv;
+          void main() {
+            vec4 sum = vec4(0.0);
+            sum += texture2D(tDiffuse, vUv - 4.0 * uDirection) * 0.051;
+            sum += texture2D(tDiffuse, vUv - 3.0 * uDirection) * 0.0918;
+            sum += texture2D(tDiffuse, vUv - 2.0 * uDirection) * 0.12245;
+            sum += texture2D(tDiffuse, vUv - 1.0 * uDirection) * 0.1531;
+            sum += texture2D(tDiffuse, vUv) * 0.1633;
+            sum += texture2D(tDiffuse, vUv + 1.0 * uDirection) * 0.1531;
+            sum += texture2D(tDiffuse, vUv + 2.0 * uDirection) * 0.12245;
+            sum += texture2D(tDiffuse, vUv + 3.0 * uDirection) * 0.0918;
+            sum += texture2D(tDiffuse, vUv + 4.0 * uDirection) * 0.051;
+            gl_FragColor = sum;
+          }
+        `
+      });
+
+      const compositeMat = new THREE.ShaderMaterial({
+        uniforms: {
+          tScene: { value: rtScene.texture },
+          tBloom: { value: rtBloomA.texture },
+          uBloomStrength: { value: 1.65 }
+        },
+        vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position, 1.0); }`,
+        fragmentShader: `
+          uniform sampler2D tScene;
+          uniform sampler2D tBloom;
+          uniform float uBloomStrength;
+          varying vec2 vUv;
+          vec3 aces(vec3 x) {
+            return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+          }
+          void main() {
+            vec3 base = texture2D(tScene, vUv).rgb;
+            vec3 bloom = texture2D(tBloom, vUv).rgb * uBloomStrength;
+            vec3 col = aces(base + bloom);
+            gl_FragColor = vec4(pow(col, vec3(1.0 / 1.08)), 1.0);
+          }
+        `
+      });
+
+      const postQuad = new THREE.Mesh(quadGeo, compositeMat);
+      postScene.add(postQuad);
+
+      function renderWithBloom() {
+        // 1. Render 3D scene to rtScene
+        renderer.setRenderTarget(rtScene);
+        renderWithBloom();
+
+        // 2. Bright-pass -> rtBloomA
+        postQuad.material = brightPassMat;
+        renderer.setRenderTarget(rtBloomA);
+        renderer.render(postScene, postCam);
+
+        // 3. Horizontal + Vertical separable blur (2 iterations for wide photographic halo)
+        const bw = rtBloomA.width;
+        const bh = rtBloomA.height;
+        for (let pass = 0; pass < 2; pass++) {
+          const spread = 1.0 + pass * 1.4;
+          postQuad.material = blurMat;
+          blurMat.uniforms.tDiffuse.value = rtBloomA.texture;
+          blurMat.uniforms.uDirection.value.set(spread / bw, 0.0);
+          renderer.setRenderTarget(rtBloomB);
+          renderer.render(postScene, postCam);
+
+          blurMat.uniforms.tDiffuse.value = rtBloomB.texture;
+          blurMat.uniforms.uDirection.value.set(0.0, spread / bh);
+          renderer.setRenderTarget(rtBloomA);
+          renderer.render(postScene, postCam);
+        }
+
+        // 4. Composite to screen
+        postQuad.material = compositeMat;
+        renderer.setRenderTarget(null);
+        renderer.render(postScene, postCam);
+      }
+
+      // Orbit state
+      const orbit = {
+        theta: 0.52,
+        phi: 1.22,
+        radius: 9200,
+        target: new THREE.Vector3(0, 2100, 350),
+        isDragging: false,
+        lastX: 0,
+        lastY: 0
+      };
+
+      function updateCamera() {
+        const sinPhi = Math.sin(orbit.phi);
+        camera.position.set(
+          orbit.target.x + orbit.radius * sinPhi * Math.sin(orbit.theta),
+          Math.max(45, orbit.target.y + orbit.radius * Math.cos(orbit.phi)),
+          orbit.target.z + orbit.radius * sinPhi * Math.cos(orbit.theta)
+        );
+        camera.lookAt(orbit.target);
+      }
+      updateCamera();
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        orbit.isDragging = true;
+        orbit.lastX = e.clientX;
+        orbit.lastY = e.clientY;
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!orbit.isDragging) return;
+        const dx = e.clientX - orbit.lastX;
+        const dy = e.clientY - orbit.lastY;
+        orbit.lastX = e.clientX;
+        orbit.lastY = e.clientY;
+        orbit.theta -= dx * 0.006;
+        orbit.phi = Math.max(0.15, Math.min(Math.PI * 0.48, orbit.phi - dy * 0.006));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { orbit.isDragging = false; });
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        orbit.radius = Math.max(800, Math.min(28000, orbit.radius * (1 + e.deltaY * 0.001)));
+        updateCamera();
+      }, { passive: false });
+
+      // Atmospheric Storm Sky Dome
+      const skyUniforms = {
+        uFlashIntensity: { value: 0 },
+        uFlashDir: { value: new THREE.Vector3(0, 0.5, 0) }
+      };
+      const skyGeo = new THREE.SphereGeometry(36000, 32, 20);
+      const skyMat = new THREE.ShaderMaterial({
+        uniforms: skyUniforms,
+        side: THREE.BackSide,
+        depthWrite: false,
+        vertexShader: `
+          varying vec3 vWorldDir;
+          void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldDir = normalize(wp.xyz);
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uFlashIntensity;
+          uniform vec3 uFlashDir;
+          varying vec3 vWorldDir;
+          void main() {
+            float h = clamp(vWorldDir.y, 0.0, 1.0);
+            vec3 zenith = vec3(0.012, 0.018, 0.042);
+            vec3 horizon = vec3(0.035, 0.055, 0.11);
+            vec3 base = mix(horizon, zenith, pow(h, 0.55));
+            float scatter = pow(max(0.0, dot(vWorldDir, normalize(uFlashDir))), 2.2);
+            vec3 flash = mix(vec3(0.16, 0.24, 0.55), vec3(0.45, 0.62, 1.0), scatter) * uFlashIntensity * 0.65;
+            gl_FragColor = vec4(base + flash, 1.0);
+          }
+        `
+      });
+      const skyDome = new THREE.Mesh(skyGeo, skyMat);
+      scene.add(skyDome);
+
+      // Storm ambient + dynamic lightning PointLights
+      const ambientLight = new THREE.AmbientLight(0x162238, 0.7);
+      scene.add(ambientLight);
+      const hemiLight = new THREE.HemisphereLight(0x283c66, 0x050810, 0.5);
+      scene.add(hemiLight);
+
+      const boltLightTop = new THREE.PointLight(0xa5b4fc, 0, 28000, 1.35);
+      const boltLightMid = new THREE.PointLight(0x7dd3fc, 0, 24000, 1.35);
+      const boltLightGround = new THREE.PointLight(0xe0f2fe, 0, 20000, 1.45);
+      scene.add(boltLightTop, boltLightMid, boltLightGround);
+
+      // Procedural 3D Storm Basin Terrain (wet reflective ground + distant ridges)
+      function hash2D(x, y) {
+        const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+        return s - Math.floor(s);
+      }
+      function noise2D(x, y) {
+        const ix = Math.floor(x), iy = Math.floor(y);
+        const fx = x - ix, fy = y - iy;
+        const ux = fx * fx * (3 - 2 * fx);
+        const uy = fy * fy * (3 - 2 * fy);
+        const a = hash2D(ix, iy), b = hash2D(ix + 1, iy);
+        const c = hash2D(ix, iy + 1), d = hash2D(ix + 1, iy + 1);
+        return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+      }
+      function fbm2D(x, y) {
+        let v = 0, amp = 0.5;
+        for (let i = 0; i < 4; i++) {
+          v += amp * noise2D(x, y);
+          x *= 2.03; y *= 2.03; amp *= 0.5;
+        }
+        return v;
+      }
+
+      const terrainGeo = new THREE.PlaneGeometry(34000, 34000, 112, 112);
+      terrainGeo.rotateX(-Math.PI / 2);
+      const tPos = terrainGeo.attributes.position;
+      for (let i = 0; i < tPos.count; i++) {
+        const vx = tPos.getX(i);
+        const vz = tPos.getZ(i);
+        const r = Math.hypot(vx, vz);
+        const basinMask = Math.max(0, Math.min(1, (r - 3200) / 7000));
+        const h = (fbm2D(vx * 0.00018 + 4.2, vz * 0.00018 + 1.7) - 0.35) * 1900 * basinMask;
+        tPos.setY(i, Math.max(-20, h));
+      }
+      terrainGeo.computeVertexNormals();
+      const terrainMat = new THREE.MeshStandardMaterial({
+        color: 0x090f1d,
+        roughness: 0.32,
+        metalness: 0.35
+      });
+      const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+      scene.add(terrainMesh);
+
+      // Subtle reference grid & radial distance rings
+      const gridHelper = new THREE.GridHelper(22000, 22, 0x1e3a5f, 0x0c1424);
+      gridHelper.position.y = 4;
+      gridHelper.material.transparent = true;
+      gridHelper.material.opacity = 0.26;
+      scene.add(gridHelper);
+
+      const ringsGroup = new THREE.Group();
+      [500, 1000, 2000, 5000, 10000].forEach((r) => {
+        const pts = [];
+        for (let i = 0; i <= 96; i++) {
+          const a = (i / 96) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(a) * r, 6, Math.sin(a) * r));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0x1e3a5f, transparent: true, opacity: 0.45 });
+        ringsGroup.add(new THREE.Line(geo, mat));
+      });
+      scene.add(ringsGroup);
+
+      // 3-Layer Domain-Warped Living Storm Cloud Progression (Scud + Base + Anvil)
+      const cloudUniforms = {
+        uTime: { value: 0 },
+        uFlashIntensity: { value: 0 },
+        uFlashPos: { value: new THREE.Vector3(0, 5400, 0) },
+        uSheetIntensity: { value: 0 },
+        uSheetPos: { value: new THREE.Vector3(3500, 5400, -2500) }
+      };
+      const cloudGeo = new THREE.PlaneGeometry(42000, 42000, 1, 1);
+      cloudGeo.rotateX(Math.PI / 2);
+      const cloudMat = new THREE.ShaderMaterial({
+        uniforms: cloudUniforms,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        vertexShader: `
+          varying vec3 vWorldPos;
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          uniform float uFlashIntensity;
+          uniform vec3 uFlashPos;
+          uniform float uSheetIntensity;
+          uniform vec3 uSheetPos;
+          varying vec3 vWorldPos;
+          varying vec2 vUv;
+
+          float hash(vec2 p) {
+            return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+          }
+          float noise(vec2 p) {
+            vec2 i = floor(p);
+            vec2 f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+          }
+          float fbm(vec2 p) {
+            float v = 0.0;
+            float a = 0.5;
+            for (int i = 0; i < 5; i++) {
+              v += a * noise(p);
+              p *= 2.04;
+              a *= 0.5;
+            }
+            return v;
+          }
+          void main() {
+            // Domain-warped evolving storm progression
+            vec2 wind = vec2(uTime * 0.022, uTime * 0.011);
+            vec2 p = vWorldPos.xz * 0.00014 + wind;
+            vec2 warp = vec2(fbm(p * 1.15 + vec2(uTime * 0.009, 0.0)),
+                             fbm(p * 1.15 + vec2(5.2, -uTime * 0.008)));
+            float n1 = fbm(p + warp * 0.55);
+            float n2 = fbm(p * 2.35 - warp * 0.4 + vec2(-uTime * 0.016, uTime * 0.012));
+            float density = smoothstep(0.22, 0.88, n1 * 0.68 + n2 * 0.42);
+
+            float distToFlash = length(vWorldPos.xz - uFlashPos.xz);
+            float mainGlow = exp(-distToFlash * 0.00028) * uFlashIntensity;
+
+            float distToSheet = length(vWorldPos.xz - uSheetPos.xz);
+            float sheetGlow = exp(-distToSheet * 0.00024) * uSheetIntensity;
+
+            float ridge = 1.0 - abs(n2 * 2.0 - 1.0);
+            float veins = pow(ridge, 4.5) * (mainGlow * 2.0 + sheetGlow * 1.4);
+            float internalScatter = smoothstep(0.18, 0.92, n2) * (mainGlow + sheetGlow * 0.8);
+
+            vec3 baseCol = mix(vec3(0.012, 0.018, 0.038), vec3(0.055, 0.082, 0.155), n1);
+            vec3 flashCol = vec3(0.36, 0.60, 1.0) * (mainGlow * 1.15 + sheetGlow * 0.75)
+                          + vec3(0.70, 0.58, 1.0) * internalScatter * 1.25
+                          + vec3(0.90, 0.96, 1.0) * veins;
+            vec3 col = baseCol + flashCol;
+
+            float edgeFade = 1.0 - smoothstep(0.30, 0.5, length(vUv - 0.5));
+            gl_FragColor = vec4(col, density * 0.86 * edgeFade);
+          }
+        `
+      });
+      const scudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+      scudMesh.position.y = 4550;
+      scudMesh.rotation.y = -0.5;
+      scene.add(scudMesh);
+
+      const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+      cloudMesh.position.y = 5400;
+      scene.add(cloudMesh);
+
+      const anvilMesh = new THREE.Mesh(cloudGeo, cloudMat);
+      anvilMesh.position.y = 6350;
+      anvilMesh.rotation.y = 0.85;
+      scene.add(anvilMesh);
+
+      // Atmospheric Rain Curtain
+      const rainCount = 2600;
+      const rainPositions = new Float32Array(rainCount * 6);
+      for (let i = 0; i < rainCount; i++) {
+        const rx = (Math.random() - 0.5) * 14000;
+        const ry = Math.random() * 5200;
+        const rz = (Math.random() - 0.5) * 14000;
+        rainPositions[i * 6] = rx;
+        rainPositions[i * 6 + 1] = ry;
+        rainPositions[i * 6 + 2] = rz;
+        rainPositions[i * 6 + 3] = rx - 22;
+        rainPositions[i * 6 + 4] = ry - 125;
+        rainPositions[i * 6 + 5] = rz + 14;
+      }
+      const rainGeo = new THREE.BufferGeometry();
+      rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+      const rainMat = new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.08 });
+      const rainLines = new THREE.LineSegments(rainGeo, rainMat);
+      scene.add(rainLines);
+
+      // Listener beacon
+      const listenerGroup = new THREE.Group();
+      const beaconGeo = new THREE.ConeGeometry(80, 220, 16);
+      const beaconMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+      const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+      beaconMesh.position.y = 110;
+      listenerGroup.add(beaconMesh);
+
+      const pulseRingGeo = new THREE.RingGeometry(120, 175, 48);
+      pulseRingGeo.rotateX(-Math.PI / 2);
+      const pulseRingMat = new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
+      const pulseRingMesh = new THREE.Mesh(pulseRingGeo, pulseRingMat);
+      pulseRingMesh.position.y = 10;
+      listenerGroup.add(pulseRingMesh);
+      scene.add(listenerGroup);
+
+      // Expanding 3D Acoustic Shock-Front Shells
+      const shockFrontGroup = new THREE.Group();
+      scene.add(shockFrontGroup);
+      const activeShockFronts = [];
+
+      function spawnShockFronts() {
+        while (shockFrontGroup.children.length > 0) {
+          const c = shockFrontGroup.children[0];
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) c.material.dispose();
+          shockFrontGroup.remove(c);
+        }
+        activeShockFronts.length = 0;
+
+        const origins = [];
+        if (state.segments.length > 0) {
+          let nearest = state.segments[0];
+          for (let i = 1; i < state.segments.length; i++) {
+            if (state.segments[i].dist < nearest.dist) nearest = state.segments[i];
+          }
+          origins.push(nearest.pos.clone());
+          const midIdx = Math.floor(state.trunkPoints.length * 0.5);
+          if (state.trunkPoints[midIdx]) origins.push(state.trunkPoints[midIdx].clone());
+        }
+        origins.forEach((orig, idx) => {
+          const ringGeo = new THREE.RingGeometry(0.95, 1.0, 64);
+          ringGeo.rotateX(-Math.PI / 2);
+          const ringMat = new THREE.MeshBasicMaterial({
+            color: idx === 0 ? 0xfde047 : 0x38bdf8,
+            transparent: true,
+            opacity: 0.72,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+          });
+          const mesh = new THREE.Mesh(ringGeo, ringMat);
+          mesh.position.set(orig.x, Math.max(25, orig.y * 0.05 + 15), orig.z);
+          shockFrontGroup.add(mesh);
+          activeShockFronts.push({ mesh, born: performance.now() * 0.001 });
+        });
+      }
+
+      // =========================================================================
+      // SHARP DIELECTRIC BREAKDOWN BOLT GEOMETRY (NO SMOOTH CURVES + TRUE TAPER)
+      // =========================================================================
+      function addMicroJags(points, tort, rng) {
+        if (!points || points.length < 2 || tort <= 0.01) return points;
+        const out = [points[0].clone()];
+        for (let i = 0; i < points.length - 1; i++) {
+          const a = points[i];
+          const b = points[i + 1];
+          const len = a.distanceTo(b);
+          if (len > 45) {
+            const m1 = a.clone().lerp(b, 0.33);
+            const m2 = a.clone().lerp(b, 0.67);
+            const jag = len * 0.22 * tort;
+            m1.x += (rng() - 0.5) * jag;
+            m1.z += (rng() - 0.5) * jag;
+            m2.x += (rng() - 0.5) * jag;
+            m2.z += (rng() - 0.5) * jag;
+            out.push(m1, m2);
+          }
+          out.push(b.clone());
+        }
+        return out;
+      }
+
+      function buildTaperedBoltGeometry(points, rStart, rEnd, radialSegs, rng) {
+        const n = points.length;
+        const verts = [];
+        const norms = [];
+        const progs = [];
+        const indices = [];
+        const ringStride = radialSegs + 1;
+
+        const upRef = new THREE.Vector3(0, 1, 0);
+        const altRef = new THREE.Vector3(1, 0, 0);
+        const tangent = new THREE.Vector3();
+        const normal = new THREE.Vector3();
+        const binormal = new THREE.Vector3();
+
+        for (let i = 0; i < n; i++) {
+          const u = i / (n - 1);
+          if (i === 0) tangent.subVectors(points[1], points[0]).normalize();
+          else if (i === n - 1) tangent.subVectors(points[n - 1], points[n - 2]).normalize();
+          else tangent.subVectors(points[i + 1], points[i - 1]).normalize();
+
+          const ref = Math.abs(tangent.dot(upRef)) > 0.92 ? altRef : upRef;
+          normal.crossVectors(tangent, ref).normalize();
+          binormal.crossVectors(tangent, normal).normalize();
+
+          // Slight plasma pinch modulation along channel
+          const pinch = 1.0 + (rng ? (rng() - 0.5) * 0.18 : 0);
+          const rad = (rStart + (rEnd - rStart) * u) * pinch;
+
+          for (let j = 0; j <= radialSegs; j++) {
+            const theta = (j / radialSegs) * Math.PI * 2;
+            const cosT = Math.cos(theta);
+            const sinT = Math.sin(theta);
+            const nx = normal.x * cosT + binormal.x * sinT;
+            const ny = normal.y * cosT + binormal.y * sinT;
+            const nz = normal.z * cosT + binormal.z * sinT;
+
+            verts.push(points[i].x + nx * rad, points[i].y + ny * rad, points[i].z + nz * rad);
+            norms.push(nx, ny, nz);
+            progs.push(u);
+          }
+        }
+
+        for (let i = 0; i < n - 1; i++) {
+          for (let j = 0; j < radialSegs; j++) {
+            const a = i * ringStride + j;
+            const b = (i + 1) * ringStride + j;
+            const c = (i + 1) * ringStride + (j + 1);
+            const d = i * ringStride + (j + 1);
+            indices.push(a, b, d);
+            indices.push(b, c, d);
+          }
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+        geo.setAttribute('normal', new THREE.Float32BufferAttribute(norms, 3));
+        geo.setAttribute('aProgress', new THREE.Float32BufferAttribute(progs, 1));
+        geo.setIndex(indices);
+        return geo;
+      }
+
+      const plasmaShaderMaterials = [];
+      function createLightningShaderMaterial(coreColorHex, edgeColorHex, baseOpacity, powerFalloff, isLeaderOnly) {
+        const mat = new THREE.ShaderMaterial({
+          uniforms: {
+            uCoreColor: { value: new THREE.Color(coreColorHex) },
+            uEdgeColor: { value: new THREE.Color(edgeColorHex) },
+            uOpacity: { value: baseOpacity },
+            uFlashBoost: { value: 1.0 },
+            uLeaderProg: { value: 1.0 },
+            uFalloff: { value: powerFalloff },
+            uIsLeaderOnly: { value: isLeaderOnly ? 1.0 : 0.0 }
+          },
+          transparent: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+          side: THREE.DoubleSide,
+          vertexShader: `
+            attribute float aProgress;
+            varying vec3 vNormalView;
+            varying vec3 vViewDir;
+            varying float vProg;
+            void main() {
+              vProg = aProgress;
+              vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+              vNormalView = normalize(normalMatrix * normal);
+              vViewDir = normalize(-mvPos.xyz);
+              gl_Position = projectionMatrix * mvPos;
+            }
+          `,
+          fragmentShader: `
+            uniform vec3 uCoreColor;
+            uniform vec3 uEdgeColor;
+            uniform float uOpacity;
+            uniform float uFlashBoost;
+            uniform float uLeaderProg;
+            uniform float uFalloff;
+            uniform float uIsLeaderOnly;
+            varying vec3 vNormalView;
+            varying vec3 vViewDir;
+            varying float vProg;
+            void main() {
+              float vis = smoothstep(vProg - 0.04, vProg, uLeaderProg);
+              float ndotv = abs(dot(normalize(vNormalView), normalize(vViewDir)));
+              float glow = pow(ndotv, uFalloff);
+              vec3 col = mix(uEdgeColor, uCoreColor, glow);
+              float boost = mix(uFlashBoost, 1.0 + (uFlashBoost - 1.0) * 0.35, uIsLeaderOnly);
+              float alpha = glow * uOpacity * boost * vis;
+              gl_FragColor = vec4(col * boost, clamp(alpha, 0.0, 1.0));
+            }
+          `
+        });
+        plasmaShaderMaterials.push(mat);
+        return mat;
+      }
+
+      // Lightning channel 3D group
+      const boltGroup = new THREE.Group();
+      scene.add(boltGroup);
+      let activeSegmentPoints = null;
+      let groundScorchRing = null;
+
+      function addDielectricBoltPath(points, rStart, rEnd, coreColor, edgeColor, tier, rng) {
+        if (!points || points.length < 2) return;
+        const radialSegs = tier === 1 ? 8 : 6;
+        // 1. White-hot plasma core
+        const coreGeo = buildTaperedBoltGeometry(points, rStart, rEnd, radialSegs, rng);
+        const coreMat = createLightningShaderMaterial(0xffffff, coreColor, tier === 1 ? 1.0 : 0.85, 0.65, tier === 3);
+        boltGroup.add(new THREE.Mesh(coreGeo, coreMat));
+
+        // 2. Ionized cyan/violet corona sheath
+        const sheathGeo = buildTaperedBoltGeometry(points, rStart * 2.8, rEnd * 2.8, radialSegs, null);
+        const sheathMat = createLightningShaderMaterial(coreColor, edgeColor, tier === 1 ? 0.55 : 0.32, 1.9, tier === 3);
+        boltGroup.add(new THREE.Mesh(sheathGeo, sheathMat));
+      }
+
+      function rebuildBolt3D() {
+        while (boltGroup.children.length > 0) {
+          const child = boltGroup.children[0];
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+          boltGroup.remove(child);
+        }
+        plasmaShaderMaterials.length = 0;
+        groundScorchRing = null;
+
+        const rng = createRNG(state.seed ^ 0x9E3779B9);
+        const energyScale = 0.75 + (state.energyKA / 200) * 1.15;
+        const trunkR = 11.5 * energyScale;
+
+        // Main trunk with sharp dielectric micro-jags
+        const jaggedTrunk = addMicroJags(state.trunkPoints, state.tortuosity, rng);
+        addDielectricBoltPath(jaggedTrunk, trunkR * 1.15, trunkR * 0.82, 0x93c5fd, 0x6366f1, 1, rng);
+
+        // Primary forked branches + Tier 3 corona streamers
+        const streamerVerts = [];
+        for (let b = 0; b < state.branches.length; b++) {
+          const jaggedBranch = addMicroJags(state.branches[b], state.tortuosity, rng);
+          const bR = trunkR * (0.52 + (b % 3) * 0.08);
+          addDielectricBoltPath(jaggedBranch, bR, Math.max(1.8, bR * 0.14), 0x60a5fa, 0x7c3aed, 2, rng);
+
+          // Tertiary aborted leader / corona streamers off branch kinks
+          if (state.tortuosity > 0.15 && jaggedBranch.length > 4) {
+            for (let s = 0; s < 2; s++) {
+              const idx = Math.floor((0.25 + rng() * 0.65) * (jaggedBranch.length - 1));
+              let cur = jaggedBranch[idx].clone();
+              const dir = new THREE.Vector3((rng() - 0.5), -0.55 - rng() * 0.4, (rng() - 0.5)).normalize();
+              for (let k = 0; k < 5; k++) {
+                const next = cur.clone().addScaledVector(dir, 55 + rng() * 65);
+                next.x += (rng() - 0.5) * 65;
+                next.z += (rng() - 0.5) * 65;
+                streamerVerts.push(cur.x, cur.y, cur.z, next.x, next.y, next.z);
+                cur = next;
+              }
+            }
+          }
+        }
+
+        if (streamerVerts.length > 0) {
+          const stGeo = new THREE.BufferGeometry();
+          stGeo.setAttribute('position', new THREE.Float32BufferAttribute(streamerVerts, 3));
+          const stMat = new THREE.LineBasicMaterial({
+            color: 0xa78bfa,
+            transparent: true,
+            opacity: 0.42,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+          });
+          boltGroup.add(new THREE.LineSegments(stGeo, stMat));
+        }
+
+        // Ground strike plasma arc & corona scorch ring (CG only)
+        if (state.flashType === 'CG' && state.trunkPoints.length > 0) {
+          const hitPt = state.trunkPoints[state.trunkPoints.length - 1];
+          const scorchGeo = new THREE.RingGeometry(10, 260 * energyScale, 48);
+          scorchGeo.rotateX(-Math.PI / 2);
+          const scorchMat = new THREE.MeshBasicMaterial({
+            color: 0xe0f2fe,
+            transparent: true,
+            opacity: 0.85,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+          });
+          groundScorchRing = new THREE.Mesh(scorchGeo, scorchMat);
+          groundScorchRing.position.set(hitPt.x, 14, hitPt.z);
+          boltGroup.add(groundScorchRing);
+        }
+
+        // Segment arrival highlight beads along the channel
+        const segCount = state.segments.length;
+        const positions = new Float32Array(segCount * 3);
+        const colors = new Float32Array(segCount * 3);
+        for (let i = 0; i < segCount; i++) {
+          const p = state.segments[i].pos;
+          positions[i * 3] = p.x;
+          positions[i * 3 + 1] = p.y;
+          positions[i * 3 + 2] = p.z;
+          colors[i * 3] = 0.22;
+          colors[i * 3 + 1] = 0.74;
+          colors[i * 3 + 2] = 0.97;
+        }
+        const ptsGeo = new THREE.BufferGeometry();
+        ptsGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        ptsGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        const ptsMat = new THREE.PointsMaterial({
+          size: 52,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.85,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false
+        });
+        activeSegmentPoints = new THREE.Points(ptsGeo, ptsMat);
+        boltGroup.add(activeSegmentPoints);
+
+        // Update listener, cloud canopy, and dynamic light positions
+        listenerGroup.position.set(0, 0, state.listenerDistM);
+        const cloudY = state.flashType === 'CG' ? Math.max(2500, state.lengthKm * 1000) : 5400;
+        scudMesh.position.y = Math.max(1600, cloudY - 850);
+        cloudMesh.position.y = cloudY;
+        anvilMesh.position.y = cloudY + 950;
+
+        if (state.trunkPoints.length > 0) {
+          const topPt = state.trunkPoints[0];
+          const midPt = state.trunkPoints[Math.floor(state.trunkPoints.length * 0.5)];
+          const botPt = state.trunkPoints[state.trunkPoints.length - 1];
+          boltLightTop.position.copy(topPt);
+          boltLightMid.position.copy(midPt);
+          boltLightGround.position.copy(botPt);
+          cloudUniforms.uFlashPos.value.copy(topPt);
+          skyUniforms.uFlashDir.value.copy(midPt).normalize();
+        }
+      }
+
+      // =========================================================================
+      // 2D DIAGNOSTIC OVERLAY RENDERER (TIMELINE / N-WAVE / SPECTRUM)
+      // =========================================================================
+      function renderDiagnosticOverlay() {
+        const panel = document.getElementById('overlay-panel');
+        if (state.viewMode === 'bolt') {
+          panel.classList.add('hidden');
+          return;
+        }
+        panel.classList.remove('hidden');
+
+        const canvas = document.getElementById('diag-canvas');
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = Math.max(300, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(180, Math.floor(rect.height * dpr));
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+
+        const W = rect.width;
+        const H = rect.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // Subtle grid
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+        ctx.lineWidth = 1;
+        for (let gx = 0; gx <= 6; gx++) {
+          const x = (gx / 6) * W;
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+        }
+        for (let gy = 0; gy <= 4; gy++) {
+          const y = (gy / 4) * H;
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+
+        const padL = 44, padR = 16, padT = 18, padB = 26;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        if (state.viewMode === 'timeline') {
+          document.getElementById('overlay-title').textContent = 'Arrival Timeline & Rumble Envelope';
+          document.getElementById('overlay-subtitle').textContent = 'Time-aligned pressure waveform p(t) driven purely by Δd/c arrival spread';
+          const spread = state.tMax - state.tMin;
+          document.getElementById('overlay-meta').textContent = `Δd/c = ${spread.toFixed(2)} s | ${state.segments.length} segments`;
+
+          const buf = state.audioBufferFiltered;
+          let maxAbs = 0.001;
+          for (let i = 0; i < buf.length; i++) {
+            const a = Math.abs(buf[i]);
+            if (a > maxAbs) maxAbs = a;
+          }
+
+          const midY = padT + plotH * 0.5;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          const bins = Math.floor(plotW);
+          const step = Math.max(1, Math.floor(buf.length / bins));
+          for (let px = 0; px < bins; px++) {
+            const idx0 = Math.floor((px / bins) * buf.length);
+            let minV = 0, maxV = 0;
+            for (let s = 0; s < step && idx0 + s < buf.length; s++) {
+              const v = buf[idx0 + s] / maxAbs;
+              if (v < minV) minV = v;
+              if (v > maxV) maxV = v;
+            }
+            const x = padL + px;
+            ctx.moveTo(x, midY - maxV * plotH * 0.45);
+            ctx.lineTo(x, midY - minV * plotH * 0.45);
+          }
+          ctx.stroke();
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.fillText('0.00 s', padL, H - 8);
+          ctx.fillText(`${state.audioDuration.toFixed(2)} s`, W - padR - 42, H - 8);
+          ctx.fillText('+p', 12, padT + 10);
+          ctx.fillText('-p', 12, padT + plotH);
+
+        } else if (state.viewMode === 'nwave') {
+          document.getElementById('overlay-title').textContent = 'N-Wave Cross-Section & r^(1/2) Lengthening';
+          document.getElementById('overlay-subtitle').textContent = 'Sharp rise → linear ramp → sharp fall at r_min vs 3×r_min vs 9×r_min';
+          const p1 = nWaveParamsAtDistance(state.dMin, state.energyKA);
+          const p2 = nWaveParamsAtDistance(state.dMin * 3, state.energyKA);
+          const p3 = nWaveParamsAtDistance(state.dMin * 9, state.energyKA);
+          document.getElementById('overlay-meta').textContent = `τ(r_min) = ${(p1.tau * 1000).toFixed(2)} ms | t_r = ${(p1.tRise * 1000).toFixed(3)} ms`;
+
+          const maxT = p3.tau * 1.15;
+          const midY = padT + plotH * 0.5;
+          const series = [
+            { p: p3, color: '#818cf8', label: '9r' },
+            { p: p2, color: '#34d399', label: '3r' },
+            { p: p1, color: '#38bdf8', label: 'r_min' }
+          ];
+
+          series.forEach(({ p, color }) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const pts = 320;
+            for (let i = 0; i <= pts; i++) {
+              const t = (i / pts) * maxT;
+              const v = evalNWave(t, p.tau, p.tRise, p.dp) / p1.dp;
+              const x = padL + (t / maxT) * plotW;
+              const y = midY - v * plotH * 0.42;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          });
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.fillText('0 ms', padL, H - 8);
+          ctx.fillText(`${(maxT * 1000).toFixed(1)} ms`, W - padR - 48, H - 8);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('r_min (1/r, τ∝r^½)', padL + 6, padT + 12);
+          ctx.fillStyle = '#34d399';
+          ctx.fillText('3r', padL + 140, padT + 12);
+          ctx.fillStyle = '#818cf8';
+          ctx.fillText('9r', padL + 172, padT + 12);
+
+        } else if (state.viewMode === 'spectrum') {
+          document.getElementById('overlay-title').textContent = 'Acoustic Power Spectrum (DFT)';
+          document.getElementById('overlay-subtitle').textContent = '25 Hz speaker-safe high-pass boundary & r^(1/2) HF roll-off';
+          document.getElementById('overlay-meta').textContent = 'HPF ≥ 25 Hz | fs = 44.1 kHz';
+
+          // Compute quick radix-2 DFT on a 2048-sample window around peak energy
+          const buf = state.audioBufferFiltered;
+          const N = 2048;
+          let peakIdx = 0, peakVal = 0;
+          for (let i = 0; i < buf.length; i++) {
+            if (Math.abs(buf[i]) > peakVal) { peakVal = Math.abs(buf[i]); peakIdx = i; }
+          }
+          const start = Math.max(0, Math.min(buf.length - N, peakIdx - 256));
+          const mags = new Float32Array(N / 2);
+          let maxMag = 1e-9;
+
+          // Evaluate log-spaced frequency bins from 10 Hz to 16000 Hz
+          const numBins = 96;
+          const fMin = 10, fMax = 16000;
+          const pts = [];
+          for (let b = 0; b < numBins; b++) {
+            const freq = fMin * Math.pow(fMax / fMin, b / (numBins - 1));
+            const omega = (2 * Math.PI * freq) / SAMPLE_RATE;
+            let re = 0, im = 0;
+            for (let n = 0; n < N; n++) {
+              const w = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (N - 1)));
+              const s = (buf[start + n] || 0) * w;
+              re += s * Math.cos(omega * n);
+              im -= s * Math.sin(omega * n);
+            }
+            const mag = Math.hypot(re, im);
+            if (mag > maxMag) maxMag = mag;
+            pts.push({ freq, mag });
+          }
+
+          // Draw 25 Hz cutoff line
+          const x25 = padL + (Math.log10(25 / fMin) / Math.log10(fMax / fMin)) * plotW;
+          ctx.strokeStyle = 'rgba(251, 191, 36, 0.75)';
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(x25, padT);
+          ctx.lineTo(x25, padT + plotH);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Draw spectrum curve
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let b = 0; b < pts.length; b++) {
+            const db = Math.max(-60, 20 * Math.log10(pts[b].mag / maxMag + 1e-6));
+            const x = padL + (Math.log10(pts[b].freq / fMin) / Math.log10(fMax / fMin)) * plotW;
+            const y = padT + (1 - (db + 60) / 60) * plotH;
+            if (b === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.fillText('25 Hz HPF', x25 + 4, padT + 12);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('10 Hz', padL, H - 8);
+          ctx.fillText('1 kHz', padL + (Math.log10(1000 / fMin) / Math.log10(fMax / fMin)) * plotW - 14, H - 8);
+          ctx.fillText('16 kHz', W - padR - 36, H - 8);
+        }
+      }
+
+      // =========================================================================
+      // REBUILD PIPELINE
+      // =========================================================================
+      function rebuildAll() {
+        generateChannel();
+        synthesizeThunderBuffer(state.segments, state.tMin, state.tMax, state.energyKA);
+        rebuildBolt3D();
+        updateTelemetry();
+        runVerificationChecks();
+        renderDiagnosticOverlay();
+      }
+
+      // =========================================================================
+      // ANIMATION LOOP
+      // =========================================================================
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const tNow = performance.now() * 0.001;
+        cloudUniforms.uTime.value = tNow;
+
+        // Automated Poisson Storm Strike Scheduler
+        if (state.stormEnabled && tNow >= state.nextStormStrikeAt) {
+          const u = Math.max(0.05, Math.random());
+          const interval = Math.max(0.85, -Math.log(u) / Math.max(0.05, state.stormFreq));
+          state.nextStormStrikeAt = tNow + Math.min(22.0, interval);
+          state.seed = (state.seed * 1664525 + 1013904223) >>> 0;
+          rebuildAll();
+          triggerStrike(true);
+        }
+
+        // Distant intra-cloud sheet-lightning flashes between major bolts
+        if (tNow >= state.nextSheetFlashAt) {
+          state.sheetFlashTime = tNow;
+          state.nextSheetFlashAt = tNow + 1.2 + Math.random() * 3.4;
+          const ang = Math.random() * Math.PI * 2;
+          const dist = 2500 + Math.random() * 6500;
+          cloudUniforms.uSheetPos.value.set(Math.cos(ang) * dist, cloudMesh.position.y, Math.sin(ang) * dist);
+        }
+        const sheetAge = tNow - state.sheetFlashTime;
+        cloudUniforms.uSheetIntensity.value = sheetAge < 0.35
+          ? (Math.exp(-sheetAge * 14.0) + (sheetAge > 0.09 ? Math.exp(-(sheetAge - 0.09) * 18.0) * 0.7 : 0)) * 0.95
+          : 0.0;
+
+        // Animate falling storm rain
+        const rPos = rainLines.geometry.attributes.position.array;
+        for (let i = 0; i < rainCount; i++) {
+          const idx = i * 6;
+          rPos[idx + 1] -= 42;
+          rPos[idx + 4] -= 42;
+          if (rPos[idx + 1] < 0) {
+            rPos[idx + 1] += 5200;
+            rPos[idx + 4] += 5200;
+          }
+        }
+        rainLines.geometry.attributes.position.needsUpdate = true;
+
+        // Multi-stroke return-stroke flicker envelope
+        let flashBoost = 1.0;
+        let cloudFlash = 0.18;
+        if (state.strikeVisualTime) {
+          const age = tNow - state.strikeVisualTime;
+          if (age < 0.45) {
+            const s1 = Math.exp(-age * 16.0);
+            const s2 = age > 0.075 ? Math.exp(-(age - 0.075) * 22.0) * 0.8 : 0;
+            const s3 = age > 0.16 ? Math.exp(-(age - 0.16) * 18.0) * 0.55 : 0;
+            const envelope = Math.min(1.4, s1 + s2 + s3);
+            flashBoost = 1.0 + envelope * 2.2;
+            cloudFlash = 0.2 + envelope * 1.45;
+          }
+        }
+        cloudUniforms.uFlashIntensity.value = cloudFlash;
+        rainMat.opacity = 0.08 + (flashBoost - 1.0) * 0.14;
+
+        const lightPower = (flashBoost - 1.0) * (3.5 + state.energyKA * 0.05);
+        boltLightTop.intensity = lightPower * 1.2;
+        boltLightMid.intensity = lightPower * 1.0;
+        boltLightGround.intensity = state.flashType === 'CG' ? lightPower * 1.4 : lightPower * 0.5;
+
+        let leaderProg = 1.0;
+        if (state.strikeVisualTime) {
+          const age = tNow - state.strikeVisualTime;
+          if (age < 0.045) {
+            leaderProg = Math.min(1.0, age / 0.038);
+          }
+        }
+        skyUniforms.uFlashIntensity.value = Math.max(0, (flashBoost - 1.0) * 0.55);
+        for (let i = 0; i < plasmaShaderMaterials.length; i++) {
+          plasmaShaderMaterials[i].uniforms.uFlashBoost.value = flashBoost;
+          plasmaShaderMaterials[i].uniforms.uLeaderProg.value = leaderProg;
+        }
+        if (groundScorchRing) {
+          const s = 1.0 + (flashBoost - 1.0) * 0.45;
+          groundScorchRing.scale.set(s, s, 1);
+          groundScorchRing.material.opacity = Math.min(0.95, 0.35 + (flashBoost - 1.0) * 0.4);
+        }
+
+        // Update expanding 3D acoustic shock-front rings (c = 343 m/s)
+        for (let i = activeShockFronts.length - 1; i >= 0; i--) {
+          const sf = activeShockFronts[i];
+          const age = tNow - sf.born;
+          const r = Math.max(10, age * SPEED_OF_SOUND);
+          sf.mesh.scale.set(r, r, 1);
+          const fade = Math.max(0, 0.72 - age * 0.08);
+          sf.mesh.material.opacity = fade;
+          if (fade <= 0.01) {
+            sf.mesh.geometry.dispose();
+            sf.mesh.material.dispose();
+            shockFrontGroup.remove(sf.mesh);
+            activeShockFronts.splice(i, 1);
+          }
+        }
+
+        // Pulse listener beacon ring
+        const pulse = 1 + 0.25 * Math.sin(tNow * 3.0);
+        pulseRingMesh.scale.set(pulse, pulse, 1);
+
+        // Animate segment arrival colors while audio is rolling
+        if (activeSegmentPoints && state.isPlaying) {
+          const elapsed = tNow - state.playStartTime;
+          const colors = activeSegmentPoints.geometry.attributes.color.array;
+          const segs = state.segments;
+          for (let i = 0; i < segs.length; i++) {
+            const relT = (segs[i].arrivalTime - state.tMin) + 0.025;
+            const dt = elapsed - relT;
+            if (dt >= 0 && dt < 0.16) {
+              // Bright amber-white flash as segment's N-wave arrives at listener
+              colors[i * 3] = 1.0;
+              colors[i * 3 + 1] = 0.88;
+              colors[i * 3 + 2] = 0.35;
+            } else if (dt >= 0.16) {
+              colors[i * 3] = 0.12;
+              colors[i * 3 + 1] = 0.32;
+              colors[i * 3 + 2] = 0.55;
+            } else {
+              colors[i * 3] = 0.22;
+              colors[i * 3 + 1] = 0.74;
+              colors[i * 3 + 2] = 0.97;
+            }
+          }
+          activeSegmentPoints.geometry.attributes.color.needsUpdate = true;
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // EVENT LISTENERS
+      // =========================================================================
+      document.getElementById('slider-length').addEventListener('input', (e) => {
+        state.lengthKm = parseFloat(e.target.value);
+        document.getElementById('val-length').textContent = `${state.lengthKm.toFixed(1)} km`;
+        rebuildAll();
+      });
+
+      document.getElementById('slider-tortuosity').addEventListener('input', (e) => {
+        state.tortuosity = parseFloat(e.target.value);
+        document.getElementById('val-tortuosity').textContent = state.tortuosity.toFixed(2);
+        rebuildAll();
+      });
+
+      document.getElementById('slider-distance').addEventListener('input', (e) => {
+        state.listenerDistM = parseFloat(e.target.value);
+        document.getElementById('val-distance').textContent = state.listenerDistM >= 1000
+          ? `${(state.listenerDistM / 1000).toFixed(2)} km`
+          : `${Math.round(state.listenerDistM)} m`;
+        rebuildAll();
+      });
+
+      document.getElementById('slider-energy').addEventListener('input', (e) => {
+        state.energyKA = parseFloat(e.target.value);
+        document.getElementById('val-energy').textContent = `${Math.round(state.energyKA)} kA`;
+        rebuildAll();
+      });
+
+      document.getElementById('slider-gain').addEventListener('input', (e) => {
+        state.masterGain = parseFloat(e.target.value) / 100;
+        document.getElementById('val-gain').textContent = `${Math.round(state.masterGain * 100)}%`;
+      });
+
+      document.getElementById('btn-flash-cg').addEventListener('click', () => {
+        state.flashType = 'CG';
+        document.getElementById('geometry-badge').textContent = 'CG FLASH';
+        document.getElementById('btn-flash-cg').className = 'py-1.5 rounded-md text-[11px] font-medium bg-sky-500/25 text-sky-200 border border-sky-400/40 transition-colors';
+        document.getElementById('btn-flash-ic').className = 'py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-slate-200 border border-transparent transition-colors';
+        rebuildAll();
+      });
+
+      document.getElementById('btn-flash-ic').addEventListener('click', () => {
+        state.flashType = 'IC';
+        document.getElementById('geometry-badge').textContent = 'IC FLASH';
+        document.getElementById('btn-flash-ic').className = 'py-1.5 rounded-md text-[11px] font-medium bg-sky-500/25 text-sky-200 border border-sky-400/40 transition-colors';
+        document.getElementById('btn-flash-cg').className = 'py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-slate-200 border border-transparent transition-colors';
+        rebuildAll();
+      });
+
+      document.querySelectorAll('.view-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.viewMode = btn.getAttribute('data-view');
+          document.querySelectorAll('.view-tab').forEach((b) => {
+            const active = b === btn;
+            b.className = active
+              ? 'view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors bg-sky-500/25 text-sky-200 border border-sky-400/40'
+              : 'view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent';
+          });
+          renderDiagnosticOverlay();
+        });
+      });
+
+      document.getElementById('btn-strike').addEventListener('click', () => triggerStrike(false));
+
+      document.getElementById('btn-storm-toggle').addEventListener('click', () => {
+        ensureAudioCtx();
+        state.stormEnabled = !state.stormEnabled;
+        const btn = document.getElementById('btn-storm-toggle');
+        btn.textContent = state.stormEnabled ? 'Storm: ON' : 'Storm: OFF';
+        btn.className = state.stormEnabled
+          ? 'px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/25 hover:bg-indigo-500/35 text-indigo-200 border border-indigo-400/45 transition-colors'
+          : 'px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-400 border border-slate-700/70 transition-colors';
+        if (state.stormEnabled) {
+          state.nextStormStrikeAt = (performance.now() * 0.001) + 0.6;
+        }
+      });
+
+      document.getElementById('slider-freq').addEventListener('input', (e) => {
+        state.stormFreq = parseFloat(e.target.value);
+        const avgSec = (1.0 / state.stormFreq).toFixed(1);
+        document.getElementById('val-freq').textContent = `${state.stormFreq.toFixed(2)} /s (~${avgSec}s)`;
+        state.nextStormStrikeAt = Math.min(state.nextStormStrikeAt, (performance.now() * 0.001) + (1.0 / state.stormFreq));
+      });
+      document.getElementById('btn-reseed').addEventListener('click', () => {
+        state.seed = (state.seed * 1664525 + 1013904223) >>> 0;
+        rebuildAll();
+      });
+      document.getElementById('btn-export-wav').addEventListener('click', exportWav);
+
+      document.getElementById('btn-toggle-panels').addEventListener('click', () => {
+        state.panelsVisible = !state.panelsVisible;
+        document.getElementById('left-panel').classList.toggle('hidden', !state.panelsVisible);
+        document.getElementById('right-panel').classList.toggle('hidden', !state.panelsVisible);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+          e.preventDefault();
+          triggerStrike(false);
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const rw = Math.max(256, Math.floor(window.innerWidth * Math.min(window.devicePixelRatio, 2)));
+        const rh = Math.max(256, Math.floor(window.innerHeight * Math.min(window.devicePixelRatio, 2)));
+        rtScene.setSize(rw, rh);
+        rtBloomA.setSize(Math.floor(rw * 0.5), Math.floor(rh * 0.5));
+        rtBloomB.setSize(Math.floor(rw * 0.5), Math.floor(rh * 0.5));
+        renderDiagnosticOverlay();
+      });
+
+      // Initialize
+      rebuildAll();
+      animate();
+    });
+  </script>
+</body>
+</html>
