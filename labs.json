@@ -559,6 +559,18 @@
         "fall law",
         "tidewater vs rock"
        ]
+      },
+      {
+       "href": "seismogram_3d_p_wave_s_wave_ranging_gutenberg_richter_lab.html",
+       "glyph": "seismo",
+       "name": "SEISMOGRAM 3D",
+       "desc": "An earthquake arrives in three phases, and the gap between the first two is a ruler: &#916;t = d(1/v&#8347; &#8722; 1/v&#8346;), about 0.119 s per kilometre. Move the epicentre and the same event becomes a different rhythm - three sharp hits nearby, a minute-long swell at 500 km. The only sound here that tells you how far away it happened.",
+       "tags": [
+        "P &amp; S arrivals",
+        "ranging",
+        "dispersive Rayleigh",
+        "Gutenberg-Richter"
+       ]
       }
      ]
     }

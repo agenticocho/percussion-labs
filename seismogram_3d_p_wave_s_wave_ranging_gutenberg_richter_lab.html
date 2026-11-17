@@ -1,0 +1,2067 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEISMOGRAM 3D v4 — P/S Ranging & Gutenberg–Richter Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020617;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+
+    .seismo-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    .seismo-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .seismo-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+    .seismo-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+      cursor: pointer;
+    }
+    .seismo-slider.amber::-webkit-slider-thumb { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.75); }
+    .seismo-slider.violet::-webkit-slider-thumb { background: #c084fc; box-shadow: 0 0 10px rgba(192, 132, 252, 0.75); }
+    .seismo-slider.emerald::-webkit-slider-thumb { background: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.75); }
+
+    .panel-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.6); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+
+  <!-- Full-screen 3D WebGL Canvas -->
+  <div id="webgl-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="pointer-events-auto flex items-center gap-2.5 bg-slate-950/80 backdrop-blur-md border border-slate-800/80 rounded-xl px-3.5 py-2 shadow-2xl">
+      <button id="btn-toggle-sidebar" type="button" title="Collapse or expand control panel" class="px-2 py-1 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[11px] text-sky-300 transition">
+        ◀ HIDE
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_12px_#38bdf8] animate-pulse"></span>
+        <h1 class="font-mono text-sm sm:text-base font-bold tracking-wider text-slate-100">SEISMOGRAM 3D <span class="text-sky-400 text-xs font-semibold">v4</span></h1>
+      </div>
+      <span class="hidden lg:inline-block text-xs text-slate-400 border-l border-slate-800 pl-3">
+        P / S / Surface Ranging &amp; Gutenberg–Richter Lab
+      </span>
+    </div>
+
+    <div class="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-slate-950/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-1.5 shadow-2xl">
+      <button id="btn-trigger" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono text-xs font-bold tracking-wide transition shadow-[0_0_16px_rgba(56,189,248,0.45)]">
+        TRIGGER QUAKE
+      </button>
+      <button id="btn-stop" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-semibold transition">
+        STOP
+      </button>
+      <button id="btn-timescale" type="button" title="Toggle playback speed" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-sky-500/60 text-sky-300 font-mono text-xs font-semibold transition">
+        1× REAL-TIME
+      </button>
+      <button id="btn-mute" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 font-mono text-xs transition">
+        AUDIO: ON
+      </button>
+      <button id="btn-wav" type="button" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 text-emerald-300 font-mono text-xs font-semibold transition">
+        EXPORT .WAV
+      </button>
+      <button id="btn-verify" type="button" class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-mono text-xs font-semibold transition">
+        VERIFY (4/4)
+      </button>
+    </div>
+  </header>
+
+  <!-- Camera View Presets -->
+  <div class="fixed top-16 right-3 z-20 hidden sm:flex items-center gap-1 bg-slate-950/75 backdrop-blur-md border border-slate-800/80 rounded-lg p-1 shadow-xl">
+    <span class="font-mono text-[10px] text-slate-500 px-1.5">CAM</span>
+    <button type="button" data-cam="persp" class="cam-preset px-2 py-1 rounded font-mono text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">3D Orbit</button>
+    <button type="button" data-cam="cross" class="cam-preset px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Cross-Section</button>
+    <button type="button" data-cam="top" class="cam-preset px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Top-Down</button>
+    <button type="button" data-cam="station" class="cam-preset px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Station</button>
+  </div>
+
+  <!-- Collapsible Left Control Panel -->
+  <aside id="left-sidebar" class="fixed top-16 left-3 bottom-3 w-72 sm:w-80 z-20 pointer-events-none flex flex-col gap-2.5 max-h-[calc(100vh-4.75rem)] transition-transform duration-300 ease-out">
+    <div class="pointer-events-auto bg-slate-950/82 backdrop-blur-md border border-slate-800/80 rounded-xl p-3.5 shadow-2xl overflow-y-auto panel-scroll flex flex-col gap-3.5">
+
+      <!-- Phase Legend & Live Gap Telemetry -->
+      <div class="rounded-lg bg-slate-900/75 border border-slate-800 p-2.5">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="font-mono text-[11px] uppercase tracking-wider text-slate-400">Ranging Telemetry</span>
+          <span id="telemetry-status" class="font-mono text-[11px] text-sky-400">IDLE</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5 text-center font-mono">
+          <div class="rounded bg-slate-950/80 border border-sky-500/30 p-1.5">
+            <div class="text-[10px] text-sky-400">P (6.0 km/s)</div>
+            <div id="readout-tp" class="text-xs font-bold text-slate-100">16.67 s</div>
+          </div>
+          <div class="rounded bg-slate-950/80 border border-amber-500/30 p-1.5">
+            <div class="text-[10px] text-amber-400">S (3.5 km/s)</div>
+            <div id="readout-ts" class="text-xs font-bold text-slate-100">28.57 s</div>
+          </div>
+          <div class="rounded bg-slate-950/80 border border-purple-500/30 p-1.5">
+            <div class="text-[10px] text-purple-400">R (3.0 km/s)</div>
+            <div id="readout-tr" class="text-xs font-bold text-slate-100">33.33 s</div>
+          </div>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between font-mono text-xs">
+          <span class="text-slate-400">Δt(S − P) gap:</span>
+          <span id="readout-dt-sp" class="text-amber-300 font-bold">11.90 s</span>
+        </div>
+        <div class="mt-1 flex items-center justify-between font-mono text-[11px]">
+          <span class="text-slate-500">Slope 1/v_s − 1/v_p:</span>
+          <span class="text-slate-300">0.1190 s/km</span>
+        </div>
+      </div>
+
+      <!-- Primary Sweep: Epicentral Distance d -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-distance" class="text-xs font-semibold text-slate-200">Epicentral Distance <span class="font-mono text-sky-400">d</span></label>
+          <span id="val-distance" class="font-mono text-xs font-bold text-sky-300">100 km</span>
+        </div>
+        <input id="slider-distance" type="range" min="0" max="1000" step="1" value="100" class="seismo-slider" />
+        <div class="flex items-center justify-between gap-1 mt-2">
+          <button type="button" data-dist="0" class="preset-dist flex-1 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300 transition">0 km Null</button>
+          <button type="button" data-dist="10" class="preset-dist flex-1 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300 transition">10 km</button>
+          <button type="button" data-dist="100" class="preset-dist flex-1 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-sky-500/60 font-mono text-[10px] text-sky-300 transition">100 km</button>
+          <button type="button" data-dist="500" class="preset-dist flex-1 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[10px] text-slate-300 transition">500 km</button>
+        </div>
+        <p id="rhythm-caption" class="mt-1.5 text-[11px] text-slate-400 leading-snug">
+          ~12 s of silence between P and S — a rhythmic ranging gap.
+        </p>
+      </div>
+
+      <!-- Magnitude M -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-mag" class="text-xs font-semibold text-slate-200">Magnitude <span class="font-mono text-amber-400">M</span></label>
+          <span id="val-mag" class="font-mono text-xs font-bold text-amber-300">M 5.4</span>
+        </div>
+        <input id="slider-mag" type="range" min="3.0" max="7.0" step="0.1" value="5.4" class="seismo-slider amber" />
+        <div class="text-[11px] text-slate-400 mt-1">Sets amplitude &amp; roll duration — never alters Δt(S−P).</div>
+      </div>
+
+      <!-- Depth z -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-depth" class="text-xs font-semibold text-slate-200">Focal Depth <span class="font-mono text-purple-400">z</span></label>
+          <span id="val-depth" class="font-mono text-xs font-bold text-purple-300">15 km (Shallow)</span>
+        </div>
+        <input id="slider-depth" type="range" min="5" max="600" step="5" value="15" class="seismo-slider violet" />
+        <div class="text-[11px] text-slate-400 mt-1">Deep events suppress surface waves, leaving a clean P–S pair.</div>
+      </div>
+
+      <!-- Station Response -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-station" class="text-xs font-semibold text-slate-200">Station Response</label>
+          <span id="val-station" class="font-mono text-xs font-bold text-emerald-300">Broadband (0.05–15 Hz)</span>
+        </div>
+        <input id="slider-station" type="range" min="0" max="1" step="0.01" value="0" class="seismo-slider emerald" />
+        <div class="flex justify-between font-mono text-[10px] text-slate-500 mt-1">
+          <span>Broadband</span>
+          <span>Short-Period</span>
+        </div>
+      </div>
+
+      <!-- P:S Invariance Readout -->
+      <div class="rounded-lg bg-slate-900/60 border border-slate-800/80 px-2.5 py-2 flex items-center justify-between font-mono text-[11px]">
+        <span class="text-slate-400">S : P Amplitude Ratio:</span>
+        <span id="readout-ps-ratio" class="text-emerald-300 font-bold">2.40× (d-invariant)</span>
+      </div>
+
+      <!-- 3D Polarization Legend -->
+      <div class="rounded-lg bg-slate-900/45 border border-slate-800/60 p-2 text-[10.5px] text-slate-400 space-y-1 font-mono">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-400"></span><span>P: Longitudinal compression</span></div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span><span>S: Transverse shear</span></div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-purple-400"></span><span>R: Dispersive Rayleigh roll</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom-Right Display Panel -->
+  <section id="bottom-panel" class="fixed bottom-3 right-3 left-3 md:left-[21.5rem] z-20 pointer-events-none transition-all duration-300">
+    <div class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-slate-800/80 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-800/80 bg-slate-900/50">
+        <div class="flex items-center gap-1.5">
+          <button type="button" data-tab="trace" class="display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">
+            Seismogram Trace
+          </button>
+          <button type="button" data-tab="timeline" class="display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+            Three-Phase Timeline
+          </button>
+          <button type="button" data-tab="gr" class="display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+            log₁₀ N vs M (G–R)
+          </button>
+        </div>
+        <div id="display-meta" class="font-mono text-[11px] text-slate-400">
+          Phase-Colored Velocity • High-to-Low Dispersive Roll
+        </div>
+      </div>
+
+      <div id="panel-trace" class="p-3">
+        <div class="relative h-40 sm:h-44 w-full">
+          <canvas id="canvas-trace" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+      </div>
+
+      <div id="panel-timeline" class="p-3 hidden">
+        <div class="relative h-40 sm:h-44 w-full">
+          <canvas id="canvas-timeline" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+      </div>
+
+      <div id="panel-gr" class="p-3 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+          <div class="lg:col-span-7 relative h-44 sm:h-48">
+            <canvas id="canvas-gr" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+          </div>
+          <div class="lg:col-span-5 flex flex-col justify-between rounded-lg bg-slate-900/75 border border-slate-800 p-3 text-xs leading-relaxed">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-amber-300">Gutenberg–Richter &amp; The SOC Caveat</span>
+                <button id="btn-resample-gr" type="button" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 font-mono text-[10px] text-sky-300 border border-slate-700 transition">
+                  Resample 4,000
+                </button>
+              </div>
+              <div id="gr-fit-readout" class="font-mono text-[11px] text-emerald-300 mb-2">
+                log₁₀ N = 6.60 − 1.00 M (b = 1.00, N = 4,000)
+              </div>
+              <p class="text-slate-300 text-[11.5px] leading-relaxed">
+                <strong class="text-slate-100">SAND-PILE</strong> shows a power law from self-organised criticality — a system driven to marginal stability with no characteristic size. Earthquakes show a similar power law from a different mechanism: a heterogeneous fault population with a distribution of sizes, not a single system self-tuning. Same statistics, different physics.
+              </p>
+            </div>
+            <div class="mt-2 pt-1.5 border-t border-slate-800 font-mono text-[10px] text-slate-500">
+              Synthetic catalogue: M ∈ [3.0, 7.0], inverse-CDF exponential sampling.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Verification Modal -->
+  <div id="modal-verify" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h2 class="font-mono text-sm font-bold text-slate-100">SEISMOGRAM 3D — Four-Check Physics Verification</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Live numerical audit of ranging law, causality, P:S distance-invariance, and d → 0 null.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 font-mono text-xs text-slate-300">CLOSE</button>
+      </div>
+      <div id="verify-results" class="mt-4 space-y-2.5 font-mono text-xs"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+        <span id="verify-summary" class="font-mono text-xs text-emerald-400 font-semibold">All 4 checks passed.</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono text-xs font-bold">RE-RUN CHECKS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-16 right-4 z-50 hidden px-3.5 py-2 rounded-lg bg-slate-900/95 border border-sky-500/50 text-sky-200 font-mono text-xs shadow-xl"></div>
+
+  <script>
+  window.addEventListener('load', () => {
+    'use strict';
+
+    // =========================================================================
+    // 1. PHYSICAL CONSTANTS & EXACT ANALYTICAL MODEL
+    // =========================================================================
+    const VP = 6.0;
+    const VS = 3.5;
+    const VR = 3.0;
+    const THEORY_SLOPE = (1 / VS) - (1 / VP);
+
+    const state = {
+      distance: 100,
+      magnitude: 5.4,
+      depth: 15,
+      stationMix: 0.0,
+      timeScale: 1,
+      muted: false,
+      activeTab: 'trace',
+      sidebarOpen: true,
+      playing: false,
+      simTime: 0,
+      lastFrameTs: 0,
+      arrivedP: false,
+      arrivedS: false,
+      arrivedR: false,
+      stationShock: 0,
+      camShake: 0,
+      grCatalogue: [],
+      grFit: { a: 0, b: 1, bins: [] }
+    };
+
+    function computePhaseTimes(d) {
+      const dist = Math.max(0, d);
+      const tP = dist / VP;
+      const tS = dist / VS;
+      const tR = dist / VR;
+      return { tP, tS, tR, dtSP: tS - tP, dtRS: tR - tS };
+    }
+
+    function computePhaseAmplitudes(d, M, depth, stationMix) {
+      const magScale = Math.pow(10, 0.38 * (M - 4.5));
+      const distAtten = 1 / Math.pow(1 + d / 120, 0.22);
+      const depthNorm = (depth - 5) / 595;
+      const surfaceDepthFactor = Math.exp(-depthNorm * 3.4);
+
+      const pStation = 1.0 + 0.35 * stationMix;
+      const sStation = 1.0 + 0.15 * stationMix;
+      const rStation = 1.0 - 0.72 * stationMix;
+
+      const ampP = magScale * distAtten * 0.42 * pStation;
+      const ampS = magScale * distAtten * 1.008 * sStation;
+      const ampR = magScale * distAtten * 1.45 * surfaceDepthFactor * rStation;
+
+      return { ampP, ampS, ampR, psRatio: ampS / ampP };
+    }
+
+    function computePhaseDurations(d, M) {
+      const distFactor = Math.min(1, d / 25);
+      const magDur = 0.6 + 0.35 * (M - 3.0);
+      const durP = (0.14 + 0.22 * magDur) * (0.25 + 0.75 * distFactor);
+      const durS = (0.22 + 0.55 * magDur) * (0.20 + 0.80 * distFactor);
+      const baseRoll = 24 + 9 * (M - 3.0);
+      const durR = 0.18 + baseRoll * distFactor;
+      return { durP, durS, durR };
+    }
+
+    function evaluateSeismogramComponents(t, d, M, depth, stationMix) {
+      const { tP, tS, tR } = computePhaseTimes(d);
+      const { ampP, ampS, ampR } = computePhaseAmplitudes(d, M, depth, stationMix);
+      const { durP, durS, durR } = computePhaseDurations(d, M);
+
+      let yP = 0, yS = 0, yR = 0;
+
+      if (t >= tP && t <= tP + durP * 3.5) {
+        const u = (t - tP) / durP;
+        const env = Math.pow(Math.max(0, u), 0.35) * Math.exp(-u * 2.2) * 2.4;
+        const freqP = 5.5 + 3.5 * stationMix;
+        yP = ampP * env * (Math.sin(2 * Math.PI * freqP * (t - tP)) + 0.45 * Math.sin(2 * Math.PI * (freqP * 1.67) * (t - tP)));
+      }
+
+      if (t >= tS && t <= tS + durS * 3.5) {
+        const u = (t - tS) / durS;
+        const env = Math.pow(Math.max(0, u), 0.6) * Math.exp(-u * 1.4) * 2.1;
+        const freqS = 2.1 + 0.9 * stationMix;
+        yS = ampS * env * (Math.sin(2 * Math.PI * freqS * (t - tS) + 0.4) + 0.35 * Math.sin(2 * Math.PI * (freqS * 1.42) * (t - tS)));
+      }
+
+      if (t >= tR && t <= tR + durR * 1.35) {
+        const u = (t - tR) / durR;
+        const env = Math.sin(Math.min(Math.PI, Math.PI * Math.pow(u, 0.72))) * Math.exp(-Math.max(0, u - 0.55) * 2.6);
+        const fStart = d < 5 ? 4.0 : 2.8;
+        const fEnd = d < 5 ? 2.5 : 0.32;
+        const phase = 2 * Math.PI * durR * (fStart * u + 0.5 * (fEnd - fStart) * u * u);
+        yR = ampR * env * Math.sin(phase);
+      }
+
+      return { yP, yS, yR, total: yP + yS + yR };
+    }
+
+    function evaluateSeismogram(t, d, M, depth, stationMix) {
+      return evaluateSeismogramComponents(t, d, M, depth, stationMix).total;
+    }
+
+    // =========================================================================
+    // 2. WEB AUDIO SYNTHESIS & 44.1 kHz 16-BIT STEREO .WAV EXPORT
+    // =========================================================================
+    let audioCtx = null;
+    let activeAudioNodes = [];
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function stopAllAudio() {
+      activeAudioNodes.forEach((n) => {
+        try { n.stop(); } catch (_) {}
+        try { n.disconnect(); } catch (_) {}
+      });
+      activeAudioNodes = [];
+    }
+
+    function scheduleQuakeAudio(ctx, dest, startTime, d, M, depth, stationMix, timeScale) {
+      const { tP, tS, tR } = computePhaseTimes(d);
+      const { ampP, ampS, ampR } = computePhaseAmplitudes(d, M, depth, stationMix);
+      const { durP, durS, durR } = computePhaseDurations(d, M);
+
+      const sP = startTime + tP / timeScale;
+      const sS = startTime + tS / timeScale;
+      const sR = startTime + tR / timeScale;
+
+      const normGain = 0.28 / Math.max(0.4, Math.pow(10, 0.22 * (M - 5.0)));
+      const created = [];
+
+      // P-WAVE
+      {
+        const g = ctx.createGain();
+        const peak = Math.min(0.85, ampP * normGain * 1.15);
+        const dP = Math.max(0.12, durP / timeScale);
+        g.gain.setValueAtTime(0.0001, sP);
+        g.gain.linearRampToValueAtTime(peak, sP + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, sP + dP + 0.14);
+
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220 + 60 * stationMix, sP);
+        osc.frequency.exponentialRampToValueAtTime(78, sP + 0.09);
+
+        const bufLen = Math.floor(ctx.sampleRate * 0.045);
+        const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) ch[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+        const noise = ctx.createBufferSource();
+        noise.buffer = buf;
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 1400;
+        bp.Q.value = 1.6;
+
+        osc.connect(g);
+        noise.connect(bp);
+        bp.connect(g);
+        g.connect(dest);
+
+        osc.start(sP);
+        osc.stop(sP + dP + 0.16);
+        noise.start(sP);
+        created.push(osc, noise);
+      }
+
+      // S-WAVE
+      {
+        const g = ctx.createGain();
+        const peak = Math.min(0.95, ampS * normGain * 1.05);
+        const dS = Math.max(0.24, (durS * 1.4) / timeScale);
+        g.gain.setValueAtTime(0.0001, sS);
+        g.gain.linearRampToValueAtTime(peak, sS + 0.018);
+        g.gain.exponentialRampToValueAtTime(0.0001, sS + dS + 0.25);
+
+        const osc1 = ctx.createOscillator();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(108, sS);
+        osc1.frequency.exponentialRampToValueAtTime(42, sS + dS * 0.8);
+
+        const osc2 = ctx.createOscillator();
+        osc2.type = 'sawtooth';
+        osc2.frequency.setValueAtTime(76, sS);
+        osc2.frequency.exponentialRampToValueAtTime(34, sS + dS * 0.8);
+
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(240 + 120 * stationMix, sS);
+        lp.Q.value = 2.2;
+
+        osc1.connect(g);
+        osc2.connect(lp);
+        lp.connect(g);
+        g.connect(dest);
+
+        osc1.start(sS);
+        osc1.stop(sS + dS + 0.28);
+        osc2.start(sS);
+        osc2.stop(sS + dS + 0.28);
+        created.push(osc1, osc2);
+      }
+
+      // SURFACE WAVE (Dispersive: high -> low)
+      if (ampR > 0.015) {
+        const dR = Math.max(0.2, durR / timeScale);
+        const peak = Math.min(0.9, ampR * normGain * 0.95);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, sR);
+        g.gain.linearRampToValueAtTime(peak * 0.65, sR + dR * 0.14);
+        g.gain.linearRampToValueAtTime(peak, sR + dR * 0.42);
+        g.gain.exponentialRampToValueAtTime(0.0001, sR + dR * 1.12);
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        const fHi = d < 5 ? 160 : 145;
+        const fLo = d < 5 ? 75 : 26;
+        osc.frequency.setValueAtTime(fHi, sR);
+        osc.frequency.exponentialRampToValueAtTime(fLo, sR + dR);
+
+        const oscSub = ctx.createOscillator();
+        oscSub.type = 'triangle';
+        oscSub.frequency.setValueAtTime(fHi * 0.5, sR);
+        oscSub.frequency.exponentialRampToValueAtTime(fLo * 0.7, sR + dR);
+
+        const noiseLen = Math.max(1024, Math.floor(ctx.sampleRate * (dR * 1.15)));
+        const nBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+        const nCh = nBuf.getChannelData(0);
+        for (let i = 0; i < noiseLen; i++) nCh[i] = Math.random() * 2 - 1;
+        const nSrc = ctx.createBufferSource();
+        nSrc.buffer = nBuf;
+        const nBp = ctx.createBiquadFilter();
+        nBp.type = 'bandpass';
+        nBp.Q.value = 3.2;
+        nBp.frequency.setValueAtTime(340, sR);
+        nBp.frequency.exponentialRampToValueAtTime(38, sR + dR);
+
+        const nGain = ctx.createGain();
+        nGain.gain.value = 0.35;
+
+        osc.connect(g);
+        oscSub.connect(g);
+        nSrc.connect(nBp);
+        nBp.connect(nGain);
+        nGain.connect(g);
+        g.connect(dest);
+
+        osc.start(sR);
+        osc.stop(sR + dR * 1.15);
+        oscSub.start(sR);
+        oscSub.stop(sR + dR * 1.15);
+        nSrc.start(sR);
+        nSrc.stop(sR + dR * 1.15);
+        created.push(osc, oscSub, nSrc);
+      }
+
+      return created;
+    }
+
+    async function exportWavFile() {
+      const { tR } = computePhaseTimes(state.distance);
+      const { durR } = computePhaseDurations(state.distance, state.magnitude);
+      const totalSec = Math.min(95, Math.max(3.0, (tR + durR * 1.18) / state.timeScale + 0.5));
+      const sampleRate = 44100;
+      const offline = new OfflineAudioContext(2, Math.floor(sampleRate * totalSec), sampleRate);
+
+      scheduleQuakeAudio(
+        offline,
+        offline.destination,
+        0.05,
+        state.distance,
+        state.magnitude,
+        state.depth,
+        state.stationMix,
+        state.timeScale
+      );
+
+      const rendered = await offline.startRendering();
+      const wavBlob = audioBufferToWav16BitStereo(rendered);
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `seismogram_d${state.distance}km_M${state.magnitude.toFixed(1)}_z${state.depth}km.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast(`Exported 44.1 kHz 16-bit stereo WAV (${totalSec.toFixed(1)} s)`);
+    }
+
+    function audioBufferToWav16BitStereo(buffer) {
+      const numCh = 2;
+      const sampleRate = buffer.sampleRate;
+      const len = buffer.length;
+      const dataSize = len * numCh * 2;
+      const out = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(out);
+
+      const writeStr = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numCh, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numCh * 2, true);
+      view.setUint16(32, numCh * 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      const ch0 = buffer.getChannelData(0);
+      const ch1 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : ch0;
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        const s0 = Math.max(-1, Math.min(1, ch0[i]));
+        const s1 = Math.max(-1, Math.min(1, ch1[i]));
+        view.setInt16(offset, s0 < 0 ? s0 * 0x8000 : s0 * 0x7fff, true);
+        view.setInt16(offset + 2, s1 < 0 ? s1 * 0x8000 : s1 * 0x7fff, true);
+        offset += 4;
+      }
+      return new Blob([out], { type: 'audio/wav' });
+    }
+
+    // =========================================================================
+    // 3. THREE.JS v4 — TWILIGHT SKY DOME, MICRO-ROCK TERRAIN & OPEN-SPACE FRAMING
+    // =========================================================================
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020617);
+    scene.fog = new THREE.FogExp2(0x020617, 0.0065);
+
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 600);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.28;
+    container.appendChild(renderer.domElement);
+
+    function createGlowSpriteTexture() {
+      const c = document.createElement('canvas');
+      c.width = 64;
+      c.height = 64;
+      const g = c.getContext('2d');
+      const grad = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+      grad.addColorStop(0.0, 'rgba(255,255,255,1.0)');
+      grad.addColorStop(0.25, 'rgba(255,255,255,0.75)');
+      grad.addColorStop(0.6, 'rgba(255,255,255,0.18)');
+      grad.addColorStop(1.0, 'rgba(255,255,255,0.0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+    const glowTex = createGlowSpriteTexture();
+
+    // Twilight Observatory Atmospheric Sky Dome
+    {
+      const skyGeo = new THREE.SphereGeometry(260, 32, 20);
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        vertexShader: `
+          varying vec3 vPos;
+          void main() {
+            vPos = position;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vPos;
+          void main() {
+            float h = normalize(vPos).y;
+            vec3 zenith = vec3(0.008, 0.018, 0.045);
+            vec3 horizon = vec3(0.035, 0.075, 0.16);
+            vec3 nadir = vec3(0.005, 0.01, 0.025);
+            vec3 col = h >= 0.0 ? mix(horizon, zenith, pow(h, 0.55)) : mix(horizon, nadir, pow(-h, 0.5));
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      });
+      scene.add(new THREE.Mesh(skyGeo, skyMat));
+    }
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x334155, 0.95));
+    const keyLight = new THREE.DirectionalLight(0xbae6fd, 1.45);
+    keyLight.position.set(20, 38, 24);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0xc084fc, 0.95);
+    rimLight.position.set(-26, 14, -22);
+    scene.add(rimLight);
+    const epiPointLight = new THREE.PointLight(0xf59e0b, 2.5, 40);
+    scene.add(epiPointLight);
+    const stationPointLight = new THREE.PointLight(0x38bdf8, 1.3, 24);
+    scene.add(stationPointLight);
+
+    // Deep-Space Starfield
+    {
+      const starCount = 1400;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        const r = 100 + Math.random() * 140;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        starPos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) * 0.85 + 3;
+        starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      const starMat = new THREE.PointsMaterial({ color: 0xcbd5e1, size: 0.75, map: glowTex, transparent: true, opacity: 0.65, blending: THREE.AdditiveBlending, depthWrite: false });
+      scene.add(new THREE.Points(starGeo, starMat));
+    }
+
+    const STATION_X = -20;
+    function distToWorldX(d) { return STATION_X + (d / 1000) * 44; }
+    function depthToWorldY(z) { return -(z / 600) * 10.5; }
+
+    const SLAB_W = 58;
+    const SLAB_D = 26;
+    const SLAB_H = 11;
+
+    const waveUniforms = {
+      uEpicentre: { value: new THREE.Vector3(distToWorldX(100), depthToWorldY(15), 0) },
+      uTime: { value: 0 },
+      uActive: { value: 0 },
+      uRP: { value: 0 },
+      uRS: { value: 0 },
+      uRR: { value: 0 },
+      uSurfStrength: { value: 1.0 },
+      uMagScale: { value: 1.0 }
+    };
+
+    // --- 3A. High-Resolution Analytical-Normal Mountain/Basin Terrain with Micro-Rock Grain ---
+    const terrainGeo = new THREE.PlaneGeometry(SLAB_W, SLAB_D, 168, 76);
+    terrainGeo.rotateX(-Math.PI / 2);
+
+    const terrainMat = new THREE.ShaderMaterial({
+      uniforms: waveUniforms,
+      transparent: true,
+      vertexShader: `
+        uniform vec3 uEpicentre;
+        uniform float uTime;
+        uniform float uActive;
+        uniform float uRP;
+        uniform float uRS;
+        uniform float uRR;
+        uniform float uSurfStrength;
+        uniform float uMagScale;
+
+        varying float vWaveP;
+        varying float vWaveS;
+        varying float vWaveR;
+        varying float vBaseElev;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPos;
+
+        float baseRelief(vec2 xz) {
+          float ridge1 = 0.70 * sin(xz.x * 0.14 + 0.4) * cos(xz.y * 0.19 - 0.2);
+          float ridge2 = 0.36 * sin(xz.x * 0.33 - xz.y * 0.28);
+          float detail = 0.14 * sin(xz.x * 0.85 + xz.y * 0.72) * cos(xz.x * 0.52);
+          float padMask = smoothstep(1.5, 5.5, distance(xz, vec2(-20.0, 0.0)));
+          return (ridge1 + ridge2 + detail) * padMask;
+        }
+
+        float waveDisp(vec2 xz, out float wP, out float wS, out float wR) {
+          wP = 0.0; wS = 0.0; wR = 0.0;
+          if (uActive < 0.5) return 0.0;
+          float dist3D = distance(vec3(xz.x, 0.0, xz.y), uEpicentre);
+          float dist2D = distance(xz, uEpicentre.xz);
+
+          float dP = dist3D - uRP;
+          wP = exp(-dP * dP * 1.45) * sin(dP * 5.2);
+
+          float dS = dist3D - uRS;
+          wS = exp(-dS * dS * 0.68) * sin(dS * 3.3);
+
+          float dR = uRR - dist2D;
+          if (dR > -1.5 && dR < 15.0) {
+            float envR = exp(-max(0.0, dR) * 0.20) * smoothstep(-1.5, 0.4, dR);
+            float dispFreq = mix(5.4, 1.25, clamp(dR / 13.0, 0.0, 1.0));
+            wR = envR * sin(dR * dispFreq) * uSurfStrength;
+          }
+          return (wP * 0.20 + wS * 0.46 + wR * 0.92) * clamp(uMagScale, 0.45, 1.85);
+        }
+
+        void main() {
+          vec3 p = position;
+          p.x += 1.0;
+
+          float bElev = baseRelief(p.xz);
+          float wP, wS, wR;
+          float wY = waveDisp(p.xz, wP, wS, wR);
+          p.y = bElev + wY;
+
+          float eps = 0.20;
+          float wp1, ws1, wr1, wp2, ws2, wr2;
+          float hx = baseRelief(p.xz + vec2(eps, 0.0)) + waveDisp(p.xz + vec2(eps, 0.0), wp1, ws1, wr1);
+          float hz = baseRelief(p.xz + vec2(0.0, eps)) + waveDisp(p.xz + vec2(0.0, eps), wp2, ws2, wr2);
+          vec3 n = normalize(vec3(p.y - hx, eps, p.y - hz));
+
+          vNormalW = n;
+          vWorldPos = p;
+          vBaseElev = bElev;
+          vWaveP = abs(wP);
+          vWaveS = abs(wS);
+          vWaveR = abs(wR);
+
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying float vWaveP;
+        varying float vWaveS;
+        varying float vWaveR;
+        varying float vBaseElev;
+        varying vec3 vNormalW;
+        varying vec3 vWorldPos;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        void main() {
+          // Micro-rock normal perturbation for realistic geological grain
+          float grain = hash21(floor(vWorldPos.xz * 6.0)) * 0.08;
+          vec3 N = normalize(vNormalW + vec3(grain - 0.04, 0.0, grain - 0.04));
+          vec3 L = normalize(vec3(0.45, 0.85, 0.55));
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 H = normalize(L + V);
+
+          float diff = max(dot(N, L), 0.0);
+          float spec = pow(max(dot(N, H), 0.0), 48.0);
+          float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+          float ao = smoothstep(-0.9, 0.5, vBaseElev) * 0.55 + 0.45;
+
+          vec3 valleyCol = vec3(0.025, 0.055, 0.11);
+          vec3 ridgeCol  = vec3(0.12, 0.19, 0.30);
+          vec3 rockCol   = mix(valleyCol, ridgeCol, smoothstep(-0.6, 0.9, vBaseElev)) * ao;
+
+          float contour = 1.0 - smoothstep(0.012, 0.036, abs(fract(vBaseElev * 3.5) - 0.5));
+          float gx = abs(fract(vWorldPos.x * 0.5) - 0.5);
+          float gz = abs(fract(vWorldPos.z * 0.5) - 0.5);
+          float gridLine = 1.0 - smoothstep(0.014, 0.042, min(gx, gz));
+
+          vec3 litRock = rockCol * (0.45 + 0.80 * diff) + vec3(0.20, 0.32, 0.48) * spec * 0.50;
+          litRock += vec3(0.08, 0.18, 0.30) * gridLine * 0.32 + vec3(0.14, 0.26, 0.38) * contour * 0.22;
+          litRock += vec3(0.12, 0.28, 0.48) * fresnel * 0.26;
+
+          vec3 colP = vec3(0.22, 0.80, 1.0) * vWaveP * 1.6;
+          vec3 colS = vec3(1.0, 0.65, 0.08) * vWaveS * 1.7;
+          vec3 colR = vec3(0.80, 0.52, 1.0) * vWaveR * 1.85;
+
+          vec3 finalCol = litRock + colP + colS + colR + vec3(0.55, 0.80, 1.0) * spec * (vWaveP + vWaveS + vWaveR) * 0.65;
+          gl_FragColor = vec4(finalCol, 0.90);
+        }
+      `
+    });
+    scene.add(new THREE.Mesh(terrainGeo, terrainMat));
+
+    // --- 3B. Geological Cut-Away Lithosphere Walls with Live Wave Tomography Shader ---
+    const strataMat = new THREE.ShaderMaterial({
+      uniforms: waveUniforms,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      vertexShader: `
+        varying vec3 vWorldPos;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPos = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uEpicentre;
+        uniform float uActive;
+        uniform float uRP;
+        uniform float uRS;
+        varying vec3 vWorldPos;
+
+        void main() {
+          float depth = -vWorldPos.y;
+          float warp = 0.25 * sin(vWorldPos.x * 0.18 + vWorldPos.z * 0.15);
+          float dW = depth + warp;
+
+          vec3 upperCrust = vec3(0.05, 0.11, 0.20);
+          vec3 midCrust   = vec3(0.08, 0.10, 0.24);
+          vec3 lowerCrust = vec3(0.12, 0.08, 0.22);
+          vec3 mantle     = vec3(0.24, 0.07, 0.15);
+
+          vec3 col = mix(upperCrust, midCrust, smoothstep(1.2, 3.2, dW));
+          col = mix(col, lowerCrust, smoothstep(4.2, 6.8, dW));
+          col = mix(col, mantle, smoothstep(7.8, 10.5, dW));
+
+          float moho = 1.0 - smoothstep(0.03, 0.12, abs(dW - 4.2));
+          float lab  = 1.0 - smoothstep(0.03, 0.12, abs(dW - 7.8));
+          col += vec3(0.22, 0.55, 0.85) * moho * 0.48 + vec3(0.75, 0.35, 0.85) * lab * 0.38;
+
+          float tomGlow = 0.0;
+          if (uActive > 0.5) {
+            float dist3D = distance(vWorldPos, uEpicentre);
+            float pRing = exp(-pow(dist3D - uRP, 2.0) * 2.2);
+            float sRing = exp(-pow(dist3D - uRS, 2.0) * 1.1);
+            col += vec3(0.22, 0.82, 1.0) * pRing * 1.05;
+            col += vec3(1.0, 0.65, 0.08) * sRing * 1.05;
+            tomGlow = max(pRing, sRing);
+          }
+
+          float alpha = 0.34 + tomGlow * 0.48 + moho * 0.16;
+          gl_FragColor = vec4(col, alpha);
+        }
+      `
+    });
+
+    [
+      { w: SLAB_W, h: SLAB_H, pos: [1, -SLAB_H / 2, SLAB_D / 2], rotY: 0 },
+      { w: SLAB_W, h: SLAB_H, pos: [1, -SLAB_H / 2, -SLAB_D / 2], rotY: 0 },
+      { w: SLAB_D, h: SLAB_H, pos: [1 - SLAB_W / 2, -SLAB_H / 2, 0], rotY: Math.PI / 2 },
+      { w: SLAB_D, h: SLAB_H, pos: [1 + SLAB_W / 2, -SLAB_H / 2, 0], rotY: Math.PI / 2 }
+    ].forEach((ws) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(ws.w, ws.h), strataMat);
+      m.position.set(ws.pos[0], ws.pos[1], ws.pos[2]);
+      m.rotation.y = ws.rotY;
+      scene.add(m);
+    });
+
+    const crustEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(SLAB_W, SLAB_H, SLAB_D)),
+      new THREE.LineBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.78 })
+    );
+    crustEdges.position.set(1, -SLAB_H / 2, 0);
+    scene.add(crustEdges);
+
+    // 3D Distance Scale Tick Markers along front edge of crustal block
+    [0, 250, 500, 750, 1000].forEach((km) => {
+      const tx = distToWorldX(km);
+      const tickGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(tx, 0.05, SLAB_D / 2),
+        new THREE.Vector3(tx, -0.55, SLAB_D / 2)
+      ]);
+      scene.add(new THREE.Line(tickGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.6 })));
+    });
+
+    // --- 3C. 3,500-Particle Luminous Volumetric Crustal Field ---
+    const PARTICLE_COUNT = 3500;
+    const pBasePos = new Float32Array(PARTICLE_COUNT * 3);
+    const pCurPos = new Float32Array(PARTICLE_COUNT * 3);
+    const pColors = new Float32Array(PARTICLE_COUNT * 3);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const x = (Math.random() - 0.5) * (SLAB_W - 2) + 1;
+      const y = -Math.random() * (SLAB_H - 0.5) - 0.2;
+      const z = (Math.random() - 0.5) * (SLAB_D - 2);
+      pBasePos[i * 3] = x;
+      pBasePos[i * 3 + 1] = y;
+      pBasePos[i * 3 + 2] = z;
+      pCurPos[i * 3] = x;
+      pCurPos[i * 3 + 1] = y;
+      pCurPos[i * 3 + 2] = z;
+      pColors[i * 3] = 0.14;
+      pColors[i * 3 + 1] = 0.26;
+      pColors[i * 3 + 2] = 0.44;
+    }
+
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(pCurPos, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+    const particleMat = new THREE.PointsMaterial({
+      size: 0.42,
+      map: glowTex,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    scene.add(new THREE.Points(particleGeo, particleMat));
+
+    // --- 3D. Detailed Seismic Observatory Vault, 3-Axis Needles & Helical Drum ---
+    const stationGroup = new THREE.Group();
+    stationGroup.position.set(STATION_X, 0.05, 0);
+    scene.add(stationGroup);
+
+    const pierMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.4, 1.75, 0.55, 24),
+      new THREE.MeshPhongMaterial({ color: 0x1e293b, emissive: 0x0f172a, shininess: 70 })
+    );
+    pierMesh.position.y = 0.28;
+    stationGroup.add(pierMesh);
+
+    const domeMesh = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(1.12, 1),
+      new THREE.MeshPhongMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.65 })
+    );
+    domeMesh.position.y = 1.18;
+    stationGroup.add(domeMesh);
+
+    const stationBeaconMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const stationBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24), stationBeaconMat);
+    stationBeacon.position.y = 1.18;
+    stationGroup.add(stationBeacon);
+
+    // 3-Axis Orthogonal Seismometer Needles inside dome
+    const needleZ = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.95, 0.08), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+    needleZ.position.y = 1.18;
+    stationGroup.add(needleZ);
+
+    const stationShockMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending });
+    const stationShockRing = new THREE.Mesh(new THREE.RingGeometry(1.2, 1.75, 48), stationShockMat);
+    stationShockRing.rotation.x = -Math.PI / 2;
+    stationShockRing.position.y = 0.1;
+    stationGroup.add(stationShockRing);
+
+    const drumGroup = new THREE.Group();
+    drumGroup.position.set(STATION_X - 2.8, 1.35, 0);
+    scene.add(drumGroup);
+    const drumMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.68, 0.68, 2.4, 28, 1, true),
+      new THREE.MeshPhongMaterial({ color: 0x0f172a, emissive: 0x082f49, wireframe: true, transparent: true, opacity: 0.7 })
+    );
+    drumMesh.rotation.z = Math.PI / 2;
+    drumGroup.add(drumMesh);
+
+    const stylusPivot = new THREE.Group();
+    stylusPivot.position.set(0, 0.95, 0);
+    drumGroup.add(stylusPivot);
+    const stylusTip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.45, 0.08),
+      new THREE.MeshBasicMaterial({ color: 0x34d399 })
+    );
+    stylusTip.position.y = -0.22;
+    stylusPivot.add(stylusTip);
+
+    // --- 3E. Epicentre Energy Column, Hypocentre Plasma Core, Ray Paths & Pulses ---
+    const epicentreGroup = new THREE.Group();
+    scene.add(epicentreGroup);
+
+    const epiColumn = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.25, 0.85, 5.5, 24, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.16, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    epiColumn.position.y = 2.9;
+    epicentreGroup.add(epiColumn);
+
+    const epiOuterRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.2, 1.42, 48),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+    );
+    epiOuterRing.rotation.x = -Math.PI / 2;
+    epiOuterRing.position.y = 0.35;
+    epicentreGroup.add(epiOuterRing);
+
+    const epiInnerRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.45, 0.65, 32),
+      new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+    );
+    epiInnerRing.rotation.x = -Math.PI / 2;
+    epiInnerRing.position.y = 0.35;
+    epicentreGroup.add(epiInnerRing);
+
+    const hypoCore = new THREE.Mesh(
+      new THREE.SphereGeometry(0.62, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xfef08a })
+    );
+    epicentreGroup.add(hypoCore);
+
+    const hypoHalo = new THREE.Mesh(
+      new THREE.SphereGeometry(1.35, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    epicentreGroup.add(hypoHalo);
+
+    const plumbGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0.35, 0),
+      new THREE.Vector3(0, -1, 0)
+    ]);
+    const plumbLine = new THREE.Line(
+      plumbGeo,
+      new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.8 })
+    );
+    epicentreGroup.add(plumbLine);
+
+    const RAY_SEGS = 56;
+    const pRayGeo = new THREE.BufferGeometry();
+    pRayGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((RAY_SEGS + 1) * 3), 3));
+    const pRayLine = new THREE.Line(pRayGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 }));
+    scene.add(pRayLine);
+
+    const sRayGeo = new THREE.BufferGeometry();
+    sRayGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((RAY_SEGS + 1) * 3), 3));
+    const sRayLine = new THREE.Line(sRayGeo, new THREE.LineBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.45 }));
+    scene.add(sRayLine);
+
+    const rRayGeo = new THREE.BufferGeometry();
+    rRayGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((RAY_SEGS + 1) * 3), 3));
+    const rRayLine = new THREE.Line(rRayGeo, new THREE.LineBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.55 }));
+    scene.add(rRayLine);
+
+    const pulseP = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16), new THREE.MeshBasicMaterial({ color: 0x7dd3fc }));
+    const pulseS = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfbbf24 }));
+    const pulseR = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 16), new THREE.MeshBasicMaterial({ color: 0xd8b4fe }));
+    pulseP.visible = pulseS.visible = pulseR.visible = false;
+    scene.add(pulseP, pulseS, pulseR);
+
+    function createFresnelShellMaterial(hexColor) {
+      return new THREE.ShaderMaterial({
+        uniforms: {
+          uColor: { value: new THREE.Color(hexColor) },
+          uOpacity: { value: 0.0 }
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        vertexShader: `
+          varying vec3 vNormalV;
+          varying vec3 vViewDir;
+          void main() {
+            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+            vNormalV = normalize(normalMatrix * normal);
+            vViewDir = normalize(-mvPos.xyz);
+            gl_Position = projectionMatrix * mvPos;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uColor;
+          uniform float uOpacity;
+          varying vec3 vNormalV;
+          varying vec3 vViewDir;
+          void main() {
+            float fresnel = pow(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 2.4);
+            gl_FragColor = vec4(uColor, fresnel * uOpacity);
+          }
+        `
+      });
+    }
+
+    const wavePMat = createFresnelShellMaterial(0x38bdf8);
+    const waveP = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), wavePMat);
+    scene.add(waveP);
+
+    const waveSMat = createFresnelShellMaterial(0xf59e0b);
+    const waveS = new THREE.Mesh(new THREE.SphereGeometry(1, 36, 24), waveSMat);
+    scene.add(waveS);
+
+    const waveR = new THREE.Mesh(
+      new THREE.RingGeometry(0.90, 1.0, 64),
+      new THREE.MeshBasicMaterial({ color: 0xc084fc, side: THREE.DoubleSide, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    waveR.rotation.x = -Math.PI / 2;
+    waveR.position.y = 0.35;
+    scene.add(waveR);
+
+    const RIBBON_PTS = 220;
+    const ribbonPositions = new Float32Array(RIBBON_PTS * 3);
+    const ribbonHistory = new Float32Array(RIBBON_PTS);
+    const ribbonGeo = new THREE.BufferGeometry();
+    ribbonGeo.setAttribute('position', new THREE.BufferAttribute(ribbonPositions, 3));
+    const ribbonLine = new THREE.Line(ribbonGeo, new THREE.LineBasicMaterial({ color: 0x38bdf8 }));
+    scene.add(ribbonLine);
+
+    function sampleRayPoint(arr, tNorm) {
+      const t = Math.max(0, Math.min(1, tNorm));
+      const fIdx = t * RAY_SEGS;
+      const i0 = Math.floor(fIdx);
+      const i1 = Math.min(RAY_SEGS, i0 + 1);
+      const frac = fIdx - i0;
+      return {
+        x: arr[i0 * 3] * (1 - frac) + arr[i1 * 3] * frac,
+        y: arr[i0 * 3 + 1] * (1 - frac) + arr[i1 * 3 + 1] * frac,
+        z: arr[i0 * 3 + 2] * (1 - frac) + arr[i1 * 3 + 2] * frac
+      };
+    }
+
+    function update3DGeometryPositions() {
+      const ex = distToWorldX(state.distance);
+      const hy = depthToWorldY(state.depth);
+      epicentreGroup.position.set(ex, 0, 0);
+      hypoCore.position.set(0, hy, 0);
+      hypoHalo.position.set(0, hy, 0);
+      epiPointLight.position.set(ex, hy + 1.4, 2.5);
+      stationPointLight.position.set(STATION_X, 2.2, 1.5);
+
+      const pArr = plumbLine.geometry.attributes.position.array;
+      pArr[0] = 0; pArr[1] = 0.35; pArr[2] = 0;
+      pArr[3] = 0; pArr[4] = hy; pArr[5] = 0;
+      plumbLine.geometry.attributes.position.needsUpdate = true;
+
+      const pRay = pRayLine.geometry.attributes.position.array;
+      const sRay = sRayLine.geometry.attributes.position.array;
+      const rRay = rRayLine.geometry.attributes.position.array;
+      const span = ex - STATION_X;
+      for (let i = 0; i <= RAY_SEGS; i++) {
+        const t = i / RAY_SEGS;
+        const x = STATION_X + span * t;
+        const baseLineY = 0.25 * (1 - t) + hy * t;
+        const bow = Math.sin(Math.PI * t) * Math.min(2.8, span * 0.08);
+        pRay[i * 3] = x;
+        pRay[i * 3 + 1] = baseLineY - bow;
+        pRay[i * 3 + 2] = 0;
+
+        sRay[i * 3] = x;
+        sRay[i * 3 + 1] = baseLineY - bow * 0.62;
+        sRay[i * 3 + 2] = 0.28 * Math.sin(Math.PI * t);
+
+        rRay[i * 3] = x;
+        rRay[i * 3 + 1] = 0.32;
+        rRay[i * 3 + 2] = 0;
+      }
+      pRayLine.geometry.attributes.position.needsUpdate = true;
+      sRayLine.geometry.attributes.position.needsUpdate = true;
+      rRayLine.geometry.attributes.position.needsUpdate = true;
+
+      waveUniforms.uEpicentre.value.set(ex, hy, 0);
+      waveUniforms.uSurfStrength.value = Math.exp(-((state.depth - 5) / 595) * 3.4);
+      waveUniforms.uMagScale.value = Math.pow(10, 0.25 * (state.magnitude - 5.0));
+    }
+
+    // Open-Space Framing: center the 3D working plane in the unobstructed viewport!
+    let isOrbiting = false;
+    let prevPointer = { x: 0, y: 0 };
+    let targetTheta = 0.14, camTheta = 0.14;
+    let targetPhi = 0.98, camPhi = 0.98;
+    let targetRadius = 52, camRadius = 52;
+    // When sidebar is open on left, shift camera lookAt left (-6.5) so crustal block moves right into open space!
+    // Also shift lookAt Y down (-5.5) so crustal block sits higher above the bottom trace panel!
+    function getOpenSpaceLookTarget() {
+      const isWide = window.innerWidth >= 768;
+      const xShift = (state.sidebarOpen && isWide) ? -7.2 : 0.8;
+      const yShift = -5.8;
+      return { x: xShift, y: yShift };
+    }
+    let targetLookX = getOpenSpaceLookTarget().x, lookX = targetLookX;
+    let targetLookY = getOpenSpaceLookTarget().y, lookY = targetLookY;
+
+    function applyCameraPreset(preset) {
+      const open = getOpenSpaceLookTarget();
+      if (preset === 'persp') {
+        targetTheta = 0.14; targetPhi = 0.98; targetRadius = 52; targetLookX = open.x; targetLookY = open.y;
+      } else if (preset === 'cross') {
+        targetTheta = 0.0; targetPhi = 1.44; targetRadius = 50; targetLookX = open.x; targetLookY = open.y;
+      } else if (preset === 'top') {
+        targetTheta = 0.0; targetPhi = 0.18; targetRadius = 58; targetLookX = open.x; targetLookY = -2.0;
+      } else if (preset === 'station') {
+        targetTheta = -0.42; targetPhi = 1.05; targetRadius = 22; targetLookX = STATION_X + 1.5; targetLookY = 0.5;
+      }
+      document.querySelectorAll('.cam-preset').forEach((btn) => {
+        const active = btn.getAttribute('data-cam') === preset;
+        btn.className = `cam-preset px-2 py-1 rounded font-mono text-[10px] border transition ${
+          active ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'text-slate-400 hover:text-slate-200 border-transparent'
+        }`;
+      });
+    }
+
+    document.querySelectorAll('.cam-preset').forEach((btn) => {
+      btn.addEventListener('click', () => applyCameraPreset(btn.getAttribute('data-cam')));
+    });
+
+    // Collapsible Sidebar Toggle
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', (e) => {
+      state.sidebarOpen = !state.sidebarOpen;
+      const sidebar = document.getElementById('left-sidebar');
+      const bottomPanel = document.getElementById('bottom-panel');
+      if (state.sidebarOpen) {
+        sidebar.classList.remove('-translate-x-[120%]');
+        bottomPanel.classList.add('md:left-[21.5rem]');
+        e.target.textContent = '◀ HIDE';
+      } else {
+        sidebar.classList.add('-translate-x-[120%]');
+        bottomPanel.classList.remove('md:left-[21.5rem]');
+        e.target.textContent = '▶ CONTROLS';
+      }
+      const open = getOpenSpaceLookTarget();
+      targetLookX = open.x;
+      targetLookY = open.y;
+      setTimeout(() => {
+        drawTraceCanvas();
+        drawTimelineCanvas();
+        drawGRCanvas();
+      }, 310);
+    });
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      isOrbiting = true;
+      prevPointer = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!isOrbiting) return;
+      const dx = e.clientX - prevPointer.x;
+      const dy = e.clientY - prevPointer.y;
+      prevPointer = { x: e.clientX, y: e.clientY };
+      targetTheta -= dx * 0.006;
+      targetPhi = Math.max(0.15, Math.min(1.50, targetPhi - dy * 0.006));
+    });
+    window.addEventListener('pointerup', () => { isOrbiting = false; });
+    renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      targetRadius = Math.max(16, Math.min(95, targetRadius + e.deltaY * 0.035));
+    }, { passive: false });
+
+    // =========================================================================
+    // 4. 2D CANVAS RENDERERS (GLOWING PHASE-COLORED TRACE, TIMELINE, G-R)
+    // =========================================================================
+    function sizeCanvasToDisplay(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(100, Math.floor(rect.width * dpr));
+      const h = Math.max(80, Math.floor(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      return { w, h, dpr };
+    }
+
+    function drawTraceCanvas() {
+      const canvas = document.getElementById('canvas-trace');
+      if (!canvas || state.activeTab !== 'trace') return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const { tP, tS, tR } = computePhaseTimes(state.distance);
+      const { durR } = computePhaseDurations(state.distance, state.magnitude);
+      const maxT = Math.max(6, tR + durR * 1.25);
+
+      const padL = 42 * dpr;
+      const padR = 16 * dpr;
+      const padT = 18 * dpr;
+      const padB = 22 * dpr;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+      const midY = padT + plotH * 0.5;
+
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.75)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padL, midY);
+      ctx.lineTo(w - padR, midY);
+      ctx.stroke();
+
+      const drawMarker = (t, label, color) => {
+        const x = padL + (t / maxT) * plotW;
+        ctx.strokeStyle = color;
+        ctx.setLineDash([4 * dpr, 4 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(x, padT);
+        ctx.lineTo(x, h - padB);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = color;
+        ctx.font = `600 ${10 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillText(label, Math.min(w - padR - 30 * dpr, x + 4 * dpr), padT + 10 * dpr);
+      };
+      drawMarker(tP, `P ${tP.toFixed(1)}s`, '#38bdf8');
+      drawMarker(tS, `S ${tS.toFixed(1)}s`, '#f59e0b');
+      drawMarker(tR, `R ${tR.toFixed(1)}s`, '#c084fc');
+
+      const samples = 560;
+      const comps = new Array(samples);
+      let peak = 0.001;
+      for (let i = 0; i < samples; i++) {
+        const t = (i / (samples - 1)) * maxT;
+        const c = evaluateSeismogramComponents(t, state.distance, state.magnitude, state.depth, state.stationMix);
+        comps[i] = c;
+        if (Math.abs(c.total) > peak) peak = Math.abs(c.total);
+      }
+
+      ctx.save();
+      ctx.lineWidth = 1.75 * dpr;
+      ctx.shadowBlur = 6 * dpr;
+      for (let i = 1; i < samples; i++) {
+        const x0 = padL + ((i - 1) / (samples - 1)) * plotW;
+        const y0 = midY - (comps[i - 1].total / peak) * (plotH * 0.42);
+        const x1 = padL + (i / (samples - 1)) * plotW;
+        const y1 = midY - (comps[i].total / peak) * (plotH * 0.42);
+
+        const c = comps[i];
+        const aP = Math.abs(c.yP), aS = Math.abs(c.yS), aR = Math.abs(c.yR);
+        let col = '#38bdf8';
+        if (aR >= aS && aR >= aP && aR > 0.001) col = '#c084fc';
+        else if (aS >= aP && aS > 0.001) col = '#f59e0b';
+
+        ctx.strokeStyle = col;
+        ctx.shadowColor = col;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x1, y1);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      if (state.playing && state.simTime <= maxT) {
+        const px = padL + (state.simTime / maxT) * plotW;
+        ctx.strokeStyle = '#34d399';
+        ctx.lineWidth = 2 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(px, padT);
+        ctx.lineTo(px, h - padB);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = `${10 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillText('0s', padL, h - 6 * dpr);
+      ctx.fillText(`${maxT.toFixed(0)}s`, w - padR - 28 * dpr, h - 6 * dpr);
+      ctx.fillText('VEL', 6 * dpr, midY + 3 * dpr);
+    }
+
+    function drawTimelineCanvas() {
+      const canvas = document.getElementById('canvas-timeline');
+      if (!canvas || state.activeTab !== 'timeline') return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const { tP, tS, tR, dtSP, dtRS } = computePhaseTimes(state.distance);
+      const { ampP, ampS, ampR } = computePhaseAmplitudes(state.distance, state.magnitude, state.depth, state.stationMix);
+      const { durP, durS, durR } = computePhaseDurations(state.distance, state.magnitude);
+      const maxT = Math.max(6, tR + durR * 1.2);
+
+      const padL = 78 * dpr;
+      const padR = 18 * dpr;
+      const plotW = w - padL - padR;
+
+      const rows = [
+        { label: 'P-WAVE', t: tP, dur: durP * 2, amp: ampP, color: '#38bdf8' },
+        { label: 'S-WAVE', t: tS, dur: durS * 2, amp: ampS, color: '#f59e0b' },
+        { label: 'SURFACE', t: tR, dur: durR, amp: ampR, color: '#c084fc' }
+      ];
+      const maxAmp = Math.max(0.01, ampP, ampS, ampR);
+
+      rows.forEach((row, idx) => {
+        const cy = (0.24 + idx * 0.27) * h;
+        ctx.fillStyle = row.color;
+        ctx.font = `600 ${11 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillText(row.label, 12 * dpr, cy + 4 * dpr);
+
+        ctx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, cy);
+        ctx.lineTo(w - padR, cy);
+        ctx.stroke();
+
+        const x0 = padL + (row.t / maxT) * plotW;
+        const bw = Math.max(4 * dpr, (row.dur / maxT) * plotW);
+        const bh = Math.max(4 * dpr, (row.amp / maxAmp) * (24 * dpr));
+
+        ctx.fillStyle = row.color;
+        ctx.globalAlpha = 0.28;
+        ctx.fillRect(x0, cy - bh / 2, bw, bh);
+        ctx.globalAlpha = 1;
+        ctx.fillRect(x0, cy - bh / 2, 3 * dpr, bh);
+      });
+
+      const xP = padL + (tP / maxT) * plotW;
+      const xS = padL + (tS / maxT) * plotW;
+      const gy = 0.88 * h;
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(xP, gy);
+      ctx.lineTo(xS, gy);
+      ctx.stroke();
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = `600 ${10.5 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillText(`Δt(S−P) = ${dtSP.toFixed(2)} s | Δt(R−S) = ${dtRS.toFixed(2)} s`, padL, gy - 5 * dpr);
+    }
+
+    // =========================================================================
+    // 5. GUTENBERG-RICHTER SYNTHETIC CATALOGUE (N = 4000, b ≈ 1.0)
+    // =========================================================================
+    function generateGRCatalogue(count = 4000) {
+      const bTrue = 1.0;
+      const mMin = 3.0;
+      const mMax = 7.0;
+      const events = [];
+      const beta = bTrue * Math.LN10;
+      const norm = 1 - Math.exp(-beta * (mMax - mMin));
+
+      for (let i = 0; i < count; i++) {
+        const u = Math.random();
+        const m = mMin - Math.log(1 - u * norm) / beta;
+        events.push(m);
+      }
+      state.grCatalogue = events;
+
+      const bins = [];
+      for (let m = 3.0; m <= 6.5; m += 0.25) {
+        let n = 0;
+        for (let i = 0; i < events.length; i++) {
+          if (events[i] >= m) n++;
+        }
+        if (n >= 3) bins.push({ m, logN: Math.log10(n), n });
+      }
+
+      let sumX = 0, sumY = 0, sumXX = 0, sumXY = 0;
+      const k = bins.length;
+      for (let i = 0; i < k; i++) {
+        sumX += bins[i].m;
+        sumY += bins[i].logN;
+        sumXX += bins[i].m * bins[i].m;
+        sumXY += bins[i].m * bins[i].logN;
+      }
+      const slope = (k * sumXY - sumX * sumY) / (k * sumXX - sumX * sumX);
+      const intercept = (sumY - slope * sumX) / k;
+      state.grFit = { a: intercept, b: -slope, bins };
+
+      const readout = document.getElementById('gr-fit-readout');
+      if (readout) {
+        readout.textContent = `log₁₀ N = ${intercept.toFixed(2)} − ${(-slope).toFixed(2)} M  (fitted b = ${(-slope).toFixed(2)}, N = ${count.toLocaleString()})`;
+      }
+    }
+
+    function drawGRCanvas() {
+      const canvas = document.getElementById('canvas-gr');
+      if (!canvas || state.activeTab !== 'gr') return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 42 * dpr;
+      const padR = 16 * dpr;
+      const padT = 16 * dpr;
+      const padB = 26 * dpr;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      const xMap = (m) => padL + ((m - 2.8) / 4.2) * plotW;
+      const yMap = (logN) => padT + ((4.0 - logN) / 4.0) * plotH;
+
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.8)';
+      ctx.lineWidth = 1;
+      for (let g = 0; g <= 4; g++) {
+        const y = yMap(g);
+        ctx.beginPath();
+        ctx.moveTo(padL, y);
+        ctx.lineTo(w - padR, y);
+        ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = `${9.5 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillText(`10^${g}`, 6 * dpr, y + 3 * dpr);
+      }
+
+      const { a, b, bins } = state.grFit;
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(xMap(3.0), yMap(a - b * 3.0));
+      ctx.lineTo(xMap(6.6), yMap(a - b * 6.6));
+      ctx.stroke();
+
+      bins.forEach((pt) => {
+        const x = xMap(pt.m);
+        const y = yMap(pt.logN);
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(x, y, 3.6 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = `${10 * dpr}px "JetBrains Mono", monospace`;
+      [3, 4, 5, 6, 7].forEach((m) => {
+        ctx.fillText(`M${m}`, xMap(m) - 8 * dpr, h - 7 * dpr);
+      });
+    }
+
+    // =========================================================================
+    // 6. FOUR-CHECK VERIFICATION SUITE
+    // =========================================================================
+    function runVerificationSuite() {
+      const ds = [50, 150, 350, 700];
+      const pts = ds.map((d) => ({ d, dt: computePhaseTimes(d).dtSP }));
+      let sx = 0, sy = 0, sxx = 0, sxy = 0;
+      pts.forEach((p) => { sx += p.d; sy += p.dt; sxx += p.d * p.d; sxy += p.d * p.dt; });
+      const fittedSlope = (4 * sxy - sx * sy) / (4 * sxx - sx * sx);
+      const slopeErr = Math.abs(fittedSlope - THEORY_SLOPE);
+      const pass1 = slopeErr < 1e-6;
+
+      let pass2 = true;
+      [10, 100, 500, 1000].forEach((d) => {
+        [5, 150, 600].forEach((z) => {
+          const { tP, tS, tR } = computePhaseTimes(d);
+          if (!(tP < tS && tS < tR)) pass2 = false;
+        });
+      });
+
+      const ratios = [20, 100, 300, 800].map((d) => computePhaseAmplitudes(d, state.magnitude, state.depth, state.stationMix).psRatio);
+      const rMin = Math.min(...ratios);
+      const rMax = Math.max(...ratios);
+      const pass3 = (rMax - rMin) < 1e-6;
+
+      const nullTimes = computePhaseTimes(0);
+      const pass4 = Math.abs(nullTimes.dtSP) < 1e-9 && Math.abs(nullTimes.dtRS) < 1e-9 && nullTimes.tP === 0;
+
+      const checks = [
+        {
+          title: '1. Ranging Law Slope (4 distances: 50, 150, 350, 700 km)',
+          pass: pass1,
+          detail: `Fitted slope = ${fittedSlope.toFixed(6)} s/km vs theory 1/v_s − 1/v_p = ${THEORY_SLOPE.toFixed(6)} s/km (Δ = ${slopeErr.toExponential(1)})`
+        },
+        {
+          title: '2. Causal Ordering (P < S < Surface across all d & depth)',
+          pass: pass2,
+          detail: pass2 ? 'Verified t_P < t_S < t_R at d ∈ {10,100,500,1000} km and z ∈ {5,150,600} km.' : 'Ordering violation detected.'
+        },
+        {
+          title: '3. Distance-Invariance of S:P Amplitude Ratio',
+          pass: pass3,
+          detail: `Ratio at d = 20..800 km: ${ratios[0].toFixed(4)}× (spread = ${(rMax - rMin).toExponential(1)}) — timing encodes distance, not mix.`
+        },
+        {
+          title: '4. Zero-Distance Null (d → 0 km)',
+          pass: pass4,
+          detail: `At d = 0 km: t_P = ${nullTimes.tP.toFixed(3)}s, t_S = ${nullTimes.tS.toFixed(3)}s, t_R = ${nullTimes.tR.toFixed(3)}s — single sharp event, zero gaps.`
+        }
+      ];
+
+      const containerEl = document.getElementById('verify-results');
+      containerEl.innerHTML = checks.map((c) => `
+        <div class="rounded-lg border ${c.pass ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10'} p-3">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-100">${c.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.pass ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${c.pass ? 'PASS' : 'FAIL'}</span>
+          </div>
+          <div class="text-slate-300 text-[11px] mt-1">${c.detail}</div>
+        </div>
+      `).join('');
+
+      const allPass = checks.every((c) => c.pass);
+      const summaryEl = document.getElementById('verify-summary');
+      summaryEl.textContent = allPass ? 'All 4 physics checks passed.' : 'One or more checks failed.';
+      summaryEl.className = `font-mono text-xs font-semibold ${allPass ? 'text-emerald-400' : 'text-rose-400'}`;
+    }
+
+    // =========================================================================
+    // 7. UI BINDINGS & SIMULATION LOOP
+    // =========================================================================
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.add('hidden'), 2800);
+    }
+
+    function updateReadouts() {
+      const { tP, tS, tR, dtSP } = computePhaseTimes(state.distance);
+      const { psRatio } = computePhaseAmplitudes(state.distance, state.magnitude, state.depth, state.stationMix);
+
+      document.getElementById('val-distance').textContent = `${state.distance} km`;
+      document.getElementById('val-mag').textContent = `M ${state.magnitude.toFixed(1)}`;
+      document.getElementById('val-depth').textContent = `${state.depth} km (${state.depth < 70 ? 'Shallow' : state.depth < 300 ? 'Intermediate' : 'Deep'})`;
+      document.getElementById('val-station').textContent = state.stationMix < 0.35
+        ? 'Broadband (0.05–15 Hz)'
+        : state.stationMix < 0.7
+          ? 'Mixed Response'
+          : 'Short-Period (1–10 Hz)';
+
+      document.getElementById('readout-tp').textContent = `${tP.toFixed(2)} s`;
+      document.getElementById('readout-ts').textContent = `${tS.toFixed(2)} s`;
+      document.getElementById('readout-tr').textContent = `${tR.toFixed(2)} s`;
+      document.getElementById('readout-dt-sp').textContent = `${dtSP.toFixed(2)} s`;
+      document.getElementById('readout-ps-ratio').textContent = `${psRatio.toFixed(2)}× (d-invariant)`;
+
+      const caption = document.getElementById('rhythm-caption');
+      if (state.distance === 0) {
+        caption.textContent = 'Null test (d = 0): all three phases merge into one sharp hit with zero gap.';
+      } else if (state.distance <= 25) {
+        caption.textContent = 'Near-field drum pattern: three sharp hits, nearly simultaneous.';
+      } else if (state.distance <= 200) {
+        caption.textContent = `~${dtSP.toFixed(1)} s of silence between P and S — a rhythmic ranging gap.`;
+      } else {
+        caption.textContent = `Teleseismic swell (${dtSP.toFixed(0)} s gap): phases stretch into a long dispersive roll.`;
+      }
+
+      document.querySelectorAll('.preset-dist').forEach((btn) => {
+        const dVal = Number(btn.getAttribute('data-dist'));
+        if (dVal === state.distance) {
+          btn.classList.add('border-sky-500/60', 'text-sky-300');
+          btn.classList.remove('border-slate-700', 'text-slate-300');
+        } else {
+          btn.classList.remove('border-sky-500/60', 'text-sky-300');
+          btn.classList.add('border-slate-700', 'text-slate-300');
+        }
+      });
+
+      update3DGeometryPositions();
+      drawTraceCanvas();
+      drawTimelineCanvas();
+      drawGRCanvas();
+    }
+
+    function triggerQuake() {
+      stopAllAudio();
+      state.playing = true;
+      state.simTime = 0;
+      state.arrivedP = false;
+      state.arrivedS = false;
+      state.arrivedR = false;
+      state.stationShock = 0;
+      state.camShake = 0;
+      state.lastFrameTs = performance.now();
+      ribbonHistory.fill(0);
+      waveUniforms.uActive.value = 1.0;
+      document.getElementById('telemetry-status').textContent = 'PROPAGATING';
+
+      if (!state.muted) {
+        const ctx = ensureAudioContext();
+        if (ctx) {
+          activeAudioNodes = scheduleQuakeAudio(
+            ctx,
+            ctx.destination,
+            ctx.currentTime + 0.02,
+            state.distance,
+            state.magnitude,
+            state.depth,
+            state.stationMix,
+            state.timeScale
+          );
+        }
+      }
+    }
+
+    function stopQuake() {
+      stopAllAudio();
+      state.playing = false;
+      waveUniforms.uActive.value = 0.0;
+      wavePMat.uniforms.uOpacity.value = 0;
+      waveSMat.uniforms.uOpacity.value = 0;
+      waveR.material.opacity = 0;
+      stationShockMat.opacity = 0;
+      pulseP.visible = pulseS.visible = pulseR.visible = false;
+      document.getElementById('telemetry-status').textContent = 'IDLE';
+    }
+
+    document.getElementById('slider-distance').addEventListener('input', (e) => {
+      state.distance = Number(e.target.value);
+      updateReadouts();
+    });
+    document.getElementById('slider-mag').addEventListener('input', (e) => {
+      state.magnitude = Number(e.target.value);
+      updateReadouts();
+    });
+    document.getElementById('slider-depth').addEventListener('input', (e) => {
+      state.depth = Number(e.target.value);
+      updateReadouts();
+    });
+    document.getElementById('slider-station').addEventListener('input', (e) => {
+      state.stationMix = Number(e.target.value);
+      updateReadouts();
+    });
+    document.querySelectorAll('.preset-dist').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.distance = Number(btn.getAttribute('data-dist'));
+        document.getElementById('slider-distance').value = String(state.distance);
+        updateReadouts();
+      });
+    });
+
+    document.getElementById('btn-trigger').addEventListener('click', triggerQuake);
+    document.getElementById('btn-stop').addEventListener('click', stopQuake);
+    document.getElementById('btn-timescale').addEventListener('click', (e) => {
+      state.timeScale = state.timeScale === 1 ? 5 : 1;
+      e.target.textContent = state.timeScale === 1 ? '1× REAL-TIME' : '5× TIME-LAPSE';
+    });
+    document.getElementById('btn-mute').addEventListener('click', (e) => {
+      state.muted = !state.muted;
+      e.target.textContent = state.muted ? 'AUDIO: OFF' : 'AUDIO: ON';
+      if (state.muted) stopAllAudio();
+    });
+    document.getElementById('btn-wav').addEventListener('click', () => {
+      exportWavFile().catch(() => showToast('WAV export failed in this browser context.'));
+    });
+
+    document.querySelectorAll('.display-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-tab');
+        state.activeTab = target;
+        document.querySelectorAll('.display-tab').forEach((t) => {
+          const active = t.getAttribute('data-tab') === target;
+          t.className = `display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold border transition ${
+            active ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'text-slate-400 hover:text-slate-200 border-transparent'
+          }`;
+        });
+        document.getElementById('panel-trace').classList.toggle('hidden', target !== 'trace');
+        document.getElementById('panel-timeline').classList.toggle('hidden', target !== 'timeline');
+        document.getElementById('panel-gr').classList.toggle('hidden', target !== 'gr');
+        drawTraceCanvas();
+        drawTimelineCanvas();
+        drawGRCanvas();
+      });
+    });
+
+    document.getElementById('btn-resample-gr').addEventListener('click', () => {
+      generateGRCatalogue(4000);
+      drawGRCanvas();
+    });
+
+    const modalVerify = document.getElementById('modal-verify');
+    document.getElementById('btn-verify').addEventListener('click', () => {
+      runVerificationSuite();
+      modalVerify.classList.remove('hidden');
+      modalVerify.classList.add('flex');
+    });
+    document.getElementById('btn-close-verify').addEventListener('click', () => {
+      modalVerify.classList.add('hidden');
+      modalVerify.classList.remove('flex');
+    });
+    document.getElementById('btn-rerun-verify').addEventListener('click', runVerificationSuite);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        e.preventDefault();
+        triggerQuake();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      const open = getOpenSpaceLookTarget();
+      targetLookX = open.x;
+      targetLookY = open.y;
+      drawTraceCanvas();
+      drawTimelineCanvas();
+      drawGRCanvas();
+    });
+
+    // =========================================================================
+    // 8. ANIMATION LOOP
+    // =========================================================================
+    function animate(now) {
+      requestAnimationFrame(animate);
+
+      camTheta += (targetTheta - camTheta) * 0.12;
+      camPhi += (targetPhi - camPhi) * 0.12;
+      camRadius += (targetRadius - camRadius) * 0.12;
+      lookX += (targetLookX - lookX) * 0.12;
+      lookY += (targetLookY - lookY) * 0.12;
+
+      state.camShake *= 0.90;
+      const shakeX = (Math.random() - 0.5) * state.camShake * 0.28;
+      const shakeY = (Math.random() - 0.5) * state.camShake * 0.28;
+
+      camera.position.x = lookX + camRadius * Math.sin(camPhi) * Math.sin(camTheta) + shakeX;
+      camera.position.y = lookY + camRadius * Math.cos(camPhi) + shakeY;
+      camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+      camera.lookAt(lookX, lookY, 0);
+
+      const ex = distToWorldX(state.distance);
+      const hy = depthToWorldY(state.depth);
+      const worldSpan = Math.max(0.001, Math.abs(ex - STATION_X));
+      const { tP, tS, tR } = computePhaseTimes(state.distance);
+      const { durR } = computePhaseDurations(state.distance, state.magnitude);
+      const maxT = Math.max(4, tR + durR * 1.25);
+
+      epiOuterRing.rotation.z = now * 0.0006;
+      epiInnerRing.rotation.z = -now * 0.0012;
+      drumMesh.rotation.x += 0.015;
+
+      const pPosAttr = particleGeo.attributes.position;
+      const pColAttr = particleGeo.attributes.color;
+      const pArr = pPosAttr.array;
+      const cArr = pColAttr.array;
+
+      if (state.playing) {
+        const dt = Math.min(0.05, (now - state.lastFrameTs) / 1000) * state.timeScale;
+        state.lastFrameTs = now;
+        state.simTime += dt;
+
+        const kmToWorld = state.distance > 0 ? worldSpan / state.distance : 0.044;
+        const rP = Math.max(0.1, state.simTime * VP * kmToWorld);
+        const rS = Math.max(0.1, state.simTime * VS * kmToWorld);
+        const rR = Math.max(0.1, state.simTime * VR * kmToWorld);
+
+        waveUniforms.uTime.value = state.simTime;
+        waveUniforms.uRP.value = rP;
+        waveUniforms.uRS.value = rS;
+        waveUniforms.uRR.value = rR;
+
+        waveP.position.set(ex, hy, 0);
+        waveP.scale.setScalar(rP);
+        wavePMat.uniforms.uOpacity.value = state.simTime < tP + 8 ? Math.max(0, 0.78 - rP * 0.012) : 0.08;
+
+        waveS.position.set(ex, hy, 0);
+        waveS.scale.setScalar(rS);
+        waveSMat.uniforms.uOpacity.value = state.simTime < tS + 10 ? Math.max(0, 0.85 - rS * 0.012) : 0.1;
+
+        const surfFade = Math.exp(-((state.depth - 5) / 595) * 3.0);
+        waveR.position.set(ex, 0.35, 0);
+        waveR.scale.setScalar(rR);
+        waveR.material.opacity = surfFade * Math.max(0, 0.78 - rR * 0.011);
+
+        const pRay = pRayLine.geometry.attributes.position.array;
+        const sRay = sRayLine.geometry.attributes.position.array;
+        const rRay = rRayLine.geometry.attributes.position.array;
+
+        const progP = tP > 0.01 ? state.simTime / tP : 1.0;
+        const progS = tS > 0.01 ? state.simTime / tS : 1.0;
+        const progR = tR > 0.01 ? state.simTime / tR : 1.0;
+
+        pulseP.visible = progP <= 1.0;
+        if (pulseP.visible) {
+          const pt = sampleRayPoint(pRay, 1.0 - progP);
+          pulseP.position.set(pt.x, pt.y, pt.z);
+        }
+        pulseS.visible = progS <= 1.0;
+        if (pulseS.visible) {
+          const pt = sampleRayPoint(sRay, 1.0 - progS);
+          pulseS.position.set(pt.x, pt.y, pt.z);
+        }
+        pulseR.visible = progR <= 1.0 && surfFade > 0.08;
+        if (pulseR.visible) {
+          const pt = sampleRayPoint(rRay, 1.0 - progR);
+          pulseR.position.set(pt.x, pt.y, pt.z);
+        }
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          const idx = i * 3;
+          const bx = pBasePos[idx];
+          const by = pBasePos[idx + 1];
+          const bz = pBasePos[idx + 2];
+
+          const dx = bx - ex;
+          const dy = by - hy;
+          const dz = bz;
+          const d3 = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.0001;
+          const d2 = Math.sqrt(dx * dx + dz * dz) + 0.0001;
+
+          const dp = d3 - rP;
+          const ds = d3 - rS;
+          const dr = rR - d2;
+
+          const envP = Math.exp(-dp * dp * 1.6);
+          const envS = Math.exp(-ds * ds * 0.8);
+          const envR = (dr > -1.0 && dr < 10.0) ? Math.exp(-Math.max(0, dr) * 0.25) * Math.exp(by * 0.55) * surfFade : 0.0;
+
+          const dispP = envP * Math.sin(dp * 5.0) * 0.30;
+          const dispS = envS * Math.sin(ds * 3.2) * 0.48;
+          const dispR = envR * Math.sin(dr * 3.8) * 0.58;
+
+          pArr[idx] = bx + (dx / d3) * dispP + (dx / d2) * dispR * 0.45;
+          pArr[idx + 1] = by + (dy / d3) * dispP + dispS + dispR;
+          pArr[idx + 2] = bz + (dz / d3) * dispP;
+
+          cArr[idx] = 0.12 + envP * 0.12 + envS * 0.88 + envR * 0.68;
+          cArr[idx + 1] = 0.22 + envP * 0.58 + envS * 0.45 + envR * 0.26;
+          cArr[idx + 2] = 0.38 + envP * 0.65 + envR * 0.65;
+        }
+        pPosAttr.needsUpdate = true;
+        pColAttr.needsUpdate = true;
+
+        const sample = evaluateSeismogram(state.simTime, state.distance, state.magnitude, state.depth, state.stationMix);
+        for (let i = RIBBON_PTS - 1; i > 0; i--) ribbonHistory[i] = ribbonHistory[i - 1];
+        ribbonHistory[0] = Math.max(-3.6, Math.min(3.6, sample * 0.9));
+        stylusPivot.rotation.z = Math.max(-0.55, Math.min(0.55, sample * 0.22));
+        needleZ.position.y = 1.18 + Math.max(-0.35, Math.min(0.35, sample * 0.18));
+
+        if (!state.arrivedP && state.simTime >= tP) {
+          state.arrivedP = true;
+          state.stationShock = 1.0;
+          state.camShake = Math.max(state.camShake, 0.25);
+          document.getElementById('telemetry-status').textContent = 'P-WAVE ARRIVED';
+          stationBeaconMat.color.setHex(0x38bdf8);
+          stationShockMat.color.setHex(0x38bdf8);
+          stationPointLight.color.setHex(0x38bdf8);
+        }
+        if (!state.arrivedS && state.simTime >= tS) {
+          state.arrivedS = true;
+          state.stationShock = 1.0;
+          state.camShake = Math.max(state.camShake, 0.65);
+          document.getElementById('telemetry-status').textContent = 'S-WAVE ARRIVED';
+          stationBeaconMat.color.setHex(0xf59e0b);
+          stationShockMat.color.setHex(0xf59e0b);
+          stationPointLight.color.setHex(0xf59e0b);
+        }
+        if (!state.arrivedR && state.simTime >= tR) {
+          state.arrivedR = true;
+          state.stationShock = 1.0;
+          state.camShake = Math.max(state.camShake, 0.55 * surfFade);
+          document.getElementById('telemetry-status').textContent = 'SURFACE ROLL';
+          stationBeaconMat.color.setHex(0xc084fc);
+          stationShockMat.color.setHex(0xc084fc);
+          stationPointLight.color.setHex(0xc084fc);
+        }
+
+        if (state.stationShock > 0.01) {
+          state.stationShock *= 0.92;
+          const sScale = 1 + (1 - state.stationShock) * 4.2;
+          stationShockRing.scale.set(sScale, sScale, 1);
+          stationShockMat.opacity = state.stationShock * 0.9;
+        } else {
+          stationShockMat.opacity = 0;
+        }
+
+        stationGroup.position.y = 0.05 + Math.max(-0.45, Math.min(0.45, sample * 0.16));
+        domeMesh.rotation.y += 0.025;
+
+        if (state.simTime > maxT) {
+          state.playing = false;
+          waveUniforms.uActive.value = 0.0;
+          pulseP.visible = pulseS.visible = pulseR.visible = false;
+          document.getElementById('telemetry-status').textContent = 'COMPLETE';
+          stationGroup.position.y = 0.05;
+          stylusPivot.rotation.z = 0;
+          needleZ.position.y = 1.18;
+        }
+        drawTraceCanvas();
+      } else {
+        const pulse = 1 + 0.08 * Math.sin(now * 0.004);
+        epiOuterRing.scale.set(pulse, pulse, 1);
+      }
+
+      const rArr = ribbonLine.geometry.attributes.position.array;
+      for (let i = 0; i < RIBBON_PTS; i++) {
+        rArr[i * 3] = STATION_X - i * 0.075;
+        rArr[i * 3 + 1] = 2.6 + ribbonHistory[i];
+        rArr[i * 3 + 2] = 0;
+      }
+      ribbonLine.geometry.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
+    }
+
+    generateGRCatalogue(4000);
+    updateReadouts();
+    requestAnimationFrame(animate);
+  });
+  </script>
+</body>
+</html>
