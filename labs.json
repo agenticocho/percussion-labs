@@ -514,6 +514,17 @@
        ]
       },
       {
+       "href": "crashing_wave_3d_shoaling_miche_breaker_index_minnaert_bubble_lab.html",
+       "glyph": "wave",
+       "name": "CRASHING-WAVE 3D",
+       "desc": "Falling water is silent. The roar of a breaking wave is entrained air - the crest traps a void, the void shatters into bubbles, and each bubble rings at its Minnaert frequency. Change only the seabed slope and the same wave goes from a hiss to a thud, because a plunging break swallows bigger air. Below Miche&rsquo;s index of 0.78, nothing happens at all.",
+       "tags": [
+        "shoaling",
+        "Miche breaker index",
+        "Minnaert bubbles"
+       ]
+      },
+      {
        "href": "thunder_3d_shock_wave_n_wave_line_source_lab.html",
        "glyph": "thunder",
        "name": "THUNDER 3D",
