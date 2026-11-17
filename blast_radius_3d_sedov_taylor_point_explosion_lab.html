@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BLAST-RADIUS 3D v2 — Sedov–Taylor Point Explosion Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020617;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+
+    .blast-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    .blast-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .blast-slider::-webkit-slider-thumb:hover { transform: scale(1.18); }
+    .blast-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+      cursor: pointer;
+    }
+    .blast-slider.sky::-webkit-slider-thumb { background: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.75); }
+    .blast-slider.emerald::-webkit-slider-thumb { background: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.75); }
+    .blast-slider.violet::-webkit-slider-thumb { background: #c084fc; box-shadow: 0 0 10px rgba(192, 132, 252, 0.75); }
+
+    .panel-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.6); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+
+  <!-- Full-screen 3D WebGL Canvas -->
+  <div id="webgl-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="pointer-events-auto flex items-center gap-2.5 bg-slate-950/80 backdrop-blur-md border border-slate-800/80 rounded-xl px-3.5 py-2 shadow-2xl">
+      <button id="btn-toggle-sidebar" type="button" class="px-2 py-1 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[11px] text-amber-300 transition">
+        ◀ HIDE
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_12px_#f59e0b] animate-pulse"></span>
+        <h1 class="font-mono text-sm sm:text-base font-bold tracking-wider text-slate-100">BLAST-RADIUS 3D <span class="text-amber-400 text-xs font-semibold">v2</span></h1>
+      </div>
+      <span class="hidden lg:inline-block text-xs text-slate-400 border-l border-slate-800 pl-3">
+        Sedov–Taylor Point Explosion &amp; Dimensional Analysis Lab
+      </span>
+    </div>
+
+    <div class="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-slate-950/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-1.5 shadow-2xl">
+      <button id="btn-detonate" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono text-xs font-bold tracking-wide transition shadow-[0_0_16px_rgba(245,158,11,0.45)]">
+        DETONATE
+      </button>
+      <button id="btn-double-yield" type="button" class="px-2.5 py-1.5 rounded-lg bg-sky-500/20 border border-sky-500/50 hover:bg-sky-500/30 text-sky-300 font-mono text-xs font-bold transition">
+        2× YIELD (+14.9% R)
+      </button>
+      <button id="btn-stop" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-semibold transition">
+        RESET
+      </button>
+      <button id="btn-mute" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 font-mono text-xs transition">
+        AUDIO: ON
+      </button>
+      <button id="btn-wav" type="button" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 text-emerald-300 font-mono text-xs font-semibold transition">
+        EXPORT .WAV
+      </button>
+      <button id="btn-verify" type="button" class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-mono text-xs font-semibold transition">
+        VERIFY (4/4)
+      </button>
+    </div>
+  </header>
+
+  <!-- Camera View Presets -->
+  <div class="fixed top-16 right-3 z-20 hidden sm:flex items-center gap-1 bg-slate-950/75 backdrop-blur-md border border-slate-800/80 rounded-lg p-1 shadow-xl">
+    <span class="font-mono text-[10px] text-slate-500 px-1.5">CAM</span>
+    <button type="button" data-cam="persp" class="cam-preset px-2 py-1 rounded font-mono text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 transition">3D Orbit</button>
+    <button type="button" data-cam="ground" class="cam-preset px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Ground-Level</button>
+    <button type="button" data-cam="top" class="cam-preset px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Top-Down</button>
+    <button type="button" data-cam="mast" class="cam-preset px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Telemetry Mast</button>
+  </div>
+
+  <!-- Collapsible Left Control Panel -->
+  <aside id="left-sidebar" class="fixed top-16 left-3 bottom-3 w-72 sm:w-80 z-20 pointer-events-none flex flex-col gap-2.5 max-h-[calc(100vh-4.75rem)] transition-transform duration-300 ease-out">
+    <div class="pointer-events-auto bg-slate-950/82 backdrop-blur-md border border-slate-800/80 rounded-xl p-3.5 shadow-2xl overflow-y-auto panel-scroll flex flex-col gap-3">
+
+      <!-- Mode Toggle: BLAST vs PUFF (null) -->
+      <div class="rounded-lg bg-slate-900/80 border border-slate-800 p-2">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="font-mono text-[10.5px] uppercase tracking-wider text-slate-400">Expansion Law</span>
+          <span id="telemetry-status" class="font-mono text-[10.5px] text-amber-400">READY</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="btn-mode-blast" type="button" class="py-1.5 rounded-md font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 transition">
+            BLAST (t^2/5)
+          </button>
+          <button id="btn-mode-puff" type="button" class="py-1.5 rounded-md font-mono text-xs font-semibold bg-slate-950/70 text-slate-400 border border-slate-800 hover:text-slate-200 transition">
+            PUFF (t^1.00 Null)
+          </button>
+        </div>
+      </div>
+
+      <!-- 2x Yield Fifth-Root Payoff Card -->
+      <div class="rounded-lg bg-sky-950/35 border border-sky-500/35 p-2.5">
+        <div class="flex items-center justify-between font-mono text-[11px] text-sky-300 font-bold mb-1">
+          <span>Fifth-Root Payoff: E^(1/5)</span>
+          <span>2^(1/5) = 1.149</span>
+        </div>
+        <div id="readout-scaling" class="font-mono text-[11px] text-slate-200">
+          Double E → R grows +14.9% (measured: 1.149×)
+        </div>
+        <div class="text-[10.5px] text-slate-400 mt-1 leading-snug">
+          2× yield barely moves the fireball — energy enters as a fifth root.
+        </div>
+      </div>
+
+      <!-- Live Telemetry -->
+      <div class="grid grid-cols-3 gap-1.5 text-center font-mono">
+        <div class="rounded bg-slate-900/80 border border-slate-800 p-1.5">
+          <div class="text-[9.5px] text-slate-400">Radius R(1s)</div>
+          <div id="readout-r1s" class="text-xs font-bold text-amber-300">161 m</div>
+        </div>
+        <div class="rounded bg-slate-900/80 border border-slate-800 p-1.5">
+          <div class="text-[9.5px] text-slate-400">Mach @ r</div>
+          <div id="readout-mach" class="text-xs font-bold text-sky-300">M 1.42</div>
+        </div>
+        <div class="rounded bg-slate-900/80 border border-slate-800 p-1.5">
+          <div class="text-[9.5px] text-slate-400">Arrival t</div>
+          <div id="readout-tarr" class="text-xs font-bold text-emerald-300">0.78 s</div>
+        </div>
+      </div>
+
+      <!-- Yield E -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-yield" class="text-xs font-semibold text-slate-200">Yield <span class="font-mono text-amber-400">E</span> (relative)</label>
+          <span id="val-yield" class="font-mono text-xs font-bold text-amber-300">100×</span>
+        </div>
+        <input id="slider-yield" type="range" min="1" max="1000" step="1" value="100" class="blast-slider" />
+      </div>
+
+      <!-- Ambient Density rho -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-rho" class="text-xs font-semibold text-slate-200">Ambient Density <span class="font-mono text-sky-400">ρ</span></label>
+          <span id="val-rho" class="font-mono text-xs font-bold text-sky-300">1.225 kg/m³</span>
+        </div>
+        <input id="slider-rho" type="range" min="0.20" max="1.225" step="0.005" value="1.225" class="blast-slider sky" />
+        <div class="flex justify-between font-mono text-[10px] text-slate-500 mt-0.5">
+          <span>High Altitude</span>
+          <span>Sea Level</span>
+        </div>
+      </div>
+
+      <!-- Listener Distance r -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-dist" class="text-xs font-semibold text-slate-200">Listener Distance <span class="font-mono text-emerald-400">r</span></label>
+          <span id="val-dist" class="font-mono text-xs font-bold text-emerald-300">400 m</span>
+        </div>
+        <input id="slider-dist" type="range" min="20" max="5000" step="10" value="400" class="blast-slider emerald" />
+        <div class="text-[10.5px] text-slate-400 mt-0.5">Near = sharp broadband crack • Far = dull low-passed thump</div>
+      </div>
+
+      <!-- Adiabatic Index gamma -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-gamma" class="text-xs font-semibold text-slate-200">Adiabatic Index <span class="font-mono text-purple-400">γ</span></label>
+          <span id="val-gamma" class="font-mono text-xs font-bold text-purple-300">1.40 (ξ = 1.033)</span>
+        </div>
+        <input id="slider-gamma" type="range" min="1.20" max="1.67" step="0.01" value="1.40" class="blast-slider violet" />
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom-Right Display Panel -->
+  <section id="bottom-panel" class="fixed bottom-3 right-3 left-3 md:left-[21.5rem] z-20 pointer-events-none transition-all duration-300">
+    <div class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-slate-800/80 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-800/80 bg-slate-900/50">
+        <div class="flex items-center gap-1.5">
+          <button type="button" data-tab="loglog" class="display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 transition">
+            log–log R vs t
+          </button>
+          <button type="button" data-tab="mach" class="display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+            Shock Mach vs t
+          </button>
+          <button type="button" data-tab="profile" class="display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold text-slate-400 hover:text-slate-200 border border-transparent transition">
+            Sedov Pressure Profile
+          </button>
+        </div>
+        <div id="display-meta" class="font-mono text-[11px] text-slate-400">
+          Blast slope 0.400 (t^2/5) vs Puff null 1.000 (t^1)
+        </div>
+      </div>
+
+      <div id="panel-loglog" class="p-3">
+        <div class="relative h-44 sm:h-48 w-full">
+          <canvas id="canvas-loglog" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+      </div>
+
+      <div id="panel-mach" class="p-3 hidden">
+        <div class="relative h-44 sm:h-48 w-full">
+          <canvas id="canvas-mach" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+      </div>
+
+      <div id="panel-profile" class="p-3 hidden">
+        <div class="relative h-44 sm:h-48 w-full">
+          <canvas id="canvas-profile" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Verification Modal -->
+  <div id="modal-verify" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h2 class="font-mono text-sm font-bold text-slate-100">BLAST-RADIUS 3D — Four-Check Physics Verification</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Numerical audit of 2/5 exponent, E^(1/5) scaling, t^(−3/5) Mach decay, and Puff null.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 font-mono text-xs text-slate-300">CLOSE</button>
+      </div>
+      <div id="verify-results" class="mt-4 space-y-2.5 font-mono text-xs"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+        <span id="verify-summary" class="font-mono text-xs text-emerald-400 font-semibold">All 4 checks passed.</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-mono text-xs font-bold">RE-RUN CHECKS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-16 right-4 z-50 hidden px-3.5 py-2 rounded-lg bg-slate-900/95 border border-amber-500/50 text-amber-200 font-mono text-xs shadow-xl"></div>
+
+  <script>
+  window.addEventListener('load', () => {
+    'use strict';
+
+    // =========================================================================
+    // 1. SEDOV-TAYLOR DIMENSIONAL ANALYSIS & ACOUSTIC TRANSITION MODEL
+    // =========================================================================
+    const E_BASE_JOULES = 1.0e10;
+    const PUFF_VELOCITY = 220;
+
+    const state = {
+      yieldRel: 100,
+      rho: 1.225,
+      listenerDist: 400,
+      gamma: 1.40,
+      mode: 'blast',
+      activeTab: 'loglog',
+      sidebarOpen: true,
+      muted: false,
+      playing: false,
+      simTime: 0,
+      lastFrameTs: 0,
+      listenerHit: false,
+      mastShock: 0,
+      ghostRadius1s: null,
+      camShake: 0
+    };
+
+    function computeXi(gamma) {
+      return 1.033 * (0.65 + 0.875 * (gamma - 1.0));
+    }
+
+    function computeSoundSpeed(rho, gamma) {
+      const tempRatio = 0.74 + 0.26 * Math.pow(rho / 1.225, 0.25);
+      return 343.0 * Math.sqrt((gamma / 1.4) * tempRatio);
+    }
+
+    function sedovRadius(t, yieldRel, rho, gamma) {
+      if (t <= 0) return 0;
+      const E = yieldRel * E_BASE_JOULES;
+      const xi = computeXi(gamma);
+      return xi * Math.pow(E / rho, 0.2) * Math.pow(t, 0.4);
+    }
+
+    function puffRadius(t) {
+      return Math.max(0, PUFF_VELOCITY * t);
+    }
+
+    function sedovMach(t, yieldRel, rho, gamma) {
+      const tSafe = Math.max(1e-4, t);
+      const R = sedovRadius(tSafe, yieldRel, rho, gamma);
+      const U = 0.4 * R / tSafe;
+      const cs = computeSoundSpeed(rho, gamma);
+      return U / cs;
+    }
+
+    function computeListenerArrival(r, yieldRel, rho, gamma, mode) {
+      const cs = computeSoundSpeed(rho, gamma);
+      if (mode === 'puff') {
+        return { tArr: r / PUFF_VELOCITY, machAtR: PUFF_VELOCITY / cs, overpressureRatio: 0.25 };
+      }
+      const E = yieldRel * E_BASE_JOULES;
+      const xi = computeXi(gamma);
+      const A = xi * Math.pow(E / rho, 0.2);
+      const tStar = Math.pow((0.4 * A) / cs, 5 / 3);
+      const rStar = A * Math.pow(tStar, 0.4);
+
+      let tArr, machAtR, overpressureRatio;
+      if (r <= rStar) {
+        tArr = Math.pow(r / A, 2.5);
+        machAtR = sedovMach(tArr, yieldRel, rho, gamma);
+        overpressureRatio = (2 * gamma / (gamma + 1)) * (machAtR * machAtR - 1);
+      } else {
+        tArr = tStar + (r - rStar) / cs;
+        machAtR = 1.0 + 0.35 * (rStar / r);
+        const pStar = (2 * gamma / (gamma + 1)) * 1.4;
+        overpressureRatio = pStar * (rStar / r);
+      }
+      return { tArr, machAtR, overpressureRatio, rStar, tStar };
+    }
+
+    function sedovInteriorProfile(lambda, gamma) {
+      if (lambda <= 0.001) return { pNorm: 0.36, rhoNorm: 0.0 };
+      if (lambda >= 1.0) return { pNorm: 1.0, rhoNorm: 1.0 };
+      const pNorm = 0.36 + 0.64 * Math.pow(lambda, 4.2);
+      const rhoNorm = Math.pow(lambda, 2.2 / Math.max(0.2, gamma - 1.0));
+      return { pNorm, rhoNorm };
+    }
+
+    // =========================================================================
+    // 2. DISCONTINUOUS SHOCK-EDGE AUDIO + 44.1 kHz 16-BIT STEREO .WAV EXPORT
+    // =========================================================================
+    let audioCtx = null;
+    let activeSource = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function stopAudio() {
+      if (activeSource) {
+        try { activeSource.stop(); } catch (_) {}
+        try { activeSource.disconnect(); } catch (_) {}
+        activeSource = null;
+      }
+    }
+
+    function synthesizeBlastBuffer(sampleRate, r, yieldRel, rho, gamma, mode) {
+      const { tArr, overpressureRatio } = computeListenerArrival(r, yieldRel, rho, gamma, mode);
+      const delaySec = Math.min(4.5, Math.max(0.02, tArr * 0.25));
+      const tailSec = 1.4;
+      const totalSamples = Math.floor(sampleRate * (delaySec + tailSec));
+      const buf = new Float32Array(totalSamples);
+
+      const nArr = Math.floor(delaySec * sampleRate);
+      const distNorm = Math.min(1, Math.max(0, (Math.log10(r) - Math.log10(20)) / (Math.log10(5000) - Math.log10(20))));
+      const amp = Math.min(0.95, 0.35 + 0.55 * Math.min(1, overpressureRatio * 0.35)) * (1 - 0.35 * distNorm);
+
+      const fc = 14000 * Math.pow(180 / 14000, distNorm);
+      const dt = 1 / sampleRate;
+      const rc = 1 / (2 * Math.PI * fc);
+      const alpha = dt / (rc + dt);
+
+      let lp = 0;
+      const nWaveTau = (0.008 + 0.045 * distNorm) * sampleRate;
+
+      for (let i = nArr; i < totalSamples; i++) {
+        const k = i - nArr;
+        let raw = 0;
+        if (k === 0) {
+          raw = amp; // instantaneous discontinuity, zero attack ramp
+        } else {
+          const u = k / nWaveTau;
+          const friedlander = amp * (1 - 0.85 * u) * Math.exp(-u * 1.15);
+          const coolRumble = amp * 0.28 * (Math.random() * 2 - 1) * Math.exp(-k / (sampleRate * 0.28));
+          raw = friedlander + coolRumble;
+        }
+
+        if (k === 0 && distNorm < 0.25) lp = raw;
+        else lp = lp + alpha * (raw - lp);
+        buf[i] = Math.max(-0.98, Math.min(0.98, lp));
+      }
+      return { samples: buf, totalSec: delaySec + tailSec };
+    }
+
+    function playBlastAudio() {
+      if (state.muted) return;
+      const ctx = ensureAudioContext();
+      if (!ctx) return;
+      stopAudio();
+
+      const { samples } = synthesizeBlastBuffer(ctx.sampleRate, state.listenerDist, state.yieldRel, state.rho, state.gamma, state.mode);
+      const ab = ctx.createBuffer(2, samples.length, ctx.sampleRate);
+      ab.getChannelData(0).set(samples);
+      ab.getChannelData(1).set(samples);
+
+      const src = ctx.createBufferSource();
+      src.buffer = ab;
+      src.connect(ctx.destination);
+      src.start();
+      activeSource = src;
+    }
+
+    function exportWavFile() {
+      const sampleRate = 44100;
+      const { samples, totalSec } = synthesizeBlastBuffer(sampleRate, state.listenerDist, state.yieldRel, state.rho, state.gamma, state.mode);
+      const len = samples.length;
+      const dataSize = len * 4;
+      const out = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(out);
+
+      const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 2, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 4, true);
+      view.setUint16(32, 4, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        const v = s < 0 ? s * 0x8000 : s * 0x7fff;
+        view.setInt16(offset, v, true);
+        view.setInt16(offset + 2, v, true);
+        offset += 4;
+      }
+
+      const blob = new Blob([out], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `blast_${state.mode}_E${state.yieldRel}_r${state.listenerDist}m.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast(`Exported 44.1 kHz 16-bit stereo WAV (${totalSec.toFixed(2)} s)`);
+    }
+
+    // =========================================================================
+    // 3. THREE.JS v2 — VOLUMETRIC PLASMA SHOCK SHELL, MACH STEM & PLAYA BASIN
+    // =========================================================================
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020617);
+    scene.fog = new THREE.FogExp2(0x020617, 0.0048);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.32;
+    container.appendChild(renderer.domElement);
+
+    function createGlowSpriteTexture() {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 64;
+      const g = c.getContext('2d');
+      const grad = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+      grad.addColorStop(0.0, 'rgba(255,255,255,1.0)');
+      grad.addColorStop(0.3, 'rgba(255,255,255,0.72)');
+      grad.addColorStop(0.7, 'rgba(255,255,255,0.16)');
+      grad.addColorStop(1.0, 'rgba(255,255,255,0.0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+    const glowTex = createGlowSpriteTexture();
+
+    // Twilight Observatory Sky Dome + Stars
+    {
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        vertexShader: `varying vec3 vPos; void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        fragmentShader: `
+          varying vec3 vPos;
+          void main() {
+            float h = normalize(vPos).y;
+            vec3 zenith = vec3(0.006, 0.012, 0.035);
+            vec3 horizon = vec3(0.045, 0.08, 0.16);
+            vec3 col = mix(horizon, zenith, pow(max(0.0, h), 0.5));
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      });
+      scene.add(new THREE.Mesh(new THREE.SphereGeometry(280, 32, 20), skyMat));
+
+      const starCount = 1200;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        const r = 110 + Math.random() * 140;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        starPos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) * 0.85 + 4;
+        starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xcbd5e1, size: 0.7, map: glowTex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false })));
+    }
+
+    // Lighting
+    scene.add(new THREE.AmbientLight(0x334155, 0.9));
+    const keyLight = new THREE.DirectionalLight(0xfde68a, 1.25);
+    keyLight.position.set(16, 36, 20);
+    scene.add(keyLight);
+    const blastLight = new THREE.PointLight(0xf59e0b, 0.0, 120);
+    blastLight.position.set(0, 3.0, 0);
+    scene.add(blastLight);
+
+    // Desert Proving Ground Playa & Rim Basin (160x160 analytical-normal GLSL terrain)
+    const WORLD_SCALE = 0.032; // 1000 m = 32 world units
+    const groundUniforms = {
+      uBlastR: { value: 0.0 },
+      uActive: { value: 0.0 },
+      uColor: { value: new THREE.Color(0xf59e0b) },
+      uBlastIntensity: { value: 1.0 }
+    };
+    const terrainGeo = new THREE.PlaneGeometry(190, 190, 160, 160);
+    terrainGeo.rotateX(-Math.PI / 2);
+    const groundMat = new THREE.ShaderMaterial({
+      uniforms: groundUniforms,
+      transparent: true,
+      vertexShader: `
+        uniform float uBlastR;
+        uniform float uActive;
+        varying vec3 vWorldPos;
+        varying vec3 vNormalW;
+        varying float vRimElev;
+
+        float playaHeight(vec2 xz) {
+          float r = length(xz);
+          // Flat desert playa inside r < 34, rising to distant basin mountains
+          float basin = smoothstep(32.0, 78.0, r) * (2.6 + 1.4 * sin(xz.x * 0.09) * cos(xz.y * 0.11) + 0.7 * sin(xz.x * 0.23 - xz.y * 0.19));
+          float dunes = 0.12 * sin(xz.x * 0.35 + xz.y * 0.25) * smoothstep(6.0, 28.0, r);
+          return basin + dunes;
+        }
+
+        void main() {
+          vec3 p = position;
+          float baseH = playaHeight(p.xz);
+          float shockRipple = 0.0;
+          if (uActive > 0.5) {
+            float d = length(p.xz) - uBlastR;
+            shockRipple = exp(-d * d * 1.4) * sin(d * 4.0) * 0.28;
+          }
+          p.y = baseH + shockRipple;
+
+          float eps = 0.35;
+          float hx = playaHeight(p.xz + vec2(eps, 0.0));
+          float hz = playaHeight(p.xz + vec2(0.0, eps));
+          vNormalW = normalize(vec3(baseH - hx, eps, baseH - hz));
+          vWorldPos = p;
+          vRimElev = baseH;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uBlastR;
+        uniform float uActive;
+        uniform vec3 uColor;
+        uniform float uBlastIntensity;
+        varying vec3 vWorldPos;
+        varying vec3 vNormalW;
+        varying float vRimElev;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(123.34, 456.21));
+          p += dot(p, p + 45.32);
+          return fract(p.x * p.y);
+        }
+
+        void main() {
+          float r = length(vWorldPos.xz);
+          float grain = hash21(floor(vWorldPos.xz * 4.5)) * 0.08;
+          vec3 N = normalize(vNormalW + vec3(grain - 0.04, 0.0, grain - 0.04));
+          vec3 L = normalize(vec3(0.4, 0.85, 0.5));
+          float diff = max(dot(N, L), 0.0);
+
+          // Radial illumination from blast center
+          vec3 toCenter = normalize(vec3(0.0, 2.5, 0.0) - vWorldPos);
+          float blastDiff = max(dot(N, toCenter), 0.0) * uBlastIntensity / (1.0 + 0.02 * r * r);
+
+          float gx = abs(fract(vWorldPos.x * 0.25) - 0.5);
+          float gz = abs(fract(vWorldPos.z * 0.25) - 0.5);
+          float grid = 1.0 - smoothstep(0.012, 0.032, min(gx, gz));
+
+          float ringDist = abs(fract(r / 16.0) - 0.5) * 16.0; // every 500m
+          float rangeRing = 1.0 - smoothstep(0.05, 0.14, ringDist);
+
+          vec3 sandCol = mix(vec3(0.025, 0.042, 0.08), vec3(0.09, 0.12, 0.19), smoothstep(0.0, 3.5, vRimElev));
+          vec3 base = sandCol * (0.45 + 0.65 * diff) + uColor * blastDiff * 0.85;
+          base += vec3(0.08, 0.14, 0.24) * grid * 0.35 + vec3(0.16, 0.28, 0.42) * rangeRing * 0.45;
+
+          if (uActive > 0.5) {
+            float d = r - uBlastR;
+            float shockRing = exp(-d * d * 2.4) * 1.65;
+            float scourTrail = exp(-max(0.0, -d) * 0.35) * smoothstep(-8.0, 0.0, d) * 0.28;
+            base += uColor * (shockRing + scourTrail);
+          }
+
+          float fade = 1.0 - smoothstep(68.0, 94.0, r);
+          gl_FragColor = vec4(base, fade * 0.94);
+        }
+      `
+    });
+    scene.add(new THREE.Mesh(terrainGeo, groundMat));
+
+    // --- Multi-Layer Volumetric Sedov-Taylor Shock Assembly ---
+    // 1. Inner Blackbody Cooling Core
+    const coreMat = new THREE.MeshBasicMaterial({ color: 0xfffbeb, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const coreSphere = new THREE.Mesh(new THREE.SphereGeometry(0.42, 28, 20), coreMat);
+    scene.add(coreSphere);
+
+    // 2. Sedov Compressed Rim Plasma Shell (3D cellular turbulence + sharp Fresnel shock discontinuity)
+    const shockMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(0xf59e0b) },
+        uCoreColor: { value: new THREE.Color(0xffffff) },
+        uOpacity: { value: 0.0 },
+        uTime: { value: 0.0 }
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      vertexShader: `
+        varying vec3 vNormalV;
+        varying vec3 vViewDir;
+        varying vec3 vLocalPos;
+        void main() {
+          vLocalPos = position;
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          vNormalV = normalize(normalMatrix * normal);
+          vViewDir = normalize(-mvPos.xyz);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform vec3 uCoreColor;
+        uniform float uOpacity;
+        uniform float uTime;
+        varying vec3 vNormalV;
+        varying vec3 vViewDir;
+        varying vec3 vLocalPos;
+
+        void main() {
+          float fresnel = pow(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 2.6);
+          // Subtle plasma cellular modulation behind the shock front
+          float turb = 0.5 + 0.5 * sin(vLocalPos.x * 7.0 + uTime * 3.0) * cos(vLocalPos.y * 7.0 - uTime * 2.5) * sin(vLocalPos.z * 7.0);
+          vec3 col = mix(uColor, uCoreColor, fresnel * 0.7 + turb * 0.2);
+          float alpha = (0.06 + fresnel * 0.94 + turb * 0.10) * uOpacity;
+          gl_FragColor = vec4(col, alpha);
+        }
+      `
+    });
+    const shockSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 56, 36), shockMat);
+    scene.add(shockSphere);
+
+    // 3. Outer Optical Atmospheric Compression Halo (shows shock-to-acoustic decoupling)
+    const outerHaloMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(0xbae6fd) },
+        uOpacity: { value: 0.0 }
+      },
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      vertexShader: `
+        varying vec3 vNormalV;
+        varying vec3 vViewDir;
+        void main() {
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          vNormalV = normalize(normalMatrix * normal);
+          vViewDir = normalize(-mvPos.xyz);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        varying vec3 vNormalV;
+        varying vec3 vViewDir;
+        void main() {
+          float rim = pow(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 3.8);
+          gl_FragColor = vec4(uColor, rim * uOpacity);
+        }
+      `
+    });
+    const outerHalo = new THREE.Mesh(new THREE.SphereGeometry(1.05, 40, 28), outerHaloMat);
+    scene.add(outerHalo);
+
+    // 4. Mach-Stem Ground Reflection Ring
+    const machStemMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const machStemRing = new THREE.Mesh(new THREE.RingGeometry(0.92, 1.02, 64), machStemMat);
+    machStemRing.rotation.x = -Math.PI / 2;
+    machStemRing.position.y = 0.12;
+    scene.add(machStemRing);
+
+    // Ghost comparison wireframe for 2x Yield demonstration
+    const ghostSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 32, 20),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.30 })
+    );
+    ghostSphere.visible = false;
+    scene.add(ghostSphere);
+
+    // 3,600-Particle Sedov Shell-Compressed Tracer Field + Ground Dust Skirt
+    const PARTICLE_COUNT = 3600;
+    const pDir = new Float32Array(PARTICLE_COUNT * 3);
+    const pPos = new Float32Array(PARTICLE_COUNT * 3);
+    const pCol = new Float32Array(PARTICLE_COUNT * 3);
+    const pRadialOffset = new Float32Array(PARTICLE_COUNT);
+    const pIsDust = new Uint8Array(PARTICLE_COUNT);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      if (i < 2800) {
+        const cosPhi = Math.random();
+        const sinPhi = Math.sqrt(1 - cosPhi * cosPhi);
+        pDir[i * 3] = sinPhi * Math.cos(theta);
+        pDir[i * 3 + 1] = cosPhi;
+        pDir[i * 3 + 2] = sinPhi * Math.sin(theta);
+        pRadialOffset[i] = 0.80 + 0.20 * Math.pow(Math.random(), 0.3);
+        pIsDust[i] = 0;
+      } else {
+        // Ground-skimming Mach-stem dust skirt
+        pDir[i * 3] = Math.cos(theta);
+        pDir[i * 3 + 1] = 0.02 + Math.random() * 0.09;
+        pDir[i * 3 + 2] = Math.sin(theta);
+        pRadialOffset[i] = 0.86 + 0.16 * Math.random();
+        pIsDust[i] = 1;
+      }
+      pCol[i * 3] = 1.0; pCol[i * 3 + 1] = 0.72; pCol[i * 3 + 2] = 0.25;
+    }
+
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    particleGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+    scene.add(new THREE.Points(
+      particleGeo,
+      new THREE.PointsMaterial({ size: 0.44, map: glowTex, vertexColors: true, transparent: true, opacity: 0.88, blending: THREE.AdditiveBlending, depthWrite: false })
+    ));
+
+    // Detailed Overpressure Telemetry Mast at Listener Distance r
+    const listenerGroup = new THREE.Group();
+    scene.add(listenerGroup);
+    const mastLattice = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.55, 2.8, 6, 4, true),
+      new THREE.MeshPhongMaterial({ color: 0x334155, wireframe: true })
+    );
+    mastLattice.position.y = 1.4;
+    listenerGroup.add(mastLattice);
+    const listenerOrbMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+    const listenerOrb = new THREE.Mesh(new THREE.SphereGeometry(0.38, 20, 20), listenerOrbMat);
+    listenerOrb.position.y = 3.0;
+    listenerGroup.add(listenerOrb);
+    const mastShockMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, side: THREE.DoubleSide, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending });
+    const mastShockRing = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.3, 36), mastShockMat);
+    mastShockRing.rotation.x = -Math.PI / 2;
+    mastShockRing.position.y = 0.15;
+    listenerGroup.add(mastShockRing);
+
+    // Open-Space Orbit Camera + Presets
+    let isOrbiting = false;
+    let prevPointer = { x: 0, y: 0 };
+    let targetTheta = 0.26, camTheta = 0.26;
+    let targetPhi = 1.02, camPhi = 1.02;
+    let targetRadius = 46, camRadius = 46;
+
+    function getOpenSpaceLookTarget() {
+      const isWide = window.innerWidth >= 768;
+      return {
+        x: (state.sidebarOpen && isWide) ? -4.5 : 1.0,
+        y: -4.2
+      };
+    }
+    let targetLookX = getOpenSpaceLookTarget().x, lookX = targetLookX;
+    let targetLookY = getOpenSpaceLookTarget().y, lookY = targetLookY;
+
+    function applyCameraPreset(preset) {
+      const open = getOpenSpaceLookTarget();
+      if (preset === 'persp') {
+        targetTheta = 0.26; targetPhi = 1.02; targetRadius = 46; targetLookX = open.x; targetLookY = open.y;
+      } else if (preset === 'ground') {
+        targetTheta = 0.15; targetPhi = 1.42; targetRadius = 42; targetLookX = open.x; targetLookY = -1.2;
+      } else if (preset === 'top') {
+        targetTheta = 0.0; targetPhi = 0.16; targetRadius = 62; targetLookX = open.x; targetLookY = -2.0;
+      } else if (preset === 'mast') {
+        const lx = Math.min(45, state.listenerDist * WORLD_SCALE);
+        targetTheta = -0.35; targetPhi = 1.12; targetRadius = 18; targetLookX = lx; targetLookY = 1.2;
+      }
+      document.querySelectorAll('.cam-preset').forEach((btn) => {
+        const active = btn.getAttribute('data-cam') === preset;
+        btn.className = `cam-preset px-2 py-1 rounded font-mono text-[10px] border transition ${
+          active ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'text-slate-400 hover:text-slate-200 border-transparent'
+        }`;
+      });
+    }
+    document.querySelectorAll('.cam-preset').forEach((btn) => {
+      btn.addEventListener('click', () => applyCameraPreset(btn.getAttribute('data-cam')));
+    });
+
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', (e) => {
+      state.sidebarOpen = !state.sidebarOpen;
+      const sidebar = document.getElementById('left-sidebar');
+      const bottomPanel = document.getElementById('bottom-panel');
+      if (state.sidebarOpen) {
+        sidebar.classList.remove('-translate-x-[120%]');
+        bottomPanel.classList.add('md:left-[21.5rem]');
+        e.target.textContent = '◀ HIDE';
+      } else {
+        sidebar.classList.add('-translate-x-[120%]');
+        bottomPanel.classList.remove('md:left-[21.5rem]');
+        e.target.textContent = '▶ CONTROLS';
+      }
+      const open = getOpenSpaceLookTarget();
+      targetLookX = open.x;
+      targetLookY = open.y;
+      setTimeout(() => { drawActivePlot(); }, 310);
+    });
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      isOrbiting = true;
+      prevPointer = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!isOrbiting) return;
+      const dx = e.clientX - prevPointer.x;
+      const dy = e.clientY - prevPointer.y;
+      prevPointer = { x: e.clientX, y: e.clientY };
+      targetTheta -= dx * 0.006;
+      targetPhi = Math.max(0.14, Math.min(1.48, targetPhi - dy * 0.006));
+    });
+    window.addEventListener('pointerup', () => { isOrbiting = false; });
+    renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      targetRadius = Math.max(14, Math.min(125, targetRadius + e.deltaY * 0.04));
+    }, { passive: false });
+
+    // =========================================================================
+    // 4. 2D CANVAS PLOTS (GLOWING LOG-LOG R vs T, MACH vs T, PRESSURE PROFILE)
+    // =========================================================================
+    function sizeCanvasToDisplay(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(100, Math.floor(rect.width * dpr));
+      const h = Math.max(80, Math.floor(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      return { w, h, dpr };
+    }
+
+    function drawLogLogCanvas() {
+      const canvas = document.getElementById('canvas-loglog');
+      if (!canvas || state.activeTab !== 'loglog') return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 48 * dpr, padR = 20 * dpr, padT = 18 * dpr, padB = 26 * dpr;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const xMap = (lt) => padL + ((lt + 2.0) / 3.5) * plotW;
+      const yMap = (lR) => padT + ((3.6 - lR) / 3.6) * plotH;
+
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.75)';
+      ctx.lineWidth = 1;
+      [0, 1, 2, 3].forEach((lr) => {
+        const y = yMap(lr);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = `${9.5 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillText(`10^${lr}m`, 4 * dpr, y + 3 * dpr);
+      });
+
+      ctx.save();
+      ctx.strokeStyle = '#c084fc';
+      ctx.setLineDash([5 * dpr, 4 * dpr]);
+      ctx.lineWidth = 1.8 * dpr;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const lt = -2.0 + (i / 80) * 3.5;
+        const t = Math.pow(10, lt);
+        const lR = Math.log10(Math.max(1, puffRadius(t)));
+        const x = xMap(lt), y = yMap(lR);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#f59e0b';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 6 * dpr;
+      ctx.lineWidth = 2.3 * dpr;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const lt = -2.0 + (i / 80) * 3.5;
+        const t = Math.pow(10, lt);
+        const lR = Math.log10(Math.max(1, sedovRadius(t, state.yieldRel, state.rho, state.gamma)));
+        const x = xMap(lt), y = yMap(lR);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      if (state.playing && state.simTime > 0.01) {
+        const lt = Math.log10(state.simTime);
+        const rNow = state.mode === 'blast'
+          ? sedovRadius(state.simTime, state.yieldRel, state.rho, state.gamma)
+          : puffRadius(state.simTime);
+        const lR = Math.log10(Math.max(1, rNow));
+        ctx.fillStyle = state.mode === 'blast' ? '#fbbf24' : '#e879f9';
+        ctx.beginPath();
+        ctx.arc(xMap(lt), yMap(lR), 4.5 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.font = `600 ${10 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('BLAST: slope = 0.400 (t^2/5)', padL + 8 * dpr, padT + 12 * dpr);
+      ctx.fillStyle = '#c084fc';
+      ctx.fillText('PUFF (Null): slope = 1.000 (t^1)', padL + 8 * dpr, padT + 26 * dpr);
+
+      ctx.fillStyle = '#94a3b8';
+      [-2, -1, 0, 1].forEach((lt) => {
+        ctx.fillText(`10^${lt}s`, xMap(lt) - 10 * dpr, h - 7 * dpr);
+      });
+    }
+
+    function drawMachCanvas() {
+      const canvas = document.getElementById('canvas-mach');
+      if (!canvas || state.activeTab !== 'mach') return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 48 * dpr, padR = 20 * dpr, padT = 18 * dpr, padB = 26 * dpr;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const xMap = (lt) => padL + ((lt + 2.0) / 3.5) * plotW;
+      const yMap = (lM) => padT + ((2.2 - lM) / 3.0) * plotH;
+
+      const yM1 = yMap(0);
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.55)';
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.beginPath(); ctx.moveTo(padL, yM1); ctx.lineTo(w - padR, yM1); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#34d399';
+      ctx.font = `${9.5 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillText('Mach 1.0 (Acoustic)', w - padR - 115 * dpr, yM1 - 5 * dpr);
+
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 6 * dpr;
+      ctx.lineWidth = 2.2 * dpr;
+      ctx.beginPath();
+      for (let i = 0; i <= 80; i++) {
+        const lt = -2.0 + (i / 80) * 3.5;
+        const t = Math.pow(10, lt);
+        const lM = Math.log10(Math.max(0.05, sedovMach(t, state.yieldRel, state.rho, state.gamma)));
+        const x = xMap(lt), y = yMap(lM);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = `600 ${10 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillText('Mach ∝ t^(−3/5)  (slope = −0.600)', padL + 8 * dpr, padT + 12 * dpr);
+    }
+
+    function drawProfileCanvas() {
+      const canvas = document.getElementById('canvas-profile');
+      if (!canvas || state.activeTab !== 'profile') return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 48 * dpr, padR = 20 * dpr, padT = 18 * dpr, padB = 26 * dpr;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const xMap = (lam) => padL + lam * plotW;
+      const yMap = (val) => padT + (1.05 - val) * plotH;
+
+      ctx.save();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 5 * dpr;
+      ctx.lineWidth = 2.2 * dpr;
+      ctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const lam = i / 100;
+        const { pNorm } = sedovInteriorProfile(lam, state.gamma);
+        const x = xMap(lam), y = yMap(pNorm);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.lineWidth = 2.0 * dpr;
+      ctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const lam = i / 100;
+        const { rhoNorm } = sedovInteriorProfile(lam, state.gamma);
+        const x = xMap(lam), y = yMap(rhoNorm);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.font = `600 ${10 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillStyle = '#f59e0b';
+      ctx.fillText('Pressure P/P_shock (peaks at front)', padL + 8 * dpr, padT + 12 * dpr);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('Density ρ/ρ_shock (hollow core)', padL + 8 * dpr, padT + 26 * dpr);
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillText('r / R(t) = 0', padL, h - 7 * dpr);
+      ctx.fillText('r / R(t) = 1.0 (Shock)', w - padR - 115 * dpr, h - 7 * dpr);
+    }
+
+    function drawActivePlot() {
+      drawLogLogCanvas();
+      drawMachCanvas();
+      drawProfileCanvas();
+    }
+
+    // =========================================================================
+    // 5. FOUR-CHECK VERIFICATION SUITE
+    // =========================================================================
+    function runVerificationSuite() {
+      const ts = [0.05, 0.2, 1.0, 4.0, 15.0];
+
+      const pts1 = ts.map((t) => ({ x: Math.log10(t), y: Math.log10(sedovRadius(t, state.yieldRel, state.rho, state.gamma)) }));
+      let sx = 0, sy = 0, sxx = 0, sxy = 0;
+      pts1.forEach((p) => { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; });
+      const slopeBlast = (pts1.length * sxy - sx * sy) / (pts1.length * sxx - sx * sx);
+      const pass1 = Math.abs(slopeBlast - 0.4) <= 0.01;
+
+      const r1 = sedovRadius(1.0, 100, state.rho, state.gamma);
+      const r2 = sedovRadius(1.0, 200, state.rho, state.gamma);
+      const ratio2x = r2 / r1;
+      const theory2x = Math.pow(2, 0.2);
+      const pass2 = Math.abs(ratio2x - theory2x) < 1e-4;
+
+      const pts3 = ts.map((t) => ({ x: Math.log10(t), y: Math.log10(sedovMach(t, state.yieldRel, state.rho, state.gamma)) }));
+      sx = 0; sy = 0; sxx = 0; sxy = 0;
+      pts3.forEach((p) => { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; });
+      const slopeMach = (pts3.length * sxy - sx * sy) / (pts3.length * sxx - sx * sx);
+      const pass3 = Math.abs(slopeMach + 0.6) <= 0.01;
+
+      const pts4 = ts.map((t) => ({ x: Math.log10(t), y: Math.log10(puffRadius(t)) }));
+      sx = 0; sy = 0; sxx = 0; sxy = 0;
+      pts4.forEach((p) => { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; });
+      const slopePuff = (pts4.length * sxy - sx * sy) / (pts4.length * sxx - sx * sx);
+      const pass4 = Math.abs(slopePuff - 1.0) <= 0.01;
+
+      const checks = [
+        { title: '1. Sedov–Taylor Exponent (log R vs log t)', pass: pass1, detail: `Fitted slope = ${slopeBlast.toFixed(6)} (target: 0.400 ± 0.01)` },
+        { title: '2. Fifth-Root Energy Scaling (2× Yield)', pass: pass2, detail: `Measured R(2E)/R(E) = ${ratio2x.toFixed(6)} vs 2^(1/5) = ${theory2x.toFixed(6)} (+14.9%)` },
+        { title: '3. Shock Mach Decay (M ∝ t^(−3/5))', pass: pass3, detail: `Fitted log M vs log t slope = ${slopeMach.toFixed(6)} (target: −0.600 ± 0.01)` },
+        { title: '4. Constant-Velocity PUFF Null (R ∝ t)', pass: pass4, detail: `Fitted PUFF slope = ${slopePuff.toFixed(6)} (target: 1.000 ± 0.01)` }
+      ];
+
+      document.getElementById('verify-results').innerHTML = checks.map((c) => `
+        <div class="rounded-lg border ${c.pass ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10'} p-3">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-100">${c.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.pass ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${c.pass ? 'PASS' : 'FAIL'}</span>
+          </div>
+          <div class="text-slate-300 text-[11px] mt-1">${c.detail}</div>
+        </div>
+      `).join('');
+
+      const allPass = checks.every((c) => c.pass);
+      const summaryEl = document.getElementById('verify-summary');
+      summaryEl.textContent = allPass ? 'All 4 physics checks passed.' : 'One or more checks failed.';
+      summaryEl.className = `font-mono text-xs font-semibold ${allPass ? 'text-emerald-400' : 'text-rose-400'}`;
+    }
+
+    // =========================================================================
+    // 6. UI BINDINGS & SIMULATION LOOP
+    // =========================================================================
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.add('hidden'), 2800);
+    }
+
+    function updateReadouts() {
+      const xi = computeXi(state.gamma);
+      const r1 = state.mode === 'blast'
+        ? sedovRadius(1.0, state.yieldRel, state.rho, state.gamma)
+        : puffRadius(1.0);
+      const { tArr, machAtR } = computeListenerArrival(state.listenerDist, state.yieldRel, state.rho, state.gamma, state.mode);
+
+      document.getElementById('val-yield').textContent = `${state.yieldRel}×`;
+      document.getElementById('val-rho').textContent = `${state.rho.toFixed(3)} kg/m³`;
+      document.getElementById('val-dist').textContent = state.listenerDist >= 1000
+        ? `${(state.listenerDist / 1000).toFixed(2)} km`
+        : `${state.listenerDist} m`;
+      document.getElementById('val-gamma').textContent = `${state.gamma.toFixed(2)} (ξ = ${xi.toFixed(3)})`;
+
+      document.getElementById('readout-r1s').textContent = `${r1.toFixed(0)} m`;
+      document.getElementById('readout-mach').textContent = `M ${machAtR.toFixed(2)}`;
+      document.getElementById('readout-tarr').textContent = `${tArr.toFixed(2)} s`;
+
+      const lx = Math.min(48, state.listenerDist * WORLD_SCALE);
+      listenerGroup.position.set(lx, 0, 0);
+
+      drawActivePlot();
+    }
+
+    function detonate() {
+      state.playing = true;
+      state.simTime = 0.005;
+      state.listenerHit = false;
+      state.mastShock = 0;
+      state.lastFrameTs = performance.now();
+      groundUniforms.uActive.value = 1.0;
+      const isBlast = state.mode === 'blast';
+      groundUniforms.uColor.value.setHex(isBlast ? 0xf59e0b : 0xc084fc);
+      shockMat.uniforms.uColor.value.setHex(isBlast ? 0xf59e0b : 0xc084fc);
+      blastLight.color.setHex(isBlast ? 0xf59e0b : 0xc084fc);
+      listenerOrbMat.color.setHex(0x34d399);
+      document.getElementById('telemetry-status').textContent = isBlast ? 'SHOCK EXPANDING' : 'PUFF (NULL)';
+      playBlastAudio();
+    }
+
+    function resetSim() {
+      stopAudio();
+      state.playing = false;
+      state.simTime = 0;
+      groundUniforms.uActive.value = 0.0;
+      blastLight.intensity = 0;
+      shockSphere.scale.setScalar(0.01);
+      outerHalo.scale.setScalar(0.01);
+      coreSphere.scale.setScalar(0.01);
+      shockMat.uniforms.uOpacity.value = 0;
+      outerHaloMat.uniforms.uOpacity.value = 0;
+      coreMat.opacity = 0;
+      machStemMat.opacity = 0;
+      mastShockMat.opacity = 0;
+      ghostSphere.visible = false;
+      document.getElementById('telemetry-status').textContent = 'READY';
+      drawActivePlot();
+    }
+
+    document.getElementById('slider-yield').addEventListener('input', (e) => { state.yieldRel = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-rho').addEventListener('input', (e) => { state.rho = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-dist').addEventListener('input', (e) => { state.listenerDist = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-gamma').addEventListener('input', (e) => { state.gamma = Number(e.target.value); updateReadouts(); });
+
+    document.getElementById('btn-detonate').addEventListener('click', detonate);
+    document.getElementById('btn-stop').addEventListener('click', resetSim);
+
+    document.getElementById('btn-double-yield').addEventListener('click', () => {
+      const oldY = state.yieldRel;
+      const newY = Math.min(1000, Math.round(oldY * 2));
+      const rOld = sedovRadius(1.0, oldY, state.rho, state.gamma);
+      const rNew = sedovRadius(1.0, newY, state.rho, state.gamma);
+      const ratio = rNew / rOld;
+
+      state.ghostRadius1s = rOld;
+      ghostSphere.visible = true;
+      ghostSphere.scale.setScalar(Math.max(0.5, rOld * WORLD_SCALE));
+
+      state.yieldRel = newY;
+      document.getElementById('slider-yield').value = String(newY);
+      document.getElementById('readout-scaling').textContent = `Double E (${oldY}→${newY}): R × ${ratio.toFixed(3)} (+${((ratio - 1) * 100).toFixed(1)}%)`;
+      updateReadouts();
+      detonate();
+    });
+
+    document.getElementById('btn-mode-blast').addEventListener('click', () => {
+      state.mode = 'blast';
+      document.getElementById('btn-mode-blast').className = 'py-1.5 rounded-md font-mono text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 transition';
+      document.getElementById('btn-mode-puff').className = 'py-1.5 rounded-md font-mono text-xs font-semibold bg-slate-950/70 text-slate-400 border border-slate-800 hover:text-slate-200 transition';
+      updateReadouts();
+    });
+
+    document.getElementById('btn-mode-puff').addEventListener('click', () => {
+      state.mode = 'puff';
+      document.getElementById('btn-mode-puff').className = 'py-1.5 rounded-md font-mono text-xs font-bold bg-purple-500/20 text-purple-300 border border-purple-500/50 transition';
+      document.getElementById('btn-mode-blast').className = 'py-1.5 rounded-md font-mono text-xs font-semibold bg-slate-950/70 text-slate-400 border border-slate-800 hover:text-slate-200 transition';
+      updateReadouts();
+    });
+
+    document.getElementById('btn-mute').addEventListener('click', (e) => {
+      state.muted = !state.muted;
+      e.target.textContent = state.muted ? 'AUDIO: OFF' : 'AUDIO: ON';
+      if (state.muted) stopAudio();
+    });
+
+    document.getElementById('btn-wav').addEventListener('click', exportWavFile);
+
+    document.querySelectorAll('.display-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-tab');
+        state.activeTab = target;
+        document.querySelectorAll('.display-tab').forEach((t) => {
+          const active = t.getAttribute('data-tab') === target;
+          t.className = `display-tab px-2.5 py-1 rounded-md font-mono text-xs font-semibold border transition ${
+            active ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'text-slate-400 hover:text-slate-200 border-transparent'
+          }`;
+        });
+        document.getElementById('panel-loglog').classList.toggle('hidden', target !== 'loglog');
+        document.getElementById('panel-mach').classList.toggle('hidden', target !== 'mach');
+        document.getElementById('panel-profile').classList.toggle('hidden', target !== 'profile');
+        drawActivePlot();
+      });
+    });
+
+    const modalVerify = document.getElementById('modal-verify');
+    document.getElementById('btn-verify').addEventListener('click', () => {
+      runVerificationSuite();
+      modalVerify.classList.remove('hidden');
+      modalVerify.classList.add('flex');
+    });
+    document.getElementById('btn-close-verify').addEventListener('click', () => {
+      modalVerify.classList.add('hidden');
+      modalVerify.classList.remove('flex');
+    });
+    document.getElementById('btn-rerun-verify').addEventListener('click', runVerificationSuite);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        e.preventDefault();
+        detonate();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      const open = getOpenSpaceLookTarget();
+      targetLookX = open.x;
+      targetLookY = open.y;
+      drawActivePlot();
+    });
+
+    // =========================================================================
+    // 7. ANIMATION LOOP
+    // =========================================================================
+    function animate(now) {
+      requestAnimationFrame(animate);
+
+      camTheta += (targetTheta - camTheta) * 0.12;
+      camPhi += (targetPhi - camPhi) * 0.12;
+      camRadius += (targetRadius - camRadius) * 0.12;
+      lookX += (targetLookX - lookX) * 0.12;
+      lookY += (targetLookY - lookY) * 0.12;
+
+      state.camShake *= 0.88;
+      const sx = (Math.random() - 0.5) * state.camShake * 0.35;
+      const sy = (Math.random() - 0.5) * state.camShake * 0.35;
+
+      camera.position.x = lookX + camRadius * Math.sin(camPhi) * Math.sin(camTheta) + sx;
+      camera.position.y = lookY + camRadius * Math.cos(camPhi) + sy;
+      camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+      camera.lookAt(lookX, lookY, 0);
+
+      const pPosAttr = particleGeo.attributes.position;
+      const pColAttr = particleGeo.attributes.color;
+      const pArr = pPosAttr.array;
+      const cArr = pColAttr.array;
+
+      if (state.playing) {
+        const dt = Math.min(0.05, (now - state.lastFrameTs) / 1000);
+        state.lastFrameTs = now;
+        state.simTime += dt;
+
+        const rMeters = state.mode === 'blast'
+          ? sedovRadius(state.simTime, state.yieldRel, state.rho, state.gamma)
+          : puffRadius(state.simTime);
+        const rWorld = Math.max(0.2, rMeters * WORLD_SCALE);
+        const machNow = state.mode === 'blast'
+          ? sedovMach(state.simTime, state.yieldRel, state.rho, state.gamma)
+          : 0.65;
+
+        // Blackbody cooling shift: white-hot at high Mach -> amber -> crimson
+        const coolT = Math.min(1, state.simTime / 4.5);
+        shockMat.uniforms.uTime.value = state.simTime;
+        shockSphere.scale.setScalar(rWorld);
+        shockMat.uniforms.uOpacity.value = Math.max(0.12, 0.96 - coolT * 0.72);
+
+        // Acoustic decoupling halo separates as Mach drops toward 1
+        const haloScale = rWorld * (1.02 + Math.max(0, 1.2 - machNow) * 0.12);
+        outerHalo.scale.setScalar(haloScale);
+        outerHaloMat.uniforms.uOpacity.value = Math.max(0.05, 0.55 - coolT * 0.45);
+
+        coreSphere.scale.setScalar(rWorld * (0.45 - coolT * 0.2));
+        coreMat.opacity = Math.max(0, 0.75 * Math.exp(-state.simTime * 1.1));
+
+        machStemRing.scale.setScalar(rWorld);
+        machStemMat.opacity = Math.max(0, 0.85 * Math.exp(-state.simTime * 0.45));
+
+        groundUniforms.uBlastR.value = rWorld;
+        groundUniforms.uBlastIntensity.value = Math.max(0.2, 1.8 * Math.exp(-state.simTime * 0.4));
+        blastLight.intensity = Math.max(0.2, 4.5 * Math.exp(-state.simTime * 0.55));
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          const rad = rWorld * pRadialOffset[i];
+          pArr[i * 3] = pDir[i * 3] * rad;
+          pArr[i * 3 + 1] = pDir[i * 3 + 1] * rad;
+          pArr[i * 3 + 2] = pDir[i * 3 + 2] * rad;
+
+          if (pIsDust[i]) {
+            cArr[i * 3] = 0.85; cArr[i * 3 + 1] = 0.55; cArr[i * 3 + 2] = 0.22;
+          } else {
+            cArr[i * 3] = 1.0;
+            cArr[i * 3 + 1] = Math.max(0.3, 0.92 - coolT * 0.55);
+            cArr[i * 3 + 2] = Math.max(0.1, 0.75 - coolT * 0.65);
+          }
+        }
+        pPosAttr.needsUpdate = true;
+        pColAttr.needsUpdate = true;
+
+        if (!state.listenerHit && rMeters >= state.listenerDist) {
+          state.listenerHit = true;
+          state.camShake = 0.9;
+          state.mastShock = 1.0;
+          listenerOrbMat.color.setHex(0xfbbf24);
+          document.getElementById('telemetry-status').textContent = 'FRONT AT LISTENER';
+        }
+
+        if (state.mastShock > 0.01) {
+          state.mastShock *= 0.91;
+          const ms = 1 + (1 - state.mastShock) * 4.0;
+          mastShockRing.scale.set(ms, ms, 1);
+          mastShockMat.opacity = state.mastShock * 0.9;
+        } else {
+          mastShockMat.opacity = 0;
+        }
+
+        if (state.simTime > 6.5) {
+          state.playing = false;
+          document.getElementById('telemetry-status').textContent = 'COMPLETE';
+        }
+        drawLogLogCanvas();
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    updateReadouts();
+    requestAnimationFrame(animate);
+  });
+  </script>
+</body>
+</html>

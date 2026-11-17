@@ -571,6 +571,18 @@
         "dispersive Rayleigh",
         "Gutenberg-Richter"
        ]
+      },
+      {
+       "href": "blast_radius_3d_sedov_taylor_point_explosion_lab.html",
+       "glyph": "blast",
+       "name": "BLAST-RADIUS 3D",
+       "desc": "A point explosion has only two quantities to work with, energy and air density, so the fireball radius can only be R = &#958;(E/&#961;)^(1/5)t^(2/5). Fallout of units alone. Double the yield and the fireball grows 15% - and a constant-velocity puff, which is what a wrong model produces, gives slope 1.00 instead of 0.40.",
+       "tags": [
+        "Sedov&#8211;Taylor",
+        "R &#8733; t^(2/5)",
+        "Mach decay",
+        "the puff null"
+       ]
       }
      ]
     }
