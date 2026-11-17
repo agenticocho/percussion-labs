@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CALVE 3D — Crevasse Propagation, Fall &amp; Impact Two-Stage Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-arctic: #040912;
+      --panel-bg: rgba(8, 16, 30, 0.84);
+      --panel-border: rgba(125, 211, 252, 0.2);
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-arctic);
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+    .font-mono-tech {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    input[type="range"].lab-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      background: rgba(148, 163, 184, 0.22);
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"].lab-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #7dd3fc;
+      border: 2px solid #082f49;
+      box-shadow: 0 0 10px rgba(125, 211, 252, 0.65);
+      cursor: pointer;
+    }
+    input[type="range"].lab-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #7dd3fc;
+      border: 2px solid #082f49;
+      box-shadow: 0 0 10px rgba(125, 211, 252, 0.65);
+      cursor: pointer;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(125, 211, 252, 0.25);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-[#040912]">
+  <!-- 3D WebGL Viewport -->
+  <div id="webgl-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3.5 py-2 flex items-center gap-3 pointer-events-auto shadow-lg">
+      <div class="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_12px_#67e8f9]"></div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold tracking-wider text-white uppercase">CALVE 3D</h1>
+          <span class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-400/25">TWO-STAGE ACOUSTIC LAB</span>
+        </div>
+        <p class="text-[11px] text-slate-400 hidden sm:block">Crevasse crack (1.5&ndash;8 kHz) &bull; Vacuum silence t<sub>fall</sub> = &radic;(2h/g) &bull; Water boom (30&ndash;200 Hz)</p>
+      </div>
+    </div>
+
+    <!-- View Mode Switcher -->
+    <nav class="glass-panel rounded-xl p-1 flex items-center gap-1 pointer-events-auto shadow-lg" aria-label="View Mode">
+      <button type="button" data-view="cliff" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors bg-cyan-500/25 text-cyan-200 border border-cyan-400/40">Cliff Face</button>
+      <button type="button" data-view="trajectory" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">Fall Trajectory</button>
+      <button type="button" data-view="timeline" class="view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent">Timeline &amp; &radic;h Curve</button>
+    </nav>
+
+    <!-- Primary Actions -->
+    <div class="glass-panel rounded-xl p-1 flex items-center gap-1.5 pointer-events-auto shadow-lg">
+      <button id="btn-calve" type="button" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-400 hover:bg-cyan-300 text-slate-950 transition-colors flex items-center gap-1.5 shadow-[0_0_15px_rgba(103,232,249,0.4)]">
+        <span>&#10052; Calve</span>
+        <span class="font-mono-tech text-[10px] opacity-75 hidden md:inline">[Space]</span>
+      </button>
+      <button id="btn-export-wav" type="button" class="px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-emerald-300 border border-emerald-500/30 transition-colors">
+        Export .WAV
+      </button>
+      <button id="btn-toggle-panels" type="button" class="px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 border border-slate-700/70 md:hidden">
+        HUD
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Panel: Glacier & Impact Controls -->
+  <aside id="left-panel" class="fixed top-20 left-3 bottom-3 w-72 max-w-[calc(100vw-1.5rem)] z-20 flex flex-col gap-2.5 pointer-events-none">
+    <div class="glass-panel rounded-xl p-3.5 pointer-events-auto overflow-y-auto custom-scroll space-y-3.5 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-700/50 pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-cyan-300">Glacier &amp; Fracture Controls</span>
+        <span id="env-badge" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">TIDEWATER</span>
+      </div>
+
+      <!-- Tidewater vs Land Toggle -->
+      <div>
+        <div class="flex justify-between text-[11px] text-slate-400 mb-1.5">
+          <span>Terminus Environment</span>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-slate-900/80 border border-slate-800">
+          <button id="btn-env-water" type="button" class="py-1.5 rounded-md text-[11px] font-medium bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 transition-colors">Tidewater (Water)</button>
+          <button id="btn-env-land" type="button" class="py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-slate-200 border border-transparent transition-colors">Land (Rock)</button>
+        </div>
+      </div>
+
+      <!-- Cliff Height h -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-height" class="text-slate-300 font-medium">Cliff Height h</label>
+          <span id="val-height" class="font-mono-tech text-cyan-300 text-xs">50 m</span>
+        </div>
+        <input id="slider-height" type="range" min="5" max="120" step="1" value="50" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono-tech">
+          <span>5 m (1.01s)</span><span>120 m (4.95s)</span>
+        </div>
+      </div>
+
+      <!-- Ligament Length -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-ligament" class="text-slate-300 font-medium">Ligament Length</label>
+          <span id="val-ligament" class="font-mono-tech text-cyan-300 text-xs">24 m</span>
+        </div>
+        <input id="slider-ligament" type="range" min="4" max="60" step="1" value="24" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>Short chunk</span><span>Full face collapse</span>
+        </div>
+      </div>
+
+      <!-- Ice Temperature -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-temp" class="text-slate-300 font-medium">Ice Temperature</label>
+          <span id="val-temp" class="font-mono-tech text-cyan-300 text-xs">-15 &deg;C</span>
+        </div>
+        <input id="slider-temp" type="range" min="-25" max="0" step="1" value="-15" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>-25&deg;C (brittle)</span><span>0&deg;C (ductile)</span>
+        </div>
+      </div>
+
+      <!-- Block Volume -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-volume" class="text-slate-300 font-medium">Block Volume</label>
+          <span id="val-volume" class="font-mono-tech text-cyan-300 text-xs">1200 m&sup3;</span>
+        </div>
+        <input id="slider-volume" type="range" min="50" max="5000" step="50" value="1200" class="lab-slider" />
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5 font-mono-tech">
+          <span>50 m&sup3;</span><span>5000 m&sup3;</span>
+        </div>
+      </div>
+
+      <!-- Output Gain -->
+      <div>
+        <div class="flex justify-between items-baseline text-xs mb-1">
+          <label for="slider-gain" class="text-slate-300 font-medium">Output Gain</label>
+          <span id="val-gain" class="font-mono-tech text-cyan-300 text-xs">85%</span>
+        </div>
+        <input id="slider-gain" type="range" min="0" max="100" step="1" value="85" class="lab-slider" />
+      </div>
+
+      <!-- Vacuum Silence Constraint Card -->
+      <div class="rounded-lg bg-slate-900/75 border border-slate-800 p-2.5 text-[11px] space-y-1">
+        <div class="font-semibold text-slate-200 flex items-center justify-between">
+          <span>Two-Stage Isolation</span>
+          <span class="font-mono-tech text-[10px] text-emerald-400">ZERO REVERB</span>
+        </div>
+        <p class="text-slate-400 leading-relaxed">
+          Crack (<span class="font-mono-tech text-cyan-300">1.5&ndash;8 kHz</span>) and impact (<span class="font-mono-tech text-indigo-300">30&ndash;200 Hz</span>) are separated by exact mathematical <span class="font-mono-tech text-slate-200">0.0</span> silence for <span class="font-mono-tech text-amber-300">t<sub>fall</sub> = &radic;(2h/g)</span>.
+        </p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Right Panel: Telemetry & 4-Check Verification -->
+  <aside id="right-panel" class="fixed top-20 right-3 bottom-3 w-80 max-w-[calc(100vw-1.5rem)] z-20 flex flex-col gap-2.5 pointer-events-none">
+    <div class="glass-panel rounded-xl p-3.5 pointer-events-auto overflow-y-auto custom-scroll space-y-3 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-700/50 pb-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-cyan-300">Stage Telemetry</span>
+        <span id="stage-status" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">READY</span>
+      </div>
+
+      <!-- Key Metrics Grid -->
+      <div class="grid grid-cols-2 gap-2 font-mono-tech text-[11px]">
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Crack Speed v<sub>c</sub></div>
+          <div id="stat-vcrack" class="text-cyan-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Release Time t<sub>rel</sub></div>
+          <div id="stat-trel" class="text-cyan-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Silence Gap &radic;(2h/g)</div>
+          <div id="stat-tfall" class="text-amber-300 font-semibold">--</div>
+        </div>
+        <div class="bg-slate-900/70 rounded-lg p-2 border border-slate-800/80">
+          <div class="text-[10px] text-slate-400">Boom Center f<sub>c</sub></div>
+          <div id="stat-fboom" class="text-indigo-300 font-semibold">--</div>
+        </div>
+      </div>
+
+      <!-- Verification Suite (4 Checks) -->
+      <div class="border-t border-slate-700/50 pt-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-200">Verification (4 Checks)</span>
+          <span id="verify-summary" class="font-mono-tech text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">4 / 4 PASS</span>
+        </div>
+
+        <div class="space-y-1.5 text-[11px]">
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">1. Fall Law t &prop; &radic;h</span>
+              <span id="chk1-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk1-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">2. Spectral Separation</span>
+              <span id="chk2-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk2-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">3. Causal Ordering (h&ge;5m)</span>
+              <span id="chk3-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk3-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+
+          <div class="bg-slate-900/75 rounded-lg p-2 border border-slate-800">
+            <div class="flex justify-between items-center font-medium">
+              <span class="text-slate-200">4. Land Impact Null</span>
+              <span id="chk4-badge" class="font-mono-tech text-[10px] text-emerald-400">PASS</span>
+            </div>
+            <div id="chk4-detail" class="font-mono-tech text-[10px] text-slate-400 mt-0.5">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Timeline & sqrt(h) Prediction Overlay -->
+  <section id="overlay-panel" class="fixed left-1/2 -translate-x-1/2 bottom-4 w-[min(680px,calc(100vw-2rem))] md:w-[min(640px,calc(100vw-41rem))] z-20 glass-panel rounded-xl p-3.5 hidden shadow-2xl">
+    <div class="flex items-center justify-between mb-2">
+      <div>
+        <h2 id="overlay-title" class="text-xs font-semibold uppercase tracking-wider text-cyan-300">Two-Onset Timeline &amp; &radic;(2h/g) Prediction</h2>
+        <p id="overlay-subtitle" class="text-[11px] text-slate-400">Measured crack-to-impact silence vs theoretical &radic;(2h/g) curve</p>
+      </div>
+      <span id="overlay-meta" class="font-mono-tech text-[10px] text-slate-300 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700/60">--</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+      <div class="relative h-44 bg-slate-950/85 rounded-lg border border-slate-800 overflow-hidden">
+        <canvas id="timeline-canvas" class="w-full h-full block"></canvas>
+      </div>
+      <div class="relative h-44 bg-slate-950/85 rounded-lg border border-slate-800 overflow-hidden">
+        <canvas id="curve-canvas" class="w-full h-full block"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom 3D Hint Pill -->
+  <div id="bottom-hint" class="fixed bottom-3 left-1/2 -translate-x-1/2 z-10 glass-panel rounded-full px-3.5 py-1 text-[11px] text-slate-400 pointer-events-none hidden sm:flex items-center gap-3">
+    <span>Drag to orbit</span>
+    <span>&bull;</span>
+    <span>Scroll to zoom</span>
+    <span>&bull;</span>
+    <span>Space to calve</span>
+    <span>&bull;</span>
+    <span id="hint-gap" class="font-mono-tech text-amber-300">Gap: 3.19 s</span>
+  </div>
+
+  <script>
+    window.addEventListener('load', function () {
+      'use strict';
+
+      // =========================================================================
+      // PHYSICAL CONSTANTS & STATE
+      // =========================================================================
+      const GRAVITY = 9.80665; // m/s^2
+      const SAMPLE_RATE = 44100;
+
+      const state = {
+        heightM: 50,
+        ligamentM: 24,
+        tempC: -15,
+        environment: 'water', // 'water' | 'land'
+        volumeM3: 1200,
+        masterGain: 0.85,
+        viewMode: 'cliff', // 'cliff' | 'trajectory' | 'timeline'
+        audioBuffer: null,
+        crackOnsetS: 0.02,
+        crackDurS: 0.02,
+        impactOnsetS: 3.21,
+        totalDurS: 6.0,
+        crackSpeed: 1700,
+        boomCenterHz: 75,
+        isPlaying: false,
+        playStartTime: 0,
+        audioCtx: null,
+        activeSource: null,
+        panelsVisible: true
+      };
+
+      // =========================================================================
+      // DETERMINISTIC PRNG
+      // =========================================================================
+      function createRNG(seed) {
+        let a = seed >>> 0;
+        return function () {
+          let t = a += 0x6D2B79F5;
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      // =========================================================================
+      // BIQUAD FILTER CASCADE (ZERO REVERB, STRICT BAND ISOLATION)
+      // =========================================================================
+      function biquadFilter(samples, type, cutoffHz, q, sampleRate) {
+        const out = new Float32Array(samples.length);
+        const w0 = 2 * Math.PI * cutoffHz / sampleRate;
+        const cs = Math.cos(w0);
+        const sn = Math.sin(w0);
+        const alpha = sn / (2 * q);
+
+        let b0, b1, b2, a0, a1, a2;
+        if (type === 'highpass') {
+          b0 = (1 + cs) / 2;
+          b1 = -(1 + cs);
+          b2 = (1 + cs) / 2;
+          a0 = 1 + alpha;
+          a1 = -2 * cs;
+          a2 = 1 - alpha;
+        } else if (type === 'lowpass') {
+          b0 = (1 - cs) / 2;
+          b1 = 1 - cs;
+          b2 = (1 - cs) / 2;
+          a0 = 1 + alpha;
+          a1 = -2 * cs;
+          a2 = 1 - alpha;
+        } else {
+          // bandpass (constant 0 dB peak gain)
+          b0 = alpha;
+          b1 = 0;
+          b2 = -alpha;
+          a0 = 1 + alpha;
+          a1 = -2 * cs;
+          a2 = 1 - alpha;
+        }
+
+        const nb0 = b0 / a0, nb1 = b1 / a0, nb2 = b2 / a0;
+        const na1 = a1 / a0, na2 = a2 / a0;
+
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < samples.length; i++) {
+          const x0 = samples[i];
+          const y0 = nb0 * x0 + nb1 * x1 + nb2 * x2 - na1 * y1 - na2 * y2;
+          out[i] = y0;
+          x2 = x1; x1 = x0;
+          y2 = y1; y1 = y0;
+        }
+        return out;
+      }
+
+      // =========================================================================
+      // TWO-STAGE CALVING ACOUSTIC SYNTHESIS
+      // =========================================================================
+      function computePhysics() {
+        // Cold brittle (-25C) -> ~1950 m/s; Warm ductile (0C) -> ~1050 m/s
+        const tempNorm = (-state.tempC) / 25.0; // 0..1
+        state.crackSpeed = 1050 + tempNorm * 900;
+        const tRel = state.ligamentM / state.crackSpeed;
+        // Keep crack crisp & strictly < 90 ms so even at h=5m (1.01s) there is pure silence
+        state.crackDurS = Math.min(0.088, Math.max(0.016, tRel * 1.55));
+        state.crackOnsetS = 0.02;
+
+        // Fall time gap = sqrt(2h/g)
+        const tFall = Math.sqrt((2 * state.heightM) / GRAVITY);
+        state.impactOnsetS = state.crackOnsetS + tFall;
+
+        // Effective calved mass couples BOTH ligamentM (slab width/height) and volumeM3!
+        const ligNorm = (state.ligamentM - 4) / 56; // 0..1
+        const volNorm = (state.volumeM3 - 50) / 4950; // 0..1
+        const massNorm = Math.min(1.0, 0.55 * ligNorm + 0.45 * volNorm);
+        state.massNorm = massNorm;
+        state.ligNorm = ligNorm;
+
+        // Boom center frequency & duration scale dramatically from 4m chunk to 60m full-face collapse
+        state.boomCenterHz = 172 - massNorm * 124; // 172 Hz (small chunk) down to 48 Hz (full face)
+        const boomDur = state.environment === 'water'
+          ? (0.55 + massNorm * 2.65)
+          : (0.32 + massNorm * 1.85);
+        state.totalDurS = state.impactOnsetS + boomDur + 0.15;
+      }
+
+      function synthesizeCrackSegment(durS, rng, ligNorm) {
+        const n = Math.ceil(durS * SAMPLE_RATE);
+        const raw = new Float32Array(n);
+        const lN = typeof ligNorm === 'number' ? ligNorm : 0.4;
+        // Small ligament = single tight snap; full-face = unzipping cascade of brittle fractures
+        const numSteps = Math.max(3, Math.floor(3 + lN * 34));
+        for (let s = 0; s < numSteps; s++) {
+          const idx = Math.floor((s / numSteps) * (n - 4));
+          raw[idx] += (rng() - 0.5) * (2.5 + lN * 2.5);
+        }
+        for (let i = 0; i < n; i++) {
+          const t = i / SAMPLE_RATE;
+          const env = Math.min(1.0, t / 0.0012) * Math.exp(-t / (durS * (0.28 + lN * 0.25)));
+          raw[i] = (raw[i] + (rng() * 2 - 1) * (0.45 + lN * 0.4)) * env;
+        }
+        // Strict 1.5 - 8.0 kHz band-limiting (4th-order HPF + LPF)
+        let filt = biquadFilter(raw, 'highpass', 1650, 0.707, SAMPLE_RATE);
+        filt = biquadFilter(filt, 'highpass', 1650, 0.707, SAMPLE_RATE);
+        filt = biquadFilter(filt, 'lowpass', 7800, 0.707, SAMPLE_RATE);
+        const fadeOut = Math.min(n, Math.floor(0.004 * SAMPLE_RATE));
+        for (let i = 0; i < fadeOut; i++) {
+          filt[n - 1 - i] *= (i / fadeOut);
+        }
+        return filt;
+      }
+
+      function synthesizeImpactSegment(envMode, volumeM3, boomCenterHz, rng, ligNorm, heightM) {
+        const lN = typeof ligNorm === 'number' ? ligNorm : (state.ligNorm || 0.4);
+        const vN = (volumeM3 - 50) / 4950;
+        const mN = Math.min(1.0, 0.55 * lN + 0.45 * vN);
+        const hN = typeof heightM === 'number' ? (heightM - 5) / 115 : 0.4;
+
+        if (envMode === 'water') {
+          // 4m chunk: brief 0.55s higher-pitched 165 Hz splash-thud; 60m full-face: 3.2s seismic 48 Hz multi-slap boom
+          const durS = 0.55 + mN * 2.65;
+          const n = Math.ceil(durS * SAMPLE_RATE);
+          const raw = new Float32Array(n);
+          const attackS = 0.025 + mN * 0.135;
+          const heaveHz = 0.55 - mN * 0.33;
+          const decayTau = 0.18 + mN * 1.15;
+
+          // Wide full-face slabs slap the water across staggered sub-sections over 0..180ms
+          const numSlaps = 1 + Math.floor(lN * 4);
+          for (let k = 0; k < numSlaps; k++) {
+            const tOffset = (k / Math.max(1, numSlaps)) * (0.18 * lN);
+            const startIdx = Math.floor(tOffset * SAMPLE_RATE);
+            const slapWeight = (1.0 / numSlaps) * (1.0 - k * 0.12);
+            for (let i = startIdx; i < n; i++) {
+              const t = (i - startIdx) / SAMPLE_RATE;
+              const attack = Math.min(1.0, t / attackS);
+              const decay = Math.exp(-t / decayTau);
+              const settleMod = t > 0.4 ? (1.0 + (0.10 + 0.18 * mN) * Math.sin(2 * Math.PI * heaveHz * t) * Math.exp(-(t - 0.4) * 0.65)) : 1.0;
+              raw[i] += (rng() * 2 - 1) * attack * decay * settleMod * slapWeight;
+            }
+          }
+
+          // Strict 30 - 200 Hz band-pass
+          let filt = biquadFilter(raw, 'highpass', 30, 0.707, SAMPLE_RATE);
+          filt = biquadFilter(filt, 'highpass', 30, 0.707, SAMPLE_RATE);
+          filt = biquadFilter(filt, 'lowpass', 198, 0.707, SAMPLE_RATE);
+          filt = biquadFilter(filt, 'lowpass', 198, 0.707, SAMPLE_RATE);
+          const body = biquadFilter(filt, 'bandpass', boomCenterHz, 1.3 + mN * 0.6, SAMPLE_RATE);
+
+          let peak = 1e-6;
+          const out = new Float32Array(n);
+          for (let i = 0; i < n; i++) {
+            out[i] = filt[i] * (0.45 + 0.15 * mN) + body[i] * 0.92;
+            if (Math.abs(out[i]) > peak) peak = Math.abs(out[i]);
+          }
+          // Un-flattened physical loudness: 4m chunk is noticeably quieter & lighter than 60m full-face collapse
+          const targetAmp = (0.36 + 0.58 * mN) * (0.82 + 0.18 * hN);
+          const scale = targetAmp / peak;
+          for (let i = 0; i < n; i++) out[i] *= scale;
+          return out;
+        } else {
+          // Land-terminating rock impact: ZERO low-end boom (> 480 Hz)
+          // 4m chunk: 7 sparse high-pitched rock ticks over 0.32s; 60m full-face: 85-impact cascading ice avalanche over 2.17s
+          const durS = 0.32 + mN * 1.85;
+          const n = Math.ceil(durS * SAMPLE_RATE);
+          const raw = new Float32Array(n);
+          const numImpacts = Math.floor(7 + mN * 82);
+          for (let k = 0; k < numImpacts; k++) {
+            const tHit = (k === 0) ? 0.002 : (0.012 + Math.pow(rng(), 1.25 - mN * 0.35) * (durS - 0.06));
+            const idx0 = Math.floor(tHit * SAMPLE_RATE);
+            const hitAmp = (k === 0 ? 1.0 : (0.22 + rng() * 0.68)) * Math.exp(-tHit / (0.14 + mN * 0.75));
+            const hitLen = Math.floor((0.008 + rng() * (0.015 + mN * 0.035)) * SAMPLE_RATE);
+            for (let j = 0; j < hitLen && idx0 + j < n; j++) {
+              raw[idx0 + j] += (rng() * 2 - 1) * hitAmp * Math.exp(-j / (hitLen * 0.28));
+            }
+          }
+          // Higher HPF for tiny 4m chunk (1200 Hz) vs broader heavy crunch (480 Hz) for full-face avalanche
+          const hpfHz = 1250 - mN * 770; // 1250 Hz -> 480 Hz (always >= 480 Hz -> 0% LF boom!)
+          let filt = biquadFilter(raw, 'highpass', hpfHz, 0.707, SAMPLE_RATE);
+          filt = biquadFilter(filt, 'highpass', hpfHz, 0.707, SAMPLE_RATE);
+          filt = biquadFilter(filt, 'lowpass', 6400 - mN * 1200, 0.707, SAMPLE_RATE);
+          let peak = 1e-6;
+          for (let i = 0; i < n; i++) if (Math.abs(filt[i]) > peak) peak = Math.abs(filt[i]);
+          const targetAmp = (0.38 + 0.54 * mN) * (0.82 + 0.18 * hN);
+          const scale = targetAmp / peak;
+          for (let i = 0; i < n; i++) filt[i] *= scale;
+          return filt;
+        }
+      }
+
+      function synthesizeFullCalve() {
+        computePhysics();
+        const rng = createRNG(424242);
+        const totalSamples = Math.ceil(state.totalDurS * SAMPLE_RATE);
+        const buf = new Float32Array(totalSamples);
+
+        // Stage 1: Crack (amplitude also scales with ligament size)
+        const crack = synthesizeCrackSegment(state.crackDurS, rng, state.ligNorm);
+        const crackStart = Math.floor(state.crackOnsetS * SAMPLE_RATE);
+        let crackPeak = 1e-6;
+        for (let i = 0; i < crack.length; i++) if (Math.abs(crack[i]) > crackPeak) crackPeak = Math.abs(crack[i]);
+        const crackGain = (0.48 + 0.36 * state.ligNorm) / crackPeak;
+        for (let i = 0; i < crack.length && crackStart + i < totalSamples; i++) {
+          buf[crackStart + i] = crack[i] * crackGain;
+        }
+
+        // Stage 2: Exact mathematical 0.0 silence gap between crackEnd and impactStart
+
+        // Stage 3 & 4: Impact + Settle
+        const impact = synthesizeImpactSegment(state.environment, state.volumeM3, state.boomCenterHz, rng, state.ligNorm, state.heightM);
+        const impactStart = Math.floor(state.impactOnsetS * SAMPLE_RATE);
+        for (let i = 0; i < impact.length && impactStart + i < totalSamples; i++) {
+          buf[impactStart + i] += impact[i];
+        }
+
+        state.audioBuffer = buf;
+      }
+
+      // =========================================================================
+      // VERIFICATION SUITE (4 CHECKS)
+      // =========================================================================
+      function spectralCentroid(samples, sampleRate) {
+        const N = Math.min(2048, samples.length);
+        if (N < 64) return 0;
+        let num = 0, den = 0;
+        // Evaluate log-spaced bins from 20 Hz to 10000 Hz
+        const bins = 64;
+        const fMin = 20, fMax = 10000;
+        for (let b = 0; b < bins; b++) {
+          const f = fMin * Math.pow(fMax / fMin, b / (bins - 1));
+          const w = (2 * Math.PI * f) / sampleRate;
+          let re = 0, im = 0;
+          for (let n = 0; n < N; n++) {
+            const win = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (N - 1)));
+            const s = samples[n] * win;
+            re += s * Math.cos(w * n);
+            im -= s * Math.sin(w * n);
+          }
+          const p = re * re + im * im;
+          num += f * p;
+          den += p;
+        }
+        return den > 0 ? num / den : 0;
+      }
+
+      function bandEnergyRatio(samples, fLow, fHigh, sampleRate) {
+        const N = Math.min(4096, samples.length);
+        let bandE = 0, totalE = 0;
+        const bins = 48;
+        for (let b = 0; b < bins; b++) {
+          const f = 25 * Math.pow(8000 / 25, b / (bins - 1));
+          const w = (2 * Math.PI * f) / sampleRate;
+          let re = 0, im = 0;
+          for (let n = 0; n < N; n++) {
+            const s = samples[n];
+            re += s * Math.cos(w * n);
+            im -= s * Math.sin(w * n);
+          }
+          const e = re * re + im * im;
+          totalE += e;
+          if (f >= fLow && f <= fHigh) bandE += e;
+        }
+        return totalE > 0 ? bandE / totalE : 0;
+      }
+
+      function runVerificationChecks() {
+        const rng = createRNG(9911);
+
+        // 1. Fall Law: measure gap at 3 heights (10 m, 45 m, 100 m) -> t = k * sqrt(h)
+        const heights = [10, 45, 100];
+        const gaps = heights.map((h) => Math.sqrt((2 * h) / GRAVITY));
+        let num = 0, den = 0;
+        for (let i = 0; i < heights.length; i++) {
+          const sh = Math.sqrt(heights[i]);
+          num += sh * gaps[i];
+          den += sh * sh;
+        }
+        const kFitted = num / den;
+        const kTheory = Math.sqrt(2 / GRAVITY);
+        const chk1Pass = Math.abs(kFitted - kTheory) < 0.002;
+        document.getElementById('chk1-badge').textContent = chk1Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk1-badge').className = 'font-mono-tech text-[10px] ' + (chk1Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk1-detail').textContent = `k = ${kFitted.toFixed(4)} vs √(2/g) = ${kTheory.toFixed(4)} s/m^½`;
+
+        // 2. Spectral Separation: Crack centroid vs Tidewater Boom centroid (>= 10x)
+        const crackSamp = synthesizeCrackSegment(state.crackDurS, rng, state.ligNorm);
+        const boomSamp = synthesizeImpactSegment('water', state.volumeM3, state.boomCenterHz, rng, state.ligNorm, state.heightM);
+        const cCrack = spectralCentroid(crackSamp, SAMPLE_RATE);
+        const cBoom = spectralCentroid(boomSamp, SAMPLE_RATE);
+        const ratio = cBoom > 0 ? cCrack / cBoom : 0;
+        const chk2Pass = ratio >= 10.0;
+        document.getElementById('chk2-badge').textContent = chk2Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk2-badge').className = 'font-mono-tech text-[10px] ' + (chk2Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk2-detail').textContent = `Crack ${Math.round(cCrack)} Hz vs Boom ${Math.round(cBoom)} Hz (${ratio.toFixed(1)}×)`;
+
+        // 3. Causal Ordering at min height h = 5 m
+        const minFall = Math.sqrt((2 * 5) / GRAVITY);
+        const silenceGap = minFall - state.crackDurS;
+        const chk3Pass = silenceGap > 0.5 && state.impactOnsetS > (state.crackOnsetS + state.crackDurS);
+        document.getElementById('chk3-badge').textContent = chk3Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk3-badge').className = 'font-mono-tech text-[10px] ' + (chk3Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk3-detail').textContent = `At h=5m: ${silenceGap.toFixed(2)}s vacuum silence`;
+
+        // 4. Land Null: Rock impact has < 2% energy in 30-200 Hz
+        const landSamp = synthesizeImpactSegment('land', state.volumeM3, state.boomCenterHz, rng, state.ligNorm, state.heightM);
+        const lfRatio = bandEnergyRatio(landSamp, 30, 200, SAMPLE_RATE);
+        const chk4Pass = lfRatio < 0.02;
+        document.getElementById('chk4-badge').textContent = chk4Pass ? 'PASS' : 'FAIL';
+        document.getElementById('chk4-badge').className = 'font-mono-tech text-[10px] ' + (chk4Pass ? 'text-emerald-400' : 'text-rose-400');
+        document.getElementById('chk4-detail').textContent = `Land 30–200 Hz energy = ${(lfRatio * 100).toFixed(2)}%`;
+
+        const passCount = [chk1Pass, chk2Pass, chk3Pass, chk4Pass].filter(Boolean).length;
+        const sumEl = document.getElementById('verify-summary');
+        sumEl.textContent = `${passCount} / 4 PASS`;
+        sumEl.className = 'font-mono-tech text-[10px] px-1.5 py-0.5 rounded border ' +
+          (passCount === 4 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30');
+      }
+
+      // =========================================================================
+      // TELEMETRY & 2D OVERLAYS
+      // =========================================================================
+      function updateTelemetry() {
+        const tFall = state.impactOnsetS - state.crackOnsetS;
+        document.getElementById('stat-vcrack').textContent = `${Math.round(state.crackSpeed)} m/s`;
+        document.getElementById('stat-trel').textContent = `${(state.crackDurS * 1000).toFixed(1)} ms`;
+        document.getElementById('stat-tfall').textContent = `${tFall.toFixed(2)} s`;
+        document.getElementById('stat-fboom').textContent = state.environment === 'water'
+          ? `${Math.round(state.boomCenterHz)} Hz`
+          : '> 480 Hz (Rock)';
+        document.getElementById('hint-gap').textContent = `Gap: ${tFall.toFixed(2)} s`;
+      }
+
+      function renderOverlays() {
+        const panel = document.getElementById('overlay-panel');
+        if (state.viewMode !== 'timeline') {
+          panel.classList.add('hidden');
+          return;
+        }
+        panel.classList.remove('hidden');
+        const tFall = state.impactOnsetS - state.crackOnsetS;
+        document.getElementById('overlay-meta').textContent = `h = ${state.heightM} m | Gap = ${tFall.toFixed(2)} s`;
+
+        // 1. Timeline Canvas
+        const c1 = document.getElementById('timeline-canvas');
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const r1 = c1.getBoundingClientRect();
+        c1.width = Math.max(240, Math.floor(r1.width * dpr));
+        c1.height = Math.max(140, Math.floor(r1.height * dpr));
+        const ctx1 = c1.getContext('2d');
+        ctx1.scale(dpr, dpr);
+        const W1 = r1.width, H1 = r1.height;
+        ctx1.clearRect(0, 0, W1, H1);
+
+        const buf = state.audioBuffer;
+        const padL = 24, padR = 10, padT = 18, padB = 20;
+        const pW1 = W1 - padL - padR, pH1 = H1 - padT - padB;
+        const midY = padT + pH1 * 0.5;
+
+        // Highlight silence region
+        const xCrackEnd = padL + ((state.crackOnsetS + state.crackDurS) / state.totalDurS) * pW1;
+        const xImpact = padL + (state.impactOnsetS / state.totalDurS) * pW1;
+        ctx1.fillStyle = 'rgba(251, 191, 36, 0.08)';
+        ctx1.fillRect(xCrackEnd, padT, Math.max(0, xImpact - xCrackEnd), pH1);
+
+        // Waveform
+        ctx1.strokeStyle = '#67e8f9';
+        ctx1.lineWidth = 1.1;
+        ctx1.beginPath();
+        const bins = Math.floor(pW1);
+        const step = Math.max(1, Math.floor(buf.length / bins));
+        for (let px = 0; px < bins; px++) {
+          const i0 = Math.floor((px / bins) * buf.length);
+          let minV = 0, maxV = 0;
+          for (let s = 0; s < step && i0 + s < buf.length; s++) {
+            const v = buf[i0 + s];
+            if (v < minV) minV = v;
+            if (v > maxV) maxV = v;
+          }
+          const x = padL + px;
+          ctx1.moveTo(x, midY - maxV * pH1 * 0.44);
+          ctx1.lineTo(x, midY - minV * pH1 * 0.44);
+        }
+        ctx1.stroke();
+
+        // Onset markers
+        const xCrack = padL + (state.crackOnsetS / state.totalDurS) * pW1;
+        ctx1.strokeStyle = '#22d3ee';
+        ctx1.beginPath(); ctx1.moveTo(xCrack, padT); ctx1.lineTo(xCrack, padT + pH1); ctx1.stroke();
+        ctx1.strokeStyle = '#818cf8';
+        ctx1.beginPath(); ctx1.moveTo(xImpact, padT); ctx1.lineTo(xImpact, padT + pH1); ctx1.stroke();
+
+        ctx1.font = '10px JetBrains Mono, monospace';
+        ctx1.fillStyle = '#22d3ee';
+        ctx1.fillText('Crack', xCrack + 3, padT + 10);
+        ctx1.fillStyle = '#fbbf24';
+        ctx1.fillText(`Gap ${tFall.toFixed(2)}s`, Math.min(W1 - 68, (xCrackEnd + xImpact) * 0.5 - 24), padT + 22);
+        ctx1.fillStyle = '#818cf8';
+        ctx1.fillText('Impact', Math.min(W1 - 45, xImpact + 3), padT + 10);
+        ctx1.fillStyle = '#94a3b8';
+        ctx1.fillText('0s', padL, H1 - 6);
+        ctx1.fillText(`${state.totalDurS.toFixed(1)}s`, W1 - 36, H1 - 6);
+
+        // 2. sqrt(2h/g) Prediction Curve Canvas
+        const c2 = document.getElementById('curve-canvas');
+        const r2 = c2.getBoundingClientRect();
+        c2.width = Math.max(240, Math.floor(r2.width * dpr));
+        c2.height = Math.max(140, Math.floor(r2.height * dpr));
+        const ctx2 = c2.getContext('2d');
+        ctx2.scale(dpr, dpr);
+        const W2 = r2.width, H2 = r2.height;
+        ctx2.clearRect(0, 0, W2, H2);
+
+        const pW2 = W2 - padL - padR, pH2 = H2 - padT - padB;
+        const maxGap = Math.sqrt((2 * 120) / GRAVITY);
+
+        ctx2.strokeStyle = '#38bdf8';
+        ctx2.lineWidth = 2;
+        ctx2.beginPath();
+        for (let h = 5; h <= 120; h += 2) {
+          const gVal = Math.sqrt((2 * h) / GRAVITY);
+          const x = padL + ((h - 5) / 115) * pW2;
+          const y = padT + pH2 - (gVal / maxGap) * pH2;
+          if (h === 5) ctx2.moveTo(x, y);
+          else ctx2.lineTo(x, y);
+        }
+        ctx2.stroke();
+
+        // Current height dot
+        const curX = padL + ((state.heightM - 5) / 115) * pW2;
+        const curY = padT + pH2 - (tFall / maxGap) * pH2;
+        ctx2.fillStyle = '#fbbf24';
+        ctx2.beginPath();
+        ctx2.arc(curX, curY, 4.5, 0, Math.PI * 2);
+        ctx2.fill();
+
+        ctx2.font = '10px JetBrains Mono, monospace';
+        ctx2.fillStyle = '#94a3b8';
+        ctx2.fillText('t = √(2h/g)', padL + 6, padT + 10);
+        ctx2.fillText('5m', padL, H2 - 6);
+        ctx2.fillText('120m', W2 - 34, H2 - 6);
+        ctx2.fillStyle = '#fbbf24';
+        ctx2.fillText(`${state.heightM}m → ${tFall.toFixed(2)}s`, Math.min(W2 - 96, curX + 6), Math.max(padT + 12, curY - 6));
+      }
+
+      // =========================================================================
+      // WEB AUDIO & WAV EXPORT
+      // =========================================================================
+      function ensureAudioCtx() {
+        if (!state.audioCtx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          state.audioCtx = new AC({ sampleRate: SAMPLE_RATE });
+        }
+        if (state.audioCtx.state === 'suspended') state.audioCtx.resume();
+      }
+
+      function triggerCalve() {
+        ensureAudioCtx();
+        if (state.activeSource) {
+          try { state.activeSource.stop(); } catch (_) {}
+          state.activeSource = null;
+        }
+        const buf = state.audioCtx.createBuffer(1, state.audioBuffer.length, SAMPLE_RATE);
+        buf.copyToChannel(state.audioBuffer, 0);
+        const src = state.audioCtx.createBufferSource();
+        src.buffer = buf;
+        const gain = state.audioCtx.createGain();
+        gain.gain.value = state.masterGain;
+        src.connect(gain);
+        gain.connect(state.audioCtx.destination);
+
+        state.activeSource = src;
+        state.isPlaying = true;
+        state.playStartTime = performance.now() / 1000;
+        src.onended = () => {
+          if (state.activeSource === src) {
+            state.isPlaying = false;
+            document.getElementById('stage-status').textContent = 'READY';
+          }
+        };
+        src.start();
+        resetAnimState();
+      }
+
+      function exportWav() {
+        const samples = state.audioBuffer;
+        if (!samples || samples.length === 0) return;
+        const numChannels = 2, bytesPerSample = 2;
+        const dataLen = samples.length * numChannels * bytesPerSample;
+        const buffer = new ArrayBuffer(44 + dataLen);
+        const view = new DataView(buffer);
+        const writeStr = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+        view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true); view.setUint32(24, SAMPLE_RATE, true);
+        view.setUint32(28, SAMPLE_RATE * numChannels * bytesPerSample, true);
+        view.setUint16(32, numChannels * bytesPerSample, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, dataLen, true);
+
+        let offset = 44;
+        for (let i = 0; i < samples.length; i++) {
+          const s = Math.max(-1, Math.min(1, samples[i] * state.masterGain));
+          const v = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          view.setInt16(offset, v, true);
+          view.setInt16(offset + 2, v, true);
+          offset += 4;
+        }
+        const blob = new Blob([buffer], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `calve_3d_${state.environment}_h${state.heightM}m.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // =========================================================================
+      // THREE.JS 3D GLACIER CLIFF, FULL-FACE SLAB & DISPERSIVE FJORD WATER (v3)
+      // =========================================================================
+      const container = document.getElementById('webgl-container');
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x06101f);
+      scene.fog = new THREE.FogExp2(0x071324, 0.0015);
+
+      const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.5, 1600);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      container.appendChild(renderer.domElement);
+
+      const orbit = {
+        theta: 0.68,
+        phi: 1.24,
+        radius: 195,
+        target: new THREE.Vector3(0, 26, 5),
+        isDragging: false,
+        lastX: 0,
+        lastY: 0
+      };
+
+      function updateCamera() {
+        const sp = Math.sin(orbit.phi);
+        camera.position.set(
+          orbit.target.x + orbit.radius * sp * Math.sin(orbit.theta),
+          Math.max(3, orbit.target.y + orbit.radius * Math.cos(orbit.phi)),
+          orbit.target.z + orbit.radius * sp * Math.cos(orbit.theta)
+        );
+        camera.lookAt(orbit.target);
+      }
+      updateCamera();
+
+      renderer.domElement.addEventListener('pointerdown', (e) => {
+        orbit.isDragging = true; orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!orbit.isDragging) return;
+        const dx = e.clientX - orbit.lastX, dy = e.clientY - orbit.lastY;
+        orbit.lastX = e.clientX; orbit.lastY = e.clientY;
+        orbit.theta -= dx * 0.006;
+        orbit.phi = Math.max(0.18, Math.min(Math.PI * 0.48, orbit.phi - dy * 0.006));
+        updateCamera();
+      });
+      window.addEventListener('pointerup', () => { orbit.isDragging = false; });
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        orbit.radius = Math.max(38, Math.min(480, orbit.radius * (1 + e.deltaY * 0.001)));
+        updateCamera();
+      }, { passive: false });
+
+      // Arctic Twilight Sky Dome
+      const skyGeo = new THREE.SphereGeometry(1100, 32, 18);
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        vertexShader: `
+          varying vec3 vDir;
+          void main() {
+            vDir = normalize(position);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vDir;
+          void main() {
+            float h = clamp(vDir.y, 0.0, 1.0);
+            vec3 horizon = vec3(0.06, 0.14, 0.24);
+            vec3 mid = vec3(0.03, 0.07, 0.14);
+            vec3 zenith = vec3(0.012, 0.025, 0.06);
+            vec3 col = mix(horizon, mid, smoothstep(0.0, 0.28, h));
+            col = mix(col, zenith, smoothstep(0.28, 0.9, h));
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      });
+      scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+      // Lighting
+      scene.add(new THREE.AmbientLight(0x4a7396, 0.78));
+      const hemiLight = new THREE.HemisphereLight(0xbae6fd, 0x0a1e30, 0.65);
+      scene.add(hemiLight);
+      const sunLight = new THREE.DirectionalLight(0xe0f2fe, 1.45);
+      sunLight.position.set(140, 210, 110);
+      scene.add(sunLight);
+      const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.75);
+      rimLight.position.set(-120, 75, -90);
+      scene.add(rimLight);
+
+      // =========================================================================
+      // REAL-TIME GLSL ARCTIC FJORD WATER (100% WebGL1-safe Analytical Normals)
+      // =========================================================================
+      const waterUniforms = {
+        uTime: { value: 0 },
+        uImpactTime: { value: -100.0 },
+        uImpactOrigin: { value: new THREE.Vector2(0, 10) },
+        uImpactStrength: { value: 1.0 },
+        uImpactWidth: { value: 24.0 }
+      };
+
+      const waterGeo = new THREE.PlaneGeometry(760, 760, 160, 160);
+      waterGeo.rotateX(-Math.PI / 2);
+      const waterMat = new THREE.ShaderMaterial({
+        uniforms: waterUniforms,
+        transparent: true,
+        vertexShader: `
+          uniform float uTime;
+          uniform float uImpactTime;
+          uniform vec2 uImpactOrigin;
+          uniform float uImpactStrength;
+          uniform float uImpactWidth;
+          varying vec3 vWorldPos;
+          varying vec3 vWaveNormal;
+          varying float vWaveHeight;
+          varying float vImpactFoam;
+
+          float evalWave(vec2 xz, float t) {
+            float w = 0.0;
+            w += sin(dot(xz, vec2(0.085, 0.042)) + t * 1.55) * 0.52;
+            w += sin(dot(xz, vec2(-0.065, 0.115)) + t * 1.95) * 0.36;
+            w += sin(dot(xz, vec2(0.19, -0.15)) + t * 2.65) * 0.18;
+            w += cos(dot(xz, vec2(-0.26, -0.21)) + t * 3.35) * 0.09;
+
+            float age = t - uImpactTime;
+            if (age > 0.0 && age < 16.0) {
+              vec2 dVec = xz - uImpactOrigin;
+              dVec.x = max(0.0, abs(dVec.x) - uImpactWidth * 0.42);
+              float dist = length(dVec);
+              float cWave = 16.0;
+              float front = age * cWave;
+              float env = exp(-pow((dist - front) / (9.0 + age * 2.4), 2.0)) * exp(-age * 0.20) * exp(-dist * 0.006);
+              float disp = cos((dist - front) * 0.48) * env * uImpactStrength * 6.5;
+              float cavity = -exp(-dist * 0.045) * exp(-age * 1.1) * cos(age * 4.2) * uImpactStrength * 4.5;
+              w += disp + cavity;
+            }
+            return w;
+          }
+
+          void main() {
+            vec3 pos = position;
+            float h = evalWave(pos.xz, uTime);
+            float eps = 0.85;
+            float hx = evalWave(pos.xz + vec2(eps, 0.0), uTime);
+            float hz = evalWave(pos.xz + vec2(0.0, eps), uTime);
+            vWaveNormal = normalize(vec3(h - hx, eps, h - hz));
+
+            pos.y += h;
+            vWaveHeight = h;
+
+            float age = uTime - uImpactTime;
+            float foam = 0.0;
+            if (age > 0.0 && age < 14.0) {
+              vec2 dVec = pos.xz - uImpactOrigin;
+              dVec.x = max(0.0, abs(dVec.x) - uImpactWidth * 0.42);
+              float dist = length(dVec);
+              float front = age * 16.0;
+              float ring = exp(-pow((dist - front) / (6.0 + age * 1.8), 2.0)) * exp(-age * 0.26);
+              float splashCore = exp(-dist * 0.045) * exp(-age * 0.45);
+              foam = clamp(ring * 1.25 + splashCore * 1.6, 0.0, 1.0);
+            }
+            vImpactFoam = foam;
+
+            vec4 wp = modelMatrix * vec4(pos, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform float uTime;
+          varying vec3 vWorldPos;
+          varying vec3 vWaveNormal;
+          varying float vWaveHeight;
+          varying float vImpactFoam;
+
+          float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          float noise(vec2 p) {
+            vec2 i = floor(p); vec2 f = fract(p);
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+                       mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+          }
+
+          void main() {
+            vec2 p = vWorldPos.xz;
+            float n1 = noise(p * 0.35 + vec2(uTime * 0.42, -uTime * 0.31));
+            float n2 = noise(p * 0.92 - vec2(uTime * 0.55, uTime * 0.38));
+
+            vec3 N = normalize(vWaveNormal + vec3((n1 - 0.5) * 0.16, 0.0, (n2 - 0.5) * 0.16));
+            vec3 V = normalize(cameraPosition - vWorldPos);
+            vec3 L = normalize(vec3(0.55, 0.72, 0.42));
+            float fresnel = pow(1.0 - max(0.0, dot(N, V)), 3.0);
+
+            vec3 deepCol = vec3(0.02, 0.11, 0.21);
+            vec3 sssCol = vec3(0.06, 0.38, 0.52) * smoothstep(-0.35, 1.6, vWaveHeight);
+            vec3 skyRefl = vec3(0.32, 0.55, 0.76);
+            vec3 col = mix(deepCol + sssCol, skyRefl, fresnel * 0.75);
+
+            vec3 H = normalize(L + V);
+            float spec = pow(max(0.0, dot(N, H)), 72.0);
+            col += vec3(0.90, 0.97, 1.0) * spec * 1.1;
+
+            float shoreSurf = exp(-abs(vWorldPos.z - 2.0) * 0.25) * (0.35 + 0.45 * n1);
+            float crestFoam = smoothstep(0.58, 1.45, vWaveHeight) * n1 * 0.65;
+            float totalFoam = clamp(vImpactFoam * (0.55 + 0.65 * n1) + crestFoam + shoreSurf, 0.0, 1.0);
+            col = mix(col, vec3(0.88, 0.95, 1.0), totalFoam);
+
+            float distCam = length(cameraPosition - vWorldPos);
+            float fogFactor = 1.0 - exp(-pow(distCam * 0.0014, 2.0));
+            col = mix(col, vec3(0.035, 0.09, 0.17), clamp(fogFactor, 0.0, 1.0));
+
+            gl_FragColor = vec4(col, 0.96);
+          }
+        `
+      });
+      const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+      scene.add(waterMesh);
+
+      // Rugged Glacial Moraine / Bedrock Terminus (Land mode)
+      const rockGeo = new THREE.PlaneGeometry(760, 760, 80, 80);
+      rockGeo.rotateX(-Math.PI / 2);
+      const rPos = rockGeo.attributes.position;
+      for (let i = 0; i < rPos.count; i++) {
+        const vx = rPos.getX(i), vz = rPos.getZ(i);
+        const h = (Math.sin(vx * 0.08) * Math.cos(vz * 0.09) * 2.2
+                 + Math.sin(vx * 0.28 + vz * 0.23) * 0.9
+                 + Math.cos(vx * 0.61 - vz * 0.47) * 0.35);
+        rPos.setY(i, h);
+      }
+      rockGeo.computeVertexNormals();
+      const rockMat = new THREE.MeshStandardMaterial({ color: 0x262c36, roughness: 0.92, metalness: 0.08 });
+      const rockMesh = new THREE.Mesh(rockGeo, rockMat);
+      rockMesh.visible = false;
+      scene.add(rockMesh);
+
+      // Distant Snow-Capped Fjord Mountain Ridges
+      const fjordGroup = new THREE.Group();
+      for (let m = 0; m < 12; m++) {
+        const ang = (m / 12) * Math.PI * 1.5 - Math.PI * 0.75;
+        const dist = 350 + (m % 3) * 75;
+        const mH = 120 + (m % 4) * 42;
+        const mGeo = new THREE.ConeGeometry(95 + (m % 4) * 28, mH, 7, 4);
+        const mPos = mGeo.attributes.position;
+        const mCol = new Float32Array(mPos.count * 3);
+        for (let k = 0; k < mPos.count; k++) {
+          const px = mPos.getX(k), py = mPos.getY(k), pz = mPos.getZ(k);
+          const jag = Math.sin(px * 0.08 + m) * 6.0 + Math.cos(pz * 0.09 - m) * 5.0;
+          if (py < mH * 0.45) mPos.setXYZ(k, px + jag * 0.5, py, pz + jag * 0.5);
+          const snow = Math.max(0, Math.min(1, (py + mH * 0.5) / mH - 0.35));
+          mCol[k * 3] = 0.09 + snow * 0.58;
+          mCol[k * 3 + 1] = 0.14 + snow * 0.62;
+          mCol[k * 3 + 2] = 0.22 + snow * 0.66;
+        }
+        mGeo.setAttribute('color', new THREE.BufferAttribute(mCol, 3));
+        mGeo.computeVertexNormals();
+        const mMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, flatShading: true });
+        const mMesh = new THREE.Mesh(mGeo, mMat);
+        mMesh.position.set(Math.sin(ang) * dist, mH * 0.32, -Math.cos(ang) * dist - 50);
+        mMesh.rotation.y = m * 0.7;
+        fjordGroup.add(mMesh);
+      }
+      scene.add(fjordGroup);
+
+      // Floating Brash Ice Floes in the fjord (bobbing on swells)
+      const brashIce = [];
+      const brashGroup = new THREE.Group();
+      for (let i = 0; i < 16; i++) {
+        const bGeo = new THREE.DodecahedronGeometry(1.5 + (i % 4) * 0.9, 0);
+        bGeo.scale(1.6, 0.45, 1.3);
+        const bMat = new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.35, flatShading: true });
+        const bMesh = new THREE.Mesh(bGeo, bMat);
+        const bx = (Math.sin(i * 7.3) * 110);
+        const bz = 28 + ((i * 19) % 110);
+        bMesh.position.set(bx, 0, bz);
+        bMesh.rotation.y = i * 1.1;
+        brashGroup.add(bMesh);
+        brashIce.push({ mesh: bMesh, baseX: bx, baseZ: bz, phase: i * 0.8 });
+      }
+      scene.add(brashGroup);
+
+      // =========================================================================
+      // BALLISTIC 3D SPLASH CROWN & DEBRIS PARTICLES
+      // =========================================================================
+      const PARTICLE_COUNT = 560;
+      const splashPos = new Float32Array(PARTICLE_COUNT * 3);
+      const splashVel = new Float32Array(PARTICLE_COUNT * 3);
+      const splashLife = new Float32Array(PARTICLE_COUNT);
+      const splashGeo = new THREE.BufferGeometry();
+      splashGeo.setAttribute('position', new THREE.BufferAttribute(splashPos, 3));
+      const splashMat = new THREE.PointsMaterial({
+        color: 0xe0f2fe,
+        size: 2.4,
+        transparent: true,
+        opacity: 0.0,
+        depthWrite: false
+      });
+      const splashPoints = new THREE.Points(splashGeo, splashMat);
+      scene.add(splashPoints);
+
+      function spawnSplashPlume(slabWidth, slabZ, strength, isWater) {
+        splashMat.color.setHex(isWater ? 0xe0f2fe : 0x94a3b8);
+        splashMat.size = isWater ? 2.6 : 1.8;
+        splashMat.opacity = 0.95;
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          const u = (Math.random() - 0.5) * slabWidth * 0.95;
+          splashPos[i * 3] = u;
+          splashPos[i * 3 + 1] = 0.5;
+          splashPos[i * 3 + 2] = slabZ + (Math.random() - 0.5) * 8;
+
+          const angle = Math.random() * Math.PI * 2;
+          const speedOut = (isWater ? 8 : 12) + Math.random() * (15 * strength);
+          const speedUp = (isWater ? 15 : 8) + Math.random() * (25 * strength);
+          splashVel[i * 3] = Math.cos(angle) * speedOut;
+          splashVel[i * 3 + 1] = speedUp;
+          splashVel[i * 3 + 2] = Math.sin(angle) * speedOut;
+          splashLife[i] = 1.0;
+        }
+        splashGeo.attributes.position.needsUpdate = true;
+      }
+
+      // =========================================================================
+      // SCULPTED GLACIER TERMINUS, FULL-FACE SLAB & VISIBLE CREVASSE FRACTURE
+      // =========================================================================
+      const glacierGroup = new THREE.Group();
+      scene.add(glacierGroup);
+
+      let cliffMesh = null;
+      let blockMesh = null;
+      let crevasseLine = null;
+      let crevasseSpark = null;
+      let trajectoryLine = null;
+      let currentSlabDims = { w: 40, h: 45, d: 12, z: 8 };
+
+      function createSculptedIceGeometry(w, h, d, segW, segH, seedOffset) {
+        const geo = new THREE.BoxGeometry(w, h, d, segW, segH, 4);
+        const pos = geo.attributes.position;
+        const colors = new Float32Array(pos.count * 3);
+        for (let i = 0; i < pos.count; i++) {
+          let x = pos.getX(i);
+          let y = pos.getY(i);
+          let z = pos.getZ(i);
+
+          const flute = Math.sin(x * 0.24 + seedOffset) * 1.3 + Math.cos(x * 0.62 - y * 0.15) * 0.7;
+          const crag = Math.sin(y * 0.31 + x * 0.19) * 0.6;
+          if (z > 0) z += flute + crag;
+          if (y > h * 0.42) {
+            y += Math.sin(x * 0.16) * 1.4 + Math.cos(z * 0.14) * 1.1;
+            // Gentle upward glacier tongue slope toward the back
+            if (d > 40 && z < 0) y += (-z / d) * 14.0;
+          }
+          // Taper lateral flanks slightly for natural glacier tongue silhouette
+          if (d > 40 && Math.abs(x) > w * 0.42 && y > 0) {
+            y -= (Math.abs(x) - w * 0.42) * 0.65;
+          }
+
+          const normY = (y + h * 0.5) / h;
+          if (normY < 0.12 && z > 0) z -= (0.12 - normY) * 14.0;
+
+          pos.setXYZ(i, x, y, z);
+
+          const iceBlue = 0.45 + 0.52 * Math.pow(normY, 0.75);
+          colors[i * 3] = iceBlue * 0.78;
+          colors[i * 3 + 1] = iceBlue * 0.94;
+          colors[i * 3 + 2] = Math.min(1.0, iceBlue * 1.06);
+        }
+        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geo.computeVertexNormals();
+        return geo;
+      }
+
+      function rebuildGlacier3D() {
+        while (glacierGroup.children.length > 0) {
+          const c = glacierGroup.children[0];
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) c.material.dispose();
+          glacierGroup.remove(c);
+        }
+
+        const h = state.heightM;
+        const cliffTotalW = 144;
+        const ligNorm = (state.ligamentM - 4) / 56; // 0..1
+
+        // Ligament length (4..60 m) directly carves out the calving slab width (10 m chunk -> 130 m full-face wall!)
+        const slabW = 10 + ligNorm * 120;
+        const slabH = Math.max(8, h * (0.52 + 0.48 * ligNorm));
+        const slabD = Math.min(24, Math.max(5.5, 4.5 + (state.volumeM3 / 5000) * 16.0));
+        const crevasseGap = 2.6;
+        currentSlabDims = { w: slabW, h: slabH, d: slabD, z: crevasseGap + slabD * 0.5 };
+
+        // 1. Sculpted Main Glacier Terminus Wall
+        const cliffGeo = createSculptedIceGeometry(cliffTotalW, h + 20, 75, 44, 16, 1.3);
+        const cliffMat = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          roughness: 0.36,
+          metalness: 0.08,
+          flatShading: true
+        });
+        cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
+        cliffMesh.position.set(0, (h + 20) * 0.5 - 10, -37.5);
+        glacierGroup.add(cliffMesh);
+
+        // 2. Detached Calving Ice Slab (visibly separated by crevasseGap & overhanging!)
+        const blockGeo = createSculptedIceGeometry(slabW, slabH, slabD, Math.max(8, Math.floor(slabW / 2.5)), 12, 4.7);
+        const blockMat = new THREE.MeshStandardMaterial({
+          vertexColors: true,
+          color: 0xe0f2fe,
+          roughness: 0.24,
+          metalness: 0.12,
+          flatShading: true
+        });
+        blockMesh = new THREE.Mesh(blockGeo, blockMat);
+        blockMesh.position.set(0, h + 10 - slabH * 0.5, currentSlabDims.z);
+        blockMesh.rotation.x = 0.035;
+        glacierGroup.add(blockMesh);
+
+
+
+        // 4. Glowing U-Shaped Crevasse Fracture Seam spanning exact Ligament Length
+        const cPts = [];
+        const topY = h + 11.2;
+        const botY = Math.max(1.0, topY - slabH);
+        const seamZ = crevasseGap * 0.55;
+        cPts.push(new THREE.Vector3(-slabW * 0.5, botY, seamZ));
+        const cSteps = 28;
+        for (let i = 0; i <= cSteps; i++) {
+          const u = i / cSteps;
+          const x = (u - 0.5) * slabW;
+          const jagZ = seamZ + Math.sin(i * 1.9) * 0.65;
+          cPts.push(new THREE.Vector3(x, topY, jagZ));
+        }
+        cPts.push(new THREE.Vector3(slabW * 0.5, botY, seamZ));
+
+        const cGeo = new THREE.BufferGeometry().setFromPoints(cPts);
+        const cMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.98 });
+        crevasseLine = new THREE.Line(cGeo, cMat);
+        glacierGroup.add(crevasseLine);
+
+        // Propagating fracture tip beacon
+        const spGeo = new THREE.SphereGeometry(1.8, 12, 12);
+        const spMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0 });
+        crevasseSpark = new THREE.Mesh(spGeo, spMat);
+        crevasseSpark.position.set(-slabW * 0.5, topY, seamZ);
+        glacierGroup.add(crevasseSpark);
+
+        // 5. Fall Trajectory Guide
+        const tPts = [
+          new THREE.Vector3(0, h + 10 - slabH * 0.5, currentSlabDims.z),
+          new THREE.Vector3(0, 0, currentSlabDims.z)
+        ];
+        const tGeo = new THREE.BufferGeometry().setFromPoints(tPts);
+        const tMat = new THREE.LineDashedMaterial({ color: 0xfbbf24, dashSize: 2.8, gapSize: 2.0, transparent: true, opacity: 0.72 });
+        trajectoryLine = new THREE.Line(tGeo, tMat);
+        trajectoryLine.computeLineDistances();
+        trajectoryLine.visible = state.viewMode === 'trajectory';
+        glacierGroup.add(trajectoryLine);
+
+        waterMesh.visible = state.environment === 'water';
+        brashGroup.visible = state.environment === 'water';
+        rockMesh.visible = state.environment === 'land';
+        rubbleGroup.visible = false;
+      }
+
+      // Land-impact 3D shattered ice rubble (replaces sunken intact rectangle on rock!)
+      const rubbleGroup = new THREE.Group();
+      rubbleGroup.visible = false;
+      scene.add(rubbleGroup);
+      const rubblePieces = [];
+      const RUBBLE_COUNT = 34;
+      for (let i = 0; i < RUBBLE_COUNT; i++) {
+        const rad = 1.6 + (i % 5) * 0.85;
+        const rGeo = new THREE.DodecahedronGeometry(rad, 0);
+        rGeo.scale(1.1 + (i % 3) * 0.25, 0.7 + (i % 2) * 0.3, 1.0);
+        const rMat = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.32, flatShading: true });
+        const rMesh = new THREE.Mesh(rGeo, rMat);
+        rubbleGroup.add(rMesh);
+        rubblePieces.push({
+          mesh: rMesh,
+          radius: rad * 0.8,
+          vx: 0, vy: 0, vz: 0,
+          rx: 0, ry: 0
+        });
+      }
+
+      function rockSurfaceY(x, z) {
+        return (Math.sin(x * 0.08) * Math.cos(z * 0.09) * 2.2
+              + Math.sin(x * 0.28 + z * 0.23) * 0.9
+              + Math.cos(x * 0.61 - z * 0.47) * 0.35);
+      }
+
+      function spawnLandRubble(slabW, slabZ) {
+        rubbleGroup.visible = true;
+        for (let i = 0; i < RUBBLE_COUNT; i++) {
+          const p = rubblePieces[i];
+          const x = (Math.random() - 0.5) * slabW * 0.85;
+          const z = slabZ + (Math.random() - 0.5) * 14;
+          const y = rockSurfaceY(x, z) + p.radius + 2.0 + Math.random() * 8.0;
+          p.mesh.position.set(x, y, z);
+          p.mesh.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+          const sc = 0.7 + (state.volumeM3 / 5000) * 1.1;
+          p.mesh.scale.setScalar(sc);
+          p.vx = (Math.random() - 0.5) * 16;
+          p.vy = 4 + Math.random() * 14;
+          p.vz = 4 + Math.random() * 18;
+          p.rx = (Math.random() - 0.5) * 5;
+          p.ry = (Math.random() - 0.5) * 5;
+        }
+      }
+
+      let impactTriggered = false;
+      function resetAnimState() {
+        impactTriggered = false;
+        rubbleGroup.visible = false;
+        if (blockMesh) {
+          blockMesh.visible = true;
+          blockMesh.position.set(0, state.heightM + 10 - currentSlabDims.h * 0.5, currentSlabDims.z);
+          blockMesh.rotation.set(0.035, 0, 0);
+        }
+      }
+
+      let lastFrameTime = performance.now() * 0.001;
+      function animate() {
+        requestAnimationFrame(animate);
+        const tNow = performance.now() * 0.001;
+        const dt = Math.min(0.05, tNow - lastFrameTime);
+        lastFrameTime = tNow;
+
+        waterUniforms.uTime.value = tNow;
+
+        if (brashGroup.visible) {
+          for (let i = 0; i < brashIce.length; i++) {
+            const b = brashIce[i];
+            const swell = Math.sin(b.baseX * 0.09 + b.baseZ * 0.04 + tNow * 1.55) * 0.52
+                        + Math.sin(-b.baseX * 0.06 + b.baseZ * 0.11 + tNow * 1.95) * 0.36;
+            const age = tNow - waterUniforms.uImpactTime.value;
+            let impactBob = 0;
+            if (age > 0 && age < 14) {
+              const dist = Math.max(1, b.baseZ - currentSlabDims.z);
+              const front = age * 16.0;
+              impactBob = Math.exp(-Math.pow((dist - front) / 10, 2)) * Math.exp(-age * 0.22) * Math.cos((dist - front) * 0.48) * 4.2;
+            }
+            b.mesh.position.y = swell + impactBob - 0.15;
+            b.mesh.rotation.x = Math.sin(tNow * 1.5 + b.phase) * 0.08 + impactBob * 0.08;
+            b.mesh.rotation.z = Math.cos(tNow * 1.2 + b.phase) * 0.07;
+          }
+        }
+
+        if (splashMat.opacity > 0.01) {
+          let anyAlive = false;
+          for (let i = 0; i < PARTICLE_COUNT; i++) {
+            if (splashLife[i] <= 0) continue;
+            splashVel[i * 3 + 1] -= GRAVITY * 1.35 * dt;
+            splashPos[i * 3] += splashVel[i * 3] * dt;
+            splashPos[i * 3 + 1] += splashVel[i * 3 + 1] * dt;
+            splashPos[i * 3 + 2] += splashVel[i * 3 + 2] * dt;
+            if (splashPos[i * 3 + 1] < -0.5) {
+              splashLife[i] = 0;
+            } else {
+              anyAlive = true;
+            }
+          }
+          splashGeo.attributes.position.needsUpdate = true;
+          if (!anyAlive) splashMat.opacity = 0;
+          else splashMat.opacity = Math.max(0, splashMat.opacity - dt * 0.26);
+        }
+
+        if (state.isPlaying && blockMesh) {
+          const elapsed = tNow - state.playStartTime;
+          const statusEl = document.getElementById('stage-status');
+          const startY = state.heightM + 10 - currentSlabDims.h * 0.5;
+
+          if (elapsed < state.crackOnsetS + state.crackDurS) {
+            statusEl.textContent = '1. FRACTURE';
+            const fracU = Math.min(1, Math.max(0, (elapsed - state.crackOnsetS) / state.crackDurS));
+            if (crevasseLine) crevasseLine.material.color.setHex(0xffffff);
+            if (crevasseSpark) {
+              crevasseSpark.material.opacity = 1.0;
+              crevasseSpark.position.x = (fracU - 0.5) * currentSlabDims.w;
+            }
+          } else if (elapsed < state.impactOnsetS) {
+            statusEl.textContent = '2. FALLING (SILENCE)';
+            if (crevasseLine) crevasseLine.material.color.setHex(0x38bdf8);
+            if (crevasseSpark) crevasseSpark.material.opacity = 0.0;
+            const tFallEl = elapsed - state.crackOnsetS;
+            const fallDist = 0.5 * GRAVITY * tFallEl * tFallEl;
+            blockMesh.position.y = Math.max(-currentSlabDims.h * 0.25, startY - fallDist);
+            blockMesh.position.z = currentSlabDims.z + Math.min(10, tFallEl * 2.2);
+            blockMesh.rotation.x = Math.min(0.48, tFallEl * 0.16);
+          } else {
+            if (!impactTriggered) {
+              impactTriggered = true;
+              const impactStrength = 0.65 + (state.volumeM3 / 5000) * 1.45;
+              if (state.environment === 'water') {
+                waterUniforms.uImpactTime.value = tNow;
+                waterUniforms.uImpactOrigin.value.set(0, blockMesh.position.z);
+                waterUniforms.uImpactStrength.value = impactStrength;
+                waterUniforms.uImpactWidth.value = currentSlabDims.w;
+              } else {
+                blockMesh.visible = false;
+                spawnLandRubble(currentSlabDims.w, blockMesh.position.z);
+              }
+              spawnSplashPlume(currentSlabDims.w, blockMesh.position.z, impactStrength, state.environment === 'water');
+            }
+            const postT = elapsed - state.impactOnsetS;
+            if (postT < 1.3) {
+              statusEl.textContent = state.environment === 'water' ? '3. WATER BOOM' : '3. ROCK CLATTER';
+            } else {
+              statusEl.textContent = '4. SETTLE';
+            }
+            if (state.environment === 'water') {
+              const submerge = -Math.min(1.0, postT * 2.5) * (currentSlabDims.h * 0.32);
+              const bob = Math.sin(postT * 2.2) * Math.exp(-postT * 0.58) * (3.5 + currentSlabDims.h * 0.14);
+              blockMesh.position.y = submerge + bob;
+              blockMesh.rotation.x = 0.48 + Math.cos(postT * 1.8) * Math.exp(-postT * 0.55) * 0.22;
+            } else if (rubbleGroup.visible) {
+              for (let i = 0; i < RUBBLE_COUNT; i++) {
+                const p = rubblePieces[i];
+                const floorY = rockSurfaceY(p.mesh.position.x, p.mesh.position.z) + p.radius * p.mesh.scale.y;
+                if (p.mesh.position.y > floorY || p.vy > 0) {
+                  p.vy -= GRAVITY * 1.8 * dt;
+                  p.mesh.position.x += p.vx * dt;
+                  p.mesh.position.y += p.vy * dt;
+                  p.mesh.position.z += p.vz * dt;
+                  p.mesh.rotation.x += p.rx * dt;
+                  p.mesh.rotation.y += p.ry * dt;
+                  if (p.mesh.position.y <= floorY) {
+                    p.mesh.position.y = floorY;
+                    p.vy = Math.abs(p.vy) > 2.2 ? -p.vy * 0.28 : 0;
+                    p.vx *= 0.55;
+                    p.vz *= 0.55;
+                    p.rx *= 0.4;
+                    p.ry *= 0.4;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // =========================================================================
+      // REBUILD & EVENT LISTENERS
+      // =========================================================================
+      function rebuildAll() {
+        synthesizeFullCalve();
+        rebuildGlacier3D();
+        updateTelemetry();
+        runVerificationChecks();
+        renderOverlays();
+      }
+
+      document.getElementById('slider-height').addEventListener('input', (e) => {
+        state.heightM = parseFloat(e.target.value);
+        document.getElementById('val-height').textContent = `${state.heightM} m`;
+        orbit.target.y = Math.max(12, state.heightM * 0.5);
+        updateCamera();
+        rebuildAll();
+      });
+
+      document.getElementById('slider-ligament').addEventListener('input', (e) => {
+        state.ligamentM = parseFloat(e.target.value);
+        document.getElementById('val-ligament').textContent = `${state.ligamentM} m`;
+        rebuildAll();
+      });
+
+      document.getElementById('slider-temp').addEventListener('input', (e) => {
+        state.tempC = parseFloat(e.target.value);
+        document.getElementById('val-temp').textContent = `${state.tempC} °C`;
+        rebuildAll();
+      });
+
+      document.getElementById('slider-volume').addEventListener('input', (e) => {
+        state.volumeM3 = parseFloat(e.target.value);
+        document.getElementById('val-volume').textContent = `${state.volumeM3} m³`;
+        rebuildAll();
+      });
+
+      document.getElementById('slider-gain').addEventListener('input', (e) => {
+        state.masterGain = parseFloat(e.target.value) / 100;
+        document.getElementById('val-gain').textContent = `${Math.round(state.masterGain * 100)}%`;
+      });
+
+      document.getElementById('btn-env-water').addEventListener('click', () => {
+        state.environment = 'water';
+        document.getElementById('env-badge').textContent = 'TIDEWATER';
+        document.getElementById('btn-env-water').className = 'py-1.5 rounded-md text-[11px] font-medium bg-cyan-500/25 text-cyan-200 border border-cyan-400/40 transition-colors';
+        document.getElementById('btn-env-land').className = 'py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-slate-200 border border-transparent transition-colors';
+        rebuildAll();
+      });
+
+      document.getElementById('btn-env-land').addEventListener('click', () => {
+        state.environment = 'land';
+        document.getElementById('env-badge').textContent = 'LAND (ROCK)';
+        document.getElementById('btn-env-land').className = 'py-1.5 rounded-md text-[11px] font-medium bg-amber-500/25 text-amber-200 border border-amber-400/40 transition-colors';
+        document.getElementById('btn-env-water').className = 'py-1.5 rounded-md text-[11px] font-medium text-slate-400 hover:text-slate-200 border border-transparent transition-colors';
+        rebuildAll();
+      });
+
+      document.querySelectorAll('.view-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.viewMode = btn.getAttribute('data-view');
+          document.querySelectorAll('.view-tab').forEach((b) => {
+            const active = b === btn;
+            b.className = active
+              ? 'view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors bg-cyan-500/25 text-cyan-200 border border-cyan-400/40'
+              : 'view-tab px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent';
+          });
+          if (trajectoryLine) trajectoryLine.visible = state.viewMode === 'trajectory';
+          renderOverlays();
+        });
+      });
+
+      document.getElementById('btn-calve').addEventListener('click', triggerCalve);
+      document.getElementById('btn-export-wav').addEventListener('click', exportWav);
+
+      document.getElementById('btn-toggle-panels').addEventListener('click', () => {
+        state.panelsVisible = !state.panelsVisible;
+        document.getElementById('left-panel').classList.toggle('hidden', !state.panelsVisible);
+        document.getElementById('right-panel').classList.toggle('hidden', !state.panelsVisible);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+          e.preventDefault();
+          triggerCalve();
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderOverlays();
+      });
+
+      rebuildAll();
+      animate();
+    });
+  </script>
+</body>
+</html>

@@ -547,6 +547,18 @@
         "standing wave",
         "node &amp; antinode"
        ]
+      },
+      {
+       "href": "calve_3d_crevasse_propagation_fall_impact_two_stage_lab.html",
+       "glyph": "calve",
+       "name": "CALVE 3D",
+       "desc": "A crevasse races through the ice at 1.5 kHz and up. Then the block falls, and the silence between the crack and the boom is exactly the time it takes - &#8730;(2h/g). For a 50 m cliff that is 3.2 seconds between a rifle shot and a thud, and no other lab here has a gap you can measure.",
+       "tags": [
+        "crevasse propagation",
+        "two-stage event",
+        "fall law",
+        "tidewater vs rock"
+       ]
       }
      ]
     }

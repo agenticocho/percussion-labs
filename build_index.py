@@ -19,6 +19,9 @@ CARD = ('<a class="card" href="{href}">\n'
         'stroke-width="2"><path d="M3 8h10M9 4l4 4-4 4"/></svg></div>\n'
         '      </a>')
 
+NUMWORDS = {n: w for n, w in zip(
+    range(0, 100), "Zero One Two Three Four Five Six Seven Eight Nine Ten Eleven Twelve Thirteen Fourteen Fifteen Sixteen Seventeen Eighteen Nineteen Twenty Twenty-one Twenty-two Twenty-three Twenty-four Twenty-five Twenty-six Twenty-seven Twenty-eight Twenty-nine Thirty Thirty-one Thirty-two Thirty-three Thirty-four Thirty-five Thirty-six Thirty-seven Thirty-eight Thirty-nine Forty Forty-one Forty-two Forty-three Forty-four Forty-five Forty-six Forty-seven Forty-eight Forty-nine Fifty Fifty-one Fifty-two Fifty-three Fifty-four Fifty-five Fifty-six Fifty-seven Fifty-eight Fifty-nine Sixty".split())}
+
 n = 0
 out = []
 for sec in LABS:
@@ -39,5 +42,12 @@ for sec in LABS:
 body = "\n\n".join(out)
 head = re.sub(r'<b>\d+</b><i>Laboratories</i>', f'<b>{n}</b><i>Laboratories</i>', HEAD)
 head = re.sub(r'content="\w+ browser-native percussion', f'content="{n} browser-native percussion', head)
+import re as _re
+def _word(k):
+    if k in NUMWORDS: return NUMWORDS[k]
+    return NUMWORDS.get(k // 10 * 10, str(k)).replace("-", "") + "-" + NUMWORDS.get(k % 10, str(k % 10))
+head = _re.sub(r'<h1>[A-Za-z-]+ percussion', f'<h1>{_word(n)} percussion', head)
+head = _re.sub(r'Percussion Labs — [A-Za-z-]+ Interactive', f'Percussion Labs — {_word(n)} Interactive', head)
+head = _re.sub(r'· \d+ labs, organised by kind ·', f'· {n} labs, organised by kind ·', head)
 open("index.html", "w").write(head + body + TAIL)
 print(f"  generated {n} labs across {len(LABS)} sections")
