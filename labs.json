@@ -1,0 +1,652 @@
+{
+ "sections": [
+  {
+   "title": "INSTRUMENTS",
+   "sub": "what a strike sounds like \u00b7 28 labs",
+   "families": [
+    {
+     "family": "plates & discs",
+     "cards": [
+      {
+       "href": "cyma_forge_percussive_cymatics_faraday_hydro_tank_biharmonic_chladni_plate_acoustic_levitation_lab.html",
+       "glyph": "cymaforge",
+       "name": "CYMA-FORGE",
+       "desc": "Percussive cymatics: a Faraday hydro-tank, a biharmonic Chladni plate and an acoustic levitation field. Strike a plate and watch the sand find its nodes.",
+       "tags": [
+        "Chladni",
+        "Faraday waves",
+        "levitation"
+       ]
+      },
+      {
+       "href": "cymbal_3d_f_ppl_von_k_rm_n_nonlinear_plate_weyl_modal_density_wave_turbulence_chaos_wav_loop_lab.html",
+       "glyph": "cymbal",
+       "name": "CYMBAL-3D",
+       "desc": "A F\u00f6ppl\u2013von K\u00e1rm\u00e1n nonlinear plate with Weyl modal density \u2014 thousands of inharmonic modes summed into bronze. No pitch, no harmonics, just a plate whose modal spacing dissolves into shimmer at the edge and speaks in defined partials at the bell.",
+       "tags": [
+        "new",
+        "Weyl density",
+        "nonlinear plate",
+        "bronze"
+       ]
+      },
+      {
+       "href": "crotales_3d_orchestral_chromatic_antique_cymbals_chladni_disk_modes_bowed_edge_lab.html",
+       "glyph": "crotales",
+       "name": "CROTALES-3D",
+       "desc": "Chromatic antique cymbals as Chladni disk modes, struck or bowed at the edge. A small thick disk tuned to a definite pitch, which makes it the rare bronze instrument that can be played in a melody \u2014 and bowing the rim excites modes a strike cannot reach.",
+       "tags": [
+        "new",
+        "Chladni disk",
+        "antique cymbals",
+        "bowed edge",
+        "chromatic"
+       ]
+      },
+      {
+       "href": "pan_3d_steelpan_handpan_1_2_3_orthogonal_mode_coupling_loop_lab.html",
+       "glyph": "pan",
+       "name": "PAN-3D",
+       "desc": "A steelpan and handpan whose note areas are tuned to 1:2:3 orthogonal mode coupling \u2014 the only struck object here that was designed to be harmonic rather than left inharmonic. Strike a note field and the overtone sits exactly where the tuner put it, which is why a pan sounds placed and a cymbal sounds found.",
+       "tags": [
+        "new",
+        "steelpan",
+        "handpan",
+        "harmonic tuning"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "shells & bells",
+     "cards": [
+      {
+       "href": "k_rm_n_gong_3d_f_ppl_von_k_rm_n_nonlinear_shell_wave_turbulence_pitch_glissando_gong_lab.html",
+       "glyph": "karman",
+       "name": "K\u00c1RM\u00c1N-GONG 3D",
+       "desc": "F\u00f6ppl\u2013von K\u00e1rm\u00e1n nonlinear shell dynamics with wave turbulence and pitch glissando \u2014 a gong whose pitch bends as the shell deforms, which is why a struck gong blooms instead of simply ringing.",
+       "tags": [
+        "new",
+        "F\u00f6ppl\u2013von K\u00e1rm\u00e1n",
+        "shell",
+        "glissando"
+       ]
+      },
+      {
+       "href": "keisu_3d_standing_bell_singing_bowl_rayleigh_love_rim_modes_faraday_spouting_lab.html",
+       "glyph": "keisu",
+       "name": "KEISU-3D",
+       "desc": "A standing bell and a singing bowl: Rayleigh\u2013Love rim modes plus Faraday spouting. Two ways a curved vessel sings \u2014 coupled rim modes in the metal, and a liquid film climbing and breaking from the wall.",
+       "tags": [
+        "new",
+        "Rayleigh\u2013Love",
+        "rim modes",
+        "Faraday spouting"
+       ]
+      },
+      {
+       "href": "campana_3d_free_free_hanging_bell_hum_prime_tierce_quint_nominal_partials_bell_swarm_lab.html",
+       "glyph": "campana",
+       "name": "CAMPANA-3D",
+       "desc": "A free-free hanging bell resolved into its five named partials \u2014 hum, prime, tierce, quint and nominal \u2014 plus a bell swarm. The tierce sits a minor third above the prime, which is why a Western bell sounds minor whatever note you think you struck.",
+       "tags": [
+        "new",
+        "free-free",
+        "partials",
+        "tierce"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "membranes & drums",
+     "cards": [
+      {
+       "href": "timpani_3d_coupled_kettle_cavity_air_spring_live_pedal_portamento_bessel_inharmonicity_lab.html",
+       "glyph": "timpani",
+       "name": "TIMPANI-3D",
+       "desc": "A coupled kettle-cavity air spring, live pedal portamento and Bessel inharmonicity \u2014 the one percussion instrument that changes pitch while it is still ringing. The partials are not harmonic: roughly 1 : 1.59 : 2.14 : 2.30, which is why a timpanist tunes by ear and never by ratio.",
+       "tags": [
+        "new",
+        "air spring",
+        "portamento",
+        "Bessel"
+       ]
+      },
+      {
+       "href": "taiko_3d_v2_0_coupled_dual_membrane_wadaiko_nonlinear_pitch_glide_kuchi_sh_ga_wav_loop_lab.html",
+       "glyph": "taiko",
+       "name": "TAIKO-3D",
+       "desc": "A coupled dual-membrane wadaiko: two heads sharing one air column, with nonlinear pitch glide and kuchi-sh\u014dga vocal notation rendered as a WAV loop. The coupled heads are why a taiko's pitch bends under its own strike energy rather than settling where it started.",
+       "tags": [
+        "new",
+        "dual membrane",
+        "pitch glide",
+        "kuchi-sh\u014dga"
+       ]
+      },
+      {
+       "href": "snare_3d_v2_0_coupled_membrane_wire_acoustic_physics_pas_40_rudiment_lab.html",
+       "glyph": "snare",
+       "name": "SNARE-3D",
+       "desc": "A coupled membrane and snare-wire model with the PAS-40 rudiments built in. The wires are the interesting part: they are a stochastic nonlinear attachment, not a filter, so the buzz responds to how hard you hit and where \u2014 which is why a buzz roll and a marching rudiment sound like different instruments.",
+       "tags": [
+        "new",
+        "snare wires",
+        "coupled membrane",
+        "PAS-40"
+       ]
+      },
+      {
+       "href": "cavity_kick_3d_v3_0_bass_drum_helmholtz_avoided_crossing_lab.html",
+       "glyph": "cavitykick",
+       "name": "CAVITY-KICK 3D",
+       "desc": "A bass drum as two resonators of equal standing: the head and the air inside it. Sweep the cavity volume through the head frequency and the two modes refuse to cross \u2014 they repel, with a minimum gap of 2g, and a visitor expecting an intersection hears two tones bounce off each other instead. The deepest fundamental in the suite, and the only lab where the air is the instrument.",
+       "tags": [
+        "new",
+        "Helmholtz cavity",
+        "avoided crossing",
+        "sub-bass"
+       ]
+      },
+      {
+       "href": "talking_drum_3d_v2_0_hourglass_tension_cord_pitch_modulation_speech_surrogate_physics_lab.html",
+       "glyph": "talkingdrum",
+       "name": "TALKING-DRUM 3D",
+       "desc": "An hourglass drum whose cord-laced head is squeezed under the arm to bend pitch continuously mid-strike \u2014 the only drum here whose pitch is played rather than set. The hourglass body is a coupled resonator, and the tension modulation is what lets a drum imitate a tonal language.",
+       "tags": [
+        "new",
+        "tension cords",
+        "pitch modulation",
+        "hourglass body",
+        "speech surrogate"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "bars & beams",
+     "cards": [
+      {
+       "href": "diapason_3d_full_screen_3d_euler_bernoulli_tuning_fork_von_mises_stress_6_eigenmode_lab.html",
+       "glyph": "diapason",
+       "name": "DIAPASON-3D",
+       "desc": "A full-screen 3D Euler\u2013Bernoulli tuning fork with von Mises stress and six eigenmodes \u2014 the geometry of a struck fork resolved into stress fields and the modes that follow from them.",
+       "tags": [
+        "new",
+        "Euler\u2013Bernoulli",
+        "von Mises",
+        "eigenmodes"
+       ]
+      },
+      {
+       "href": "marimba_3d_arch_carved_bar_1_4_10_harmonic_physics_quarter_wave_resonator_4_mallet_lab.html",
+       "glyph": "marimba",
+       "name": "MARIMBA-3D",
+       "desc": "An arch-carved rosewood bar over a quarter-wave resonator tube, tuned so the second partial sits at 4x and the third at 10x the fundamental. A pan is tuned by hammering a plate; a bar is tuned by removing mass from underneath \u2014 same idea, opposite craft, and it is why wood sounds like wood.",
+       "tags": [
+        "new",
+        "arch carve",
+        "1:4:10",
+        "quarter-wave tube",
+        "mallet choice"
+       ]
+      },
+      {
+       "href": "waterphone_3d_hydro_acoustic_friction_idiophone_fluid_slosh_modal_portamento_stick_slip_lab.html",
+       "glyph": "waterphone",
+       "name": "WATERPHONE-3D",
+       "desc": "A hydro-acoustic friction idiophone: a steel bowl, a column of water and a ring of tines. Tip it and the water redistributes, shifting every mode at once \u2014 a portamento with no moving part, driven by stick-slip and a fluid that is also the instrument.",
+       "tags": [
+        "new",
+        "hydro-acoustic",
+        "fluid slosh",
+        "stick-slip",
+        "modal portamento"
+       ]
+      },
+      {
+       "href": "material_set_3d_speed_of_sound_internal_damping_warmth_lab.html",
+       "glyph": "materialset",
+       "name": "MATERIAL-SET 3D",
+       "desc": "One resonator, one geometry, seven materials - and only two numbers differ: speed of sound and internal damping. Because damping rises with frequency, high modes die first, so the spectrum collapses in brightness as it decays. That collapse is what you hear as warm. Bronze and wood differ not in pitch but in how fast their top end disappears.",
+       "tags": [
+        "new",
+        "speed of sound",
+        "internal damping",
+        "warmth"
+       ]
+      },
+      {
+       "href": "inverse_bar_3d_target_spectrum_non_unique_geometry_solver_lab.html",
+       "glyph": "inversebar",
+       "name": "INVERSE-BAR 3D",
+       "desc": "Name a spectrum and the lab searches for a bar that produces it - the machine a marimba builder uses, run backwards. Ask for 1:4:10 and it returns a carving profile; run it twice from different seeds and get two visibly different bars with the same modes and the same sound. The shape is not the only thing that fits a spectrum, and this lab proves it.",
+       "tags": [
+        "new",
+        "inverse problem",
+        "non-unique solution",
+        "master curve"
+       ]
+      },
+      {
+       "href": "hetero_there_3d_heterodyne_capacitance_pitch_mapping_lab.html",
+       "glyph": "heterothere",
+       "name": "HETERO-THERE 3D",
+       "desc": "Two radio oscillators near 500 kHz and a difference you can hear. A hand near the rod changes capacitance, capacitance moves the oscillator, and the audio is the subtraction - never the carrier. The pitch mapping is brutally nonlinear, 32 cents per centimetre far out and over 400 near the rod, which is exactly why the instrument swoops. Toggle linearised and it becomes easy.",
+       "tags": [
+        "new",
+        "heterodyne",
+        "capacitive sensing",
+        "nonlinear mapping"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "granular",
+     "cards": [
+      {
+       "href": "rainstick_3d_granular_avalanche_pin_lattice_jamming_phase_transition_timing_lab.html",
+       "glyph": "rainstick",
+       "name": "RAINSTICK-3D",
+       "desc": "A granular avalanche through a pin lattice, with jamming as a real phase transition. The sound is not modal \u2014 it is a timing statistic: correlated cascades sound like rain, independent clicks sound like dust, and at high fill the flow stops entirely.",
+       "tags": [
+        "new",
+        "granular",
+        "jamming",
+        "inter-arrival"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "technique",
+     "cards": [
+      {
+       "href": "pas_40_studio_interactive_drum_rudiments_simulator_sample_lab.html",
+       "glyph": "pas40",
+       "name": "PAS-40 STUDIO",
+       "desc": "The forty Percussive Arts Society rudiments as an interactive simulator and sample lab. Pure technique, no physics \u2014 where the series started, and the ground everything else stands on.",
+       "tags": [
+        "rudiments",
+        "PAS-40",
+        "technique"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "pendulums",
+     "cards": [
+      {
+       "href": "pendulum_loom_3d_harmonic_phase_loom_blackburn_lissajous_coupled_huygens_wave_lab.html",
+       "glyph": "pendulum",
+       "name": "PENDULUM-LOOM",
+       "desc": "A 3D harmonic phase loom driven by Blackburn pendulums, Lissajous figures and coupled Huygens clocks \u2014 interference turned into rhythm. The most purely physical piece in the set: every hit traces back to a pendulum you can watch swing.",
+       "tags": [
+        "coupled oscillators",
+        "Lissajous",
+        "Huygens",
+        "phase"
+       ]
+      },
+      {
+       "href": "newton_pulse_3d_precision_percussive_newton_s_cradle_oddball_mass_chain_zero_g_bpm_collider_rhythm_lab.html",
+       "glyph": "newton",
+       "name": "NEWTON-PULSE 3D",
+       "desc": "A precision percussive Newton's cradle with an oddball mass chain, a zero-G BPM collider and a rhythm lab. Momentum transfer as rhythm \u2014 one ball in and two out is a musical decision, not just a physics demonstration.",
+       "tags": [
+        "new",
+        "momentum transfer",
+        "mass chain",
+        "zero-G"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "abstract & mathematical",
+     "cards": [
+      {
+       "href": "chronocrystal_3d_spectral_graph_percussion_pendulum_wave_polyrhythmic_automaton.html",
+       "glyph": "chronocrystal",
+       "name": "CHRONOCRYSTAL",
+       "desc": "3D spectral graph percussion with a pendulum wave and a polyrhythmic automaton \u2014 a time crystal you can hear fold and unfold.",
+       "tags": [
+        "spectral graph",
+        "polyrhythm",
+        "automaton"
+       ]
+      },
+      {
+       "href": "eigenpulse_spatial_drumline_drill_bessel_cymatics_polyrhythmic_hocket_lab.html",
+       "glyph": "eigenpulse",
+       "name": "EIGENPULSE",
+       "desc": "Spatial drumline drill and polyrhythmic hocket, visualised through Bessel-mode cymatics. Where a drill line meets an eigenmode.",
+       "tags": [
+        "Bessel modes",
+        "hocket",
+        "drumline"
+       ]
+      },
+      {
+       "href": "kac_spectra_isospectral_drum_solver_poincar_hyperbolic_tree_kuramoto_chimera_synth.html",
+       "glyph": "kac",
+       "name": "KAC-SPECTRA",
+       "desc": "Solve the inverse problem \u2014 can you hear the shape of a drum? An isospectral drum solver, a Poincar\u00e9 hyperbolic tree and a Kuramoto chimera synth.",
+       "tags": [
+        "isospectral",
+        "Kuramoto",
+        "hyperbolic"
+       ]
+      },
+      {
+       "href": "quasicrystal_pu_penrose_aperiodic_percussion_delta_rule_state_machine_reversible_automaton_lab.html",
+       "glyph": "quasicrystal",
+       "name": "QUASICRYSTAL-PU",
+       "desc": "Penrose aperiodic percussion \u2014 a tiling that never repeats, driven by a delta-rule state machine and a reversible automaton.",
+       "tags": [
+        "Penrose tiling",
+        "aperiodic",
+        "reversible"
+       ]
+      },
+      {
+       "href": "padic_braid_p_adic_ultrametric_tree_non_holomorphic_fractal_series_synth_braid_group_b_loom.html",
+       "glyph": "padic",
+       "name": "PADIC-BRAID",
+       "desc": "Rhythm on a p-adic ultrametric tree, a non-holomorphic fractal series synth, and a braid group B\u2084 loom \u2014 where distance is not what you think.",
+       "tags": [
+        "p-adic",
+        "braid group",
+        "fractal"
+       ]
+      },
+      {
+       "href": "hyper_soliton_4d_polychoron_percussion_hopf_fibration_torus_nonlinear_toda_soliton_lab.html",
+       "glyph": "hypersoliton",
+       "name": "HYPER-SOLITON",
+       "desc": "A 4D polychoron projected through a Hopf fibration, struck as percussion, with a nonlinear Toda lattice carrying the transients.",
+       "tags": [
+        "4D / Hopf",
+        "Toda lattice",
+        "solitons"
+       ]
+      },
+      {
+       "href": "chimera_swarm_3d_kuramoto_sakaguchi_chimera_manifold_swarmalator_lab.html",
+       "glyph": "chimera",
+       "name": "CHIMERA-SWARM",
+       "desc": "A 3D Kuramoto\u2013Sakaguchi chimera manifold and swarmalator: one population locks in phase while another stays incoherent, and the boundary between them is what you hear.",
+       "tags": [
+        "new",
+        "Kuramoto\u2013Sakaguchi",
+        "swarmalator",
+        "chimera"
+       ]
+      },
+      {
+       "href": "cavitron_rayleigh_plesset_sonoluminescence_rijke_thermoacoustic_flame_shear_thickening_impact_lab.html",
+       "glyph": "cavitron",
+       "name": "CAVITRON",
+       "desc": "Rayleigh\u2013Plesset bubble collapse and sonoluminescence, a Rijke thermoacoustic flame tube, and shear-thickening impact rheology \u2014 three ways a strike becomes light and heat.",
+       "tags": [
+        "cavitation",
+        "thermoacoustic",
+        "rheology"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "EXPERIMENTS",
+   "sub": "when strikes happen \u00b7 11 labs",
+   "families": [
+    {
+     "family": "mechanisms",
+     "cards": [
+      {
+       "href": "metronome_sync_3d_huygens_coupled_pendulum_order_parameter_lab.html",
+       "glyph": "metronome",
+       "name": "METRONOME-SYNC 3D",
+       "desc": "Metronomes on a shared beam that synchronise through nothing but their own recoil \u2014 Huygens' 1665 observation, integrated rather than scripted. Two identical metronomes settle into ANTI-PHASE, not unison: they alternate, and the double-time pulse on the interval histogram is the physics telling you so. Sweep the coupling and watch the order parameter cross over.",
+       "tags": [
+        "new",
+        "Huygens coupling",
+        "anti-phase",
+        "order parameter"
+       ]
+      },
+      {
+       "href": "beat_field_3d_interference_polyrhythm_ratio_lab.html",
+       "glyph": "beatfield",
+       "name": "BEAT-FIELD 3D",
+       "desc": "Two pulse trains and one piece of arithmetic. Detune them and the beat rate becomes a tempo; set them to 3:2 and you get a hemiola that never drifts. Then sweep the master tempo past 20 Hz and the same ratio stops being a cross-rhythm and becomes a chord \u2014 a perfect fifth at 702 cents, from the identical integers.",
+       "tags": [
+        "new",
+        "interference",
+        "polyrhythm",
+        "rhythm\u2192pitch"
+       ]
+      },
+      {
+       "href": "sand_pile_3d_v3_0_self_organised_criticality_avalanche_rhythm_lab.html",
+       "glyph": "sandpile",
+       "name": "SAND-PILE 3D",
+       "desc": "A Bak\u2013Tang\u2013Wiesenfeld pile that grows until it collapses, and the collapse onsets are the beat. No tempo is set \u2014 the rhythm is the pile's own instability, bursty and clustered with quiet refractory gaps. Flip to the Poisson null and the difference is instant: human musical timing is 1/f too, which is why a grid sounds stiff and a pile does not.",
+       "tags": [
+        "new",
+        "self-organised criticality",
+        "avalanche",
+        "Poisson null"
+       ]
+      },
+      {
+       "href": "drip_clock_3d_v2_0_relaxation_oscillator_tate_s_law_period_doubling_lab.html",
+       "glyph": "dripclock",
+       "name": "DRIP-CLOCK 3D",
+       "desc": "A dripping faucet as a rhythm you can derive on paper: Tate&rsquo;s law gives the drop mass, so the tempo is set by surface tension, neck radius and flow, to within a few percent. Sweep the flow and the drip stops being metronomic: period-2 is swing, then period-4, then deterministic chaos, then jetting. The only lab here whose tempo has a closed form, and it still finds a way to break it.",
+       "tags": [
+        "new",
+        "Tate law",
+        "period doubling",
+        "bifurcation"
+       ]
+      },
+      {
+       "href": "strange_drum_3d_chaotic_oscillator_thresholded_rhythm_lab.html",
+       "glyph": "strangedrum",
+       "name": "STRANGE-DRUM 3D",
+       "desc": "A chaotic oscillator sampled through a threshold plane, so the orbit becomes a groove. The same seed always replays the identical rhythm, yet nothing predicts the thousandth hit without iterating to it. Sweep the parameter through period-doubling into chaos, linger in the intermittency window where it sounds like a player varying a pattern, then hit Shuffle and hear the order vanish while the histogram stays identical.",
+       "tags": [
+        "new",
+        "chaos",
+        "Lyapunov",
+        "seed replay"
+       ]
+      },
+      {
+       "href": "spiral_drum_3d_v2_0_excitable_medium_rotating_wave_rhythm_lab.html",
+       "glyph": "spiraldrum",
+       "name": "SPIRAL-DRUM 3D",
+       "desc": "A FitzHugh-Nagumo excitable medium with a phase singularity in it: the wavefront curls and rotates, and one revolution is one beat. The tempo is set by the refractory tail, so a spiral cannot spin faster than its own tail decays. Push the excitability and the tip stops tracing a clean circle, starts meandering, then goes chaotic, and the beat degrades with it. Nothing random was added.",
+       "tags": [
+        "new",
+        "excitable medium",
+        "reaction-diffusion",
+        "tip chaos"
+       ]
+      },
+      {
+       "href": "jam_wave_3d_v2_0_nagel_schreckenberg_stop_and_go_rhythm_lab.html",
+       "glyph": "jamwave",
+       "name": "JAM-WAVE 3D",
+       "desc": "Cars on a ring road obeying four rules, with nobody in charge. Past a critical density, stop-and-go jams nucleate out of nothing and travel backwards against the traffic, so a roadside observer hears burst-quiet-burst. Set the dawdle probability to zero and every jam vanishes at the same density: congestion needs noise to start, yet is not itself noise.",
+       "tags": [
+        "new",
+        "Nagel-Schreckenberg",
+        "backward jam wave",
+        "fundamental diagram"
+       ]
+      },
+      {
+       "href": "graph_choir_3d_v2_0_network_kuramoto_winding_number_polyrhythm_lab.html",
+       "glyph": "graphchoir",
+       "name": "GRAPH-CHOIR 3D",
+       "desc": "V2.0: Kuramoto oscillators wired into a graph, where the topology decides which rhythms are even possible. Wind a phase gradient around a loop and it locks into a rotating pattern \u2014 a polyrhythm carried by a quantised winding number that cannot be halved. Rewire the same nodes into a tree and every twist collapses to unison, because a graph with no cycles has nowhere to put one.",
+       "tags": [
+        "new",
+        "network Kuramoto",
+        "winding number",
+        "tree null"
+       ]
+      },
+      {
+       "href": "slab_release_3d_v3_0_weak_layer_fracture_voellmy_avalanche_lab.html",
+       "glyph": "slab",
+       "name": "SLAB-RELEASE 3D",
+       "desc": "A cohesive slab on a weak layer, and nothing happens until shear stress beats shear strength. Then a crown crack runs upslope at 48 m/s ahead of the debris, which follows a Voellmy deceleration into the runout. The first lab here whose sound is a continuous event rather than an onset - and the first whose null is silence.",
+       "tags": [
+        "new"
+       ]
+      },
+      {
+       "href": "thunder_3d_shock_wave_n_wave_line_source_lab.html",
+       "glyph": "thunder",
+       "name": "THUNDER 3D",
+       "desc": "The only shock wave in the suite. A channel at 30,000 K expands supersonically and radiates an N-wave whose rise time grows as the square root of distance - a linear source would keep its shape. And the roll you hear is not reverb: a bolt kilometres long arrives in pieces, so the rumble is the shape of the channel.",
+       "tags": [
+        "new",
+        "N-wave shock",
+        "distributed line source",
+        "r^&#189; decay"
+       ]
+      },
+      {
+       "href": "seiche_tank_3d_standing_wave_basin_resonance_lab.html",
+       "glyph": "seiche",
+       "name": "SEICHE-TANK 3D",
+       "desc": "A bounded basin has a natural frequency: T = 2L/&#8730;(gh). Drive a tank at that period and the slosh grows until it breaks at the antinodes; drive it 40% off and the water barely moves. The middle stays still while the ends rise, and moving the listener from node to antinode makes the tempo appear or vanish.",
+       "tags": [
+        "new",
+        "Merian period",
+        "standing wave",
+        "node &amp; antinode"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "PERCEPTION &amp; CAPSTONE",
+   "sub": "about the suite, not inside it \u00b7 3 labs",
+   "families": [
+    {
+     "family": "the listener",
+     "cards": [
+      {
+       "href": "cochlea_mask_3d_percussion_psychoacoustics_auditory_masking_thresholds_pitch_perception_lab.html",
+       "glyph": "cochlea",
+       "name": "COCHLEA-MASK 3D",
+       "desc": "The listener, finally: auditory masking thresholds and pitch perception. One hit can hide another that is louder, and where the threshold sits depends on frequency, time and bandwidth. Every other lab asks how an object vibrates; this one asks what you can actually hear of it.",
+       "tags": [
+        "new",
+        "masking",
+        "thresholds",
+        "pitch perception",
+        "psychoacoustics"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "the relationship",
+     "cards": [
+      {
+       "href": "timbre_clock_3d_v2_0_spectrum_rhythm_timescale_unifier_lab.html",
+       "glyph": "timbreclock",
+       "name": "TIMBRE-CLOCK 3D",
+       "desc": "One array of partials and one dial. V2.0: at audio rate the array is a chord; slow it a thousandfold and the identical numbers become a rhythm you can count. Sweep through 20 to 50 Hz and hear repetition fuse into pitch, then load a cymbal and find that the shimmer becomes a jumble nobody could tap along to.",
+       "tags": [
+        "new",
+        "spectrum &harr; rhythm",
+        "fusion crossover",
+        "capstone"
+       ]
+      }
+     ]
+    },
+    {
+     "family": "the room",
+     "cards": [
+      {
+       "href": "room_tone_3d_v2_0_schroeder_crossover_volumetric_modes_stereo_ir_lab.html",
+       "glyph": "roomtone",
+       "name": "ROOM-TONE 3D",
+       "desc": "V2.0: the space every other lab sits in, now in true stereo with ear spacing, first-order wall reflections and a volumetric standing-wave view. Below the Schroeder frequency a room has discrete modes you hear as boom; above it, only decay. Drag the volume down and the crossover climbs - so a small room is MORE coloured than a large one, which is the opposite of what everyone expects.",
+       "tags": [
+        "new",
+        "Schroeder crossover",
+        "room modes",
+        "Sabine",
+        "modal to diffuse"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "COMPOSITION",
+   "sub": "authored rhythm \u00b7 3 labs",
+   "families": [
+    {
+     "family": "beat architecture",
+     "cards": [
+      {
+       "href": "beat_forge_3d_percussionist_s_beat_architecture_euclidean_necklaces_microtiming_groove_polyrhythm_lab.html",
+       "glyph": "beatforge",
+       "name": "BEAT-FORGE 3D",
+       "desc": "Beat architecture as mathematics: Euclidean necklaces distributing hits as evenly as a rhythm allows, microtiming that decides whether a groove sits or swings, and polyrhythms that lock only at the least common multiple. The first lab here about when a hit happens rather than what it sounds like.",
+       "tags": [
+        "new",
+        "Euclidean necklace",
+        "microtiming",
+        "polyrhythm",
+        "groove"
+       ]
+      },
+      {
+       "href": "phase_loop_3d_reich_phasing_exact_cycle_drift_composition_lab.html",
+       "glyph": "phaseloop",
+       "name": "PHASE-LOOP 3D",
+       "desc": "Write one bar, choose one integer, and the piece writes itself. Two identical voices at n and n+1 drift apart, dissolve into a jumble at the halfway point, and snap back into unison displaced by a single beat at exactly cycle n. Nothing after the first bar is authored - the arrival is arithmetic, and it is computable to the sample.",
+       "tags": [
+        "new",
+        "Reich phasing",
+        "exact integer clock",
+        "composition"
+       ]
+      },
+      {
+       "href": "aksak_forge_3d_additive_meter_partition_composition_lab.html",
+       "glyph": "aksak",
+       "name": "AKSAK-FORGE 3D",
+       "desc": "Seven beats divided as 2+2+3 is a different piece from 3+2+2, at identical tempo and identical hit count. The partition is the composition, and nothing else changes. Split and merge groups on a segmented ring, then set the accents flat and hear the metre vanish into seven identical beats.",
+       "tags": [
+        "new",
+        "additive meter",
+        "integer partition",
+        "aksak"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
