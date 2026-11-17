@@ -583,6 +583,18 @@
         "Mach decay",
         "the puff null"
        ]
+      },
+      {
+       "href": "boom_carpet_3d_mach_cone_sonic_boom_lab.html",
+       "glyph": "boom",
+       "name": "BOOM-CARPET 3D",
+       "desc": "A supersonic aircraft drags a cone, and the boom reaches you when that cone sweeps past - from a direction the aircraft has already left. Inside the carpet you hear a double N-wave separated by L/v; one metre outside it, silence, with the aircraft plainly overhead. The only lab here where the direction of the sound encodes a velocity.",
+       "tags": [
+        "Mach cone arcsin(1/M)",
+        "carpet cut-off",
+        "double boom L/v",
+        "outside = silence"
+       ]
       }
      ]
     }

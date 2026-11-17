@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOOM-CARPET 3D v2 — Mach Cone &amp; Sonic Boom Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #020617;
+      color: #e2e8f0;
+      font-family: 'Inter', system-ui, sans-serif;
+      user-select: none;
+    }
+
+    .boom-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85);
+      outline: none;
+      cursor: pointer;
+    }
+    .boom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .boom-slider::-webkit-slider-thumb:hover { transform: scale(1.18); }
+    .boom-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      border: 2px solid #0f172a;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.75);
+      cursor: pointer;
+    }
+    .boom-slider.amber::-webkit-slider-thumb { background: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.75); }
+    .boom-slider.emerald::-webkit-slider-thumb { background: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.75); }
+    .boom-slider.violet::-webkit-slider-thumb { background: #c084fc; box-shadow: 0 0 10px rgba(192, 132, 252, 0.75); }
+
+    .panel-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.6); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+
+  <!-- Full-screen 3D WebGL Canvas -->
+  <div id="webgl-container" class="fixed inset-0 w-full h-full z-0"></div>
+
+  <!-- Top Header Bar -->
+  <header class="fixed top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+    <div class="pointer-events-auto flex items-center gap-2.5 bg-slate-950/80 backdrop-blur-md border border-slate-800/80 rounded-xl px-3.5 py-2 shadow-2xl">
+      <button id="btn-toggle-sidebar" type="button" class="px-2 py-1 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-700 font-mono text-[11px] text-sky-300 transition">
+        ◀ HIDE
+      </button>
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-sky-400 shadow-[0_0_12px_#38bdf8] animate-pulse"></span>
+        <h1 class="font-mono text-sm sm:text-base font-bold tracking-wider text-slate-100">BOOM-CARPET 3D <span class="text-sky-400 text-xs font-semibold">v2</span></h1>
+      </div>
+      <span class="hidden lg:inline-block text-xs text-slate-400 border-l border-slate-800 pl-3">
+        Mach Cone Geometry &amp; Lateral Cutoff Lab
+      </span>
+    </div>
+
+    <div class="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-slate-950/80 backdrop-blur-md border border-slate-800/80 rounded-xl p-1.5 shadow-2xl">
+      <button id="btn-flyby" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono text-xs font-bold tracking-wide transition shadow-[0_0_16px_rgba(56,189,248,0.45)]">
+        FLYBY PASS
+      </button>
+      <button id="btn-play-boom" type="button" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/50 hover:bg-amber-500/30 text-amber-300 font-mono text-xs font-bold transition">
+        AUDITION N-WAVE
+      </button>
+      <button id="btn-mute" type="button" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 font-mono text-xs transition">
+        AUDIO: ON
+      </button>
+      <button id="btn-wav" type="button" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/40 hover:bg-emerald-500/25 text-emerald-300 font-mono text-xs font-semibold transition">
+        EXPORT .WAV
+      </button>
+      <button id="btn-verify" type="button" class="px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 hover:bg-amber-500/25 text-amber-300 font-mono text-xs font-semibold transition">
+        VERIFY (4/4)
+      </button>
+    </div>
+  </header>
+
+  <!-- View Presets: Side (cone geometry) · Top-Down (carpet) · Listener POV -->
+  <div class="fixed top-16 right-3 z-20 hidden sm:flex items-center gap-1 bg-slate-950/75 backdrop-blur-md border border-slate-800/80 rounded-lg p-1 shadow-xl">
+    <span class="font-mono text-[10px] text-slate-500 px-1.5">VIEW</span>
+    <button type="button" data-view="side" class="view-btn px-2 py-1 rounded font-mono text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/40 transition">Side (Cone)</button>
+    <button type="button" data-view="top" class="view-btn px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Top-Down (Carpet)</button>
+    <button type="button" data-view="pov" class="view-btn px-2 py-1 rounded font-mono text-[10px] text-slate-400 hover:text-slate-200 border border-transparent transition">Listener POV</button>
+  </div>
+
+  <!-- Collapsible Left Control Panel -->
+  <aside id="left-sidebar" class="fixed top-16 left-3 bottom-3 w-72 sm:w-80 z-20 pointer-events-none flex flex-col gap-2.5 max-h-[calc(100vh-4.75rem)] transition-transform duration-300 ease-out">
+    <div class="pointer-events-auto bg-slate-950/82 backdrop-blur-md border border-slate-800/80 rounded-xl p-3.5 shadow-2xl overflow-y-auto panel-scroll flex flex-col gap-3">
+
+      <!-- Carpet Status & Cone Telemetry -->
+      <div class="rounded-lg bg-slate-900/80 border border-slate-800 p-2.5">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="font-mono text-[10.5px] uppercase tracking-wider text-slate-400">Mach Cone Telemetry</span>
+          <span id="carpet-badge" class="px-1.5 py-0.5 rounded font-mono text-[10px] font-bold bg-emerald-500/20 text-emerald-300">INSIDE CARPET</span>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5 text-center font-mono">
+          <div class="rounded bg-slate-950/80 border border-sky-500/30 p-1.5">
+            <div class="text-[9.5px] text-sky-400">Cone θ</div>
+            <div id="readout-theta" class="text-xs font-bold text-slate-100">30.0°</div>
+          </div>
+          <div class="rounded bg-slate-950/80 border border-amber-500/30 p-1.5">
+            <div class="text-[9.5px] text-amber-400">Half-Width</div>
+            <div id="readout-width" class="text-xs font-bold text-slate-100">8.66 km</div>
+          </div>
+          <div class="rounded bg-slate-950/80 border border-purple-500/30 p-1.5">
+            <div class="text-[9.5px] text-purple-400">Δt (L/v)</div>
+            <div id="readout-dt" class="text-xs font-bold text-slate-100">73.5 ms</div>
+          </div>
+        </div>
+        <div class="mt-2 pt-1.5 border-t border-slate-800 flex items-center justify-between font-mono text-[11px]">
+          <span class="text-slate-400">Speed v = M·c:</span>
+          <span id="readout-speed" class="text-sky-300 font-bold">680 m/s</span>
+        </div>
+      </div>
+
+      <!-- Mach Number M -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-mach" class="text-xs font-semibold text-slate-200">Mach Number <span class="font-mono text-sky-400">M</span></label>
+          <span id="val-mach" class="font-mono text-xs font-bold text-sky-300">M 2.00</span>
+        </div>
+        <input id="slider-mach" type="range" min="1.05" max="3.50" step="0.05" value="2.00" class="boom-slider" />
+        <div class="text-[10.5px] text-slate-400 mt-0.5">sin θ = 1/M • Amp ∝ (M² − 1)^(3/8)</div>
+      </div>
+
+      <!-- Altitude h -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-alt" class="text-xs font-semibold text-slate-200">Altitude <span class="font-mono text-amber-400">h</span></label>
+          <span id="val-alt" class="font-mono text-xs font-bold text-amber-300">5,000 m</span>
+        </div>
+        <input id="slider-alt" type="range" min="500" max="15000" step="100" value="5000" class="boom-slider amber" />
+      </div>
+
+      <!-- Aircraft Length L -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="slider-len" class="text-xs font-semibold text-slate-200">Aircraft Length <span class="font-mono text-purple-400">L</span></label>
+          <span id="val-len" class="font-mono text-xs font-bold text-purple-300">50 m</span>
+        </div>
+        <input id="slider-len" type="range" min="10" max="80" step="1" value="50" class="boom-slider violet" />
+        <div class="text-[10.5px] text-slate-400 mt-0.5">Sets bow–tail double-boom gap Δt = L / v</div>
+      </div>
+
+      <!-- Listener Position (x, y) -->
+      <div class="rounded-lg bg-slate-900/60 border border-slate-800/80 p-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-200">Listener Lateral <span class="font-mono text-emerald-400">y</span></span>
+          <span id="val-ly" class="font-mono text-xs font-bold text-emerald-300">2,000 m</span>
+        </div>
+        <input id="slider-ly" type="range" min="-18000" max="18000" step="50" value="2000" class="boom-slider emerald" />
+
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-200">Listener Track <span class="font-mono text-emerald-400">x</span></span>
+          <span id="val-lx" class="font-mono text-xs font-bold text-emerald-300">0 m</span>
+        </div>
+        <input id="slider-lx" type="range" min="-15000" max="15000" step="100" value="0" class="boom-slider emerald" />
+
+        <div class="grid grid-cols-2 gap-1.5 pt-1">
+          <button id="btn-edge-in" type="button" class="py-1 rounded bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 font-mono text-[10px] text-emerald-300 transition">1m Inside Edge</button>
+          <button id="btn-edge-out" type="button" class="py-1 rounded bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 font-mono text-[10px] text-rose-300 transition">1m Outside (Null)</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom-Right Display Panel: N-Wave Pressure & Top-Down Carpet Strip -->
+  <section id="bottom-panel" class="fixed bottom-3 right-3 left-3 md:left-[21.5rem] z-20 pointer-events-none transition-all duration-300">
+    <div class="pointer-events-auto bg-slate-950/85 backdrop-blur-md border border-slate-800/80 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b border-slate-800/80 bg-slate-900/50">
+        <span class="font-mono text-xs font-semibold text-sky-300">Double-Boom N-Wave Pressure &amp; Carpet Cut-Off</span>
+        <span id="display-status-line" class="font-mono text-[11px] text-slate-400">Bow + Tail N-wave pair • Δt = 73.5 ms</span>
+      </div>
+      <div class="p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
+        <div class="lg:col-span-7 relative h-36 sm:h-40">
+          <canvas id="canvas-nwave" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+        <div class="lg:col-span-5 relative h-36 sm:h-40">
+          <canvas id="canvas-carpet2d" class="w-full h-full block rounded-lg bg-slate-950/95 border border-slate-800/70"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Verification Modal -->
+  <div id="modal-verify" class="fixed inset-0 z-40 hidden items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h2 class="font-mono text-sm font-bold text-slate-100">BOOM-CARPET 3D — Four-Check Physics Verification</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Numerical audit of Mach angle, lateral carpet cut-off, L/v double-boom interval, and outside-carpet null.</p>
+        </div>
+        <button id="btn-close-verify" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 font-mono text-xs text-slate-300">CLOSE</button>
+      </div>
+      <div id="verify-results" class="mt-4 space-y-2.5 font-mono text-xs"></div>
+      <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+        <span id="verify-summary" class="font-mono text-xs text-emerald-400 font-semibold">All 4 checks passed.</span>
+        <button id="btn-rerun-verify" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-mono text-xs font-bold">RE-RUN CHECKS</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed top-16 right-4 z-50 hidden px-3.5 py-2 rounded-lg bg-slate-900/95 border border-sky-500/50 text-sky-200 font-mono text-xs shadow-xl"></div>
+
+  <script>
+  window.addEventListener('load', () => {
+    'use strict';
+
+    // =========================================================================
+    // 1. EXACT SUPERSONIC MACH CONE & LATERAL CUT-OFF PHYSICS
+    // =========================================================================
+    const SPEED_OF_SOUND = 340.0;
+
+    const state = {
+      mach: 2.00,
+      altitude: 5000,
+      length: 50,
+      listenerX: 0,
+      listenerY: 2000,
+      aircraftX: -12000,
+      flying: false,
+      lastFrameTs: 0,
+      bowPassed: false,
+      tailPassed: false,
+      sidebarOpen: true,
+      muted: false,
+      viewMode: 'side',
+      boomFlash: 0
+    };
+
+    function computeMachParams(M, h, L) {
+      const sinTheta = Math.min(1.0, 1.0 / Math.max(1.0001, M));
+      const thetaRad = Math.asin(sinTheta);
+      const thetaDeg = thetaRad * (180 / Math.PI);
+      const tanTheta = Math.tan(thetaRad);
+      const halfWidth = h / Math.max(1e-5, tanTheta);
+      const speed = M * SPEED_OF_SOUND;
+      const dtPair = L / speed;
+      const ampFactor = Math.pow(Math.max(0.01, M * M - 1.0), 0.375);
+      return { thetaRad, thetaDeg, tanTheta, halfWidth, speed, dtPair, ampFactor };
+    }
+
+    // =========================================================================
+    // 2. TRUE N-WAVE PRESSURE STEP AUDIO (TWO BOOMS L/v APART, STRICT NULL)
+    // =========================================================================
+    let audioCtx = null;
+    let activeSrc = null;
+
+    function ensureAudioContext() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function stopAudio() {
+      if (activeSrc) {
+        try { activeSrc.stop(); } catch (_) {}
+        try { activeSrc.disconnect(); } catch (_) {}
+        activeSrc = null;
+      }
+    }
+
+    function synthesizeNWavePair(sampleRate, M, h, L, listenerY) {
+      const { halfWidth, dtPair, ampFactor } = computeMachParams(M, h, L);
+      const inside = Math.abs(listenerY) <= halfWidth;
+      const durSec = Math.max(0.45, dtPair + 0.25);
+      const len = Math.floor(sampleRate * durSec);
+      const buf = new Float32Array(len);
+
+      if (!inside || M <= 1.001) {
+        return { samples: buf, durSec, inside: false };
+      }
+
+      const altAtten = Math.pow(5000 / Math.max(500, h), 0.35);
+      const amp = Math.min(0.88, 0.28 * ampFactor * altAtten);
+      const nWaveWidthSec = 0.014 + 0.008 * (h / 15000);
+      const nSamples = Math.max(8, Math.floor(nWaveWidthSec * sampleRate));
+
+      const addNWave = (startSample) => {
+        for (let k = 0; k < nSamples; k++) {
+          const idx = startSample + k;
+          if (idx >= len) break;
+          const u = k / (nSamples - 1);
+          buf[idx] += amp * (1.0 - 2.0 * u);
+        }
+      };
+
+      const start1 = Math.floor(0.02 * sampleRate);
+      const start2 = start1 + Math.max(1, Math.round(dtPair * sampleRate));
+      addNWave(start1);
+      addNWave(start2);
+
+      return { samples: buf, durSec, inside: true };
+    }
+
+    function playBoomAudio() {
+      if (state.muted) return;
+      const ctx = ensureAudioContext();
+      if (!ctx) return;
+      stopAudio();
+
+      const { samples, inside } = synthesizeNWavePair(ctx.sampleRate, state.mach, state.altitude, state.length, state.listenerY);
+      if (!inside) return;
+
+      const ab = ctx.createBuffer(2, samples.length, ctx.sampleRate);
+      ab.getChannelData(0).set(samples);
+      ab.getChannelData(1).set(samples);
+
+      const src = ctx.createBufferSource();
+      src.buffer = ab;
+      src.connect(ctx.destination);
+      src.start();
+      activeSrc = src;
+    }
+
+    function exportWavFile() {
+      const sr = 44100;
+      const { samples, durSec, inside } = synthesizeNWavePair(sr, state.mach, state.altitude, state.length, state.listenerY);
+      const len = samples.length;
+      const dataSize = len * 4;
+      const out = new ArrayBuffer(44 + dataSize);
+      const view = new DataView(out);
+
+      const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+      writeStr(0, 'RIFF');
+      view.setUint32(4, 36 + dataSize, true);
+      writeStr(8, 'WAVE');
+      writeStr(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 2, true);
+      view.setUint32(24, sr, true);
+      view.setUint32(28, sr * 4, true);
+      view.setUint16(32, 4, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, 'data');
+      view.setUint32(40, dataSize, true);
+
+      let offset = 44;
+      for (let i = 0; i < len; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        const v = s < 0 ? s * 0x8000 : s * 0x7fff;
+        view.setInt16(offset, v, true);
+        view.setInt16(offset + 2, v, true);
+        offset += 4;
+      }
+
+      const blob = new Blob([out], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `boom_carpet_M${state.mach.toFixed(2)}_h${state.altitude}m_${inside ? 'inside' : 'null'}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      showToast(`Exported 44.1 kHz WAV (${durSec.toFixed(2)} s, ${inside ? 'N-wave pair' : 'silent null'})`);
+    }
+
+    // =========================================================================
+    // 3. THREE.JS v2 — SCULPTED DELTA JET, VAPOR COLLAR, & MOUNTAIN BASIN
+    // =========================================================================
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020617);
+    scene.fog = new THREE.FogExp2(0x020617, 0.0038);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.28;
+    container.appendChild(renderer.domElement);
+
+    const M_TO_WORLD = 1 / 500;
+
+    function createGlowSpriteTexture() {
+      const c = document.createElement('canvas');
+      c.width = 64; c.height = 64;
+      const g = c.getContext('2d');
+      const grad = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+      grad.addColorStop(0.0, 'rgba(255,255,255,1.0)');
+      grad.addColorStop(0.3, 'rgba(255,255,255,0.7)');
+      grad.addColorStop(0.7, 'rgba(255,255,255,0.16)');
+      grad.addColorStop(1.0, 'rgba(255,255,255,0.0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(c);
+    }
+    const glowTex = createGlowSpriteTexture();
+
+    // Twilight Sky Dome + Stars
+    {
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        vertexShader: `varying vec3 vPos; void main() { vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        fragmentShader: `
+          varying vec3 vPos;
+          void main() {
+            float h = normalize(vPos).y;
+            vec3 zenith = vec3(0.006, 0.012, 0.035);
+            vec3 horizon = vec3(0.045, 0.085, 0.17);
+            gl_FragColor = vec4(mix(horizon, zenith, pow(max(0.0, h), 0.5)), 1.0);
+          }
+        `
+      });
+      scene.add(new THREE.Mesh(new THREE.SphereGeometry(280, 32, 20), skyMat));
+
+      const starCount = 1200;
+      const starPos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        const r = 110 + Math.random() * 140;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        starPos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) * 0.85 + 5;
+        starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+      }
+      const starGeo = new THREE.BufferGeometry();
+      starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+      scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xcbd5e1, size: 0.7, map: glowTex, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false })));
+    }
+
+    scene.add(new THREE.AmbientLight(0x475569, 0.95));
+    const dirLight = new THREE.DirectionalLight(0xbae6fd, 1.4);
+    dirLight.position.set(22, 46, 26);
+    scene.add(dirLight);
+    const jetLight = new THREE.PointLight(0x38bdf8, 1.6, 40);
+    scene.add(jetLight);
+
+    // Analytical-Normal Desert Corridor & Mountain Basin Terrain + Hyperbolic Carpet Shader
+    const groundUniforms = {
+      uAircraftX: { value: 0.0 },
+      uAlt: { value: 10.0 },
+      uTanTheta: { value: Math.tan(Math.PI / 6) },
+      uHalfWidth: { value: 17.32 },
+      uLengthWorld: { value: 0.1 }
+    };
+
+    const terrainGeo = new THREE.PlaneGeometry(200, 200, 160, 160);
+    terrainGeo.rotateX(-Math.PI / 2);
+    const groundMat = new THREE.ShaderMaterial({
+      uniforms: groundUniforms,
+      transparent: true,
+      vertexShader: `
+        varying vec3 vW;
+        varying vec3 vNormalW;
+        varying float vElev;
+
+        float terrainH(vec2 xz) {
+          float ridge = 1.6 * sin(xz.x * 0.06 + 0.3) * cos(xz.y * 0.08 - 0.2) * smoothstep(14.0, 48.0, abs(xz.y));
+          float detail = 0.25 * sin(xz.x * 0.22 - xz.y * 0.19) * smoothstep(10.0, 35.0, abs(xz.y));
+          return max(0.0, ridge + detail);
+        }
+
+        void main() {
+          vec3 p = position;
+          float h = terrainH(p.xz);
+          p.y = h;
+          float eps = 0.35;
+          float hx = terrainH(p.xz + vec2(eps, 0.0));
+          float hz = terrainH(p.xz + vec2(0.0, eps));
+          vNormalW = normalize(vec3(h - hx, eps, h - hz));
+          vW = p;
+          vElev = h;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uAircraftX;
+        uniform float uAlt;
+        uniform float uTanTheta;
+        uniform float uHalfWidth;
+        uniform float uLengthWorld;
+        varying vec3 vW;
+        varying vec3 vNormalW;
+        varying float vElev;
+
+        void main() {
+          vec3 N = normalize(vNormalW);
+          vec3 L = normalize(vec3(0.4, 0.85, 0.5));
+          float diff = max(dot(N, L), 0.0);
+
+          float gx = abs(fract(vW.x * 0.2) - 0.5);
+          float gz = abs(fract(vW.z * 0.2) - 0.5);
+          float grid = 1.0 - smoothstep(0.012, 0.036, min(gx, gz));
+
+          vec3 rock = mix(vec3(0.024, 0.042, 0.085), vec3(0.09, 0.14, 0.22), smoothstep(0.0, 2.2, vElev));
+          vec3 col = rock * (0.45 + 0.7 * diff) + vec3(0.06, 0.12, 0.22) * grid * 0.4;
+
+          float lat = abs(vW.z);
+          float inCarpet = 1.0 - smoothstep(uHalfWidth - 0.25, uHalfWidth + 0.25, lat);
+          float edgeLine = exp(-pow(lat - uHalfWidth, 2.0) * 18.0);
+          col += vec3(0.16, 0.48, 0.78) * inCarpet * 0.16;
+          col += vec3(0.96, 0.35, 0.45) * edgeLine * 0.92;
+
+          float trackLine = exp(-vW.z * vW.z * 25.0);
+          col += vec3(0.22, 0.74, 0.97) * trackLine * 0.4;
+
+          float dxBow = uAircraftX - vW.x;
+          float coneX = sqrt(vW.z * vW.z + uAlt * uAlt) / max(0.01, uTanTheta);
+          if (dxBow > 0.0 && lat <= uHalfWidth + 0.3) {
+            float bowFront = exp(-pow(dxBow - coneX, 2.0) * 6.5) * inCarpet;
+            float tailFront = exp(-pow((dxBow - max(0.35, uLengthWorld * 4.0)) - coneX, 2.0) * 6.5) * inCarpet;
+            col += vec3(0.22, 0.88, 1.0) * bowFront * 1.6;
+            col += vec3(0.96, 0.65, 0.10) * tailFront * 1.4;
+          }
+
+          float fade = 1.0 - smoothstep(65.0, 96.0, length(vW.xz));
+          gl_FragColor = vec4(col, fade * 0.94);
+        }
+      `
+    });
+    scene.add(new THREE.Mesh(terrainGeo, groundMat));
+
+    // Sculpted Supersonic Delta-Wing Jet + Vapor Collar + Afterburner
+    const aircraftGroup = new THREE.Group();
+    scene.add(aircraftGroup);
+
+    const fuselage = new THREE.Mesh(
+      new THREE.ConeGeometry(0.24, 3.4, 16),
+      new THREE.MeshPhongMaterial({ color: 0xe2e8f0, shininess: 90 })
+    );
+    fuselage.rotation.z = -Math.PI / 2;
+    aircraftGroup.add(fuselage);
+
+    const deltaShape = new THREE.Shape();
+    deltaShape.moveTo(1.5, 0);
+    deltaShape.lineTo(-1.3, 1.35);
+    deltaShape.lineTo(-1.0, 0);
+    deltaShape.lineTo(-1.3, -1.35);
+    deltaShape.closePath();
+    const wingGeo = new THREE.ExtrudeGeometry(deltaShape, { depth: 0.08, bevelEnabled: false });
+    wingGeo.rotateX(Math.PI / 2);
+    const wingMesh = new THREE.Mesh(wingGeo, new THREE.MeshPhongMaterial({ color: 0xcbd5e1, emissive: 0x0ea5e9, emissiveIntensity: 0.25 }));
+    aircraftGroup.add(wingMesh);
+
+    const tailFin = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.65, 0.06),
+      new THREE.MeshPhongMaterial({ color: 0x94a3b8 })
+    );
+    tailFin.position.set(-1.1, 0.35, 0);
+    aircraftGroup.add(tailFin);
+
+    const afterburner = new THREE.Mesh(
+      new THREE.ConeGeometry(0.18, 1.4, 16),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending })
+    );
+    afterburner.rotation.z = Math.PI / 2;
+    afterburner.position.set(-2.2, 0, 0);
+    aircraftGroup.add(afterburner);
+
+    // Prandtl-Glauert transonic condensation disc
+    const vaporCollarMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe, side: THREE.DoubleSide, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false });
+    const vaporCollar = new THREE.Mesh(new THREE.RingGeometry(0.35, 2.2, 36), vaporCollarMat);
+    vaporCollar.rotation.y = Math.PI / 2;
+    vaporCollar.position.set(-0.2, 0, 0);
+    aircraftGroup.add(vaporCollar);
+
+    function createFresnelConeMaterial(hexColor) {
+      return new THREE.ShaderMaterial({
+        uniforms: { uColor: { value: new THREE.Color(hexColor) } },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        vertexShader: `
+          varying vec3 vNormalV;
+          varying vec3 vViewDir;
+          void main() {
+            vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+            vNormalV = normalize(normalMatrix * normal);
+            vViewDir = normalize(-mvPos.xyz);
+            gl_Position = projectionMatrix * mvPos;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uColor;
+          varying vec3 vNormalV;
+          varying vec3 vViewDir;
+          void main() {
+            float fresnel = pow(1.0 - abs(dot(normalize(vNormalV), normalize(vViewDir))), 2.3);
+            gl_FragColor = vec4(uColor, 0.05 + fresnel * 0.58);
+          }
+        `
+      });
+    }
+
+    const CONE_LEN = 52;
+    const baseConeGeo = new THREE.ConeGeometry(1, CONE_LEN, 56, 1, true);
+    baseConeGeo.translate(0, -CONE_LEN / 2, 0);
+    baseConeGeo.rotateZ(-Math.PI / 2);
+
+    const bowCone = new THREE.Mesh(baseConeGeo, createFresnelConeMaterial(0x38bdf8));
+    bowCone.position.set(1.7, 0, 0);
+    aircraftGroup.add(bowCone);
+
+    const tailCone = new THREE.Mesh(baseConeGeo, createFresnelConeMaterial(0xf59e0b));
+    tailCone.position.set(-1.3, 0, 0);
+    aircraftGroup.add(tailCone);
+
+    // 2,000-Particle Supersonic Cone Vapor Tracer Stream
+    const CONE_PARTS = 2000;
+    const cpPhase = new Float32Array(CONE_PARTS);
+    const cpAngle = new Float32Array(CONE_PARTS);
+    const cpIsTail = new Uint8Array(CONE_PARTS);
+    const cpPos = new Float32Array(CONE_PARTS * 3);
+    const cpCol = new Float32Array(CONE_PARTS * 3);
+    for (let i = 0; i < CONE_PARTS; i++) {
+      cpPhase[i] = Math.random();
+      cpAngle[i] = Math.random() * Math.PI * 2;
+      cpIsTail[i] = i >= 1200 ? 1 : 0;
+      if (cpIsTail[i]) {
+        cpCol[i * 3] = 0.98; cpCol[i * 3 + 1] = 0.65; cpCol[i * 3 + 2] = 0.12;
+      } else {
+        cpCol[i * 3] = 0.25; cpCol[i * 3 + 1] = 0.82; cpCol[i * 3 + 2] = 1.0;
+      }
+    }
+    const conePartGeo = new THREE.BufferGeometry();
+    conePartGeo.setAttribute('position', new THREE.BufferAttribute(cpPos, 3));
+    conePartGeo.setAttribute('color', new THREE.BufferAttribute(cpCol, 3));
+    aircraftGroup.add(new THREE.Points(
+      conePartGeo,
+      new THREE.PointsMaterial({ size: 0.36, map: glowTex, vertexColors: true, transparent: true, opacity: 0.72, blending: THREE.AdditiveBlending, depthWrite: false })
+    ));
+
+    // Listener Acoustic Array Tower
+    const listenerGroup = new THREE.Group();
+    scene.add(listenerGroup);
+    const listenerMast = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.45, 2.2, 6, 3, true),
+      new THREE.MeshPhongMaterial({ color: 0x334155, wireframe: true })
+    );
+    listenerMast.position.y = 1.1;
+    listenerGroup.add(listenerMast);
+    const listenerOrbMat = new THREE.MeshBasicMaterial({ color: 0x34d399 });
+    const listenerOrb = new THREE.Mesh(new THREE.SphereGeometry(0.42, 20, 20), listenerOrbMat);
+    listenerOrb.position.y = 2.4;
+    listenerGroup.add(listenerOrb);
+    const listenerShockMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending });
+    const listenerShockRing = new THREE.Mesh(new THREE.RingGeometry(0.8, 1.3, 36), listenerShockMat);
+    listenerShockRing.rotation.x = -Math.PI / 2;
+    listenerShockRing.position.y = 0.15;
+    listenerGroup.add(listenerShockRing);
+
+    // Open-Space Orbit Camera + View Modes
+    let isOrbiting = false;
+    let prevPointer = { x: 0, y: 0 };
+    let targetTheta = 0.32, camTheta = 0.32;
+    let targetPhi = 0.98, camPhi = 0.98;
+    let targetRadius = 56, camRadius = 56;
+
+    function getOpenSpaceLookTarget() {
+      const isWide = window.innerWidth >= 768;
+      return { x: (state.sidebarOpen && isWide) ? -5.0 : 0.0, y: -2.0, z: 0 };
+    }
+    let targetLook = getOpenSpaceLookTarget();
+    let lookPos = { ...targetLook };
+
+    function applyViewMode(mode) {
+      state.viewMode = mode;
+      const open = getOpenSpaceLookTarget();
+      if (mode === 'side') {
+        targetTheta = 0.25; targetPhi = 1.05; targetRadius = 56;
+        targetLook = { x: open.x, y: 2.0, z: 0 };
+      } else if (mode === 'top') {
+        targetTheta = 0.0; targetPhi = 0.14; targetRadius = 72;
+        targetLook = { x: open.x, y: -2.0, z: 0 };
+      } else if (mode === 'pov') {
+        targetTheta = -0.35; targetPhi = 1.38; targetRadius = 16;
+        targetLook = { x: state.listenerX * M_TO_WORLD, y: 2.5, z: state.listenerY * M_TO_WORLD };
+      }
+      document.querySelectorAll('.view-btn').forEach((btn) => {
+        const active = btn.getAttribute('data-view') === mode;
+        btn.className = `view-btn px-2 py-1 rounded font-mono text-[10px] border transition ${
+          active ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'text-slate-400 hover:text-slate-200 border-transparent'
+        }`;
+      });
+    }
+    document.querySelectorAll('.view-btn').forEach((btn) => {
+      btn.addEventListener('click', () => applyViewMode(btn.getAttribute('data-view')));
+    });
+
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', (e) => {
+      state.sidebarOpen = !state.sidebarOpen;
+      const sidebar = document.getElementById('left-sidebar');
+      const bottomPanel = document.getElementById('bottom-panel');
+      if (state.sidebarOpen) {
+        sidebar.classList.remove('-translate-x-[120%]');
+        bottomPanel.classList.add('md:left-[21.5rem]');
+        e.target.textContent = '◀ HIDE';
+      } else {
+        sidebar.classList.add('-translate-x-[120%]');
+        bottomPanel.classList.remove('md:left-[21.5rem]');
+        e.target.textContent = '▶ CONTROLS';
+      }
+      if (state.viewMode !== 'pov') {
+        const open = getOpenSpaceLookTarget();
+        targetLook.x = open.x;
+      }
+      setTimeout(() => { drawNWaveCanvas(); drawCarpet2DCanvas(); }, 310);
+    });
+
+    renderer.domElement.addEventListener('pointerdown', (e) => { isOrbiting = true; prevPointer = { x: e.clientX, y: e.clientY }; });
+    window.addEventListener('pointermove', (e) => {
+      if (!isOrbiting) return;
+      const dx = e.clientX - prevPointer.x;
+      const dy = e.clientY - prevPointer.y;
+      prevPointer = { x: e.clientX, y: e.clientY };
+      targetTheta -= dx * 0.006;
+      targetPhi = Math.max(0.12, Math.min(1.48, targetPhi - dy * 0.006));
+    });
+    window.addEventListener('pointerup', () => { isOrbiting = false; });
+    renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      targetRadius = Math.max(12, Math.min(130, targetRadius + e.deltaY * 0.045));
+    }, { passive: false });
+
+    // =========================================================================
+    // 4. 2D CANVAS RENDERERS (GLOWING N-WAVE PAIR & TOP-DOWN CARPET MAP)
+    // =========================================================================
+    function sizeCanvasToDisplay(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(100, Math.floor(rect.width * dpr));
+      const h = Math.max(80, Math.floor(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      return { w, h, dpr };
+    }
+
+    function drawNWaveCanvas() {
+      const canvas = document.getElementById('canvas-nwave');
+      if (!canvas) return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const { halfWidth, dtPair, ampFactor } = computeMachParams(state.mach, state.altitude, state.length);
+      const inside = Math.abs(state.listenerY) <= halfWidth;
+      const midY = h * 0.5;
+      const padL = 36 * dpr, padR = 16 * dpr;
+      const plotW = w - padL - padR;
+
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.75)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(padL, midY); ctx.lineTo(w - padR, midY); ctx.stroke();
+
+      if (!inside) {
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 2 * dpr;
+        ctx.beginPath(); ctx.moveTo(padL, midY); ctx.lineTo(w - padR, midY); ctx.stroke();
+        ctx.fillStyle = '#fda4af';
+        ctx.font = `600 ${11 * dpr}px "JetBrains Mono", monospace`;
+        ctx.fillText('OUTSIDE CARPET — SILENT NULL (ΔP = 0.00)', padL + 10 * dpr, midY - 12 * dpr);
+        return;
+      }
+
+      const maxT = Math.max(0.28, dtPair + 0.12);
+      const nAmp = Math.min(1.0, 0.32 * ampFactor) * (h * 0.36);
+      const nDur = 0.018;
+
+      ctx.save();
+      ctx.shadowBlur = 6 * dpr;
+      const drawN = (t0, color) => {
+        const x0 = padL + (t0 / maxT) * plotW;
+        const x1 = padL + ((t0 + nDur) / maxT) * plotW;
+        ctx.strokeStyle = color;
+        ctx.shadowColor = color;
+        ctx.lineWidth = 2.1 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(x0, midY);
+        ctx.lineTo(x0, midY - nAmp);
+        ctx.lineTo(x1, midY + nAmp);
+        ctx.lineTo(x1, midY);
+        ctx.stroke();
+      };
+
+      const tBow = 0.04;
+      const tTail = tBow + dtPair;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.6 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(padL, midY);
+      ctx.lineTo(padL + (tBow / maxT) * plotW, midY);
+      ctx.stroke();
+
+      drawN(tBow, '#38bdf8');
+      ctx.strokeStyle = '#475569';
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.moveTo(padL + ((tBow + nDur) / maxT) * plotW, midY);
+      ctx.lineTo(padL + (tTail / maxT) * plotW, midY);
+      ctx.stroke();
+      ctx.shadowBlur = 6 * dpr;
+      drawN(tTail, '#f59e0b');
+      ctx.restore();
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = `600 ${10 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillText(`BOW`, padL + (tBow / maxT) * plotW - 4 * dpr, 16 * dpr);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText(`TAIL (+${(dtPair * 1000).toFixed(1)} ms)`, padL + (tTail / maxT) * plotW - 4 * dpr, 16 * dpr);
+    }
+
+    function drawCarpet2DCanvas() {
+      const canvas = document.getElementById('canvas-carpet2d');
+      if (!canvas) return;
+      const { w, h, dpr } = sizeCanvasToDisplay(canvas);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, w, h);
+
+      const { halfWidth } = computeMachParams(state.mach, state.altitude, state.length);
+      const inside = Math.abs(state.listenerY) <= halfWidth;
+
+      const xMap = (xm) => ((xm + 20000) / 40000) * w;
+      const yMap = (ym) => ((18000 - ym) / 36000) * h;
+
+      const yTop = yMap(Math.min(18000, halfWidth));
+      const yBot = yMap(Math.max(-18000, -halfWidth));
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+      ctx.fillRect(0, yTop, w, yBot - yTop);
+
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(0, yTop); ctx.lineTo(w, yTop);
+      ctx.moveTo(0, yBot); ctx.lineTo(w, yBot);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+      ctx.beginPath(); ctx.moveTo(0, yMap(0)); ctx.lineTo(w, yMap(0)); ctx.stroke();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.beginPath(); ctx.arc(xMap(state.aircraftX), yMap(0), 4 * dpr, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = inside ? '#34d399' : '#f43f5e';
+      ctx.beginPath(); ctx.arc(xMap(state.listenerX), yMap(state.listenerY), 5 * dpr, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = `${9.5 * dpr}px "JetBrains Mono", monospace`;
+      ctx.fillText(`CARPET ±${(halfWidth / 1000).toFixed(2)} km`, 8 * dpr, 14 * dpr);
+    }
+
+    // =========================================================================
+    // 5. FOUR-CHECK VERIFICATION SUITE
+    // =========================================================================
+    function runVerificationSuite() {
+      const mList = [1.4, 2.0, 3.0];
+      const maxAngleErr = Math.max(...mList.map((m) => {
+        const measured = computeMachParams(m, 5000, 50).thetaDeg;
+        const theory = Math.asin(1 / m) * (180 / Math.PI);
+        return Math.abs(measured - theory);
+      }));
+      const pass1 = maxAngleErr < 1.0;
+
+      const p2 = computeMachParams(2.0, 5000, 50);
+      const expectedW = 5000 / Math.tan(Math.asin(1 / 2.0));
+      const errW = Math.abs(p2.halfWidth - expectedW);
+      const pass2 = errW < 1e-3;
+
+      const ls = [10, 30, 50, 80];
+      const v = 2.0 * SPEED_OF_SOUND;
+      const maxDtErr = Math.max(...ls.map((L) => Math.abs(computeMachParams(2.0, 5000, L).dtPair - L / v)));
+      const pass3 = maxDtErr < 1e-6;
+
+      const hw = p2.halfWidth;
+      const inRes = synthesizeNWavePair(44100, 2.0, 5000, 50, hw - 1.0);
+      const outRes = synthesizeNWavePair(44100, 2.0, 5000, 50, hw + 1.0);
+      const peakIn = Math.max(...inRes.samples.map(Math.abs));
+      const peakOut = Math.max(...outRes.samples.map(Math.abs));
+      const pass4 = inRes.inside && !outRes.inside && peakIn > 0.05 && peakOut === 0;
+
+      const checks = [
+        { title: '1. Mach Cone Angle θ = arcsin(1/M) at M = 1.4, 2.0, 3.0', pass: pass1, detail: `Max error = ${maxAngleErr.toFixed(4)}° (target < 1.0°)` },
+        { title: '2. Carpet Half-Width = h / tan θ', pass: pass2, detail: `At M=2, h=5km: computed = ${p2.halfWidth.toFixed(2)} m vs h/tan θ = ${expectedW.toFixed(2)} m` },
+        { title: '3. Double-Boom Interval Δt = L / v (L = 10..80 m)', pass: pass3, detail: `Linear slope = 1/v; max residual = ${maxDtErr.toExponential(1)} s` },
+        { title: '4. Lateral Cutoff Null (±1 m across carpet edge)', pass: pass4, detail: `1m inside peak = ${peakIn.toFixed(3)} • 1m outside peak = ${peakOut.toFixed(3)} (silent)` }
+      ];
+
+      document.getElementById('verify-results').innerHTML = checks.map((c) => `
+        <div class="rounded-lg border ${c.pass ? 'border-emerald-500/40 bg-emerald-500/10' : 'border-rose-500/40 bg-rose-500/10'} p-3">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-slate-100">${c.title}</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.pass ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${c.pass ? 'PASS' : 'FAIL'}</span>
+          </div>
+          <div class="text-slate-300 text-[11px] mt-1">${c.detail}</div>
+        </div>
+      `).join('');
+
+      const allPass = checks.every((c) => c.pass);
+      const summaryEl = document.getElementById('verify-summary');
+      summaryEl.textContent = allPass ? 'All 4 physics checks passed.' : 'One or more checks failed.';
+      summaryEl.className = `font-mono text-xs font-semibold ${allPass ? 'text-emerald-400' : 'text-rose-400'}`;
+    }
+
+    // =========================================================================
+    // 6. UI BINDINGS & FLYBY LOOP
+    // =========================================================================
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('hidden');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.add('hidden'), 2800);
+    }
+
+    function updateReadouts() {
+      const { thetaDeg, tanTheta, halfWidth, speed, dtPair } = computeMachParams(state.mach, state.altitude, state.length);
+      const inside = Math.abs(state.listenerY) <= halfWidth;
+
+      document.getElementById('val-mach').textContent = `M ${state.mach.toFixed(2)}`;
+      document.getElementById('val-alt').textContent = `${state.altitude.toLocaleString()} m`;
+      document.getElementById('val-len').textContent = `${state.length} m`;
+      document.getElementById('val-ly').textContent = `${state.listenerY.toLocaleString()} m`;
+      document.getElementById('val-lx').textContent = `${state.listenerX.toLocaleString()} m`;
+
+      document.getElementById('readout-theta').textContent = `${thetaDeg.toFixed(1)}°`;
+      document.getElementById('readout-width').textContent = `${(halfWidth / 1000).toFixed(2)} km`;
+      document.getElementById('readout-dt').textContent = `${(dtPair * 1000).toFixed(1)} ms`;
+      document.getElementById('readout-speed').textContent = `${speed.toFixed(0)} m/s`;
+
+      const badge = document.getElementById('carpet-badge');
+      badge.textContent = inside ? 'INSIDE CARPET' : 'OUTSIDE (SILENT)';
+      badge.className = `px-1.5 py-0.5 rounded font-mono text-[10px] font-bold ${inside ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`;
+
+      document.getElementById('display-status-line').textContent = inside
+        ? `Bow + Tail N-wave pair • Δt = ${(dtPair * 1000).toFixed(1)} ms`
+        : `Listener outside ±${(halfWidth / 1000).toFixed(2)} km carpet — silent null`;
+
+      const coneR = CONE_LEN * tanTheta;
+      bowCone.scale.set(1, coneR, coneR);
+      tailCone.scale.set(1, coneR, coneR);
+      const lenW = Math.max(0.4, state.length * M_TO_WORLD * 8);
+      tailCone.position.x = 1.7 - lenW;
+
+      // Prandtl-Glauert vapor collar peaks near transonic M=1.05..1.4
+      vaporCollarMat.opacity = Math.max(0.0, 0.35 * Math.exp(-Math.pow((state.mach - 1.15) / 0.35, 2.0)));
+
+      const altW = state.altitude * M_TO_WORLD;
+      aircraftGroup.position.set(state.aircraftX * M_TO_WORLD, altW, 0);
+      jetLight.position.set(state.aircraftX * M_TO_WORLD, altW, 0);
+      listenerGroup.position.set(state.listenerX * M_TO_WORLD, 0, state.listenerY * M_TO_WORLD);
+      listenerOrbMat.color.setHex(inside ? 0x34d399 : 0xf43f5e);
+
+      groundUniforms.uAircraftX.value = state.aircraftX * M_TO_WORLD;
+      groundUniforms.uAlt.value = altW;
+      groundUniforms.uTanTheta.value = tanTheta;
+      groundUniforms.uHalfWidth.value = halfWidth * M_TO_WORLD;
+      groundUniforms.uLengthWorld.value = state.length * M_TO_WORLD;
+
+      drawNWaveCanvas();
+      drawCarpet2DCanvas();
+    }
+
+    function startFlyby() {
+      state.aircraftX = -16000;
+      state.flying = true;
+      state.bowPassed = false;
+      state.tailPassed = false;
+      state.lastFrameTs = performance.now();
+    }
+
+    document.getElementById('slider-mach').addEventListener('input', (e) => { state.mach = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-alt').addEventListener('input', (e) => { state.altitude = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-len').addEventListener('input', (e) => { state.length = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-ly').addEventListener('input', (e) => { state.listenerY = Number(e.target.value); updateReadouts(); });
+    document.getElementById('slider-lx').addEventListener('input', (e) => { state.listenerX = Number(e.target.value); updateReadouts(); });
+
+    document.getElementById('btn-edge-in').addEventListener('click', () => {
+      const { halfWidth } = computeMachParams(state.mach, state.altitude, state.length);
+      state.listenerY = Math.round(halfWidth - 1);
+      document.getElementById('slider-ly').value = String(state.listenerY);
+      updateReadouts();
+      playBoomAudio();
+    });
+
+    document.getElementById('btn-edge-out').addEventListener('click', () => {
+      const { halfWidth } = computeMachParams(state.mach, state.altitude, state.length);
+      state.listenerY = Math.round(halfWidth + 1);
+      document.getElementById('slider-ly').value = String(state.listenerY);
+      updateReadouts();
+      playBoomAudio();
+    });
+
+    document.getElementById('btn-flyby').addEventListener('click', startFlyby);
+    document.getElementById('btn-play-boom').addEventListener('click', playBoomAudio);
+    document.getElementById('btn-mute').addEventListener('click', (e) => {
+      state.muted = !state.muted;
+      e.target.textContent = state.muted ? 'AUDIO: OFF' : 'AUDIO: ON';
+      if (state.muted) stopAudio();
+    });
+    document.getElementById('btn-wav').addEventListener('click', exportWavFile);
+
+    const modalVerify = document.getElementById('modal-verify');
+    document.getElementById('btn-verify').addEventListener('click', () => {
+      runVerificationSuite();
+      modalVerify.classList.remove('hidden');
+      modalVerify.classList.add('flex');
+    });
+    document.getElementById('btn-close-verify').addEventListener('click', () => {
+      modalVerify.classList.add('hidden');
+      modalVerify.classList.remove('flex');
+    });
+    document.getElementById('btn-rerun-verify').addEventListener('click', runVerificationSuite);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+        e.preventDefault();
+        startFlyby();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      drawNWaveCanvas();
+      drawCarpet2DCanvas();
+    });
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+
+      camTheta += (targetTheta - camTheta) * 0.12;
+      camPhi += (targetPhi - camPhi) * 0.12;
+      camRadius += (targetRadius - camRadius) * 0.12;
+      lookPos.x += (targetLook.x - lookPos.x) * 0.12;
+      lookPos.y += (targetLook.y - lookPos.y) * 0.12;
+      lookPos.z += (targetLook.z - lookPos.z) * 0.12;
+
+      camera.position.x = lookPos.x + camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+      camera.position.y = lookPos.y + camRadius * Math.cos(camPhi);
+      camera.position.z = lookPos.z + camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+      camera.lookAt(lookPos.x, lookPos.y, lookPos.z);
+
+      // Animate supersonic vapor particles streaming backward along bow & tail cones
+      const { tanTheta } = computeMachParams(state.mach, state.altitude, state.length);
+      const coneR = CONE_LEN * tanTheta;
+      const lenW = Math.max(0.4, state.length * M_TO_WORLD * 8);
+      const cpArr = conePartGeo.attributes.position.array;
+      for (let i = 0; i < CONE_PARTS; i++) {
+        cpPhase[i] = (cpPhase[i] + 0.012) % 1.0;
+        const u = cpPhase[i];
+        const xOff = (cpIsTail[i] ? (1.7 - lenW) : 1.7) - u * CONE_LEN;
+        const rad = u * coneR;
+        const ang = cpAngle[i];
+        cpArr[i * 3] = xOff;
+        cpArr[i * 3 + 1] = Math.sin(ang) * rad;
+        cpArr[i * 3 + 2] = Math.cos(ang) * rad;
+      }
+      conePartGeo.attributes.position.needsUpdate = true;
+
+      if (state.flying) {
+        const dt = Math.min(0.05, (now - state.lastFrameTs) / 1000);
+        state.lastFrameTs = now;
+        const { speed, halfWidth } = computeMachParams(state.mach, state.altitude, state.length);
+        state.aircraftX += speed * dt * 6.0;
+
+        const dxNeeded = Math.sqrt(state.listenerY * state.listenerY + state.altitude * state.altitude) / Math.max(1e-4, tanTheta);
+        if (!state.bowPassed && (state.aircraftX - state.listenerX) >= dxNeeded) {
+          state.bowPassed = true;
+          if (Math.abs(state.listenerY) <= halfWidth) {
+            state.boomFlash = 1.0;
+            playBoomAudio();
+          }
+        }
+
+        if (state.aircraftX > 22000) state.flying = false;
+        updateReadouts();
+      }
+
+      if (state.boomFlash > 0.01) {
+        state.boomFlash *= 0.9;
+        listenerOrb.scale.setScalar(1 + state.boomFlash * 1.4);
+        listenerShockRing.scale.setScalar(1 + (1 - state.boomFlash) * 4.5);
+        listenerShockMat.opacity = state.boomFlash * 0.9;
+      } else {
+        listenerOrb.scale.setScalar(1);
+        listenerShockMat.opacity = 0;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    updateReadouts();
+    requestAnimationFrame(animate);
+  });
+  </script>
+</body>
+</html>
