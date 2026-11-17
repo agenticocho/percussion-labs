@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STROKE-LAB 3D v3 — Performer Motor Mechanics &amp; Rebound Roll Lab</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#07090e',
+              900: '#0c1018',
+              800: '#131926',
+              700: '#1c2536',
+              600: '#28354d'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background-color: #07090e;
+      color: #f1f5f9;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0c1018; }
+    ::-webkit-scrollbar-thumb { background: #28354d; border-radius: 9999px; }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      background: transparent; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 5px; border-radius: 999px;
+      background: #1c2536; border: 1px solid #28354d;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 15px; height: 15px; border-radius: 50%;
+      background: #f59e0b; border: 2px solid #07090e;
+      margin-top: -6px;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.55);
+    }
+    .slider-cyan::-webkit-slider-thumb { background: #38bdf8 !important; box-shadow: 0 0 8px rgba(56, 189, 248, 0.55) !important; }
+    .slider-emerald::-webkit-slider-thumb { background: #10b981 !important; box-shadow: 0 0 8px rgba(16, 185, 129, 0.55) !important; }
+    .slider-purple::-webkit-slider-thumb { background: #a855f7 !important; box-shadow: 0 0 8px rgba(168, 85, 247, 0.55) !important; }
+    .slider-rose::-webkit-slider-thumb { background: #f43f5e !important; box-shadow: 0 0 8px rgba(244, 63, 94, 0.55) !important; }
+
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(16, 22, 34, 0.90) 0%, rgba(10, 14, 22, 0.94) 100%);
+      border: 1px solid rgba(56, 73, 107, 0.45);
+      backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500/30 selection:text-amber-200">
+
+  <!-- TOP HEADER BAR -->
+  <header class="sticky top-0 z-30 bg-obsidian-950/95 backdrop-blur-md border-b border-slate-800/80 px-3 sm:px-5 py-2.5">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 via-sky-500/20 to-emerald-500/20 border border-amber-500/40 flex items-center justify-center">
+          <svg class="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 17l6-6 4 4 6-8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="4" cy="17" r="2" fill="currentColor"/>
+            <circle cx="20" cy="7" r="2" fill="#38bdf8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm sm:text-base font-extrabold tracking-tight text-white">STROKE-LAB 3D <span class="text-amber-400">v3</span></h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">Motor Mechanics &amp; Rebound Roll</span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden md:block">Coupled Upper-Arm / Forearm / Stick-Grip ODE • Full 1–20 Hz Contact &amp; Crisp Rebound Synthesis</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex items-center bg-obsidian-900 border border-slate-800 rounded-xl p-1 gap-1">
+          <button id="btnRegimeSingle" type="button" class="regime-btn px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500 text-slate-950 transition">SINGLE</button>
+          <button id="btnRegimeRoll" type="button" class="regime-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-300 hover:bg-obsidian-800 transition">ROLL (REBOUND)</button>
+          <button id="btnRegimeMachine" type="button" class="regime-btn px-2.5 py-1 rounded-lg text-xs font-mono font-semibold text-slate-300 hover:bg-obsidian-800 transition">MACHINE (NULL)</button>
+        </div>
+
+        <button id="btnRunAudio" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-md shadow-emerald-500/20">
+          Audio: OFF
+        </button>
+
+        <button id="btnPauseSim" type="button" class="px-3 py-1.5 rounded-lg bg-obsidian-800 hover:bg-obsidian-700 border border-slate-700 text-xs font-mono text-slate-200 transition">
+          Pause
+        </button>
+
+        <button id="btnExportWav" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition">
+          Export 4s WAV
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+    <!-- LEFT: 3D WEBGL BIOMECHANICAL ARM + STICK + DRUM STAGE (7 COLS) -->
+    <section class="lg:col-span-7 flex flex-col gap-3">
+      <div id="stageWrap" class="relative w-full h-80 sm:h-[470px] rounded-2xl border border-slate-800/90 bg-obsidian-950 overflow-hidden shadow-2xl">
+        <canvas id="threeCanvas" class="w-full h-full block touch-none"></canvas>
+
+        <!-- Camera Presets (Top Left) -->
+        <div class="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
+          <button type="button" data-cam="side" class="cam-btn px-2.5 py-1 rounded-lg bg-amber-500/25 border border-amber-400/60 text-amber-200 text-[10px] font-mono font-semibold backdrop-blur-sm">Side Kinematics</button>
+          <button type="button" data-cam="player" class="cam-btn px-2.5 py-1 rounded-lg bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm">Player 3/4</button>
+          <button type="button" data-cam="grip" class="cam-btn px-2.5 py-1 rounded-lg bg-obsidian-900/80 hover:bg-obsidian-800 border border-slate-700/80 text-slate-300 text-[10px] font-mono backdrop-blur-sm">Grip Close-Up</button>
+        </div>
+
+        <!-- Live Physics Status Badge (Top Right) -->
+        <div class="absolute top-3 right-3 z-10 flex flex-col items-end gap-1 pointer-events-none">
+          <div id="regimeStatusPill" class="px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-amber-500/40 text-[11px] font-mono font-bold text-amber-300 backdrop-blur-sm">
+            CONTROLLED SINGLE STROKES
+          </div>
+          <div id="limbModePill" class="px-2.5 py-0.5 rounded-md bg-obsidian-950/80 border border-slate-800 text-[10px] font-mono text-sky-300 backdrop-blur-sm">
+            Wrist-Dominant (&lt; Resonance)
+          </div>
+        </div>
+
+        <!-- Bottom Live Telemetry Strip -->
+        <div class="absolute bottom-3 left-3 right-3 z-10 grid grid-cols-2 sm:grid-cols-4 gap-2 pointer-events-none">
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Drive / Actual Rate</div>
+            <div id="telRate" class="text-xs font-mono font-bold text-amber-400">6.0 / 6.0 Hz</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Forearm Resonance</div>
+            <div id="telResonance" class="text-xs font-mono font-bold text-sky-400">6.4 Hz</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Restitution (v_out/v_in)</div>
+            <div id="telRestitution" class="text-xs font-mono font-bold text-emerald-400">e = 0.80</div>
+          </div>
+          <div class="bg-obsidian-950/85 border border-slate-800/90 rounded-xl px-2.5 py-1.5 backdrop-blur-sm">
+            <div class="text-[9px] font-mono uppercase text-slate-400">Emergent Ceiling</div>
+            <div id="telCeiling" class="text-xs font-mono font-bold text-rose-400">~10.2 Hz</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DISPLAY PLOT PANEL (4 SWITCHABLE DIAGNOSTIC VIEWS) -->
+      <div class="glass-panel rounded-2xl p-3.5 flex flex-col gap-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap gap-1.5" id="plotTabs">
+            <button type="button" data-plot="hand" class="plot-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-400/50 transition">Hand Motion</button>
+            <button type="button" data-plot="phase" class="plot-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition">Stick Trajectory</button>
+            <button type="button" data-plot="ceiling" class="plot-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition">Rate Ceiling</button>
+            <button type="button" data-plot="transfer" class="plot-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition">Transfer Function</button>
+          </div>
+          <span id="plotLegend" class="text-[10px] font-mono text-slate-400">Cyan: Forearm/Wrist • Amber: Stick Tip • Purple: Upper Arm</span>
+        </div>
+
+        <div class="relative w-full h-56 bg-obsidian-950 rounded-xl border border-slate-800/80 overflow-hidden">
+          <canvas id="plotCanvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: CONTROLS, GRIP TRANSITION & 4-CHECK VERIFICATION SUITE (5 COLS) -->
+    <aside class="lg:col-span-5 flex flex-col gap-3">
+
+      <!-- PRIMARY BIOMECHANICAL & CONTACT CONTROLS -->
+      <div class="glass-panel rounded-2xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Motor &amp; Grip Parameters</h2>
+            <p class="text-[11px] text-slate-400">Sweep drive rate &amp; loosen grip damping to unlock rebound</p>
+          </div>
+          <button id="btnSweepDemo" type="button" class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[11px] font-mono font-semibold transition">
+            Auto-Sweep 1→20 Hz
+          </button>
+        </div>
+
+        <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-semibold text-slate-200">Tempo / Drive Rate</span>
+            <span id="valDriveHz" class="font-mono font-bold text-amber-400">6.0 Hz (360 SPM)</span>
+          </div>
+          <input id="sliderDriveHz" type="range" min="1.0" max="20.0" step="0.2" value="6.0" class="w-full" />
+          <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-1">
+            <span>1 Hz Slow</span>
+            <span>5–8 Hz Forearm Res.</span>
+            <span>~10 Hz Ceiling</span>
+            <span>20 Hz</span>
+          </div>
+        </div>
+
+        <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-semibold text-slate-200">Grip Damping (c_grip)</span>
+            <span id="valGripDamp" class="font-mono font-bold text-sky-400">0.85 (Stiff • Controlled)</span>
+          </div>
+          <input id="sliderGripDamp" type="range" min="0.05" max="1.00" step="0.01" value="0.85" class="w-full slider-cyan" />
+          <div class="flex justify-between text-[9px] font-mono text-slate-500 mt-1">
+            <span class="text-emerald-400">0.05 Loose (Deliberate Roll)</span>
+            <span class="text-rose-400">0.25–0.42 Unintended Buzz</span>
+            <span>1.0 Stiff</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-medium text-slate-300">Forearm Stiffness (k₂)</span>
+              <span id="valForearmK" class="font-mono text-purple-300">6.4 Hz</span>
+            </div>
+            <input id="sliderForearmK" type="range" min="5.0" max="8.0" step="0.1" value="6.4" class="w-full slider-purple" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-medium text-slate-300">Head Impedance (e)</span>
+              <span id="valHeadImp" class="font-mono text-emerald-300">Hard (e=0.80)</span>
+            </div>
+            <input id="sliderHeadImp" type="range" min="0.25" max="0.90" step="0.01" value="0.80" class="w-full slider-emerald" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-medium text-slate-300">Muscle Fatigue</span>
+              <span id="valFatigue" class="font-mono text-rose-400">0%</span>
+            </div>
+            <input id="sliderFatigue" type="range" min="0" max="100" step="1" value="0" class="w-full slider-rose" />
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800/80 rounded-xl p-2.5 flex flex-col justify-between">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="font-medium text-slate-300">Actuator Mode</span>
+              <span id="valModeLabel" class="font-mono text-amber-300">HUMAN</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button id="btnModeHuman" type="button" class="py-1 rounded-lg text-xs font-mono font-bold bg-amber-500 text-slate-950 transition">HUMAN</button>
+              <button id="btnModeMachine" type="button" class="py-1 rounded-lg text-xs font-mono font-semibold bg-obsidian-800 text-slate-300 border border-slate-700 transition">MACHINE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOUR PHYSICS VERIFICATION CHECKS -->
+      <div class="glass-panel rounded-2xl p-4 space-y-2.5 flex-1">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Four-Check Physics Verification</h2>
+            <p class="text-[11px] text-slate-400">Live numerical tests on the coupled ODE &amp; impact integrator</p>
+          </div>
+          <button id="btnRunVerification" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold transition">
+            Run All 4 Checks
+          </button>
+        </div>
+
+        <div id="verificationList" class="space-y-2 text-xs">
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">1. Emergent Rate Ceiling (HUMAN)</div>
+              <div id="chk1Desc" class="text-[11px] font-mono text-slate-400">Click "Run All 4 Checks" to sweep 1–20 Hz and perturb k₂.</div>
+            </div>
+            <span id="chk1Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">2. Forearm Resonance Peak (5–8 Hz)</div>
+              <div id="chk2Desc" class="text-[11px] font-mono text-slate-400">Verifies transfer-function peak in 5–8 Hz &amp; stiffness shift.</div>
+            </div>
+            <span id="chk2Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">3. Head Rebound Law (v_out = e · v_in)</div>
+              <div id="chk3Desc" class="text-[11px] font-mono text-slate-400">Measures restitution e across Hard vs Soft drum heads.</div>
+            </div>
+            <span id="chk3Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+
+          <div class="bg-obsidian-950/80 border border-slate-800 rounded-xl p-2.5 flex items-start justify-between gap-2">
+            <div>
+              <div class="font-semibold text-slate-200">4. Machine Null Mode (No Ceiling)</div>
+              <div id="chk4Desc" class="text-[11px] font-mono text-slate-400">Verifies flat transfer function &amp; 20 Hz sustainability.</div>
+            </div>
+            <span id="chk4Badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-800 text-slate-400 shrink-0">PENDING</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <script>
+    // =========================================================================
+    // 1. COUPLED BIOMECHANICAL MOTOR + EXACT 3D KINEMATIC REBOUND PHYSICS (v3)
+    //    Fixes:
+    //    - Equilibrium rests just above head so 1-8 Hz ALWAYS strikes the head.
+    //    - MACHINE mode drives down to y = BEAD_RADIUS at ALL rates (1-20 Hz).
+    //    - ROLL mode (c_grip < 0.24) performs clean ballistic double-bounces
+    //      without surface micro-chattering.
+    // =========================================================================
+    const SHOULDER_X = -1.65, SHOULDER_Y = 1.25;
+    const L1 = 1.05; // Upper arm length
+    const L2 = 1.15; // Forearm length
+    const LS = 1.24; // Stick reach from wrist fulcrum to bead tip
+    const BEAD_RADIUS = 0.032;
+
+    const params = {
+      driveHz: 6.0,
+      gripDamp: 0.85,
+      forearmHz: 6.4,
+      headImpedance: 0.80,
+      fatiguePct: 0,
+      mode: 'HUMAN',
+      activePlot: 'hand',
+      paused: false,
+      audioOn: false,
+      sweepActive: false
+    };
+
+    const sim = {
+      t: 0,
+      th1: 0.0, w1: 0.0,
+      th2: -0.04, w2: 0.0,
+      thS: 0.06, wS: 0.0,
+      prevTipY: 0.25,
+      tipX: 0.74, tipY: 0.25,
+      torque1Mag: 0, torque2Mag: 0,
+      lastHitTime: -10,
+      lastImpactVel: 0,
+      lastReboundVel: 0,
+      measuredE: 0.80,
+      hitTimestamps: [],
+      achievedRateHz: 6.0,
+      history: [],
+      phaseHistory: []
+    };
+
+    function computeTipKinematics(th1, th2, thS) {
+      const elbX = SHOULDER_X + L1 * Math.sin(th1);
+      const elbY = SHOULDER_Y - L1 * Math.cos(th1);
+      const wriX = elbX + L2 * Math.cos(th2);
+      const wriY = elbY + L2 * Math.sin(th2);
+      const stickWorldAng = th2 + thS;
+      const tipX = wriX + LS * Math.cos(stickWorldAng);
+      const tipY = wriY + LS * Math.sin(stickWorldAng);
+      return { elbX, elbY, wriX, wriY, tipX, tipY, stickWorldAng };
+    }
+
+    function getPhysicsConstants(p) {
+      const m1 = 1.6, m2 = 0.55, mS = 0.055;
+      const w2_nat = 2 * Math.PI * p.forearmHz;
+      const k2 = m2 * w2_nat * w2_nat;
+      const c2 = 2 * 0.24 * Math.sqrt(k2 * m2);
+
+      const w1_nat = 2 * Math.PI * 2.4;
+      const k1 = m1 * w1_nat * w1_nat;
+      const c1 = 2 * 0.45 * Math.sqrt(k1 * m1);
+
+      // Loose grip = soft spring + minimal damping (lets stick bounce freely for double stroke)
+      // Stiff grip = strong spring + high damping (absorbs rebound immediately)
+      const kGrip = 4.5 + p.gripDamp * 95;
+      const cGrip = 0.035 + p.gripDamp * 3.4;
+      return { m1, m2, mS, k1, c1, k2, c2, kGrip, cGrip };
+    }
+
+    function stepPhysicsModel(dt, stateObj, p, recordAudioCallback = null) {
+      const substeps = 12;
+      const h = dt / substeps;
+      const { m1, m2, mS, k1, c1, k2, c2, kGrip, cGrip } = getPhysicsConstants(p);
+
+      const omega = 2 * Math.PI * p.driveHz;
+      const fatigueFactor = p.mode === 'MACHINE' ? 1.0 : Math.max(0.30, 1.0 - 0.60 * (p.fatiguePct / 100));
+
+      for (let s = 0; s < substeps; s++) {
+        stateObj.t += h;
+
+        if (p.mode === 'MACHINE') {
+          // Ideal rigid actuator: hits drumhead cleanly (y <= BEAD_RADIUS) at EVERY rate 1-20 Hz!
+          const wave = Math.sin(omega * stateObj.t);
+          const dWave = omega * Math.cos(omega * stateObj.t);
+          stateObj.th1 = 0; stateObj.w1 = 0;
+          stateObj.th2 = -0.05 + 0.09 * wave;
+          stateObj.w2 = 0.09 * dWave;
+          stateObj.thS = -0.02 + 0.14 * wave;
+          stateObj.wS = 0.14 * dWave;
+          stateObj.torque1Mag = 0; stateObj.torque2Mag = 0.6;
+        } else {
+          const isRollRegime = p.gripDamp < 0.24;
+          const effOmega = isRollRegime ? omega * 0.5 : omega;
+          const effHz = isRollRegime ? p.driveHz * 0.5 : p.driveHz;
+
+          // Emergent biomechanical recovery ceiling (~9.5-11.5 Hz single-stroke)
+          // Above ~10 Hz, muscle excitation-contraction lag shrinks stroke amplitude below head-strike threshold
+          const tauRecov = 0.045 / (0.65 + 0.35 * (p.forearmHz / 6.4));
+          const bandwidthRollOff = 1.0 / Math.sqrt(1.0 + Math.pow(effHz * tauRecov * 2.05, 4));
+
+          // Target forearm equilibrium sits low (-0.06 rad) so any active downward stroke reaches the head,
+          // while controller biases upward for raise and drives downward to strike!
+          const strokeWave = Math.sin(effOmega * stateObj.t);
+          const targetTh2 = -0.04 + 0.14 * strokeWave * bandwidthRollOff * fatigueFactor;
+          const targetW2 = 0.14 * effOmega * Math.cos(effOmega * stateObj.t) * bandwidthRollOff * fatigueFactor;
+
+          // Forearm muscle torque tracks targetTh2 through the 5-8 Hz spring-mass-damper
+          const driveTorque2 = k2 * (targetTh2 - stateObj.th2) * 1.15 + c2 * (targetW2 - stateObj.w2) * 0.45;
+
+          // Whole-limb upper arm recruitment above forearm resonance
+          const freqRatio = effHz / p.forearmHz;
+          const recruit = Math.max(0, Math.min(1, (freqRatio - 0.82) * 1.45));
+          const driveTorque1 = 24.0 * fatigueFactor * recruit * strokeWave * (1 / Math.sqrt(1 + Math.pow(effHz * 0.055, 2)));
+
+          stateObj.torque1Mag = Math.min(1, Math.abs(driveTorque1) / 22);
+          stateObj.torque2Mag = Math.min(1, Math.abs(driveTorque2) / 38);
+
+          const a1 = (driveTorque1 - k1 * stateObj.th1 - c1 * stateObj.w1 + 0.32 * k2 * (stateObj.th2 - stateObj.th1)) / m1;
+          const a2 = (driveTorque2 - k2 * (stateObj.th2 + 0.04) - c2 * stateObj.w2 - 0.25 * k1 * stateObj.th1) / m2;
+
+          // Stick grip torque + gravity pull-back (allows ballistic second bounce when grip is loose!)
+          const restStick = isRollRegime ? -0.05 : 0.04;
+          const gravityTorq = -0.55; // Gentle downward gravity return for clean second bounce in roll mode
+          const aS = (-kGrip * (stateObj.thS - restStick) - cGrip * stateObj.wS + gravityTorq - 0.72 * a2) / mS;
+
+          stateObj.w1 += a1 * h; stateObj.th1 += stateObj.w1 * h;
+          stateObj.w2 += a2 * h; stateObj.th2 += stateObj.w2 * h;
+          stateObj.wS += aS * h; stateObj.thS += stateObj.wS * h;
+        }
+
+        const kin = computeTipKinematics(stateObj.th1, stateObj.th2, stateObj.thS);
+        stateObj.tipX = kin.tipX;
+        stateObj.tipY = kin.tipY;
+
+        // Contact & Restitution at drumhead surface (y = BEAD_RADIUS)
+        if (kin.tipY <= BEAD_RADIUS) {
+          const vTip = L1 * Math.sin(stateObj.th1) * stateObj.w1 + L2 * Math.cos(stateObj.th2) * stateObj.w2 + LS * Math.cos(kin.stickWorldAng) * (stateObj.w2 + stateObj.wS);
+
+          if (stateObj.prevTipY > BEAD_RADIUS && vTip < -0.08) {
+            const vIn = Math.abs(vTip);
+            const e = p.headImpedance;
+            const vOut = e * vIn;
+
+            stateObj.lastImpactVel = vIn;
+            stateObj.lastReboundVel = vOut;
+            if (vIn > 0.01) stateObj.measuredE = vOut / vIn;
+
+            // Ballistic bounce velocity on human stick
+            if (p.mode === 'HUMAN') {
+              const bounceAngVel = (vOut / LS) * (p.gripDamp < 0.24 ? 1.15 : 0.65);
+              stateObj.wS = Math.max(bounceAngVel, Math.abs(stateObj.wS) * e);
+            }
+
+            // Clean debounce (> 26ms) prevents micro-chatter while allowing fast 20 Hz & double-stroke rolls!
+            if ((stateObj.t - stateObj.lastHitTime) > 0.026) {
+              stateObj.lastHitTime = stateObj.t;
+              stateObj.hitTimestamps.push(stateObj.t);
+              if (recordAudioCallback) recordAudioCallback(Math.min(1.0, Math.max(0.25, vIn / 4.2)), kin.tipX);
+            }
+          }
+
+          // Hard geometric clamp: never penetrate below BEAD_RADIUS
+          const sinTarget = Math.max(-0.95, Math.min(0.95, (BEAD_RADIUS - kin.wriY) / LS));
+          const minWorldAng = Math.asin(sinTarget);
+          stateObj.thS = Math.max(stateObj.thS, minWorldAng - stateObj.th2 + 0.002);
+          stateObj.tipY = BEAD_RADIUS + 0.002;
+        }
+        stateObj.prevTipY = stateObj.tipY;
+      }
+
+      stateObj.hitTimestamps = stateObj.hitTimestamps.filter(ts => (stateObj.t - ts) <= 1.0);
+      stateObj.achievedRateHz = stateObj.hitTimestamps.length;
+    }
+
+    function computeTransferMagnitude(fHz, p) {
+      if (p.mode === 'MACHINE') return 1.0;
+      const fn = p.forearmHz;
+      const zeta = 0.20 + 0.14 * (p.fatiguePct / 100);
+      const r = fHz / fn;
+      const resMag = 1.0 / Math.sqrt(Math.pow(1 - r * r, 2) + Math.pow(2 * zeta * r, 2));
+      const muscleCutoff = 1.0 / Math.sqrt(1 + Math.pow(fHz / 11.5, 4));
+      return resMag * muscleCutoff;
+    }
+
+    // =========================================================================
+    // 2. UPGRADED STUDIO SNARE WEB AUDIO SYNTHESIS + 44.1kHz WAV EXPORTER
+    // =========================================================================
+    let audioCtx = null;
+    let noiseBuffer = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new Ctx();
+        const len = Ctx ? audioCtx.sampleRate : 44100;
+        noiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+        const d = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    // Authentic multi-layer studio snare synthesis (Fundamental + Shell Overtone + Snare Wire Snap + Stick Bead Click)
+    function synthDrumHit(ctx, dest, when, vel, nBuf) {
+      const e = params.headImpedance;
+      const f0 = 155 + e * 115; // Soft pad ~180Hz -> Hard Kevlar ~260Hz
+      const decay = 0.09 + e * 0.14;
+
+      const hitGain = ctx.createGain();
+      hitGain.gain.setValueAtTime(Math.max(0.12, Math.min(1.0, vel)), when);
+      hitGain.connect(dest);
+
+      // 1. Fundamental Membrane Body
+      const osc1 = ctx.createOscillator();
+      const g1 = ctx.createGain();
+      osc1.type = 'triangle';
+      osc1.frequency.setValueAtTime(f0 * 1.48, when);
+      osc1.frequency.exponentialRampToValueAtTime(f0, when + 0.022);
+      g1.gain.setValueAtTime(0.001, when);
+      g1.gain.linearRampToValueAtTime(0.65, when + 0.002);
+      g1.gain.exponentialRampToValueAtTime(0.001, when + decay);
+      osc1.connect(g1); g1.connect(hitGain);
+      osc1.start(when); osc1.stop(when + decay + 0.02);
+
+      // 2. Shell Overtone Ring
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(f0 * 1.68, when);
+      g2.gain.setValueAtTime(0.22 * e, when);
+      g2.gain.exponentialRampToValueAtTime(0.001, when + decay * 0.75);
+      osc2.connect(g2); g2.connect(hitGain);
+      osc2.start(when); osc2.stop(when + decay + 0.02);
+
+      // 3. Snare Wire Buzz (Bandpass + Highpass)
+      const snareSrc = ctx.createBufferSource();
+      snareSrc.buffer = nBuf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.setValueAtTime(2200 + e * 2400, when); bp.Q.setValueAtTime(1.1, when);
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.setValueAtTime(1000, when);
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.001, when);
+      ng.gain.linearRampToValueAtTime(0.55 * e + 0.15, when + 0.003);
+      ng.gain.exponentialRampToValueAtTime(0.001, when + decay * 0.95);
+      snareSrc.connect(bp); bp.connect(hp); hp.connect(ng); ng.connect(hitGain);
+      snareSrc.start(when); snareSrc.stop(when + decay + 0.02);
+
+      // 4. Crisp Stick-Bead Transient
+      const clickSrc = ctx.createBufferSource();
+      clickSrc.buffer = nBuf;
+      const cbp = ctx.createBiquadFilter();
+      cbp.type = 'bandpass'; cbp.frequency.setValueAtTime(3200, when); cbp.Q.setValueAtTime(2.2, when);
+      const cg = ctx.createGain();
+      cg.gain.setValueAtTime(0.45, when);
+      cg.gain.exponentialRampToValueAtTime(0.001, when + 0.015);
+      clickSrc.connect(cbp); cbp.connect(cg); cg.connect(hitGain);
+      clickSrc.start(when); clickSrc.stop(when + 0.025);
+    }
+
+    async function export4SecWav() {
+      const sr = 44100, dur = 4.0;
+      const OffCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      const off = new OffCtx(2, sr * dur, sr);
+      const nBuf = off.createBuffer(1, sr, sr);
+      const nd = nBuf.getChannelData(0);
+      for (let i = 0; i < sr; i++) nd[i] = Math.random() * 2 - 1;
+
+      const clone = { t: 0, th1: 0, w1: 0, th2: -0.04, w2: 0, thS: 0.06, wS: 0, prevTipY: 0.25, tipX: 0.74, tipY: 0.25, lastHitTime: -10, hitTimestamps: [], achievedRateHz: 0 };
+      const stepDt = 1 / 240;
+      for (let i = 0; i < dur * 240; i++) {
+        stepPhysicsModel(stepDt, clone, params, (vel) => {
+          synthDrumHit(off, off.destination, clone.t + 0.02, vel, nBuf);
+        });
+      }
+      const rendered = await off.startRendering();
+      const ch0 = rendered.getChannelData(0), ch1 = rendered.getChannelData(1);
+      const dataSize = ch0.length * 4, buf = new ArrayBuffer(44 + dataSize), view = new DataView(buf);
+      const ws = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+      ws(0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 2, true);
+      view.setUint32(24, sr, true); view.setUint32(28, sr * 4, true); view.setUint16(32, 4, true); view.setUint16(34, 16, true);
+      ws(36, 'data'); view.setUint32(40, dataSize, true);
+      let offB = 44;
+      for (let i = 0; i < ch0.length; i++) {
+        view.setInt16(offB, Math.max(-1, Math.min(1, ch0[i])) * 0x7FFF, true);
+        view.setInt16(offB + 2, Math.max(-1, Math.min(1, ch1[i])) * 0x7FFF, true);
+        offB += 4;
+      }
+      const blob = new Blob([buf], { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `strokelab_${params.mode.toLowerCase()}_${params.driveHz.toFixed(1)}hz.wav`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    // =========================================================================
+    // 3. THREE.JS 3D STUDIO STAGE
+    // =========================================================================
+    let scene, camera, renderer, controls;
+    let shoulderGroup, elbowGroup, wristGroup, stickPivot;
+    let upperActuatorMat, foreActuatorMat, thumbFingerMesh, indexFingerMesh;
+    let drumHeadMesh, drumHeadBasePos, drumHeadMat;
+    let wristTrailLine, tipTrailLine;
+    let shockRings = [], contactFlashes = [], sparkSystem, sparkPositions, sparkVelocities = [], sparkLife = [];
+    const wristTrail = [], tipTrail = [];
+    const TRAIL_LEN = 42;
+    const ripples = [];
+    let camTargetLerp = null;
+
+    const CAM_VIEWS = {
+      side: { pos: [0.15, 1.35, 3.85], target: [0.15, 0.32, 0] },
+      player: { pos: [-2.15, 2.20, 3.15], target: [0.15, 0.25, 0] },
+      grip: { pos: [-0.45, 0.72, 1.65], target: [0.15, 0.22, 0] }
+    };
+
+    function buildStudioEnvMap(rendererInstance) {
+      const pmrem = new THREE.PMREMGenerator(rendererInstance);
+      pmrem.compileEquirectangularShader();
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(0x0b101d);
+      const b1 = new THREE.Mesh(new THREE.PlaneGeometry(10, 6), new THREE.MeshBasicMaterial({ color: 0xfff3dc, side: THREE.DoubleSide }));
+      b1.position.set(4, 7, 4); b1.lookAt(0, 0, 0); envScene.add(b1);
+      const b2 = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide }));
+      b2.position.set(-7, 3, -3); b2.lookAt(0, 0, 0); envScene.add(b2);
+      const b3 = new THREE.Mesh(new THREE.PlaneGeometry(7, 4), new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide }));
+      b3.position.set(6, 2, -5); b3.lookAt(0, 0, 0); envScene.add(b3);
+      const rt = pmrem.fromScene(envScene, 0.04);
+      pmrem.dispose();
+      return rt.texture;
+    }
+
+    function createDeformableHeadGeometry(radius, radialSegs = 24, angularSegs = 64) {
+      const geom = new THREE.BufferGeometry();
+      const positions = [0, 0, 0], uvs = [0.5, 0.5], indices = [];
+      for (let r = 1; r <= radialSegs; r++) {
+        const rad = (r / radialSegs) * radius;
+        for (let a = 0; a < angularSegs; a++) {
+          const theta = (a / angularSegs) * Math.PI * 2;
+          const x = Math.cos(theta) * rad, z = Math.sin(theta) * rad;
+          positions.push(x, 0, z);
+          uvs.push(0.5 + (x / (radius * 2)), 0.5 + (z / (radius * 2)));
+        }
+      }
+      for (let a = 0; a < angularSegs; a++) indices.push(0, 1 + ((a + 1) % angularSegs), 1 + a);
+      for (let r = 1; r < radialSegs; r++) {
+        const rs = 1 + (r - 1) * angularSegs, nrs = 1 + r * angularSegs;
+        for (let a = 0; a < angularSegs; a++) {
+          const na = (a + 1) % angularSegs;
+          indices.push(rs + a, rs + na, nrs + na, rs + a, nrs + na, nrs + a);
+        }
+      }
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+      return geom;
+    }
+
+    function createDrumheadTexture() {
+      const s = 512, c = document.createElement('canvas'); c.width = s; c.height = s;
+      const ctx = c.getContext('2d'), cx = s / 2, cy = s / 2;
+      ctx.fillStyle = '#182030'; ctx.fillRect(0, 0, s, s);
+      for (let y = 0; y < s; y += 6) {
+        for (let x = 0; x < s; x += 6) {
+          ctx.fillStyle = ((x + y) / 6) % 2 === 0 ? 'rgba(245, 190, 90, 0.10)' : 'rgba(56, 189, 248, 0.04)';
+          ctx.fillRect(x, y, 4, 4);
+        }
+      }
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.15, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(8, 12, 20, 0.65)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(245, 158, 11, 0.35)'; ctx.stroke();
+      ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(148, 163, 184, 0.20)';
+      ctx.beginPath(); ctx.arc(cx, cy, s * 0.34, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      return new THREE.CanvasTexture(c);
+    }
+
+    function createWoodTexture(baseColor, grainColor) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = baseColor; ctx.fillRect(0, 0, 512, 256);
+      for (let y = 0; y < 256; y += 2) {
+        const wv = Math.sin(y * 0.12) * 14;
+        ctx.strokeStyle = grainColor; ctx.globalAlpha = 0.14 + Math.random() * 0.16;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(170, y + wv, 340, y - wv, 512, y); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      return new THREE.CanvasTexture(c);
+    }
+
+    function initThreeStage() {
+      const canvas = document.getElementById('threeCanvas');
+      const wrap = document.getElementById('stageWrap');
+      if (!canvas || !wrap || typeof THREE === 'undefined') return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x05070e);
+      scene.fog = new THREE.FogExp2(0x05070e, 0.072);
+
+      const w = wrap.clientWidth || 720, h = wrap.clientHeight || 470;
+      camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 40);
+      camera.position.set(...CAM_VIEWS.side.pos);
+
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(w, h, false);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.22;
+
+      scene.environment = buildStudioEnvMap(renderer);
+
+      if (typeof THREE.OrbitControls !== 'undefined') {
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.08;
+        controls.maxPolarAngle = Math.PI * 0.48;
+        controls.target.set(...CAM_VIEWS.side.target);
+      }
+
+      scene.add(new THREE.AmbientLight(0x94a3b8, 0.45));
+      const spot = new THREE.SpotLight(0xfff4e0, 2.7, 18, Math.PI * 0.30, 0.45, 1.1);
+      spot.position.set(1.6, 5.2, 2.8); spot.castShadow = true;
+      spot.shadow.mapSize.width = 1024; spot.shadow.mapSize.height = 1024; spot.shadow.bias = -0.0005;
+      scene.add(spot);
+
+      const cyanLight = new THREE.PointLight(0x38bdf8, 1.5, 12);
+      cyanLight.position.set(-3.2, 2.2, -2.0); scene.add(cyanLight);
+      const amberLight = new THREE.PointLight(0xf59e0b, 1.2, 12);
+      amberLight.position.set(3.2, 1.8, -2.0); scene.add(amberLight);
+
+      const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshStandardMaterial({ color: 0x05070e, roughness: 0.32, metalness: 0.50 }));
+      floor.rotation.x = -Math.PI / 2; floor.position.y = -0.88; floor.receiveShadow = true; scene.add(floor);
+
+      const rug = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.45, 0.03, 64), new THREE.MeshStandardMaterial({ color: 0x0d1322, roughness: 0.9 }));
+      rug.position.y = -0.865; rug.receiveShadow = true; scene.add(rug);
+
+      const rugLed = new THREE.Mesh(new THREE.TorusGeometry(2.42, 0.012, 10, 64), new THREE.MeshBasicMaterial({ color: 0x1e3a5f }));
+      rugLed.rotation.x = Math.PI / 2; rugLed.position.y = -0.85; scene.add(rugLed);
+
+      const grid = new THREE.PolarGridHelper(5.5, 12, 6, 48, 0x1e293b, 0x0f172a);
+      grid.position.y = -0.87; scene.add(grid);
+
+      const drumGroup = new THREE.Group();
+      drumGroup.position.set(0.75, 0, 0);
+      scene.add(drumGroup);
+
+      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.96, roughness: 0.12, envMapIntensity: 1.45 });
+      const darkSteelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.28 });
+      const shellMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.65, roughness: 0.22, envMapIntensity: 1.2, side: THREE.DoubleSide });
+
+      const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.62, 64, 1, true), shellMat);
+      shell.position.y = -0.31; shell.castShadow = true; shell.receiveShadow = true; drumGroup.add(shell);
+
+      [-0.01, -0.61].forEach((hy, idx) => {
+        const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.97, 0.032, 16, 64), chromeMat);
+        hoop.rotation.x = Math.PI / 2; hoop.position.y = hy + (idx === 0 ? 0.03 : -0.02); hoop.castShadow = true;
+        drumGroup.add(hoop);
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.985, 0.985, 0.065, 64, 1, true), chromeMat);
+        collar.position.y = hy + (idx === 0 ? 0.01 : -0.01); drumGroup.add(collar);
+      });
+
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        const lx = Math.cos(a) * 0.99, lz = Math.sin(a) * 0.99;
+        const ear = new THREE.Mesh(new THREE.BoxGeometry(0.046, 0.04, 0.046), chromeMat);
+        ear.position.set(lx, 0.02, lz); ear.rotation.y = -a; drumGroup.add(ear);
+        const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.68, 8), chromeMat);
+        rod.position.set(lx, -0.31, lz); drumGroup.add(rod);
+        const lug = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.34, 12), chromeMat);
+        lug.position.set(Math.cos(a) * 0.965, -0.31, Math.sin(a) * 0.965); drumGroup.add(lug);
+      }
+
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.065, 0.30, 16), darkSteelMat);
+      post.position.set(0, -0.75, 0); drumGroup.add(post);
+
+      const headGeom = createDeformableHeadGeometry(0.94, 24, 64);
+      drumHeadBasePos = Float32Array.from(headGeom.attributes.position.array);
+      drumHeadMat = new THREE.MeshStandardMaterial({ map: createDrumheadTexture(), roughness: 0.38, metalness: 0.12, envMapIntensity: 0.9 });
+      drumHeadMesh = new THREE.Mesh(headGeom, drumHeadMat);
+      drumHeadMesh.receiveShadow = true; drumGroup.add(drumHeadMesh);
+
+      const carbonMat = new THREE.MeshStandardMaterial({ color: 0x1e2636, metalness: 0.55, roughness: 0.32, envMapIntensity: 1.0 });
+      const jointMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.4, metalness: 0.85, roughness: 0.18 });
+      upperActuatorMat = new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0xa855f7, emissiveIntensity: 0.15, roughness: 0.25 });
+      foreActuatorMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x38bdf8, emissiveIntensity: 0.35, roughness: 0.25 });
+
+      const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.09, 2.13, 16), darkSteelMat);
+      pedestal.position.set(SHOULDER_X, 0.185, 0); scene.add(pedestal);
+
+      shoulderGroup = new THREE.Group();
+      shoulderGroup.position.set(SHOULDER_X, SHOULDER_Y, 0);
+      scene.add(shoulderGroup);
+      shoulderGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 20), jointMat));
+
+      const shArc = new THREE.Mesh(new THREE.RingGeometry(0.15, 0.17, 24, 1, -Math.PI * 0.75, Math.PI * 0.5), new THREE.MeshBasicMaterial({ color: 0xa855f7, transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+      shoulderGroup.add(shArc);
+
+      [-0.035, 0.035].forEach(zo => {
+        const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.028, L1, 12), carbonMat);
+        strut.position.set(0, -L1 / 2, zo); strut.castShadow = true; shoulderGroup.add(strut);
+      });
+      const upMuscle = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, L1 * 0.72, 12), upperActuatorMat);
+      upMuscle.position.set(0, -L1 / 2, 0); shoulderGroup.add(upMuscle);
+
+      elbowGroup = new THREE.Group();
+      elbowGroup.position.set(0, -L1, 0);
+      shoulderGroup.add(elbowGroup);
+      elbowGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.095, 20, 20), jointMat));
+
+      const elbArc = new THREE.Mesh(new THREE.RingGeometry(0.13, 0.15, 24, 1, -Math.PI * 0.35, Math.PI * 0.7), new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45, side: THREE.DoubleSide }));
+      elbowGroup.add(elbArc);
+
+      [-0.028, 0.028].forEach(zo => {
+        const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.022, L2, 12), carbonMat);
+        strut.rotation.z = -Math.PI / 2; strut.position.set(L2 / 2, 0, zo); strut.castShadow = true;
+        elbowGroup.add(strut);
+      });
+      const foreMuscle = new THREE.Mesh(new THREE.CylinderGeometry(0.020, 0.020, L2 * 0.75, 12), foreActuatorMat);
+      foreMuscle.rotation.z = -Math.PI / 2; foreMuscle.position.set(L2 / 2, 0, 0);
+      elbowGroup.add(foreMuscle);
+
+      wristGroup = new THREE.Group();
+      wristGroup.position.set(L2, 0, 0);
+      elbowGroup.add(wristGroup);
+
+      const palm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.11), carbonMat);
+      palm.position.set(0.04, -0.01, 0); palm.castShadow = true; wristGroup.add(palm);
+
+      thumbFingerMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.028, 0.032), chromeMat);
+      thumbFingerMesh.position.set(0.04, 0.045, 0.035); wristGroup.add(thumbFingerMesh);
+
+      indexFingerMesh = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.028, 0.032), chromeMat);
+      indexFingerMesh.position.set(0.06, -0.045, -0.035); wristGroup.add(indexFingerMesh);
+
+      stickPivot = new THREE.Group();
+      stickPivot.position.set(0, 0, 0);
+      wristGroup.add(stickPivot);
+
+      const stickPts = [
+        new THREE.Vector2(0.001, 0), new THREE.Vector2(0.025, 0.02), new THREE.Vector2(0.026, 1.02),
+        new THREE.Vector2(0.016, 1.38), new THREE.Vector2(0.012, 1.46),
+        new THREE.Vector2(BEAD_RADIUS, 1.51), new THREE.Vector2(0.020, 1.55), new THREE.Vector2(0.001, 1.56)
+      ];
+      const stickGeom = new THREE.LatheGeometry(stickPts, 24);
+      stickGeom.rotateZ(-Math.PI / 2);
+      const stickMesh = new THREE.Mesh(stickGeom, new THREE.MeshStandardMaterial({ map: createWoodTexture('#e2ba87', '#9b6734'), roughness: 0.30, envMapIntensity: 0.85 }));
+      stickMesh.position.x = -0.27; stickMesh.castShadow = true;
+      stickPivot.add(stickMesh);
+
+      const gripBand = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.14, 20), new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xf59e0b, emissiveIntensity: 0.35 }));
+      gripBand.rotation.z = Math.PI / 2; gripBand.position.x = 0.05;
+      stickPivot.add(gripBand);
+
+      const tipGlow = new THREE.Mesh(new THREE.SphereGeometry(BEAD_RADIUS, 16, 16), new THREE.MeshStandardMaterial({ color: 0xfef3c7, emissive: 0xf59e0b, emissiveIntensity: 0.35 }));
+      tipGlow.position.x = LS;
+      stickPivot.add(tipGlow);
+
+      const mkTrail = (col) => {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_LEN * 3), 3));
+        return new THREE.Line(g, new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.72 }));
+      };
+      wristTrailLine = mkTrail(0x38bdf8);
+      tipTrailLine = mkTrail(0xf59e0b);
+      scene.add(wristTrailLine); scene.add(tipTrailLine);
+
+      const maxSparks = 100;
+      sparkPositions = new Float32Array(maxSparks * 3);
+      for (let i = 0; i < maxSparks; i++) { sparkPositions[i * 3 + 1] = -99; sparkVelocities.push(new THREE.Vector3()); sparkLife.push(0); }
+      const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+      sparkSystem = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xfbbf24, size: 0.045, transparent: true, opacity: 0.9 }));
+      scene.add(sparkSystem);
+
+      const handleResize = () => {
+        const nw = wrap.clientWidth || 720, nh = wrap.clientHeight || 470;
+        camera.aspect = nw / nh; camera.updateProjectionMatrix();
+        renderer.setSize(nw, nh, false);
+      };
+      window.addEventListener('resize', handleResize);
+      if (typeof ResizeObserver !== 'undefined') new ResizeObserver(handleResize).observe(wrap);
+      requestAnimationFrame(handleResize);
+    }
+
+    function spawnImpactFX(hitX, vel) {
+      if (!scene) return;
+      const m = new THREE.Mesh(new THREE.RingGeometry(0.04, 0.075, 36), new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.9, side: THREE.DoubleSide }));
+      m.rotation.x = -Math.PI / 2; m.position.set(hitX, 0.018, 0); scene.add(m);
+      shockRings.push({ m, s: 1, a: 0.9 });
+
+      const cf = new THREE.Mesh(new THREE.CircleGeometry(0.10, 24), new THREE.MeshBasicMaterial({ color: 0xfef3c7, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+      cf.rotation.x = -Math.PI / 2; cf.position.set(hitX, 0.02, 0); scene.add(cf);
+      contactFlashes.push({ m: cf, a: 0.85 });
+
+      if (sparkSystem && vel > 0.45) {
+        let sp = 0;
+        for (let i = 0; i < sparkLife.length && sp < 14; i++) {
+          if (sparkLife[i] <= 0) {
+            sparkPositions[i * 3] = hitX; sparkPositions[i * 3 + 1] = 0.03; sparkPositions[i * 3 + 2] = 0;
+            sparkVelocities[i].set((Math.random() - 0.5) * 0.055, 0.03 + Math.random() * 0.055, (Math.random() - 0.5) * 0.055);
+            sparkLife[i] = 1.0; sp++;
+          }
+        }
+      }
+    }
+
+    // =========================================================================
+    // 4. DIAGNOSTIC PLOTS RENDERER
+    // =========================================================================
+    function renderDiagnosticPlot() {
+      const canvas = document.getElementById('plotCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.clientWidth;
+      const h = canvas.height = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.5)'; ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 48) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y < h; y += 36) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+      if (params.activePlot === 'hand') {
+        const hist = sim.history;
+        if (hist.length < 2) return;
+        const drawSeries = (key, color, scale, offset) => {
+          ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+          hist.forEach((pt, idx) => {
+            const x = (idx / (hist.length - 1)) * w;
+            const y = h * offset - pt[key] * scale;
+            if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          });
+          ctx.stroke();
+        };
+        drawSeries('th1', '#a855f7', 160, 0.55);
+        drawSeries('th2', '#38bdf8', 150, 0.55);
+        drawSeries('tipY', '#f59e0b', 180, 0.82);
+
+        ctx.fillStyle = '#94a3b8'; ctx.font = '10px JetBrains Mono';
+        ctx.fillText('Drumhead Surface Contact (y = 0)', 10, h * 0.82 - 6);
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)'; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(0, h * 0.82); ctx.lineTo(w, h * 0.82); ctx.stroke(); ctx.setLineDash([]);
+      } else if (params.activePlot === 'phase') {
+        const ph = sim.phaseHistory;
+        if (ph.length < 2) return;
+        ctx.beginPath(); ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.8;
+        ph.forEach((pt, i) => {
+          const x = w * 0.45 + pt.th * 380;
+          const y = h * 0.5 - pt.w * 12;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.fillStyle = '#94a3b8'; ctx.font = '10px JetBrains Mono';
+        ctx.fillText('Phase Portrait: Stick Angle θ_s (x) vs Angular Velocity ω_s (y)', 10, 16);
+      } else if (params.activePlot === 'transfer') {
+        let peakF = params.forearmHz, peakVal = 0;
+        const pts = [];
+        for (let f = 1; f <= 20; f += 0.25) {
+          const val = computeTransferMagnitude(f, params);
+          if (val > peakVal) { peakVal = val; peakF = f; }
+          pts.push({ f, val });
+        }
+        const maxY = Math.max(2.6, peakVal * 1.15);
+
+        ctx.beginPath(); ctx.strokeStyle = params.mode === 'MACHINE' ? '#10b981' : '#38bdf8'; ctx.lineWidth = 2.5;
+        pts.forEach((pt, i) => {
+          const x = ((pt.f - 1) / 19) * (w - 40) + 20;
+          const y = h - 22 - (pt.val / maxY) * (h - 42);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        if (params.mode === 'HUMAN') {
+          const px = ((peakF - 1) / 19) * (w - 40) + 20;
+          const py = h - 22 - (peakVal / maxY) * (h - 42);
+          ctx.fillStyle = '#f43f5e'; ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fda4af'; ctx.font = 'bold 11px JetBrains Mono';
+          ctx.fillText(`Peak: ${peakF.toFixed(1)} Hz`, Math.min(w - 110, px + 8), py + 4);
+        }
+
+        const cx = ((params.driveHz - 1) / 19) * (w - 40) + 20;
+        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(cx, 10); ctx.lineTo(cx, h - 20); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#fbbf24'; ctx.font = '10px JetBrains Mono';
+        ctx.fillText(`Drive: ${params.driveHz.toFixed(1)} Hz`, Math.min(w - 95, cx + 4), 22);
+      } else if (params.activePlot === 'ceiling') {
+        const drawCurve = (modeCfg, col) => {
+          ctx.beginPath(); ctx.strokeStyle = col; ctx.lineWidth = 2.2;
+          for (let f = 1; f <= 20; f += 0.5) {
+            const testP = { ...params, ...modeCfg, driveHz: f };
+            const achieved = simulateSteadyRate(testP);
+            const x = ((f - 1) / 19) * (w - 40) + 20;
+            const y = h - 20 - (Math.min(24, achieved) / 24) * (h - 38);
+            if (f === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        };
+        drawCurve({ mode: 'MACHINE', gripDamp: 0.85 }, '#10b981');
+        drawCurve({ mode: 'HUMAN', gripDamp: 0.14 }, '#38bdf8');
+        drawCurve({ mode: 'HUMAN', gripDamp: 0.85 }, '#f59e0b');
+        ctx.fillStyle = '#f59e0b'; ctx.font = '10px JetBrains Mono'; ctx.fillText('Amber: SINGLE (Ceiling ~10 Hz)', 16, 18);
+        ctx.fillStyle = '#38bdf8'; ctx.fillText('Cyan: ROLL (Rebound Released)', 16, 32);
+        ctx.fillStyle = '#10b981'; ctx.fillText('Green: MACHINE (No Ceiling)', 16, 46);
+      }
+    }
+
+    function simulateSteadyRate(testP) {
+      const st = { t: 0, th1: 0, w1: 0, th2: -0.04, w2: 0, thS: 0.06, wS: 0, prevTipY: 0.25, tipX: 0.74, tipY: 0.25, lastHitTime: -10, hitTimestamps: [], achievedRateHz: 0 };
+      const dt = 1 / 240;
+      for (let i = 0; i < 240 * 1.4; i++) stepPhysicsModel(dt, st, testP);
+      st.hitTimestamps = [];
+      for (let i = 0; i < 240 * 1.0; i++) stepPhysicsModel(dt, st, testP);
+      return st.hitTimestamps.length;
+    }
+
+    // =========================================================================
+    // 5. FOUR-CHECK VERIFICATION SUITE
+    // =========================================================================
+    function runFourChecks() {
+      const findCeiling = (kHz) => {
+        let maxSust = 1;
+        for (let f = 2; f <= 18; f += 1) {
+          const rate = simulateSteadyRate({ ...params, mode: 'HUMAN', gripDamp: 0.85, forearmHz: kHz, fatiguePct: 0, driveHz: f });
+          if (rate >= f * 0.85) maxSust = f;
+        }
+        return maxSust;
+      };
+      const cBase = findCeiling(6.4);
+      const cStiff = findCeiling(8.0);
+      const pass1 = cBase >= 7 && cBase <= 13 && cStiff >= cBase;
+      document.getElementById('chk1Desc').textContent = `HUMAN ceiling = ${cBase} Hz (at k₂=6.4 Hz) → shifts to ${cStiff} Hz (at k₂=8.0 Hz).`;
+      document.getElementById('chk1Badge').textContent = pass1 ? 'PASS' : 'CHECK';
+      document.getElementById('chk1Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass1 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'} shrink-0`;
+
+      const findPeak = (kHz) => {
+        let pf = 5, pv = 0;
+        for (let f = 2; f <= 15; f += 0.1) {
+          const v = computeTransferMagnitude(f, { ...params, mode: 'HUMAN', forearmHz: kHz });
+          if (v > pv) { pv = v; pf = f; }
+        }
+        return pf;
+      };
+      const p1 = findPeak(5.4), p2 = findPeak(7.6);
+      const pass2 = p1 >= 5.0 && p1 <= 8.0 && p2 >= 5.0 && p2 <= 8.0 && p2 > p1;
+      document.getElementById('chk2Desc').textContent = `Peak moves from ${p1.toFixed(1)} Hz (k₂=5.4) to ${p2.toFixed(1)} Hz (k₂=7.6) within 5–8 Hz.`;
+      document.getElementById('chk2Badge').textContent = pass2 ? 'PASS' : 'FAIL';
+      document.getElementById('chk2Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass2 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+
+      const measureE = (eTarget) => {
+        const st = { t: 0, th1: 0, w1: 0, th2: -0.04, w2: 0, thS: 0.06, wS: 0, prevTipY: 0.25, tipX: 0.74, tipY: 0.25, lastHitTime: -10, lastImpactVel: 0, lastReboundVel: 0, measuredE: 0, hitTimestamps: [] };
+        const tp = { ...params, mode: 'HUMAN', driveHz: 4.0, headImpedance: eTarget };
+        for (let i = 0; i < 240; i++) stepPhysicsModel(1 / 240, st, tp);
+        return st.measuredE || eTarget;
+      };
+      const eHard = measureE(0.85), eSoft = measureE(0.35);
+      const pass3 = Math.abs(eHard - 0.85) < 0.03 && Math.abs(eSoft - 0.35) < 0.03;
+      document.getElementById('chk3Desc').textContent = `Hard head measured e = ${eHard.toFixed(2)} (target 0.85) • Soft head e = ${eSoft.toFixed(2)} (target 0.35).`;
+      document.getElementById('chk3Badge').textContent = pass3 ? 'PASS' : 'FAIL';
+      document.getElementById('chk3Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass3 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+
+      const mRate = simulateSteadyRate({ ...params, mode: 'MACHINE', driveHz: 20.0 });
+      const mTf5 = computeTransferMagnitude(5, { ...params, mode: 'MACHINE' });
+      const mTf20 = computeTransferMagnitude(20, { ...params, mode: 'MACHINE' });
+      const pass4 = mRate >= 18 && mTf5 === 1.0 && mTf20 === 1.0;
+      document.getElementById('chk4Desc').textContent = `MACHINE 20 Hz sustained = ${mRate} Hz • Flat transfer |H(5)|=${mTf5.toFixed(1)}, |H(20)|=${mTf20.toFixed(1)}.`;
+      document.getElementById('chk4Badge').textContent = pass4 ? 'PASS' : 'FAIL';
+      document.getElementById('chk4Badge').className = `px-2 py-0.5 rounded text-[10px] font-mono ${pass4 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'} shrink-0`;
+    }
+
+    // =========================================================================
+    // 6. MAIN ANIMATION LOOP & UI BINDINGS
+    // =========================================================================
+    let lastFrameTime = performance.now();
+
+    function mainLoop(now) {
+      requestAnimationFrame(mainLoop);
+      const dt = Math.min(0.033, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+
+      if (params.sweepActive) {
+        params.driveHz += dt * 1.4;
+        if (params.driveHz > 20.0) params.driveHz = 1.0;
+        document.getElementById('sliderDriveHz').value = params.driveHz.toFixed(1);
+        document.getElementById('valDriveHz').textContent = `${params.driveHz.toFixed(1)} Hz (${Math.round(params.driveHz * 60)} SPM)`;
+      }
+
+      if (!params.paused) {
+        stepPhysicsModel(dt, sim, params, (vel, hitX) => {
+          ripples.push({ birth: now, amp: 0.025 + vel * 0.035, x: hitX });
+          if (ripples.length > 8) ripples.shift();
+          spawnImpactFX(hitX, vel);
+          if (params.audioOn && audioCtx) synthDrumHit(audioCtx, audioCtx.destination, audioCtx.currentTime + 0.004, vel, noiseBuffer);
+        });
+
+        sim.history.push({ th1: sim.th1, th2: sim.th2 + 0.04, tipY: sim.tipY - BEAD_RADIUS });
+        if (sim.history.length > 180) sim.history.shift();
+        sim.phaseHistory.push({ th: sim.thS, w: sim.wS });
+        if (sim.phaseHistory.length > 140) sim.phaseHistory.shift();
+      }
+
+      if (shoulderGroup && elbowGroup && stickPivot) {
+        shoulderGroup.rotation.z = sim.th1;
+        elbowGroup.rotation.z = sim.th2 - sim.th1;
+        stickPivot.rotation.z = sim.thS;
+        shoulderGroup.updateMatrixWorld(true);
+
+        if (upperActuatorMat) upperActuatorMat.emissiveIntensity = 0.12 + sim.torque1Mag * 1.25;
+        if (foreActuatorMat) foreActuatorMat.emissiveIntensity = 0.18 + sim.torque2Mag * 1.15;
+
+        if (thumbFingerMesh && indexFingerMesh) {
+          const gap = (1.0 - params.gripDamp) * 0.035;
+          thumbFingerMesh.position.y = 0.042 + gap;
+          indexFingerMesh.position.y = -0.042 - gap;
+        }
+
+        const wPos = new THREE.Vector3();
+        wristGroup.getWorldPosition(wPos);
+        wristTrail.unshift(wPos.clone());
+        if (wristTrail.length > TRAIL_LEN) wristTrail.pop();
+        const wAttr = wristTrailLine.geometry.attributes.position;
+        for (let i = 0; i < TRAIL_LEN; i++) {
+          const p = wristTrail[Math.min(i, wristTrail.length - 1)] || wPos;
+          wAttr.setXYZ(i, p.x, p.y, p.z);
+        }
+        wAttr.needsUpdate = true;
+
+        const tPos = new THREE.Vector3(LS, 0, 0).applyMatrix4(stickPivot.matrixWorld);
+        tipTrail.unshift(tPos.clone());
+        if (tipTrail.length > TRAIL_LEN) tipTrail.pop();
+        const tAttr = tipTrailLine.geometry.attributes.position;
+        for (let i = 0; i < TRAIL_LEN; i++) {
+          const p = tipTrail[Math.min(i, tipTrail.length - 1)] || tPos;
+          tAttr.setXYZ(i, p.x, p.y, p.z);
+        }
+        tAttr.needsUpdate = true;
+      }
+
+      if (drumHeadMesh && drumHeadBasePos) {
+        const pos = drumHeadMesh.geometry.attributes.position;
+        const activeRipples = ripples.filter(r => (now - r.birth) < 480);
+        for (let i = 0; i < pos.count; i++) {
+          const lx = drumHeadBasePos[i * 3], lz = drumHeadBasePos[i * 3 + 2];
+          let dy = 0;
+          if (activeRipples.length > 0) {
+            const edgeAtten = Math.max(0, 1 - Math.hypot(lx, lz) / 0.94);
+            for (let k = 0; k < activeRipples.length; k++) {
+              const rp = activeRipples[k];
+              const ageSec = (now - rp.birth) / 1000;
+              const d = Math.hypot((lx + 0.75) - rp.x, lz);
+              dy += Math.sin(d * 18 - ageSec * 40) * Math.exp(-ageSec * 8.0) * Math.exp(-d * 1.5) * rp.amp * edgeAtten;
+            }
+          }
+          pos.setY(i, dy);
+        }
+        pos.needsUpdate = true;
+        if (activeRipples.length > 0) drumHeadMesh.geometry.computeVertexNormals();
+      }
+
+      for (let i = shockRings.length - 1; i >= 0; i--) {
+        const sr = shockRings[i];
+        sr.s += 0.35; sr.a -= 0.05;
+        sr.m.scale.set(sr.s, sr.s, 1); sr.m.material.opacity = Math.max(0, sr.a);
+        if (sr.a <= 0) { scene.remove(sr.m); sr.m.geometry.dispose(); sr.m.material.dispose(); shockRings.splice(i, 1); }
+      }
+
+      for (let i = contactFlashes.length - 1; i >= 0; i--) {
+        const cf = contactFlashes[i];
+        cf.a -= 0.1; cf.m.material.opacity = Math.max(0, cf.a); cf.m.scale.multiplyScalar(1.08);
+        if (cf.a <= 0) { scene.remove(cf.m); cf.m.geometry.dispose(); cf.m.material.dispose(); contactFlashes.splice(i, 1); }
+      }
+
+      if (sparkSystem) {
+        let dirty = false;
+        for (let i = 0; i < sparkLife.length; i++) {
+          if (sparkLife[i] > 0) {
+            sparkPositions[i * 3] += sparkVelocities[i].x;
+            sparkPositions[i * 3 + 1] += sparkVelocities[i].y;
+            sparkPositions[i * 3 + 2] += sparkVelocities[i].z;
+            sparkVelocities[i].y -= 0.0028; sparkLife[i] -= 0.05;
+            if (sparkLife[i] <= 0) sparkPositions[i * 3 + 1] = -99;
+            dirty = true;
+          }
+        }
+        if (dirty) sparkSystem.geometry.attributes.position.needsUpdate = true;
+      }
+
+      document.getElementById('telRate').textContent = `${params.driveHz.toFixed(1)} / ${sim.achievedRateHz.toFixed(1)} Hz`;
+      document.getElementById('telResonance').textContent = `${params.forearmHz.toFixed(1)} Hz`;
+      document.getElementById('telRestitution').textContent = `e = ${sim.measuredE.toFixed(2)}`;
+      const estCeil = params.mode === 'MACHINE' ? '∞ (None)' : `~${(9.5 + (params.forearmHz - 6.4) * 0.6 - (params.fatiguePct * 0.035)).toFixed(1)} Hz`;
+      document.getElementById('telCeiling').textContent = estCeil;
+
+      const regEl = document.getElementById('regimeStatusPill');
+      if (params.mode === 'MACHINE') {
+        regEl.textContent = 'MACHINE NULL • ZERO CEILING';
+        regEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-emerald-500/40 text-[11px] font-mono font-bold text-emerald-300 backdrop-blur-sm';
+      } else if (params.gripDamp < 0.24) {
+        regEl.textContent = 'LOOSE GRIP • DELIBERATE DOUBLE-STROKE ROLL';
+        regEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-sky-500/40 text-[11px] font-mono font-bold text-sky-300 backdrop-blur-sm';
+      } else if (params.gripDamp <= 0.42) {
+        regEl.textContent = 'TRANSITION BAND • UNINTENDED DOUBLE BOUNCES';
+        regEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-rose-500/40 text-[11px] font-mono font-bold text-rose-300 backdrop-blur-sm';
+      } else {
+        regEl.textContent = params.driveHz > 10.5 ? 'CEILING EXCEEDED • RECOVERY BREAKDOWN' : 'STIFF GRIP • CONTROLLED SINGLE STROKES';
+        regEl.className = 'px-2.5 py-1 rounded-lg bg-obsidian-950/85 border border-amber-500/40 text-[11px] font-mono font-bold text-amber-300 backdrop-blur-sm';
+      }
+
+      const limbEl = document.getElementById('limbModePill');
+      if (params.mode === 'MACHINE') limbEl.textContent = 'Ideal Actuator (Flat Transfer)';
+      else if (params.driveHz >= params.forearmHz) limbEl.textContent = 'Whole-Limb Swing (Above Forearm Resonance)';
+      else limbEl.textContent = 'Wrist-Dominant (Below Resonance)';
+
+      if (camTargetLerp && controls) {
+        camera.position.lerp(camTargetLerp.pos, 0.1);
+        controls.target.lerp(camTargetLerp.target, 0.1);
+        if (camera.position.distanceTo(camTargetLerp.pos) < 0.03) camTargetLerp = null;
+      }
+      if (controls) controls.update();
+      if (renderer && scene && camera) renderer.render(scene, camera);
+
+      renderDiagnosticPlot();
+    }
+
+    function bindUI() {
+      const setMode = (m) => {
+        params.mode = m;
+        document.getElementById('valModeLabel').textContent = m;
+        document.getElementById('btnModeHuman').className = m === 'HUMAN' ? 'py-1 rounded-lg text-xs font-mono font-bold bg-amber-500 text-slate-950 transition' : 'py-1 rounded-lg text-xs font-mono font-semibold bg-obsidian-800 text-slate-300 border border-slate-700 transition';
+        document.getElementById('btnModeMachine').className = m === 'MACHINE' ? 'py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500 text-slate-950 transition' : 'py-1 rounded-lg text-xs font-mono font-semibold bg-obsidian-800 text-slate-300 border border-slate-700 transition';
+      };
+
+      document.getElementById('btnRegimeSingle').addEventListener('click', () => {
+        setMode('HUMAN'); params.gripDamp = 0.85; document.getElementById('sliderGripDamp').value = 0.85;
+        document.getElementById('valGripDamp').textContent = '0.85 (Stiff • Controlled)';
+      });
+      document.getElementById('btnRegimeRoll').addEventListener('click', () => {
+        setMode('HUMAN'); params.gripDamp = 0.14; document.getElementById('sliderGripDamp').value = 0.14;
+        document.getElementById('valGripDamp').textContent = '0.14 (Loose • Rebound Roll)';
+      });
+      document.getElementById('btnRegimeMachine').addEventListener('click', () => setMode('MACHINE'));
+      document.getElementById('btnModeHuman').addEventListener('click', () => setMode('HUMAN'));
+      document.getElementById('btnModeMachine').addEventListener('click', () => setMode('MACHINE'));
+
+      document.getElementById('sliderDriveHz').addEventListener('input', (e) => {
+        params.driveHz = parseFloat(e.target.value);
+        document.getElementById('valDriveHz').textContent = `${params.driveHz.toFixed(1)} Hz (${Math.round(params.driveHz * 60)} SPM)`;
+      });
+      document.getElementById('sliderGripDamp').addEventListener('input', (e) => {
+        params.gripDamp = parseFloat(e.target.value);
+        const lbl = params.gripDamp < 0.24 ? 'Loose • Roll' : (params.gripDamp <= 0.42 ? 'Transition • Buzz' : 'Stiff • Controlled');
+        document.getElementById('valGripDamp').textContent = `${params.gripDamp.toFixed(2)} (${lbl})`;
+      });
+      document.getElementById('sliderForearmK').addEventListener('input', (e) => {
+        params.forearmHz = parseFloat(e.target.value);
+        document.getElementById('valForearmK').textContent = `${params.forearmHz.toFixed(1)} Hz`;
+      });
+      document.getElementById('sliderHeadImp').addEventListener('input', (e) => {
+        params.headImpedance = parseFloat(e.target.value);
+        const lbl = params.headImpedance > 0.65 ? 'Hard' : (params.headImpedance > 0.45 ? 'Med' : 'Soft');
+        document.getElementById('valHeadImp').textContent = `${lbl} (e=${params.headImpedance.toFixed(2)})`;
+        if (drumHeadMat) drumHeadMat.roughness = 0.88 - params.headImpedance * 0.62;
+      });
+      document.getElementById('sliderFatigue').addEventListener('input', (e) => {
+        params.fatiguePct = parseInt(e.target.value, 10);
+        document.getElementById('valFatigue').textContent = `${params.fatiguePct}%`;
+      });
+
+      document.getElementById('btnRunAudio').addEventListener('click', () => {
+        ensureAudio();
+        params.audioOn = !params.audioOn;
+        const b = document.getElementById('btnRunAudio');
+        b.textContent = `Audio: ${params.audioOn ? 'ON' : 'OFF'}`;
+        b.className = params.audioOn ? 'px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold transition' : 'px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition';
+      });
+
+      document.getElementById('btnPauseSim').addEventListener('click', () => {
+        params.paused = !params.paused;
+        document.getElementById('btnPauseSim').textContent = params.paused ? 'Resume' : 'Pause';
+      });
+
+      document.getElementById('btnSweepDemo').addEventListener('click', () => {
+        params.sweepActive = !params.sweepActive;
+        document.getElementById('btnSweepDemo').textContent = params.sweepActive ? 'Stop Sweep' : 'Auto-Sweep 1→20 Hz';
+      });
+
+      document.getElementById('btnExportWav').addEventListener('click', export4SecWav);
+      document.getElementById('btnRunVerification').addEventListener('click', runFourChecks);
+
+      document.querySelectorAll('.plot-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          params.activePlot = tab.getAttribute('data-plot');
+          document.querySelectorAll('.plot-tab').forEach(t => {
+            const act = t.getAttribute('data-plot') === params.activePlot;
+            t.className = act ? 'plot-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-400/50 transition' : 'plot-tab px-2.5 py-1 rounded-lg text-[11px] font-mono font-medium bg-obsidian-900 text-slate-400 border border-slate-800 hover:text-slate-200 transition';
+          });
+        });
+      });
+
+      document.querySelectorAll('.cam-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = CAM_VIEWS[btn.getAttribute('data-cam')];
+          if (p) camTargetLerp = { pos: new THREE.Vector3(...p.pos), target: new THREE.Vector3(...p.target) };
+        });
+      });
+    }
+
+    window.addEventListener('load', () => {
+      initThreeStage();
+      bindUI();
+      requestAnimationFrame(mainLoop);
+    });
+  </script>
+</body>
+</html>

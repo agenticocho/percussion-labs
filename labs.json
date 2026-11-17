@@ -656,6 +656,23 @@
        ]
       }
      ]
+    },
+    {
+     "family": "the performer",
+     "cards": [
+      {
+       "href": "stroke_lab_3d_performer_motor_mechanics_rebound_roll_lab.html",
+       "glyph": "stroke",
+       "name": "STROKE-LAB 3D",
+       "desc": "The first lab whose limiting physics is the player. A stroke is a driven spring-mass-damper with a rebound, and the arm tops out around ten per second - until the grip loosens and the stick is allowed to come back. A drum roll was never fast single strokes; it was letting physics do half the work.",
+       "tags": [
+        "motor mechanics",
+        "rebound & restitution",
+        "5&#8211;8 Hz resonance",
+        "the machine null"
+       ]
+      }
+     ]
     }
    ]
   },
