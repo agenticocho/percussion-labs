@@ -8,7 +8,7 @@ SPRITE = re.search(r'<svg xmlns="http://www.w3.org/2000/svg" style="display:none
 HEAD = HTML[:HTML.find("<section>")]
 TAIL = HTML[HTML.rfind("</section>") + len("</section>"):]
 
-GLYPH = ('<svg class="glyph" aria-hidden="true"><use href="#i-{g}"/></svg>')
+GLYPH = ('<svg class="glyph" aria-hidden="true"><use href="#i-{glyph}"/></svg>')
 CARD = ('<a class="card" href="{href}">\n'
         '        ' + GLYPH + '\n'
         '        <div class="num">{num:02d}</div>\n'
